@@ -1,36 +1,362 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🍽️ Table Order System - Frontend
 
-## Getting Started
+테이블에 비치된 태블릿을 통해 고객이 직접 메뉴를 확인하고 주문할 수 있는 시스템의 프론트엔드입니다.
 
-First, run the development server:
+## 📋 프로젝트 개요
 
+### 주요 기능
+- **고객용 태블릿 UI**: 메뉴 조회, 장바구니, 주문하기, 직원 호출
+- **관리자 대시보드**: 실시간 주문 접수, 주문 상태 관리, 메뉴 관리, 매출 통계
+
+### 주요 특징
+- ⚡️ **빠른 반응 속도**: Next.js 16 App Router로 최적화된 성능
+- 📱 **태블릿 최적화**: 터치 친화적인 UI/UX
+- 📲 **PWA 지원**: 홈 화면 추가로 앱처럼 사용 (URL 바 숨김)
+- 🔄 **실시간 업데이트**: WebSocket 기반 주문 알림
+- 🎨 **모던한 디자인**: Tailwind CSS v4 활용
+- 💾 **오프라인 지원**: Service Worker 기반 캐싱
+
+---
+
+## 🛠 기술 스택
+
+### Core
+- **Framework**: [Next.js](https://nextjs.org) 16.1.1 (App Router)
+- **Language**: TypeScript 5
+- **Runtime**: React 19.2.3
+
+### Styling
+- **CSS Framework**: Tailwind CSS v4
+- **Design System**: 커스텀 컴포넌트 라이브러리
+
+### State Management
+- **Client State**: [Zustand](https://github.com/pmndrs/zustand) (장바구니, UI 상태)
+- **Server State**: [TanStack Query](https://tanstack.com/query) (API 데이터 캐싱)
+
+### API & Networking
+- **HTTP Client**: Fetch API (Next.js 내장)
+- **Real-time**: WebSocket / STOMP (주문 알림)
+
+### PWA
+- **Library**: [next-pwa](https://github.com/shadowwalker/next-pwa) 5.6.0
+- **Service Worker**: Workbox (자동 생성)
+- **Caching Strategy**: StaleWhileRevalidate, NetworkFirst
+
+### Package Manager
+- **npm** (package-lock.json 사용)
+
+---
+
+## 🚀 시작하기
+
+### 1. 사전 요구사항
+- Node.js 20.x 이상
+- npm 10.x 이상
+
+### 2. 설치
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# 의존성 설치
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 3. PWA 아이콘 준비
+PWA가 정상 작동하려면 아이콘이 필요합니다. [아이콘 생성 가이드](./public/icons/README.md)를 참고하세요.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+**필요한 파일:**
+```
+public/icons/
+├── icon-192x192.png       # Android 홈 화면
+├── icon-512x512.png       # Android 스플래시
+└── apple-touch-icon.png   # iOS 홈 화면
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 4. 환경 변수 설정
+`.env.local` 파일을 생성하고 아래 내용을 추가하세요:
+```env
+# API 서버 주소
+NEXT_PUBLIC_API_URL=http://localhost:8080/api/v1
 
-## Learn More
+# WebSocket 주소
+NEXT_PUBLIC_WS_URL=ws://localhost:8080/ws-stomp
+```
 
-To learn more about Next.js, take a look at the following resources:
+### 5. 개발 서버 실행
+```bash
+npm run dev
+```
+브라우저에서 [http://localhost:3000](http://localhost:3000) 으로 접속하세요.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+**Note**: PWA는 개발 모드에서 비활성화됩니다. 프로덕션 빌드에서만 활성화됩니다.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 6. 빌드
+```bash
+# 프로덕션 빌드 (PWA 활성화)
+npm run build
 
-## Deploy on Vercel
+# 빌드된 앱 실행
+npm start
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 📲 PWA 사용 방법
+
+### 고객 사용 시나리오
+
+1. **QR 코드 스캔**
+   - 태블릿으로 테이블 QR 코드 스캔
+   - 웹사이트가 열림
+
+2. **홈 화면에 추가**
+   - **Android**: "앱 설치" 배너 표시 → 터치
+   - **iOS**: Safari → 공유 버튼 → "홈 화면에 추가"
+
+3. **앱처럼 실행**
+   - 홈 화면의 "T-Order" 아이콘 터치
+   - 풀스크린으로 실행 (URL 바 없음)
+   - 앱처럼 매끄러운 경험 제공
+
+### PWA 기능
+
+✅ **풀스크린 모드**: 브라우저 UI 숨김 (URL 바, 툴바 등) ✓ 테스트 완료  
+✅ **오프라인 지원**: 네트워크 끊겨도 메뉴판 볼 수 있음  
+✅ **빠른 로딩**: 캐싱으로 반복 방문 시 즉시 로딩  
+✅ **앱 아이콘**: 홈 화면에 브랜드 아이콘 표시 ✓ 테스트 완료  
+✅ **자동 업데이트**: 새로운 버전 자동 적용
+
+### PWA 설정 파일
+
+- **manifest.json**: PWA 메타데이터 (이름, 아이콘, 색상)
+- **sw.js** (자동 생성): Service Worker (캐싱 로직)
+- **next.config.ts**: PWA 빌드 설정
+
+---
+
+## 📁 프로젝트 구조
+
+```
+order_front/
+├── src/
+│   ├── app/                      # Next.js App Router
+│   │   ├── layout.tsx            # 루트 레이아웃 (PWA 메타 태그)
+│   │   ├── page.tsx              # 홈 페이지
+│   │   ├── customer/             # 고객용 페이지
+│   │   │   ├── menu/             # 메뉴판
+│   │   │   ├── cart/             # 장바구니
+│   │   │   └── orders/           # 주문 내역
+│   │   └── admin/                # 관리자 페이지
+│   │       ├── dashboard/        # 주문 접수 현황
+│   │       ├── menu/             # 메뉴 관리
+│   │       └── analytics/        # 매출 통계
+│   ├── components/               # 공통 컴포넌트
+│   │   ├── ui/                   # 기본 UI 컴포넌트
+│   │   │   ├── Button.tsx
+│   │   │   ├── Card.tsx
+│   │   │   ├── Input.tsx
+│   │   │   └── Modal.tsx
+│   │   └── layout/               # 레이아웃 컴포넌트
+│   │       ├── Header.tsx
+│   │       ├── Sidebar.tsx
+│   │       └── Footer.tsx
+│   ├── features/                 # 기능별 모듈
+│   │   ├── menu/                 # 메뉴 관련
+│   │   ├── cart/                 # 장바구니 관련
+│   │   ├── order/                # 주문 관련
+│   │   └── admin/                # 관리자 기능
+│   ├── hooks/                    # 커스텀 훅
+│   │   ├── useCart.ts            # 장바구니 훅
+│   │   ├── useWebSocket.ts       # WebSocket 훅
+│   │   └── useAuth.ts            # 인증 훅
+│   ├── lib/                      # 유틸리티 & 설정
+│   │   ├── api/                  # API 클라이언트
+│   │   ├── utils/                # 헬퍼 함수
+│   │   └── constants/            # 상수 정의
+│   ├── stores/                   # Zustand 스토어
+│   │   ├── cartStore.ts
+│   │   └── uiStore.ts
+│   └── types/                    # TypeScript 타입 정의
+│       ├── menu.ts
+│       ├── order.ts
+│       └── api.ts
+├── public/                       # 정적 파일
+│   ├── manifest.json             # PWA 설정 파일 ⭐️
+│   ├── icons/                    # PWA 아이콘 ⭐️
+│   │   ├── icon-192x192.png
+│   │   ├── icon-512x512.png
+│   │   ├── apple-touch-icon.png
+│   │   └── README.md             # 아이콘 생성 가이드
+│   ├── sw.js                     # Service Worker (자동 생성)
+│   └── images/
+├── 참고사항/                      # 프로젝트 문서
+│   ├── README.md                 # 전체 프로젝트 개요
+│   ├── api_spec.md               # API 명세서
+│   ├── tech_spec.md              # 기술 스펙
+│   ├── wireframes.md             # 화면 설계
+│   ├── okpos.md                  # OKPOS 연동 가이드
+│   └── CHECKLIST.md              # 전체 체크리스트
+├── CHECKLIST.md                  # 프론트엔드 개발 체크리스트
+├── next.config.ts                # Next.js + PWA 설정 ⭐️
+├── package.json
+├── tsconfig.json
+└── tailwind.config.ts
+```
+
+---
+
+## 🎯 주요 화면
+
+### 1. 고객용 태블릿
+- **메인 화면**: 카테고리별 메뉴 리스트 (그리드 레이아웃)
+- **메뉴 상세**: 옵션 선택 및 수량 조절
+- **장바구니**: 주문 전 확인 및 수정
+- **주문 내역**: 현재 테이블의 전체 주문 조회
+- **직원 호출**: 물, 티슈, 수저 등 요청
+
+### 2. 관리자 대시보드
+- **주문 접수 현황**: 실시간 주문 카드 (테이블 번호, 메뉴, 상태)
+- **주문 상태 관리**: 조리 중 → 서빙 완료 처리
+- **메뉴 관리**: 등록/수정/삭제, 품절 처리
+- **매출 통계**: 일/주/월별 차트 및 인기 메뉴 순위
+
+---
+
+## 🔗 관련 문서
+
+- **[전체 프로젝트 개요](./참고사항/README.md)**: 백엔드 포함 전체 시스템 설명
+- **[API 명세서](./참고사항/api_spec.md)**: REST API 엔드포인트 및 WebSocket 명세
+- **[기술 스펙](./참고사항/tech_spec.md)**: 백엔드, 인프라, 배포 방식
+- **[화면 설계](./참고사항/wireframes.md)**: UI/UX 와이어프레임
+- **[OKPOS 연동](./참고사항/okpos.md)**: POS 시스템 연동 가이드
+- **[전체 체크리스트](./참고사항/CHECKLIST.md)**: 백엔드 포함 전체 개발 체크리스트
+- **[PWA 아이콘 가이드](./public/icons/README.md)**: 아이콘 생성 및 준비 방법
+
+---
+
+## 📝 개발 가이드
+
+### 코딩 컨벤션
+- **컴포넌트**: PascalCase (예: `MenuCard.tsx`)
+- **훅**: camelCase with `use` prefix (예: `useCart.ts`)
+- **타입**: PascalCase with `Type` suffix (예: `MenuItemType`)
+- **상수**: UPPER_SNAKE_CASE (예: `API_BASE_URL`)
+
+### 커밋 메시지
+```
+feat: 새로운 기능 추가
+fix: 버그 수정
+style: 코드 포맷팅, 세미콜론 누락 등
+refactor: 코드 리팩토링
+docs: 문서 수정
+test: 테스트 코드 추가
+chore: 빌드 설정, 패키지 매니저 수정
+```
+
+### 브랜치 전략
+- `main`: 프로덕션 배포
+- `develop`: 개발 통합 브랜치
+- `feature/*`: 기능 개발
+- `fix/*`: 버그 수정
+
+---
+
+## 🧪 테스트
+
+```bash
+# 테스트 실행 (설정 후)
+npm test
+
+# 테스트 커버리지
+npm run test:coverage
+```
+
+### PWA 테스트 방법
+
+#### ✅ 로컬 테스트 (2024-12-26 완료)
+
+1. **프로덕션 빌드 생성**
+```bash
+npm run build  # PWA Service Worker 자동 생성
+npm start      # 프로덕션 서버 실행
+```
+
+2. **Chrome DevTools에서 확인**
+   - F12 → Application → Manifest ✓ 확인 완료
+   - Service Workers 탭에서 `sw.js` 활성화 ✓ 확인 완료
+   - 아이콘 3개 로드 성공 ✓ 확인 완료
+
+3. **"앱에서 열기" 버튼 확인**
+   - 주소창 오른쪽에 설치 아이콘 표시 ✓ 확인 완료
+   - 설치 후 URL 바 제거 확인 ✓ 테스트 성공
+
+4. **Lighthouse PWA 점수** (선택)
+   - F12 → Lighthouse → Progressive Web App 체크
+   - "Generate report" 클릭
+   - PWA 점수 90+ 목표
+
+#### ⏳ 실제 태블릿 테스트 (대기)
+
+- Android 태블릿 (Chrome)
+- iPad (Safari)
+- 실제 레스토랑 환경에서 테스트
+
+---
+
+## 🚀 배포
+
+### Naver Cloud Platform (NCP)
+1. 프로덕션 빌드 생성
+```bash
+npm run build
+```
+
+2. 빌드 결과물 (`.next/`) 을 NCP Server에 배포
+3. HTTPS 필수 (PWA는 HTTPS에서만 작동)
+4. CDN 설정 및 도메인 연결
+
+### 환경변수 (프로덕션)
+```env
+NEXT_PUBLIC_API_URL=https://api.yourdomain.com/api/v1
+NEXT_PUBLIC_WS_URL=wss://api.yourdomain.com/ws-stomp
+```
+
+### PWA 배포 체크리스트
+- [ ] HTTPS 인증서 적용
+- [ ] manifest.json 경로 확인
+- [ ] 아이콘 파일 모두 업로드
+- [ ] Service Worker 정상 작동 확인
+- [ ] 태블릿에서 "홈 화면 추가" 테스트
+
+---
+
+## 🤝 기여하기
+
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'feat: Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+---
+
+## 📄 라이선스
+
+이 프로젝트는 내부 프로젝트입니다.
+
+---
+
+## 👥 팀
+
+- **Frontend**: 프론트엔드 개발팀
+- **Backend**: 백엔드 개발팀
+
+---
+
+## 📞 문의
+
+프로젝트 관련 문의사항이 있으시면 이슈를 등록해주세요.
+
+---
+
+> **Last Updated**: 2024-12-26  
+> **Version**: 0.1.0 (개발 중)  
+> **PWA**: Enabled ✅
