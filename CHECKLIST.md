@@ -7,6 +7,7 @@
 ## 1. ⚙️ 프로젝트 설정 (Project Setup)
 
 ### 기본 설정
+
 - [x] Next.js 16 프로젝트 초기화
 - [x] TypeScript 설정
 - [x] Tailwind CSS v4 설정
@@ -14,16 +15,17 @@
 - [x] manifest.json 생성
 - [x] Service Worker 설정 (next.config.ts)
 - [x] PWA 아이콘 준비 (192x192, 512x512, 180x180)
-- [ ] ESLint 설정 (코드 품질)
-- [ ] Prettier 설정 (코드 포맷팅)
+- [x] ESLint 설정 (코드 품질)
+- [x] Prettier 설정 (코드 포맷팅)
 - [x] `.env` 공통 환경 변수 파일 생성
 - [x] `.env.development` 개발 환경 변수 파일 생성
 - [x] `.env.production` 프로덕션 환경 변수 파일 생성
 - [x] `.env.example` 템플릿 파일 생성
 - [x] `.gitignore` 환경 변수 규칙 업데이트
-- [ ] Git hooks 설정 (Husky + lint-staged)
+- [x] Git hooks 설정 (Husky + lint-staged)
 
 ### 폴더 구조
+
 - [x] `src/components/` - 공통 컴포넌트 폴더 생성 (ui/, layout/ 포함)
 - [x] `src/features/` - 기능별 모듈 폴더 생성 (menu/, cart/, order/, admin/)
 - [x] `src/hooks/` - 커스텀 훅 폴더 생성
@@ -32,45 +34,50 @@
 - [x] `src/types/` - TypeScript 타입 정의 폴더 생성
 
 ### 패키지 설치
-- [ ] Zustand (클라이언트 상태 관리)
-- [ ] TanStack Query (서버 상태 관리)
-- [ ] WebSocket 라이브러리 (STOMP.js)
-- [ ] 아이콘 라이브러리 (lucide-react 또는 react-icons)
-- [ ] 날짜 라이브러리 (date-fns 또는 dayjs)
-- [ ] 차트 라이브러리 (recharts - 관리자용)
+
+- [x] Zustand (클라이언트 상태 관리)
+- [x] TanStack Query (서버 상태 관리)
+- [x] WebSocket 라이브러리 (STOMP.js)
+- [x] 아이콘 라이브러리 (lucide-react 또는 react-icons)
+- [x] 날짜 라이브러리 (date-fns 또는 dayjs)
+- [x] 차트 라이브러리 (recharts - 관리자용)
 
 ---
 
 ## 2. 🎨 디자인 시스템 (Design System)
 
 ### 색상 팔레트
-- [ ] Primary 컬러 정의 (브랜드 메인 색상)
-- [ ] Secondary 컬러 정의
-- [ ] Success/Warning/Error 컬러 정의
-- [ ] Gray Scale 정의 (배경, 텍스트)
-- [ ] Tailwind CSS config에 커스텀 컬러 추가
+
+- [x] Primary 컬러 정의 (브랜드 메인 색상)
+- [x] Secondary 컬러 정의
+- [x] Success/Warning/Error 컬러 정의
+- [x] Gray Scale 정의 (배경, 텍스트)
+- [x] Tailwind CSS config에 커스텀 컬러 추가
 
 ### 타이포그래피
-- [ ] 헤딩 폰트 설정 (H1~H6)
-- [ ] 본문 폰트 설정
+
+- [x] 헤딩 폰트 설정 (H1~H6)
+- [x] 본문 폰트 설정
 - [ ] 폰트 크기 시스템 정의 (text-sm, text-base, text-lg...)
 - [ ] 폰트 굵기 정의 (font-normal, font-medium, font-bold)
 
 ### 공통 컴포넌트
-- [ ] `Button` - 기본 버튼 (primary, secondary, outline)
-- [ ] `Input` - 텍스트 입력 필드
-- [ ] `Card` - 카드 컨테이너
-- [ ] `Modal` - 모달 팝업
-- [ ] `Drawer` - 사이드 슬라이드 (장바구니용)
-- [ ] `Badge` - 뱃지 (수량 표시)
-- [ ] `Spinner` - 로딩 인디케이터
-- [ ] `Toast` - 알림 메시지
+
+- [x] `Button` - 기본 버튼 (primary, secondary, outline)
+- [x] `Input` - 텍스트 입력 필드
+- [x] `Card` - 카드 컨테이너
+- [x] `Modal` - 모달 팝업
+- [x] `Drawer` - 사이드 슬라이드 (장바구니용)
+- [x] `Badge` - 뱃지 (수량 표시)
+- [x] `Spinner` - 로딩 인디케이터
+- [x] `Toast` - 알림 메시지
 
 ---
 
 ## 3. 🧑‍🤝‍🧑 고객용 태블릿 (Customer Tablet)
 
 ### 3.1 메인 화면 (Menu Board)
+
 - [ ] **페이지 구조**
   - [ ] `/customer/menu` 라우트 생성
   - [ ] 레이아웃 구성 (Header + Sidebar + Grid + Bottom Bar)
@@ -96,6 +103,7 @@
   - [ ] 장바구니 담기 버튼
 
 ### 3.2 장바구니 기능
+
 - [ ] **Zustand 스토어 구현**
   - [ ] `cartStore.ts` 생성
   - [ ] 상태: `items`, `totalPrice`, `totalQuantity`
@@ -115,11 +123,13 @@
   - [ ] 실패 시 에러 처리 (Toast 메시지)
 
 ### 3.3 직원 호출
+
 - [ ] 직원 호출 버튼 (물, 티슈, 수저, 기타)
 - [ ] POST `/api/v1/calls` API 연동
 - [ ] 호출 완료 피드백 (Toast)
 
 ### 3.4 주문 내역 조회
+
 - [ ] `/customer/orders` 페이지 생성
 - [ ] GET `/api/v1/orders/table/{tableId}` API 연동
 - [ ] 주문 내역 리스트 표시
@@ -131,6 +141,7 @@
 ## 4. 👨‍🍳 관리자 대시보드 (Admin Dashboard)
 
 ### 4.1 주문 접수 현황판 (Order Dashboard)
+
 - [ ] **페이지 구조**
   - [ ] `/admin/dashboard` 라우트 생성
   - [ ] 그리드 레이아웃 (주문 카드 나열)
@@ -153,12 +164,14 @@
   - [ ] 낙관적 업데이트 (Optimistic Update)
 
 ### 4.2 테이블 현황
+
 - [ ] `/admin/tables` 페이지 생성
 - [ ] 테이블 배치도 그리드 렌더링
 - [ ] 테이블 상태 (공석, 식사중, 정리 필요)
 - [ ] 이용 시간 표시
 
 ### 4.3 메뉴 관리
+
 - [ ] `/admin/menu` 페이지 생성
 - [ ] 메뉴 리스트 테이블 (이미지, 이름, 가격, 카테고리)
 - [ ] 품절 토글 스위치
@@ -167,6 +180,7 @@
 - [ ] CRUD API 연동
 
 ### 4.4 매출 통계
+
 - [ ] `/admin/analytics` 페이지 생성
 - [ ] 일/주/월별 매출 추이 차트 (Line Chart)
 - [ ] 인기 메뉴 Top 5 (Bar Chart)
@@ -178,17 +192,20 @@
 ## 5. 🔌 API 연동 (API Integration)
 
 ### 5.1 API 클라이언트 설정
+
 - [ ] `lib/api/client.ts` 생성
 - [ ] Base URL 환경 변수 설정
 - [ ] 인터셉터 설정 (에러 핸들링)
 - [ ] 타입 안전한 API 함수 작성
 
 ### 5.2 TanStack Query 설정
+
 - [ ] `app/providers.tsx` QueryClientProvider 설정
 - [ ] 기본 옵션 설정 (staleTime, cacheTime, retry)
 - [ ] DevTools 추가 (개발 환경)
 
 ### 5.3 API 엔드포인트 구현
+
 - [ ] **메뉴 관련**
   - [ ] `GET /api/v1/stores/{storeId}/categories` - 메뉴 조회
   - [ ] `GET /api/v1/menus/{menuId}` - 메뉴 상세
@@ -207,6 +224,7 @@
   - [ ] `PATCH /api/v1/admin/menus/{menuId}/soldout` - 품절 처리
 
 ### 5.4 WebSocket 연동
+
 - [ ] STOMP.js 라이브러리 설치
 - [ ] `useWebSocket.ts` 커스텀 훅 작성
 - [ ] 연결 관리 (connect, disconnect)
@@ -218,17 +236,20 @@
 ## 6. 🧪 테스트 (Testing)
 
 ### 단위 테스트
+
 - [ ] 테스트 라이브러리 설치 (Jest, Testing Library)
 - [ ] 공통 컴포넌트 테스트
 - [ ] Zustand 스토어 테스트
 - [ ] 유틸리티 함수 테스트
 
 ### 통합 테스트
+
 - [ ] API 호출 테스트 (MSW 활용)
 - [ ] 페이지 렌더링 테스트
 - [ ] 사용자 플로우 테스트 (E2E)
 
 ### 반응형 테스트
+
 - [ ] 태블릿 환경 테스트 (iPad, Galaxy Tab)
 - [ ] 다양한 화면 크기 테스트
 - [ ] 터치 인터랙션 테스트
@@ -238,27 +259,32 @@
 ## 7. 🚀 배포 (Deployment)
 
 ### 빌드 최적화
+
 - [ ] 프로덕션 빌드 테스트 (`npm run build`)
 - [ ] 번들 크기 분석 (`@next/bundle-analyzer`)
 - [ ] 이미지 최적화 확인
 - [ ] 불필요한 의존성 제거
 
 ### CI/CD 파이프라인
+
 - [ ] GitHub Actions 워크플로우 작성
 - [ ] 자동 빌드 및 테스트
 - [ ] NCP Server 배포 스크립트
 
 ### 환경 변수
+
 - [ ] 프로덕션 환경 변수 설정
 - [ ] API URL 확인
 - [ ] WebSocket URL 확인
 
 ### 도메인 & SSL
+
 - [ ] 도메인 연결
 - [ ] HTTPS 인증서 적용 (PWA 필수)
 - [ ] CDN 설정
 
 ### PWA 배포
+
 - [x] PWA 아이콘 모두 업로드 확인
 - [x] manifest.json 접근 가능 확인
 - [x] Service Worker 정상 작동 확인
@@ -310,6 +336,7 @@
 ```
 
 **완료 항목:**
+
 - ✅ Next.js 16 프로젝트 초기화
 - ✅ TypeScript 설정
 - ✅ Tailwind CSS v4 설정
