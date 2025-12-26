@@ -10,7 +10,7 @@
 - [x] Next.js 16 프로젝트 초기화
 - [x] TypeScript 설정
 - [x] Tailwind CSS v4 설정
-- [x] PWA 설정 (next-pwa)
+- [x] PWA 설정 (@ducanh2912/next-pwa + Webpack)
 - [x] manifest.json 생성
 - [x] Service Worker 설정 (next.config.ts)
 - [x] PWA 아이콘 준비 (192x192, 512x512, 180x180)

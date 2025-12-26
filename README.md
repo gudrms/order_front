@@ -38,9 +38,10 @@
 - **Real-time**: WebSocket / STOMP (주문 알림)
 
 ### PWA
-- **Library**: [next-pwa](https://github.com/shadowwalker/next-pwa) 5.6.0
+- **Library**: [@ducanh2912/next-pwa](https://github.com/DuCanhGH/next-pwa) 10.2.9
 - **Service Worker**: Workbox (자동 생성)
 - **Caching Strategy**: StaleWhileRevalidate, NetworkFirst
+- **Build Tool**: Webpack (PWA 라이브러리 호환을 위해 Turbopack 대신 사용)
 
 ### Package Manager
 - **npm** (package-lock.json 사용)
