@@ -1,363 +1,337 @@
-# 🍽️ Table Order System - Frontend
+# 🍽️ m-오더 (Mobile Order System)
 
-테이블에 비치된 태블릿을 통해 고객이 직접 메뉴를 확인하고 주문할 수 있는 시스템의 프론트엔드입니다.
+태블릿 기반 매장 주문 시스템 - 프론트엔드
+
+---
 
 ## 📋 프로젝트 개요
 
-### 주요 기능
-- **고객용 태블릿 UI**: 메뉴 조회, 장바구니, 주문하기, 직원 호출
-- **관리자 대시보드**: 실시간 주문 접수, 주문 상태 관리, 메뉴 관리, 매출 통계
+**m-오더**는 음식점에서 사용하는 태블릿 기반 주문 시스템입니다.
 
-### 주요 특징
-- ⚡️ **빠른 반응 속도**: Next.js 16 App Router로 최적화된 성능
-- 📱 **태블릿 최적화**: 터치 친화적인 UI/UX
-- 📲 **PWA 지원**: 홈 화면 추가로 앱처럼 사용 (URL 바 숨김)
-- 🔄 **실시간 업데이트**: WebSocket 기반 주문 알림
-- 🎨 **모던한 디자인**: Tailwind CSS v4 활용
-- 💾 **오프라인 지원**: Service Worker 기반 캐싱
+### 주요 기능
+
+- 🛒 **고객용 주문**: 메뉴 탐색, 옵션 선택, 장바구니, 주문
+- 📊 **관리자**: 주문 관리, 메뉴 관리, 통계
+- 🔄 **실시간 동기화**: 주문 상태 실시간 업데이트
 
 ---
 
-## 🛠 기술 스택
+## 🚀 기술 스택
 
 ### Core
-- **Framework**: [Next.js](https://nextjs.org) 16.1.1 (App Router)
-- **Language**: TypeScript 5
-- **Runtime**: React 19.2.3
 
-### Styling
-- **CSS Framework**: Tailwind CSS v4
-- **Design System**: 커스텀 컴포넌트 라이브러리
+- **Next.js 14** (App Router)
+- **TypeScript**
+- **React 18**
 
-### State Management
-- **Client State**: [Zustand](https://github.com/pmndrs/zustand) (장바구니, UI 상태)
-- **Server State**: [TanStack Query](https://tanstack.com/query) (API 데이터 캐싱)
+### 상태 관리 & 데이터 페칭
 
-### API & Networking
-- **HTTP Client**: Fetch API (Next.js 내장)
-- **Real-time**: WebSocket / STOMP (주문 알림)
+- **TanStack Query** (React Query) - 서버 상태 관리
+- **Zustand** - 클라이언트 상태 관리
 
-### PWA
-- **Library**: [@ducanh2912/next-pwa](https://github.com/DuCanhGH/next-pwa) 10.2.9
-- **Service Worker**: Workbox (자동 생성)
-- **Caching Strategy**: StaleWhileRevalidate, NetworkFirst
-- **Build Tool**: Webpack (PWA 라이브러리 호환을 위해 Turbopack 대신 사용)
+### 스타일링
 
-### Package Manager
-- **npm** (package-lock.json 사용)
+- **Tailwind CSS** - 유틸리티 기반 CSS
 
----
+### HTTP 클라이언트
 
-## 🚀 시작하기
-
-### 1. 사전 요구사항
-- Node.js 20.x 이상
-- npm 10.x 이상
-
-### 2. 설치
-```bash
-# 의존성 설치
-npm install
-```
-
-### 3. PWA 아이콘 준비
-PWA가 정상 작동하려면 아이콘이 필요합니다. [아이콘 생성 가이드](./public/icons/README.md)를 참고하세요.
-
-**필요한 파일:**
-```
-public/icons/
-├── icon-192x192.png       # Android 홈 화면
-├── icon-512x512.png       # Android 스플래시
-└── apple-touch-icon.png   # iOS 홈 화면
-```
-
-### 4. 환경 변수 설정
-`.env.local` 파일을 생성하고 아래 내용을 추가하세요:
-```env
-# API 서버 주소
-NEXT_PUBLIC_API_URL=http://localhost:8080/api/v1
-
-# WebSocket 주소
-NEXT_PUBLIC_WS_URL=ws://localhost:8080/ws-stomp
-```
-
-### 5. 개발 서버 실행
-```bash
-npm run dev
-```
-브라우저에서 [http://localhost:3000](http://localhost:3000) 으로 접속하세요.
-
-**Note**: PWA는 개발 모드에서 비활성화됩니다. 프로덕션 빌드에서만 활성화됩니다.
-
-### 6. 빌드
-```bash
-# 프로덕션 빌드 (PWA 활성화)
-npm run build
-
-# 빌드된 앱 실행
-npm start
-```
-
----
-
-## 📲 PWA 사용 방법
-
-### 고객 사용 시나리오
-
-1. **QR 코드 스캔**
-   - 태블릿으로 테이블 QR 코드 스캔
-   - 웹사이트가 열림
-
-2. **홈 화면에 추가**
-   - **Android**: "앱 설치" 배너 표시 → 터치
-   - **iOS**: Safari → 공유 버튼 → "홈 화면에 추가"
-
-3. **앱처럼 실행**
-   - 홈 화면의 "T-Order" 아이콘 터치
-   - 풀스크린으로 실행 (URL 바 없음)
-   - 앱처럼 매끄러운 경험 제공
-
-### PWA 기능
-
-✅ **풀스크린 모드**: 브라우저 UI 숨김 (URL 바, 툴바 등) ✓ 테스트 완료  
-✅ **오프라인 지원**: 네트워크 끊겨도 메뉴판 볼 수 있음  
-✅ **빠른 로딩**: 캐싱으로 반복 방문 시 즉시 로딩  
-✅ **앱 아이콘**: 홈 화면에 브랜드 아이콘 표시 ✓ 테스트 완료  
-✅ **자동 업데이트**: 새로운 버전 자동 적용
-
-### PWA 설정 파일
-
-- **manifest.json**: PWA 메타데이터 (이름, 아이콘, 색상)
-- **sw.js** (자동 생성): Service Worker (캐싱 로직)
-- **next.config.ts**: PWA 빌드 설정
+- **Axios** - API 통신
 
 ---
 
 ## 📁 프로젝트 구조
 
 ```
-order_front/
+front/
 ├── src/
-│   ├── app/                      # Next.js App Router
-│   │   ├── layout.tsx            # 루트 레이아웃 (PWA 메타 태그)
-│   │   ├── page.tsx              # 홈 페이지
-│   │   ├── customer/             # 고객용 페이지
-│   │   │   ├── menu/             # 메뉴판
-│   │   │   ├── cart/             # 장바구니
-│   │   │   └── orders/           # 주문 내역
-│   │   └── admin/                # 관리자 페이지
-│   │       ├── dashboard/        # 주문 접수 현황
-│   │       ├── menu/             # 메뉴 관리
-│   │       └── analytics/        # 매출 통계
-│   ├── components/               # 공통 컴포넌트
-│   │   ├── ui/                   # 기본 UI 컴포넌트
-│   │   │   ├── Button.tsx
-│   │   │   ├── Card.tsx
-│   │   │   ├── Input.tsx
-│   │   │   └── Modal.tsx
-│   │   └── layout/               # 레이아웃 컴포넌트
-│   │       ├── Header.tsx
-│   │       ├── Sidebar.tsx
-│   │       └── Footer.tsx
-│   ├── features/                 # 기능별 모듈
-│   │   ├── menu/                 # 메뉴 관련
-│   │   ├── cart/                 # 장바구니 관련
-│   │   ├── order/                # 주문 관련
-│   │   └── admin/                # 관리자 기능
-│   ├── hooks/                    # 커스텀 훅
-│   │   ├── useCart.ts            # 장바구니 훅
-│   │   ├── useWebSocket.ts       # WebSocket 훅
-│   │   └── useAuth.ts            # 인증 훅
-│   ├── lib/                      # 유틸리티 & 설정
-│   │   ├── api/                  # API 클라이언트
-│   │   ├── utils/                # 헬퍼 함수
-│   │   └── constants/            # 상수 정의
-│   ├── stores/                   # Zustand 스토어
-│   │   ├── cartStore.ts
-│   │   └── uiStore.ts
-│   └── types/                    # TypeScript 타입 정의
-│       ├── menu.ts
-│       ├── order.ts
-│       └── api.ts
-├── public/                       # 정적 파일
-│   ├── manifest.json             # PWA 설정 파일 ⭐️
-│   ├── icons/                    # PWA 아이콘 ⭐️
-│   │   ├── icon-192x192.png
-│   │   ├── icon-512x512.png
-│   │   ├── apple-touch-icon.png
-│   │   └── README.md             # 아이콘 생성 가이드
-│   ├── sw.js                     # Service Worker (자동 생성)
-│   └── images/
-├── 참고사항/                      # 프로젝트 문서
-│   ├── README.md                 # 전체 프로젝트 개요
-│   ├── api_spec.md               # API 명세서
-│   ├── tech_spec.md              # 기술 스펙
-│   ├── wireframes.md             # 화면 설계
-│   ├── okpos.md                  # OKPOS 연동 가이드
-│   └── CHECKLIST.md              # 전체 체크리스트
-├── CHECKLIST.md                  # 프론트엔드 개발 체크리스트
-├── next.config.ts                # Next.js + PWA 설정 ⭐️
-├── package.json
-├── tsconfig.json
-└── tailwind.config.ts
+│   ├── app/                    # Next.js App Router
+│   │   ├── customer/          # 고객용 페이지
+│   │   │   ├── menu/         # 메뉴 페이지
+│   │   │   └── cart/         # 장바구니 페이지
+│   │   └── admin/            # 관리자 페이지 (예정)
+│   │
+│   ├── features/              # 기능별 모듈
+│   │   ├── menu/             # 메뉴 기능
+│   │   │   ├── components/   # 메뉴 컴포넌트
+│   │   │   ├── layout/       # 레이아웃 컴포넌트
+│   │   │   └── hooks/        # 커스텀 훅
+│   │   └── cart/             # 장바구니 기능
+│   │       └── components/   # 장바구니 컴포넌트
+│   │
+│   ├── stores/               # Zustand 스토어
+│   │   ├── cartStore.ts      # 장바구니 상태
+│   │   └── uiStore.ts        # UI 상태
+│   │
+│   ├── hooks/                # 공통 훅
+│   │   └── queries/          # TanStack Query 훅
+│   │       └── useMenus.ts   # 메뉴 데이터 훅
+│   │
+│   ├── lib/                  # 라이브러리 설정
+│   │   ├── api/              # API 통신
+│   │   │   ├── client.ts     # Axios 인스턴스
+│   │   │   └── endpoints/    # API 엔드포인트
+│   │   └── query/            # React Query 설정
+│   │
+│   ├── mocks/                # Mock 데이터
+│   │   ├── categories.ts     # 카테고리
+│   │   └── menus.ts          # 메뉴 & 옵션
+│   │
+│   └── types/                # TypeScript 타입
+│       ├── menu.ts           # 메뉴 관련 타입
+│       └── order.ts          # 주문 관련 타입
+│
+├── public/                   # 정적 파일
+├── .env.local               # 환경 변수
+└── package.json
 ```
 
 ---
 
-## 🎯 주요 화면
+## 🛠️ 설치 및 실행
 
-### 1. 고객용 태블릿
-- **메인 화면**: 카테고리별 메뉴 리스트 (그리드 레이아웃)
-- **메뉴 상세**: 옵션 선택 및 수량 조절
-- **장바구니**: 주문 전 확인 및 수정
-- **주문 내역**: 현재 테이블의 전체 주문 조회
-- **직원 호출**: 물, 티슈, 수저 등 요청
-
-### 2. 관리자 대시보드
-- **주문 접수 현황**: 실시간 주문 카드 (테이블 번호, 메뉴, 상태)
-- **주문 상태 관리**: 조리 중 → 서빙 완료 처리
-- **메뉴 관리**: 등록/수정/삭제, 품절 처리
-- **매출 통계**: 일/주/월별 차트 및 인기 메뉴 순위
-
----
-
-## 🔗 관련 문서
-
-- **[전체 프로젝트 개요](./참고사항/README.md)**: 백엔드 포함 전체 시스템 설명
-- **[API 명세서](./참고사항/api_spec.md)**: REST API 엔드포인트 및 WebSocket 명세
-- **[기술 스펙](./참고사항/tech_spec.md)**: 백엔드, 인프라, 배포 방식
-- **[화면 설계](./참고사항/wireframes.md)**: UI/UX 와이어프레임
-- **[OKPOS 연동](./참고사항/okpos.md)**: POS 시스템 연동 가이드
-- **[전체 체크리스트](./참고사항/CHECKLIST.md)**: 백엔드 포함 전체 개발 체크리스트
-- **[PWA 아이콘 가이드](./public/icons/README.md)**: 아이콘 생성 및 준비 방법
-
----
-
-## 📝 개발 가이드
-
-### 코딩 컨벤션
-- **컴포넌트**: PascalCase (예: `MenuCard.tsx`)
-- **훅**: camelCase with `use` prefix (예: `useCart.ts`)
-- **타입**: PascalCase with `Type` suffix (예: `MenuItemType`)
-- **상수**: UPPER_SNAKE_CASE (예: `API_BASE_URL`)
-
-### 커밋 메시지
-```
-feat: 새로운 기능 추가
-fix: 버그 수정
-style: 코드 포맷팅, 세미콜론 누락 등
-refactor: 코드 리팩토링
-docs: 문서 수정
-test: 테스트 코드 추가
-chore: 빌드 설정, 패키지 매니저 수정
-```
-
-### 브랜치 전략
-- `main`: 프로덕션 배포
-- `develop`: 개발 통합 브랜치
-- `feature/*`: 기능 개발
-- `fix/*`: 버그 수정
-
----
-
-## 🧪 테스트
+### 1️⃣ 의존성 설치
 
 ```bash
-# 테스트 실행 (설정 후)
-npm test
-
-# 테스트 커버리지
-npm run test:coverage
+npm install
 ```
 
-### PWA 테스트 방법
+### 2️⃣ 환경 변수 설정
 
-#### ✅ 로컬 테스트 (2024-12-26 완료)
+`.env.local` 파일 생성:
 
-1. **프로덕션 빌드 생성**
+```env
+# Mock 모드 사용 여부
+NEXT_PUBLIC_USE_MOCK=true
+
+# API URL (실제 백엔드 연결 시 변경)
+NEXT_PUBLIC_API_URL=http://localhost:3001
+
+# 매장 ID
+NEXT_PUBLIC_STORE_ID=1
+```
+
+### 3️⃣ 개발 서버 실행
+
 ```bash
-npm run build  # PWA Service Worker 자동 생성
-npm start      # 프로덕션 서버 실행
+npm run dev
 ```
 
-2. **Chrome DevTools에서 확인**
-   - F12 → Application → Manifest ✓ 확인 완료
-   - Service Workers 탭에서 `sw.js` 활성화 ✓ 확인 완료
-   - 아이콘 3개 로드 성공 ✓ 확인 완료
+브라우저에서 http://localhost:3000 접속
 
-3. **"앱에서 열기" 버튼 확인**
-   - 주소창 오른쪽에 설치 아이콘 표시 ✓ 확인 완료
-   - 설치 후 URL 바 제거 확인 ✓ 테스트 성공
+### 4️⃣ 프로덕션 빌드
 
-4. **Lighthouse PWA 점수** (선택)
-   - F12 → Lighthouse → Progressive Web App 체크
-   - "Generate report" 클릭
-   - PWA 점수 90+ 목표
-
-#### ⏳ 실제 태블릿 테스트 (대기)
-
-- Android 태블릿 (Chrome)
-- iPad (Safari)
-- 실제 레스토랑 환경에서 테스트
-
----
-
-## 🚀 배포
-
-### Naver Cloud Platform (NCP)
-1. 프로덕션 빌드 생성
 ```bash
 npm run build
+npm start
 ```
-
-2. 빌드 결과물 (`.next/`) 을 NCP Server에 배포
-3. HTTPS 필수 (PWA는 HTTPS에서만 작동)
-4. CDN 설정 및 도메인 연결
-
-### 환경변수 (프로덕션)
-```env
-NEXT_PUBLIC_API_URL=https://api.yourdomain.com/api/v1
-NEXT_PUBLIC_WS_URL=wss://api.yourdomain.com/ws-stomp
-```
-
-### PWA 배포 체크리스트
-- [ ] HTTPS 인증서 적용
-- [ ] manifest.json 경로 확인
-- [ ] 아이콘 파일 모두 업로드
-- [ ] Service Worker 정상 작동 확인
-- [ ] 태블릿에서 "홈 화면 추가" 테스트
 
 ---
 
-## 🤝 기여하기
+## 📱 주요 페이지
+
+### 고객용
+
+#### 1️⃣ 메뉴 페이지 (`/customer/menu`)
+
+```
+┌─────────────────────────────────────────────┐
+│ [Sidebar]  [TopBar - 카테고리]             │
+│                                             │
+│ [치킨]     🍗 후라이드 치킨                 │
+│ [피자]     [카드] [카드] [카드]             │
+│ [파스타]                                    │
+│ [음료]     🍕 피자                          │
+│ [디저트]   [카드] [카드] [카드]             │
+│                                             │
+│           [주문내역] [장바구니 2개 45,000원]│
+└─────────────────────────────────────────────┘
+```
+
+**기능**:
+
+- ✅ 카테고리별 스크롤 네비게이션
+- ✅ 활성 카테고리 자동 하이라이트
+- ✅ 메뉴 클릭 → 상세 패널
+- ✅ 옵션 선택 → 장바구니 담기
+- ✅ 품절 메뉴 표시
+
+#### 2️⃣ 장바구니 페이지 (`/customer/cart`)
+
+```
+┌─────────────────────────────────────────────┐
+│ ← 뒤로가기        장바구니 (2개)             │
+├─────────────────────────────────────────────┤
+│                                             │
+│ [후라이드 치킨]                             │
+│ - 2인분 (+5,000원)                          │
+│ 23,000원 x 2 = 46,000원                     │
+│ [ - ]  2  [ + ]  [삭제]                     │
+│                                             │
+│ [마르게리타 피자]                           │
+│ - L 사이즈 (+5,000원)                       │
+│ 22,000원 x 1 = 22,000원                     │
+│ [ - ]  1  [ + ]  [삭제]                     │
+│                                             │
+├─────────────────────────────────────────────┤
+│ 총 상품 수: 3개                             │
+│ 총 금액: 68,000원                           │
+│ [        주문하기        ]                  │
+└─────────────────────────────────────────────┘
+```
+
+**기능**:
+
+- ✅ 장바구니 아이템 목록
+- ✅ 수량 조절 (+/-)
+- ✅ 아이템 삭제
+- ✅ 총 금액 자동 계산
+- ✅ 빈 장바구니 처리
+
+---
+
+## 🎨 주요 컴포넌트
+
+### 레이아웃
+
+- **Sidebar** - 좌측 카테고리 네비게이션
+- **TopBar** - 상단 카테고리 탭 (모바일)
+- **BottomBar** - 하단 주문내역/장바구니 버튼
+- **DetailPanel** - 우측 슬라이드 패널
+
+### 메뉴
+
+- **MenuGrid** - 메뉴 전체 그리드
+- **CategorySection** - 카테고리별 섹션
+- **MenuCard** - 개별 메뉴 카드
+- **MenuDetailContent** - 메뉴 상세 + 옵션 선택
+
+### 장바구니
+
+- **CartItemCard** - 장바구니 아이템 카드
+- **CartSummary** - 총 금액 요약
+
+---
+
+## 📊 상태 관리
+
+### Zustand Stores
+
+#### 1️⃣ cartStore
+
+```typescript
+interface CartStore {
+  items: CartItem[]; // 장바구니 아이템
+  totalPrice: number; // 총 금액
+  totalQuantity: number; // 총 수량
+
+  addItem: (item) => void; // 아이템 추가
+  removeItem: (id) => void; // 아이템 삭제
+  updateQuantity: (id, qty) => void; // 수량 변경
+  clearCart: () => void; // 장바구니 비우기
+}
+```
+
+#### 2️⃣ uiStore
+
+```typescript
+interface UIStore {
+  detailPanel: {
+    isOpen: boolean;
+    type: 'menu' | 'call' | null;
+    menuId?: number;
+  };
+
+  openMenuDetail: (menuId) => void; // 메뉴 상세 열기
+  openCallPanel: () => void; // 직원호출 열기
+  closeDetailPanel: () => void; // 패널 닫기
+}
+```
+
+---
+
+## 🔌 API 통신
+
+### TanStack Query 훅
+
+#### useCategories
+
+```typescript
+const { data: categories, isLoading } = useCategories(storeId);
+```
+
+#### useMenus
+
+```typescript
+const { data: menus, isLoading } = useMenus(storeId, categoryId);
+```
+
+#### useMenuDetail
+
+```typescript
+const { data: menuDetail, isLoading } = useMenuDetail(menuId);
+```
+
+---
+
+## 🎭 Mock 데이터
+
+현재 **Mock 모드**로 작동 중 (`NEXT_PUBLIC_USE_MOCK=true`)
+
+### 데이터
+
+- **5개 카테고리**: 치킨, 피자, 파스타, 음료, 디저트
+- **25개 메뉴**: 각 카테고리당 5개
+- **옵션**:
+  - 치킨: 사이즈 (1인분/2인분/3인분)
+  - 피자: 사이즈 (R/L) + 토핑 (치즈/페퍼로니/올리브)
+  - 파스타: 사이드 (마늘빵/샐러드)
+
+---
+
+## 🐛 트러블슈팅
+
+### 메뉴가 안 보여요
+
+→ DetailPanel 레이아웃 간섭 문제 → 수정 완료 ✅
+
+### 장바구니 에러 (options undefined)
+
+→ 옵셔널 체이닝 추가 → 수정 완료 ✅
+
+### F5하면 전체 새로고침돼요
+
+→ 정상 동작입니다. Next.js는 페이지 이동 시 최적화됩니다.
+
+---
+
+## 📈 개발 진행 상황
+
+✅ **Phase 1**: 프로젝트 초기 설정 (완료)  
+✅ **Phase 2**: 고객용 메뉴 페이지 (완료)  
+🔄 **Phase 3**: 장바구니 & 주문 플로우 (33% 완료)  
+⏳ **Phase 4**: 주문 내역 페이지  
+⏳ **Phase 5**: 관리자 페이지
+
+자세한 내용은 [CHECKLIST.md](./CHECKLIST.md) 참조
+
+---
+
+## 🤝 기여
 
 1. Fork the Project
 2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'feat: Add some AmazingFeature'`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
 4. Push to the Branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
 ---
 
-## 📄 라이선스
+## 📝 라이선스
 
-이 프로젝트는 내부 프로젝트입니다.
-
----
-
-## 👥 팀
-
-- **Frontend**: 프론트엔드 개발팀
-- **Backend**: 백엔드 개발팀
+MIT License
 
 ---
 
-## 📞 문의
+## 📧 문의
 
-프로젝트 관련 문의사항이 있으시면 이슈를 등록해주세요.
-
----
-
-> **Last Updated**: 2024-12-26  
-> **Version**: 0.1.0 (개발 중)  
-> **PWA**: Enabled ✅
+프로젝트 관련 문의: [이메일 주소]

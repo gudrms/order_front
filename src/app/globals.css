@@ -26,6 +26,22 @@
   --gray-700: #374151;
   --gray-800: #1f2937;
   --gray-900: #111827;
+
+  /* Font Sizes */
+  --font-size-xs: 0.75rem; /* 12px */
+  --font-size-sm: 0.875rem; /* 14px */
+  --font-size-base: 1rem; /* 16px */
+  --font-size-lg: 1.125rem; /* 18px */
+  --font-size-xl: 1.25rem; /* 20px */
+  --font-size-2xl: 1.5rem; /* 24px */
+  --font-size-3xl: 1.875rem; /* 30px */
+  --font-size-4xl: 2.25rem; /* 36px */
+
+  /* Font Weights */
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
 }
 
 @theme inline {
@@ -54,6 +70,22 @@
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* Font Sizes */
+  --fontSize-xs: var(--font-size-xs);
+  --fontSize-sm: var(--font-size-sm);
+  --fontSize-base: var(--font-size-base);
+  --fontSize-lg: var(--font-size-lg);
+  --fontSize-xl: var(--font-size-xl);
+  --fontSize-2xl: var(--font-size-2xl);
+  --fontSize-3xl: var(--font-size-3xl);
+  --fontSize-4xl: var(--font-size-4xl);
+
+  /* Font Weights */
+  --fontWeight-normal: var(--font-weight-normal);
+  --fontWeight-medium: var(--font-weight-medium);
+  --fontWeight-semibold: var(--font-weight-semibold);
+  --fontWeight-bold: var(--font-weight-bold);
 }
 
 @media (prefers-color-scheme: dark) {
