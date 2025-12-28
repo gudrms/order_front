@@ -22,7 +22,7 @@ function mockQuery<T>(data: T, delay = 500) {
 /**
  * 카테고리 목록 조회 훅
  */
-export function useCategories(storeId: number) {
+export function useCategories(storeId: string) {
   return useQuery<MenuCategory[]>({
     queryKey: ['categories', storeId],
     queryFn: USE_MOCK
@@ -38,7 +38,7 @@ export function useCategories(storeId: number) {
 /**
  * 메뉴 목록 조회 훅
  */
-export function useMenus(storeId: number, categoryId?: number) {
+export function useMenus(storeId: string, categoryId?: string) {
   return useQuery<Menu[]>({
     queryKey: ['menus', storeId, categoryId],
     queryFn: USE_MOCK
@@ -60,7 +60,7 @@ export function useMenus(storeId: number, categoryId?: number) {
 /**
  * 메뉴 상세 조회 훅
  */
-export function useMenuDetail(menuId?: number) {
+export function useMenuDetail(menuId?: string) {
   return useQuery<MenuDetail>({
     queryKey: ['menu', menuId],
     queryFn: USE_MOCK

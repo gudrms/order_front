@@ -5,8 +5,8 @@ import { CategoryButton } from '../components/CategoryButton';
 
 interface TopBarProps {
   tableNumber?: number;
-  activeCategoryId: number | null;
-  onCategoryClick: (categoryId: number) => void;
+  activeCategoryId: string | null;
+  onCategoryClick: (categoryId: string) => void;
 }
 
 /**
@@ -21,7 +21,7 @@ export function TopBar({
   activeCategoryId,
   onCategoryClick,
 }: TopBarProps) {
-  const storeId = Number(process.env.NEXT_PUBLIC_STORE_ID || 1);
+  const storeId = process.env.NEXT_PUBLIC_STORE_ID || 'default-store-id';
   const { data: categories, isLoading } = useCategories(storeId);
 
   return (

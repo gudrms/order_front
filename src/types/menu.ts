@@ -6,7 +6,7 @@
  * 메뉴 카테고리
  */
 export interface MenuCategory {
-  id: number;
+  id: string; // UUID
   name: string;
   description?: string;
   displayOrder: number;
@@ -23,7 +23,7 @@ export type MenuOptionType = 'SINGLE' | 'MULTIPLE';
  * 메뉴 옵션 항목
  */
 export interface MenuOptionItem {
-  id: number;
+  id: string; // UUID
   name: string;
   price: number;
 }
@@ -32,7 +32,7 @@ export interface MenuOptionItem {
  * 메뉴 옵션
  */
 export interface MenuOption {
-  id: number;
+  id: string; // UUID
   name: string;
   type: MenuOptionType;
   required: boolean;
@@ -43,12 +43,12 @@ export interface MenuOption {
  * 메뉴
  */
 export interface Menu {
-  id: number;
+  id: string; // UUID
   name: string;
   price: number;
   description: string;
   imageUrl: string | null;
-  categoryId: number;
+  categoryId: string; // UUID
   categoryName?: string;
   soldOut: boolean;
   displayOrder: number;

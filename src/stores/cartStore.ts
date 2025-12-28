@@ -6,7 +6,7 @@ import type { CartSelectedOption } from '@/types';
  */
 export interface CartItem {
   id: string; // 고유 ID (menuId + 옵션 조합)
-  menuId: number; // 메뉴 ID
+  menuId: string; // 메뉴 ID (UUID)
   menuName: string; // 메뉴 이름
   unitPrice: number; // 개당 가격 (옵션 포함)
   quantity: number; // 수량
@@ -19,7 +19,7 @@ export interface CartItem {
  * 장바구니에 추가할 아이템 (id 제외)
  */
 export interface AddCartItemInput {
-  menuId: number;
+  menuId: string; // UUID
   menuName: string;
   basePrice: number; // 메뉴 기본 가격
   quantity: number;
@@ -53,16 +53,17 @@ type CartStore = CartState & CartActions;
  * 고유 ID 생성 함수
  */
 function generateCartItemId(
-  menuId: number,
+  menuId: string,
   options?: CartSelectedOption[]
 ): string {
   const baseId = `menu_${menuId}`;
   if (!options || options.length === 0) {
     return baseId;
   }
+  // UUID는 문자열이므로 문자열 정렬
   const sortedOptionIds = options
     .map((opt) => opt.itemId)
-    .sort((a, b) => a - b)
+    .sort((a, b) => a.localeCompare(b))
     .join('_');
   return `${baseId}_opt_${sortedOptionIds}`;
 }

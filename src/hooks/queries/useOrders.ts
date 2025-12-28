@@ -9,7 +9,7 @@ import type { Order } from '@/types';
 /**
  * 테이블별 주문 내역 조회 훅
  */
-export function useOrdersByTable(tableId?: number) {
+export function useOrdersByTable(tableId?: string) {
   return useQuery<Order[]>({
     queryKey: ['orders', 'table', tableId],
     queryFn: () => api.order.getOrdersByTable(tableId!),

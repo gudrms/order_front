@@ -5,7 +5,7 @@ import type { Menu } from '@/types';
 
 interface MenuCardProps {
   menu: Menu;
-  onClick: (menuId: number) => void;
+  onClick: (menuId: string) => void; // UUID
 }
 
 /**

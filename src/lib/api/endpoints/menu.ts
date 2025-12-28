@@ -8,7 +8,7 @@ import { apiClient } from '../client';
 /**
  * 카테고리 목록 조회
  */
-export async function getCategories(storeId: number): Promise<MenuCategory[]> {
+export async function getCategories(storeId: string): Promise<MenuCategory[]> {
   return apiClient.get<MenuCategory[]>(`/stores/${storeId}/categories`);
 }
 
@@ -18,8 +18,8 @@ export async function getCategories(storeId: number): Promise<MenuCategory[]> {
  * @param categoryId - 카테고리 ID (선택)
  */
 export async function getMenus(
-  storeId: number,
-  categoryId?: number
+  storeId: string,
+  categoryId?: string
 ): Promise<Menu[]> {
   const endpoint = categoryId
     ? `/stores/${storeId}/menus?categoryId=${categoryId}`
@@ -31,6 +31,6 @@ export async function getMenus(
 /**
  * 메뉴 상세 조회
  */
-export async function getMenuDetail(menuId: number): Promise<MenuDetail> {
+export async function getMenuDetail(menuId: string): Promise<MenuDetail> {
   return apiClient.get<MenuDetail>(`/menus/${menuId}`);
 }

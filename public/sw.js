@@ -1,30 +1,30 @@
 if (!self.define) {
   let e,
     s = {};
-  const c = (c, i) => (
-    (c = new URL(c + '.js', i).href),
-    s[c] ||
+  const i = (i, n) => (
+    (i = new URL(i + '.js', n).href),
+    s[i] ||
       new Promise((s) => {
         if ('document' in self) {
           const e = document.createElement('script');
-          ((e.src = c), (e.onload = s), document.head.appendChild(e));
-        } else ((e = c), importScripts(c), s());
+          ((e.src = i), (e.onload = s), document.head.appendChild(e));
+        } else ((e = i), importScripts(i), s());
       }).then(() => {
-        let e = s[c];
-        if (!e) throw new Error(`Module ${c} didn’t register its module`);
+        let e = s[i];
+        if (!e) throw new Error(`Module ${i} didn’t register its module`);
         return e;
       })
   );
-  self.define = (i, n) => {
+  self.define = (n, c) => {
     const t =
       e ||
       ('document' in self ? document.currentScript.src : '') ||
       location.href;
     if (s[t]) return;
     let a = {};
-    const d = (e) => c(e, t),
+    const d = (e) => i(e, t),
       f = { module: { uri: t }, exports: a, require: d };
-    s[t] = Promise.all(i.map((e) => f[e] || d(e))).then((e) => (n(...e), a));
+    s[t] = Promise.all(n.map((e) => f[e] || d(e))).then((e) => (c(...e), a));
   };
 }
 define(['./workbox-c18c662b'], function (e) {
@@ -34,14 +34,6 @@ define(['./workbox-c18c662b'], function (e) {
     e.clientsClaim(),
     e.precacheAndRoute(
       [
-        {
-          url: '/_next/static/KNW4R7cvWtlY8pjDK-Bi7/_buildManifest.js',
-          revision: 'ff3ad5295b712f52c5d8fc053cff1414',
-        },
-        {
-          url: '/_next/static/KNW4R7cvWtlY8pjDK-Bi7/_ssgManifest.js',
-          revision: 'b6652df95db52feb4daf4eca35380933',
-        },
         {
           url: '/_next/static/chunks/176-eb35f000be02ad11.js',
           revision: 'eb35f000be02ad11',
@@ -83,20 +75,20 @@ define(['./workbox-c18c662b'], function (e) {
           revision: 'baebf4515cd2028f',
         },
         {
-          url: '/_next/static/chunks/app/customer/cart/page-d889bf209917ddc4.js',
-          revision: 'd889bf209917ddc4',
+          url: '/_next/static/chunks/app/customer/cart/page-8fb5e7fc8e6e3f31.js',
+          revision: '8fb5e7fc8e6e3f31',
         },
         {
-          url: '/_next/static/chunks/app/customer/menu/page-e24c7d2a3d53e05b.js',
-          revision: 'e24c7d2a3d53e05b',
+          url: '/_next/static/chunks/app/customer/menu/page-22127e5d8de96093.js',
+          revision: '22127e5d8de96093',
         },
         {
           url: '/_next/static/chunks/app/layout-c689e29c9bd10b7d.js',
           revision: 'c689e29c9bd10b7d',
         },
         {
-          url: '/_next/static/chunks/app/page-27001b2c259d1c48.js',
-          revision: '27001b2c259d1c48',
+          url: '/_next/static/chunks/app/page-15da2148a26c443d.js',
+          revision: '15da2148a26c443d',
         },
         {
           url: '/_next/static/chunks/framework-d7de93249215fb06.js',
@@ -165,6 +157,14 @@ define(['./workbox-c18c662b'], function (e) {
         {
           url: '/_next/static/media/ba015fad6dcf6784-s.woff2',
           revision: '8ea4f719af3312a055caf09f34c89a77',
+        },
+        {
+          url: '/_next/static/naVerBZxX_dZoJGhViSNS/_buildManifest.js',
+          revision: 'ff3ad5295b712f52c5d8fc053cff1414',
+        },
+        {
+          url: '/_next/static/naVerBZxX_dZoJGhViSNS/_ssgManifest.js',
+          revision: 'b6652df95db52feb4daf4eca35380933',
         },
         { url: '/file.svg', revision: 'd09f95206c3fa0bb9bd9fefabfd0ea71' },
         { url: '/globe.svg', revision: '2aaafa6a49b6563925fe440891e32717' },

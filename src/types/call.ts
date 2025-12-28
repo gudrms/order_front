@@ -35,8 +35,8 @@ export const CallStatusLabel: Record<CallStatus, string> = {
  * 직원 호출
  */
 export interface Call {
-  id: number;
-  tableId: number;
+  id: string; // UUID
+  tableId: string; // UUID
   tableNumber?: number;
   type: CallType;
   message: string | null;
@@ -49,7 +49,7 @@ export interface Call {
  * 직원 호출 생성 요청 DTO
  */
 export interface CreateCallRequest {
-  tableId: number;
+  tableId: string; // UUID
   type: CallType;
   message?: string | null;
 }

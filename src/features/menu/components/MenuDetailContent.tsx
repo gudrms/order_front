@@ -7,7 +7,7 @@ import { useCartStore, useUIStore } from '@/stores';
 import type { CartSelectedOption } from '@/types';
 
 interface MenuDetailContentProps {
-  menuId: number;
+  menuId: string; // UUID
 }
 
 /**

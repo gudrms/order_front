@@ -15,13 +15,13 @@ export async function createOrder(data: CreateOrderRequest): Promise<Order> {
 /**
  * 테이블별 주문 내역 조회
  */
-export async function getOrdersByTable(tableId: number): Promise<Order[]> {
+export async function getOrdersByTable(tableId: string): Promise<Order[]> {
   return apiClient.get<Order[]>(`/orders/table/${tableId}`);
 }
 
 /**
  * 주문 취소
  */
-export async function cancelOrder(orderId: number): Promise<Order> {
+export async function cancelOrder(orderId: string): Promise<Order> {
   return apiClient.post<Order>(`/orders/${orderId}/cancel`);
 }

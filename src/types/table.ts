@@ -21,11 +21,11 @@ export const TableStatusLabel: Record<TableStatus, string> = {
  * 테이블
  */
 export interface Table {
-  id: number;
-  number: number;
+  id: string; // UUID
+  number: number; // 테이블 번호는 number 유지
   capacity: number;
   status: TableStatus;
-  currentOrderId: number | null;
+  currentOrderId: string | null; // UUID
   occupiedAt: string | null;
   createdAt?: string;
   updatedAt?: string;

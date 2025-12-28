@@ -8,13 +8,13 @@ import { apiClient } from '../client';
 /**
  * 테이블 목록 조회
  */
-export async function getTables(storeId: number): Promise<Table[]> {
+export async function getTables(storeId: string): Promise<Table[]> {
   return apiClient.get<Table[]>(`/stores/${storeId}/tables`);
 }
 
 /**
  * 테이블 상세 조회
  */
-export async function getTableDetail(tableId: number): Promise<Table> {
+export async function getTableDetail(tableId: string): Promise<Table> {
   return apiClient.get<Table>(`/tables/${tableId}`);
 }

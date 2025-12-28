@@ -6,8 +6,8 @@ import { useActiveSection } from '../hooks/useActiveSection';
 import { CategorySection } from './CategorySection';
 
 interface MenuGridProps {
-  onCategoryActive?: (categoryId: number) => void;
-  onMenuClick: (menuId: number) => void;
+  onCategoryActive?: (categoryId: string) => void;
+  onMenuClick: (menuId: string) => void;
 }
 
 /**
@@ -17,7 +17,7 @@ interface MenuGridProps {
  * - 활성 섹션 자동 추적
  */
 export function MenuGrid({ onCategoryActive, onMenuClick }: MenuGridProps) {
-  const storeId = Number(process.env.NEXT_PUBLIC_STORE_ID || 1);
+  const storeId = process.env.NEXT_PUBLIC_STORE_ID || 'default-store-id';
 
   // 데이터 조회
   const { data: categories, isLoading: categoriesLoading } =
@@ -26,7 +26,7 @@ export function MenuGrid({ onCategoryActive, onMenuClick }: MenuGridProps) {
 
   // 각 섹션에 대한 ref Map - useMemo로 안정적으로 관리
   const sectionRefs = useMemo(() => {
-    const refs = new Map<number, React.RefObject<HTMLElement | null>>();
+    const refs = new Map<string, React.RefObject<HTMLElement | null>>();
 
     if (categories) {
       categories.forEach((category) => {
@@ -74,7 +74,7 @@ export function MenuGrid({ onCategoryActive, onMenuClick }: MenuGridProps) {
       acc[menu.categoryId].push(menu);
       return acc;
     },
-    {} as Record<number, typeof menus>
+    {} as Record<string, typeof menus>
   );
 
   return (

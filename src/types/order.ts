@@ -21,7 +21,7 @@ export const OrderStatusLabel: Record<OrderStatus, string> = {
  * 선택된 옵션 항목
  */
 export interface SelectedOptionItem {
-  optionItemId: number;
+  optionItemId: string; // UUID
   name: string;
   price: number;
 }
@@ -30,7 +30,7 @@ export interface SelectedOptionItem {
  * 선택된 옵션
  */
 export interface SelectedOption {
-  optionId: number;
+  optionId: string; // UUID
   optionName: string;
   items: SelectedOptionItem[];
 }
@@ -40,8 +40,8 @@ export interface SelectedOption {
  * UI 컴포넌트와 cartStore에서 사용
  */
 export interface CartSelectedOption {
-  id: number; // 옵션 그룹 ID
-  itemId: number; // 옵션 아이템 ID
+  id: string; // 옵션 그룹 ID (UUID)
+  itemId: string; // 옵션 아이템 ID (UUID)
   name: string; // 옵션 아이템 이름
   price: number; // 옵션 아이템 가격
 }
@@ -50,8 +50,8 @@ export interface CartSelectedOption {
  * 주문 항목
  */
 export interface OrderItem {
-  id?: number;
-  menuId: number;
+  id?: string; // UUID
+  menuId: string; // UUID
   menuName: string;
   quantity: number;
   unitPrice: number;
@@ -63,8 +63,8 @@ export interface OrderItem {
  * 주문
  */
 export interface Order {
-  id: number;
-  tableId: number;
+  id: string; // UUID
+  tableId: string; // UUID
   tableNumber?: number;
   items: OrderItem[];
   totalPrice: number;
@@ -78,13 +78,13 @@ export interface Order {
  * 주문 생성 요청 DTO
  */
 export interface CreateOrderRequest {
-  tableId: number;
+  tableId: string; // UUID
   items: {
-    menuId: number;
+    menuId: string; // UUID
     quantity: number;
     options?: {
-      optionId: number;
-      optionItemIds: number[];
+      optionId: string; // UUID
+      optionItemIds: string[]; // UUID[]
     }[];
   }[];
 }

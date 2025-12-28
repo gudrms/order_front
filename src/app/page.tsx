@@ -18,12 +18,12 @@ export default function TestPage() {
 
   // 타입 테스트
   const testMenu: Menu = {
-    id: 1,
+    id: 'test-menu-1',
     name: '테스트 메뉴',
     price: 15000,
     description: '이것은 테스트 메뉴입니다',
     imageUrl: null,
-    categoryId: 1,
+    categoryId: 'test-category-1',
     soldOut: false,
     displayOrder: 1,
   };

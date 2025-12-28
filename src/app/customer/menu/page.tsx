@@ -18,7 +18,7 @@ import { MenuGrid } from '@/features/menu/components';
  */
 export default function MenuPage() {
   // 현재 활성화된 카테고리 (Intersection Observer가 자동으로 감지)
-  const [activeCategoryId, setActiveCategoryId] = useState<number | null>(null);
+  const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
 
   // UI 스토어에서 메뉴 상세 패널 열기 함수 가져오기
   const { openMenuDetail } = useUIStore();
@@ -26,7 +26,7 @@ export default function MenuPage() {
   /**
    * 카테고리 클릭 시 해당 섹션으로 스크롤 이동
    */
-  const handleCategoryClick = (categoryId: number) => {
+  const handleCategoryClick = (categoryId: string) => {
     const element = document.getElementById(`category-${categoryId}`);
     if (element) {
       element.scrollIntoView({
@@ -39,7 +39,7 @@ export default function MenuPage() {
   /**
    * 활성 카테고리 변경 시 (Intersection Observer)
    */
-  const handleCategoryActive = (categoryId: number) => {
+  const handleCategoryActive = (categoryId: string) => {
     setActiveCategoryId(categoryId);
   };
 

@@ -5,10 +5,10 @@ import { useEffect, useState, RefObject } from 'react';
  * Intersection Observer를 사용하여 활성 섹션 감지
  */
 export function useActiveSection(
-  sectionRefs: Map<number, RefObject<HTMLElement | null>>,
+  sectionRefs: Map<string, RefObject<HTMLElement | null>>,
   options?: IntersectionObserverInit
 ) {
-  const [activeCategoryId, setActiveCategoryId] = useState<number | null>(null);
+  const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
 
   useEffect(() => {
     // Intersection Observer 설정
@@ -29,7 +29,7 @@ export function useActiveSection(
           const categoryId =
             mostVisible.target.getAttribute('data-category-id');
           if (categoryId) {
-            setActiveCategoryId(Number(categoryId));
+            setActiveCategoryId(categoryId); // 문자열 그대로 사용
           }
         }
       },

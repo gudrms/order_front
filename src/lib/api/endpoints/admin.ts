@@ -11,7 +11,7 @@ import { apiClient } from '../client';
  * @param status - 주문 상태 필터 (선택)
  */
 export async function getAdminOrders(
-  storeId: number,
+  storeId: string,
   status?: OrderStatus
 ): Promise<Order[]> {
   const endpoint = status
@@ -25,7 +25,7 @@ export async function getAdminOrders(
  * 주문 상태 변경
  */
 export async function updateOrderStatus(
-  orderId: number,
+  orderId: string,
   status: OrderStatus
 ): Promise<Order> {
   return apiClient.patch<Order>(`/admin/orders/${orderId}/status`, {
@@ -37,7 +37,7 @@ export async function updateOrderStatus(
  * 메뉴 품절 처리
  */
 export async function updateMenuSoldOut(
-  menuId: number,
+  menuId: string,
   soldOut: boolean
 ): Promise<void> {
   return apiClient.patch<void>(`/admin/menus/${menuId}/soldout`, {

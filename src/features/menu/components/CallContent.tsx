@@ -13,7 +13,7 @@ export function CallContent() {
   const closeDetailPanel = useUIStore((state) => state.closeDetailPanel);
 
   // 테이블 ID (실제로는 props나 URL에서 가져와야 함)
-  const tableId = 12; // 임시
+  const tableId = 'table-12'; // 임시 (UUID 형식)
 
   const callTypes: Array<{
     type: CallType;

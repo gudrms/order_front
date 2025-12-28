@@ -11,7 +11,7 @@ export type DetailPanelType = 'menu' | 'call' | null;
 interface DetailPanelState {
   isOpen: boolean;
   type: DetailPanelType;
-  menuId?: number; // 메뉴 상세일 때만 사용
+  menuId?: string; // 메뉴 상세일 때만 사용 (UUID)
 }
 
 /**
@@ -33,7 +33,7 @@ interface UIState {
  */
 interface UIActions {
   // 상세 패널
-  openMenuDetail: (menuId: number) => void;
+  openMenuDetail: (menuId: string) => void;
   openCallPanel: () => void;
   closeDetailPanel: () => void;
 

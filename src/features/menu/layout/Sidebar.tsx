@@ -5,8 +5,8 @@ import { useUIStore } from '@/stores';
 import { CategoryButton } from '../components/CategoryButton';
 
 interface SidebarProps {
-  activeCategoryId: number | null;
-  onCategoryClick: (categoryId: number) => void;
+  activeCategoryId: string | null;
+  onCategoryClick: (categoryId: string) => void;
 }
 
 /**
@@ -18,7 +18,7 @@ interface SidebarProps {
  * - 클릭 시 해당 카테고리로 스크롤 이동
  */
 export function Sidebar({ activeCategoryId, onCategoryClick }: SidebarProps) {
-  const storeId = Number(process.env.NEXT_PUBLIC_STORE_ID || 1);
+  const storeId = process.env.NEXT_PUBLIC_STORE_ID || 'default-store-id';
   const { data: categories, isLoading } = useCategories(storeId);
   const { toggleSidebar, openCallPanel } = useUIStore();
 

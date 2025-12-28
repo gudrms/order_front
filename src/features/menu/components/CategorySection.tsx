@@ -7,7 +7,7 @@ import { MenuCard } from './MenuCard';
 interface CategorySectionProps {
   category: MenuCategory;
   menus: Menu[];
-  onMenuClick: (menuId: number) => void;
+  onMenuClick: (menuId: string) => void; // UUID
 }
 
 /**
