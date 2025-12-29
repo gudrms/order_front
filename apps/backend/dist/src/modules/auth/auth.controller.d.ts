@@ -8,12 +8,12 @@ export declare class AuthController {
         name?: string;
     }): Promise<{
         id: string;
+        email: string;
         name: string | null;
         phoneNumber: string | null;
+        role: import(".prisma/client").$Enums.UserRole;
         createdAt: Date;
         updatedAt: Date;
-        email: string;
-        role: import(".prisma/client").$Enums.UserRole;
     }>;
     getProfile(req: any): any;
 }

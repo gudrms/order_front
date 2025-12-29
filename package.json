@@ -7,6 +7,10 @@
     "scripts": {
         "dev": "npm run dev --workspaces",
         "build": "npm run build --workspaces",
-        "lint": "npm run lint --workspaces"
+        "lint": "npm run lint --workspaces",
+        "supa:start": "npx supabase start",
+        "supa:stop": "npx supabase stop",
+        "supa:status": "npx supabase status",
+        "supa:pull-data": "node scripts/pull-db.js"
     }
 }

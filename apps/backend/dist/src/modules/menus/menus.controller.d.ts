@@ -19,8 +19,8 @@ export declare class MenusController {
             } & {
                 id: string;
                 name: string;
-                displayOrder: number;
                 menuId: string;
+                displayOrder: number;
                 minSelect: number;
                 maxSelect: number;
             })[];
@@ -30,8 +30,8 @@ export declare class MenusController {
                     name: string;
                     createdAt: Date;
                     updatedAt: Date;
-                    displayOrder: number;
                     storeId: string;
+                    displayOrder: number;
                     displayName: string;
                     icon: string | null;
                     color: string;
@@ -40,33 +40,33 @@ export declare class MenusController {
             } & {
                 id: string;
                 createdAt: Date;
-                tagId: string;
                 menuId: string;
+                tagId: string;
             })[];
         } & {
             id: string;
             name: string;
-            description: string | null;
-            isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            displayOrder: number;
             storeId: string;
+            description: string | null;
+            isActive: boolean;
+            displayOrder: number;
+            categoryId: string;
             okposMenuCode: string | null;
             price: number;
             imageUrl: string | null;
             soldOut: boolean;
             isHidden: boolean;
             lastSyncedAt: Date;
-            categoryId: string;
         })[];
     } & {
         id: string;
         name: string;
         createdAt: Date;
         updatedAt: Date;
+        storeId: string;
         okposCategoryCode: string | null;
         displayOrder: number;
-        storeId: string;
     })[]>;
 }
