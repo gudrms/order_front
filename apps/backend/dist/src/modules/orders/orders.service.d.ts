@@ -27,6 +27,8 @@ export declare class OrdersService {
         })[];
     } & {
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         storeId: string;
         orderNumber: string;
         tableNumber: number;
@@ -34,8 +36,6 @@ export declare class OrdersService {
         totalAmount: number;
         note: string | null;
         okposOrderId: string | null;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     private generateOrderNumber;
     getOrders(storeId: string, status?: any, page?: number): Promise<{
@@ -61,6 +61,8 @@ export declare class OrdersService {
             })[];
         } & {
             id: string;
+            createdAt: Date;
+            updatedAt: Date;
             storeId: string;
             orderNumber: string;
             tableNumber: number;
@@ -68,8 +70,6 @@ export declare class OrdersService {
             totalAmount: number;
             note: string | null;
             okposOrderId: string | null;
-            createdAt: Date;
-            updatedAt: Date;
         })[];
         meta: {
             total: number;
@@ -79,6 +79,8 @@ export declare class OrdersService {
     }>;
     updateOrderStatus(storeId: string, orderId: string, status: any): Promise<{
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         storeId: string;
         orderNumber: string;
         tableNumber: number;
@@ -86,7 +88,5 @@ export declare class OrdersService {
         totalAmount: number;
         note: string | null;
         okposOrderId: string | null;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
 }

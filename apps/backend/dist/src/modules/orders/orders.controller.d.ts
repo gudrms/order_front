@@ -26,6 +26,8 @@ export declare class OrdersController {
         })[];
     } & {
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         storeId: string;
         orderNumber: string;
         tableNumber: number;
@@ -33,8 +35,6 @@ export declare class OrdersController {
         totalAmount: number;
         note: string | null;
         okposOrderId: string | null;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     getOrders(storeId: string, status?: OrderStatus, page?: number): Promise<{
         data: ({
@@ -59,6 +59,8 @@ export declare class OrdersController {
             })[];
         } & {
             id: string;
+            createdAt: Date;
+            updatedAt: Date;
             storeId: string;
             orderNumber: string;
             tableNumber: number;
@@ -66,8 +68,6 @@ export declare class OrdersController {
             totalAmount: number;
             note: string | null;
             okposOrderId: string | null;
-            createdAt: Date;
-            updatedAt: Date;
         })[];
         meta: {
             total: number;
@@ -77,6 +77,8 @@ export declare class OrdersController {
     }>;
     updateOrderStatus(storeId: string, orderId: string, status: OrderStatus): Promise<{
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         storeId: string;
         orderNumber: string;
         tableNumber: number;
@@ -84,7 +86,5 @@ export declare class OrdersController {
         totalAmount: number;
         note: string | null;
         okposOrderId: string | null;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
 }
