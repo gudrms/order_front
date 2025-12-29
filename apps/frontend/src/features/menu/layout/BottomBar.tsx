@@ -9,24 +9,19 @@ import { useUIStore, useCartStore } from '@/stores';
  * - 장바구니 버튼 (장바구니가 닫혀있을 때만 표시)
  */
 export function BottomBar() {
-  const { isCartOpen, toggleCart } = useUIStore();
+  const { isCartOpen, toggleCart, toggleOrderHistory } = useUIStore();
   const { totalQuantity, totalPrice } = useCartStore();
 
   const hasItems = totalQuantity > 0;
-
-  const handleOrderHistoryClick = () => {
-    // TODO: 주문내역 페이지로 이동
-    alert('주문내역 페이지가 여기에 표시됩니다!');
-  };
 
   return (
     <div className="flex h-20 items-center justify-end gap-4 border-t bg-white px-6">
       {/* 주문내역 버튼 */}
       <button
-        onClick={handleOrderHistoryClick}
+        onClick={toggleOrderHistory}
         className="rounded-lg border border-gray-300 px-6 py-3 font-medium text-gray-700 transition-colors hover:bg-gray-50"
       >
-        주문내역
+        📋 주문내역
       </button>
 
       {/* 장바구니 버튼 (장바구니가 닫혀있을 때만 표시) */}
@@ -42,7 +37,7 @@ export function BottomBar() {
         >
           {hasItems ? (
             <>
-              장바구니 ({totalQuantity}) {totalPrice.toLocaleString()}원
+              🛒 장바구니 ({totalQuantity}) {totalPrice.toLocaleString()}원
             </>
           ) : (
             '장바구니가 비어있습니다'

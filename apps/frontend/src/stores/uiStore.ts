@@ -28,6 +28,9 @@ interface UIState {
 
   // 장바구니 패널 (우측)
   isCartOpen: boolean;
+
+  // 주문내역 패널 (우측)
+  isOrderHistoryOpen: boolean;
 }
 
 /**
@@ -50,6 +53,11 @@ interface UIActions {
   openCart: () => void;
   closeCart: () => void;
   toggleCart: () => void;
+
+  // 주문내역
+  openOrderHistory: () => void;
+  closeOrderHistory: () => void;
+  toggleOrderHistory: () => void;
 }
 
 type UIStore = UIState & UIActions;
@@ -66,18 +74,16 @@ export const useUIStore = create<UIStore>((set) => ({
   },
   isSidebarOpen: false,
   isCartOpen: true, // 기본값: 열림
+  isOrderHistoryOpen: false,
 
   // 메뉴 상세 모달 액션
   openMenuDetail: (menuId) => {
-    console.log('🏪 uiStore.openMenuDetail 호출:', menuId);
     set({
       selectedMenuId: menuId,
     });
-    console.log('🏪 uiStore.openMenuDetail 완료 - selectedMenuId 설정됨');
   },
 
   closeMenuDetail: () => {
-    console.log('🏪 uiStore.closeMenuDetail 호출');
     set({
       selectedMenuId: null,
     });
@@ -121,6 +127,8 @@ export const useUIStore = create<UIStore>((set) => ({
   openCart: () => {
     set({
       isCartOpen: true,
+      // 메뉴 상세 모달 닫기
+      selectedMenuId: null,
     });
   },
 
@@ -133,6 +141,39 @@ export const useUIStore = create<UIStore>((set) => ({
   toggleCart: () => {
     set((state) => ({
       isCartOpen: !state.isCartOpen,
+      // 장바구니를 열 때 메뉴 상세 모달 닫기
+      selectedMenuId: state.isCartOpen ? state.selectedMenuId : null,
+    }));
+  },
+
+  // 주문내역 액션
+  openOrderHistory: () => {
+    set({
+      isOrderHistoryOpen: true,
+      // 다른 패널들 닫기
+      isCartOpen: false,
+      detailPanel: {
+        isOpen: false,
+        type: null,
+      },
+    });
+  },
+
+  closeOrderHistory: () => {
+    set({
+      isOrderHistoryOpen: false,
+    });
+  },
+
+  toggleOrderHistory: () => {
+    set((state) => ({
+      isOrderHistoryOpen: !state.isOrderHistoryOpen,
+      // 열 때 다른 패널들 닫기
+      isCartOpen: state.isOrderHistoryOpen ? state.isCartOpen : false,
+      detailPanel: state.isOrderHistoryOpen ? state.detailPanel : {
+        isOpen: false,
+        type: null,
+      },
     }));
   },
 }));

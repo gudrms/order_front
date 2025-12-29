@@ -18,22 +18,13 @@ interface CategorySectionProps {
  */
 export const CategorySection = forwardRef<HTMLElement, CategorySectionProps>(
   ({ category, menus, onMenuClick }, ref) => {
-    console.log('📂 CategorySection - onMenuClick:', typeof onMenuClick, onMenuClick);
-
     // 메뉴가 없으면 렌더링하지 않음
     if (!menus || menus.length === 0) {
       return null;
     }
 
     const handleClick = (menuId: string) => {
-      console.log('🔗 CategorySection handleClick:', menuId);
-      try {
-        console.log('🔗 onMenuClick 호출 직전');
-        onMenuClick(menuId);
-        console.log('🔗 onMenuClick 호출 완료');
-      } catch (error) {
-        console.error('❌ CategorySection handleClick 에러:', error);
-      }
+      onMenuClick(menuId);
     };
 
     return (

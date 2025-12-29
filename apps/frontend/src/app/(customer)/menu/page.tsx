@@ -79,7 +79,6 @@ function MenuContent() {
       // 메뉴 찾기
       const menu = menus?.find((m) => m.id === menuId);
       if (!menu) {
-        console.error('메뉴를 찾을 수 없습니다:', menuId);
         return;
       }
 

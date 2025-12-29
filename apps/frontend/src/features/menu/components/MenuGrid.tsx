@@ -85,7 +85,6 @@ export function MenuGrid({ onCategoryActive, onMenuClick }: MenuGridProps) {
         const ref = sectionRefs.get(category.id);
 
         if (!ref) {
-          console.error(`ref 없음: ${category.id}`);
           return null;
         }
 

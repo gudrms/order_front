@@ -2,18 +2,21 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useParams } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { useUIStore, useTableStore, useCartStore } from '@/stores';
 import { useMenus } from '@/hooks/queries/useMenus';
 import { useStore } from '@/hooks/queries/useStore';
+import { mockMenuDetails } from '@/mocks';
+import { USE_MOCK } from '@/lib/mock-config';
 import {
   TopBar,
   Sidebar,
   BottomBar,
-  DetailPanel,
 } from '@/features/menu/layout';
 import { MenuGrid } from '@/features/menu/components';
 import { CartPanel } from '@/features/cart';
 import { MenuDetailModal } from '@/features/menu/components/MenuDetailModal';
+import { OrderHistoryPanel } from '@/features/order';
 
 /**
  * 고객용 메뉴 페이지
@@ -29,6 +32,7 @@ function MenuContent() {
   const params = useParams();
   const searchParams = useSearchParams();
   const { setTableNumber } = useTableStore();
+  const queryClient = useQueryClient();
 
   const storeType = params.storeType as string;
   const branchId = params.branchId as string;
@@ -45,6 +49,18 @@ function MenuContent() {
 
   // 메뉴 데이터 (Store ID가 있을 때만 조회)
   const { data: menus, isLoading: isMenusLoading } = useMenus(store?.id || '');
+
+  /**
+   * 메뉴 목록을 불러온 후 모든 메뉴 상세 정보를 prefetch
+   */
+  useEffect(() => {
+    if (menus && USE_MOCK) {
+      // Mock 모드일 때만 prefetch (실제 API는 필요시에만)
+      menus.forEach((menu) => {
+        queryClient.setQueryData(['menu', menu.id], mockMenuDetails[menu.id]);
+      });
+    }
+  }, [menus, queryClient]);
 
   /**
    * URL에서 테이블 번호 읽어서 Store에 저장
@@ -94,7 +110,6 @@ function MenuContent() {
       // 메뉴 찾기
       const menu = menus.find((m) => m.id === menuId);
       if (!menu) {
-        console.error('메뉴를 찾을 수 없습니다:', menuId);
         return;
       }
 
@@ -174,11 +189,11 @@ function MenuContent() {
       {/* 메뉴 상세 모달 (중앙) */}
       <MenuDetailModal />
 
-      {/* 우측 상세 패널 (직원 호출 등) */}
-      <DetailPanel />
-
       {/* 우측 장바구니 패널 */}
       <CartPanel />
+
+      {/* 우측 주문내역 패널 */}
+      <OrderHistoryPanel />
     </>
   );
 }

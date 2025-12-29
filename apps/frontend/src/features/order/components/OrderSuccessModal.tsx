@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 interface OrderSuccessModalProps {
@@ -17,7 +17,8 @@ interface OrderSuccessModalProps {
  * 주문 완료 후 표시되는 모달
  * - 주문 성공 메시지
  * - 주문번호 표시
- * - 3초 후 자동으로 메뉴 페이지로 복귀
+ * - 2초 후 자동으로 메뉴 페이지로 복귀
+ * - 카운트다운 표시 (2, 1, 0)
  */
 export function OrderSuccessModal({
   isOpen,
@@ -28,19 +29,36 @@ export function OrderSuccessModal({
   tableNumber,
 }: OrderSuccessModalProps) {
   const router = useRouter();
+  const [countdown, setCountdown] = useState(2);
 
   useEffect(() => {
     if (isOpen) {
-      // 3초 후 자동으로 메뉴로 복귀
+      // 카운트다운 초기화
+      setCountdown(2);
+
+      // 1초마다 카운트다운
+      const countdownInterval = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      // 2초 후 자동으로 메뉴로 복귀
       const timer = setTimeout(() => {
         onClose();
         const menuUrl = `/${storeType}/${branchId}/menu${
           tableNumber ? `?table=${tableNumber}` : ''
         }`;
         router.push(menuUrl);
-      }, 3000);
+      }, 2000);
 
-      return () => clearTimeout(timer);
+      return () => {
+        clearTimeout(timer);
+        clearInterval(countdownInterval);
+      };
     }
   }, [isOpen, onClose, router, storeType, branchId, tableNumber]);
 
@@ -82,7 +100,7 @@ export function OrderSuccessModal({
 
         {/* 안내 메시지 */}
         <p className="mb-2 text-gray-600">주방에서 조리 중입니다</p>
-        <p className="text-sm text-gray-500">3초 후 메뉴로 돌아갑니다</p>
+        <p className="text-base text-gray-500">{countdown}초 후 창이 닫힙니다</p>
       </div>
     </>
   );

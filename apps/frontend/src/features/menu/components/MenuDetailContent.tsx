@@ -17,7 +17,7 @@ interface MenuDetailContentProps {
 export function MenuDetailContent({ menuId }: MenuDetailContentProps) {
   const { data: menu, isLoading } = useMenuDetail(menuId);
   const addItem = useCartStore((state) => state.addItem);
-  const closeDetailPanel = useUIStore((state) => state.closeDetailPanel);
+  const closeMenuDetail = useUIStore((state) => state.closeMenuDetail);
 
   const [quantity, setQuantity] = useState(1);
   const [selectedOptions, setSelectedOptions] = useState<CartSelectedOption[]>(
@@ -68,15 +68,12 @@ export function MenuDetailContent({ menuId }: MenuDetailContentProps) {
       imageUrl: menu.imageUrl,
     });
 
-    // 패널 닫기
-    closeDetailPanel();
+    // 메뉴 상세 모달 닫기
+    closeMenuDetail();
 
     // 상태 초기화
     setQuantity(1);
     setSelectedOptions([]);
-
-    // 성공 메시지 (나중에 토스트로 변경)
-    alert('장바구니에 담았습니다!');
   };
 
   // 옵션 선택 처리 (간단 버전 - 실제로는 더 복잡)
@@ -148,8 +145,8 @@ export function MenuDetailContent({ menuId }: MenuDetailContentProps) {
                         : 'border-gray-200 hover:border-gray-300'
                     } `}
                   >
-                    <span className="font-medium">{item.name}</span>
-                    <span className="text-gray-600">
+                    <span className="font-medium text-gray-900">{item.name}</span>
+                    <span className="text-gray-900">
                       +{item.price.toLocaleString()}원
                     </span>
                   </button>
@@ -162,20 +159,20 @@ export function MenuDetailContent({ menuId }: MenuDetailContentProps) {
 
       {/* 수량 조절 */}
       <div className="mb-6 flex items-center justify-between border-b pb-6">
-        <span className="font-medium text-gray-700">수량</span>
+        <span className="font-medium text-gray-900">수량</span>
         <div className="flex items-center gap-3">
           <button
             onClick={handleDecrement}
-            className="flex h-10 w-10 items-center justify-center rounded-lg border text-gray-600 transition-colors hover:bg-gray-50"
+            className="flex h-10 w-10 items-center justify-center rounded-lg border border-gray-900 text-gray-900 transition-colors hover:bg-gray-50"
           >
             −
           </button>
-          <span className="w-12 text-center text-lg font-semibold">
+          <span className="w-12 text-center text-lg font-semibold text-gray-900">
             {quantity}
           </span>
           <button
             onClick={handleIncrement}
-            className="flex h-10 w-10 items-center justify-center rounded-lg border text-gray-600 transition-colors hover:bg-gray-50"
+            className="flex h-10 w-10 items-center justify-center rounded-lg border border-gray-900 text-gray-900 transition-colors hover:bg-gray-50"
           >
             +
           </button>

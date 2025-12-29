@@ -10,7 +10,7 @@ export const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === 'true';
  * @param data 반환할 Mock 데이터
  * @param delay 지연 시간 (ms)
  */
-export function mockQuery<T>(data: T, delay = 500) {
+export function mockQuery<T>(data: T, delay = 0) {
     return new Promise<T>((resolve) => {
         setTimeout(() => resolve(data), delay);
     });

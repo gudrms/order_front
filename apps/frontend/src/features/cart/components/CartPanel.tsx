@@ -61,9 +61,8 @@ export function CartPanel() {
         orderNumber: data.orderNumber,
       });
     },
-    onError: (error) => {
+    onError: () => {
       alert('주문에 실패했습니다. 다시 시도해주세요.');
-      console.error('Order error:', error);
     },
   });
 

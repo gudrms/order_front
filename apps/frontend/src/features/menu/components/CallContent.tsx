@@ -53,10 +53,9 @@ export function CallContent() {
           // 패널 닫기
           closeDetailPanel();
         },
-        onError: (error) => {
+        onError: () => {
           // 에러 메시지
           alert('직원 호출에 실패했습니다. 다시 시도해주세요.');
-          console.error('Call error:', error);
         },
       }
     );

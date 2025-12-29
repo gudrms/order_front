@@ -20,7 +20,11 @@ interface SidebarProps {
 export function Sidebar({ activeCategoryId, onCategoryClick }: SidebarProps) {
   const storeId = process.env.NEXT_PUBLIC_STORE_ID || 'default-store-id';
   const { data: categories, isLoading } = useCategories(storeId);
-  const { toggleSidebar, openCallPanel } = useUIStore();
+  const { toggleSidebar, openMenuDetail } = useUIStore();
+
+  const handleStaffCall = () => {
+    openMenuDetail('menu-staff-call');
+  };
 
   return (
     <div className="flex h-screen w-40 flex-col border-r bg-white">
@@ -61,7 +65,7 @@ export function Sidebar({ activeCategoryId, onCategoryClick }: SidebarProps) {
       {/* 하단: 직원호출 버튼 (고정) */}
       <div className="border-t p-3">
         <button
-          onClick={openCallPanel}
+          onClick={handleStaffCall}
           className="w-full rounded-lg bg-gray-100 px-2 py-3 text-center font-medium text-gray-900 transition-colors hover:bg-gray-200"
         >
           <span className="mr-1 text-lg">🔔</span>

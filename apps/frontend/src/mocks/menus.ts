@@ -51,6 +51,20 @@ const pastaSideOption: MenuOption = {
   ],
 };
 
+const staffCallOption: MenuOption = {
+  id: 'opt-5-staff-call',
+  name: '직원 호출 사유',
+  type: 'MULTIPLE',
+  required: false,
+  items: [
+    { id: 'opt-item-12-water', name: '물 주세요', price: 0 },
+    { id: 'opt-item-13-tissue', name: '휴지 주세요', price: 0 },
+    { id: 'opt-item-14-cutlery', name: '수저/포크 주세요', price: 0 },
+    { id: 'opt-item-15-sauce', name: '소스 주세요', price: 0 },
+    { id: 'opt-item-16-other', name: '기타 요청사항', price: 0 },
+  ],
+};
+
 /**
  * Mock 메뉴 데이터
  * UUID 형식: menu-{category}-{number}-{name}
@@ -304,6 +318,20 @@ export const mockMenus: Menu[] = [
     options: [], // 옵션 없음
   },
 
+  // 직원 호출 (특수 카테고리) - 옵션 있음
+  {
+    id: 'menu-staff-call',
+    name: '직원 호출',
+    price: 0,
+    description: '필요한 항목을 선택하시면 직원이 가져다 드립니다',
+    imageUrl: null,
+    categoryId: 'cat-special-staff',
+    categoryName: '직원 호출',
+    soldOut: false,
+    displayOrder: 0,
+    options: [staffCallOption],
+  },
+
   // 디저트 (카테고리 cat-5-dessert) - 옵션 없음
   {
     id: 'menu-dessert-1-tiramisu',
@@ -460,25 +488,31 @@ export const mockMenuDetails: Record<string, MenuDetail> = {
     options: [],
   },
 
+  // 직원 호출 - 옵션 있음
+  'menu-staff-call': {
+    ...mockMenus[20],
+    options: [staffCallOption],
+  },
+
   // 디저트 - 옵션 없음
   'menu-dessert-1-tiramisu': {
-    ...mockMenus[20],
-    options: [],
-  },
-  'menu-dessert-2-cheesecake': {
     ...mockMenus[21],
     options: [],
   },
-  'menu-dessert-3-brownie': {
+  'menu-dessert-2-cheesecake': {
     ...mockMenus[22],
     options: [],
   },
-  'menu-dessert-4-icecream': {
+  'menu-dessert-3-brownie': {
     ...mockMenus[23],
     options: [],
   },
-  'menu-dessert-5-fruit': {
+  'menu-dessert-4-icecream': {
     ...mockMenus[24],
+    options: [],
+  },
+  'menu-dessert-5-fruit': {
+    ...mockMenus[25],
     options: [],
   },
 };
