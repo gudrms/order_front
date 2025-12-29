@@ -16,7 +16,7 @@ export default function CartPage() {
   const { items, totalQuantity } = useCartStore();
 
   const handleBack = () => {
-    router.push('/customer/menu');
+    router.push('/menu');
   };
 
   const handleOrder = () => {

@@ -59,7 +59,7 @@ export const useUIStore = create<UIStore>((set) => ({
     type: null,
   },
   isSidebarOpen: false,
-  isCartOpen: false,
+  isCartOpen: true, // 기본값: 열림
 
   // 상세 패널 액션
   openMenuDetail: (menuId) => {

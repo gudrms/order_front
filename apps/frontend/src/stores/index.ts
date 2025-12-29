@@ -8,3 +8,5 @@ export type { CartItem, AddCartItemInput } from './cartStore';
 
 export { useUIStore } from './uiStore';
 export type { DetailPanelType } from './uiStore';
+
+export { useTableStore } from './tableStore';

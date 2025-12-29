@@ -1,74 +1,387 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
+/// 매장 타입 (업종)
+enum StoreType {
+  MEXICAN
+  PUB
+  JAPANESE
+  KOREAN
+  CHINESE
+  WESTERN
+  CAFE
+  GENERAL
+}
+
+/// 주문 상태
+enum OrderStatus {
+  PENDING      // 접수 대기
+  CONFIRMED    // 접수 완료
+  COOKING      // 조리 중
+  COMPLETED    // 완료
+  CANCELLED    // 취소
+}
+
+/// 테이블 상태
+enum TableStatus {
+  AVAILABLE  // 사용 가능
+  OCCUPIED   // 사용 중
+  RESERVED   // 예약됨
+}
+
+/// 호출 상태
+enum CallStatus {
+  PENDING    // 대기 중
+  PROCESSING // 처리 중
+  COMPLETED  // 완료
+}
+
+/// 매장 정보
 model Store {
-  id        String   @id @default(uuid())
-  name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id              String   @id @default(uuid())
+  
+  /// URL 경로에 사용될 업종 ID (소문자, 예: "tacomolly", "pub")
+  storeType       String
+  
+  /// URL 경로에 사용될 지점 ID (소문자, 예: "gimpo", "gangnam")
+  branchId        String
+  
+  /// 매장 전체 이름 (예: "타코몰리 김포점")
+  name            String
+  
+  /// 지점명 (예: "김포점", "강남점")
+  branchName      String
+  
+  /// 매장 타입 Enum
+  type            StoreType @default(GENERAL)
+  
+  /// OKPOS 지점 코드 (연동용)
+  okposBranchCode String?   @unique
+  
+  /// 매장 설명
+  description     String?
+  
+  /// 주소
+  address         String?
+  
+  /// 전화번호
+  phoneNumber     String?
+  
+  /// 영업 시간 (JSON: { weekday: "...", weekend: "..." })
+  businessHours   Json?
+  
+  /// 테마 설정 (JSON: { primaryColor: "...", logo: "..." })
+  theme           Json?
+  
+  /// 활성화 여부
+  isActive        Boolean  @default(true)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  categories Category[]
-  menus      Menu[]
+  menuCategories  MenuCategory[]
+  menus           Menu[]
+  menuTags        MenuTag[]
+  orders          Order[]
+  tables          Table[]
+  staffCalls      StaffCall[]
+  
+  /// 복합 unique key (같은 업종에서 같은 지점명 불가)
+  @@unique([storeType, branchId])
+  @@index([storeType])
+  @@index([branchId])
+
+  /// 소유자 ID (User 테이블과 연결)
+  ownerId         String?
+  owner           User?    @relation(fields: [ownerId], references: [id])
 }
 
-model Category {
-  id        String   @id @default(uuid())
-  name      String
-  sortOrder Int      @default(0)
-  storeId   String
-  store     Store    @relation(fields: [storeId], references: [id])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+/// 사용자 정보 (Supabase Auth와 연동)
+model User {
+  /// Supabase Auth의 UUID와 동일해야 함
+  id              String   @id
+  
+  /// 이메일
+  email           String   @unique
+  
+  /// 이름
+  name            String?
+  
+  /// 전화번호
+  phoneNumber     String?
+  
+  /// 역할 (ADMIN: 전체 관리자, OWNER: 점주, USER: 일반)
+  role            UserRole @default(OWNER)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  menus Menu[]
+  stores          Store[]
 }
 
+enum UserRole {
+  ADMIN
+  OWNER
+  USER
+}
+
+/// 메뉴 카테고리
+model MenuCategory {
+  id                String   @id @default(uuid())
+  storeId           String
+  store             Store    @relation(fields: [storeId], references: [id])
+  /// OKPOS 카테고리 코드
+  okposCategoryCode String?
+  /// 카테고리명
+  name              String
+  /// 표시 순서
+  displayOrder      Int      @default(0)
+
+  menus             Menu[]
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([storeId, okposCategoryCode])
+  @@index([storeId])
+}
+
+/// 메뉴 정보
 model Menu {
-  id          String   @id @default(uuid())
-  name        String
-  description String?
-  price       Int
-  imageUrl    String?
-  isSoldOut   Boolean  @default(false)
-  sortOrder   Int      @default(0)
-  categoryId  String
-  category    Category @relation(fields: [categoryId], references: [id])
-  storeId     String
-  store       Store    @relation(fields: [storeId], references: [id])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id              String   @id @default(uuid())
+  storeId         String
+  store           Store    @relation(fields: [storeId], references: [id])
+  categoryId      String
+  category        MenuCategory @relation(fields: [categoryId], references: [id])
 
-  optionGroups MenuOptionGroup[]
+  /// OKPOS 메뉴 코드
+  okposMenuCode   String?
+  /// 메뉴명
+  name            String
+  /// 가격
+  price           Int
+  /// 상세 설명
+  description     String?
+  /// 이미지 URL
+  imageUrl        String?
+  /// 표시 순서
+  displayOrder    Int      @default(0)
+  
+  /// 품절 여부 (OKPOS 연동)
+  soldOut         Boolean  @default(false)
+  /// 숨김 여부 (키오스크 노출 안함)
+  isHidden        Boolean  @default(false)
+  /// 삭제 여부 (논리적 삭제)
+  isActive        Boolean  @default(true)
+  /// 마지막 동기화 시간
+  lastSyncedAt    DateTime @default(now())
+
+  optionGroups    MenuOptionGroup[]
+  tags            MenuTagRelation[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([storeId, okposMenuCode])
+  @@index([storeId, categoryId])
+  @@index([storeId, isHidden, isActive])
 }
 
+/// 메뉴 옵션 그룹 (예: 사이즈 선택, 맵기 조절)
 model MenuOptionGroup {
-  id        String   @id @default(uuid())
-  name      String
-  minSelect Int      @default(0)
-  maxSelect Int      @default(1)
-  menuId    String
-  menu      Menu     @relation(fields: [menuId], references: [id])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String       @id @default(uuid())
+  menuId       String
+  menu         Menu         @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  /// 그룹명
+  name         String
+  /// 최소 선택 개수 (0=선택, 1=필수)
+  minSelect    Int          @default(0)
+  /// 최대 선택 개수
+  maxSelect    Int          @default(1)
+  /// 표시 순서
+  displayOrder Int          @default(0)
 
-  options MenuOption[]
+  options      MenuOption[]
 }
 
+/// 메뉴 옵션 상세 (예: 보통, 곱배기)
 model MenuOption {
-  id            String          @id @default(uuid())
-  name          String
-  price         Int             @default(0)
-  isSoldOut     Boolean         @default(false)
-  optionGroupId String
-  optionGroup   MenuOptionGroup @relation(fields: [optionGroupId], references: [id])
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
+  id              String          @id @default(uuid())
+  optionGroupId   String
+  optionGroup     MenuOptionGroup @relation(fields: [optionGroupId], references: [id], onDelete: Cascade)
+
+  /// OKPOS 옵션 코드
+  okposOptionCode String?
+  /// 옵션명
+  name            String
+  /// 추가 가격
+  price           Int
+  /// 표시 순서
+  displayOrder    Int             @default(0)
+  /// 품절 여부
+  isSoldOut       Boolean         @default(false)
+
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+}
+
+/// 메뉴 태그 (BEST, HOT, NEW 등)
+model MenuTag {
+  id              String   @id @default(uuid())
+  storeId         String
+  store           Store    @relation(fields: [storeId], references: [id])
+  
+  /// 내부 관리용 태그명
+  name            String
+  /// 고객에게 보여질 태그명
+  displayName     String
+  /// 아이콘 (이모지 등)
+  icon            String?
+  /// 태그 텍스트 색상
+  color           String   @default("#FF6B35")
+  /// 태그 배경 색상
+  backgroundColor String   @default("#FFF5F2")
+  /// 표시 순서
+  displayOrder    Int      @default(0)
+  
+  menus           MenuTagRelation[]
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@unique([storeId, name])
+  @@index([storeId])
+}
+
+/// 메뉴-태그 연결 테이블 (다대다)
+model MenuTagRelation {
+  id        String   @id @default(uuid())
+  menuId    String
+  menu      Menu     @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  tagId     String
+  tag       MenuTag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+  
+  @@unique([menuId, tagId])
+  @@index([menuId])
+  @@index([tagId])
+}
+
+/// 주문 정보
+model Order {
+  id            String      @id @default(uuid())
+  storeId       String
+  store         Store       @relation(fields: [storeId], references: [id])
+  
+  /// 주문 번호 (예: ORD-20241229-001)
+  orderNumber   String      @unique
+  /// 테이블 번호
+  tableNumber   Int
+  /// 주문 상태
+  status        OrderStatus @default(PENDING)
+  /// 총 금액
+  totalAmount   Int
+  /// 특이사항/요청사항
+  note          String?
+  
+  /// OKPOS 주문 ID (연동 후 저장)
+  okposOrderId  String?
+  
+  items         OrderItem[]
+  
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  
+  @@index([storeId, status])
+  @@index([storeId, tableNumber])
+  @@index([orderNumber])
+}
+
+/// 주문 아이템 (주문에 포함된 메뉴)
+model OrderItem {
+  id            String   @id @default(uuid())
+  orderId       String
+  order         Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  /// 메뉴 정보 (스냅샷 - 주문 당시 정보 저장)
+  menuId        String
+  menuName      String   // 주문 당시 메뉴명
+  menuPrice     Int      // 주문 당시 가격
+  
+  /// 수량
+  quantity      Int
+  /// 아이템 총 금액 (메뉴 가격 + 옵션 가격) * 수량
+  totalPrice    Int
+  
+  selectedOptions OrderItemOption[]
+  
+  createdAt     DateTime @default(now())
+  
+  @@index([orderId])
+}
+
+/// 주문 아이템 옵션 (선택된 옵션 스냅샷)
+model OrderItemOption {
+  id              String    @id @default(uuid())
+  orderItemId     String
+  orderItem       OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  
+  /// 옵션 정보 (스냅샷)
+  optionGroupName String   // 그룹명 (예: "사이즈 선택")
+  optionName      String   // 옵션명 (예: "큰")
+  optionPrice     Int      // 추가 가격
+  
+  createdAt       DateTime @default(now())
+  
+  @@index([orderItemId])
+}
+
+/// 테이블 정보
+model Table {
+  id          String      @id @default(uuid())
+  storeId     String
+  store       Store       @relation(fields: [storeId], references: [id])
+  
+  /// 테이블 번호
+  tableNumber Int
+  /// 수용 인원
+  capacity    Int         @default(4)
+  /// 테이블 상태
+  status      TableStatus @default(AVAILABLE)
+  
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  
+  @@unique([storeId, tableNumber])
+  @@index([storeId])
+}
+
+/// 직원 호출
+model StaffCall {
+  id          String     @id @default(uuid())
+  storeId     String
+  store       Store      @relation(fields: [storeId], references: [id])
+  
+  /// 테이블 번호
+  tableNumber Int
+  /// 호출 유형 (물, 수저, 계산 등)
+  callType    String?
+  /// 호출 상태
+  status      CallStatus @default(PENDING)
+  /// 처리 완료 시간
+  completedAt DateTime?
+  
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  
+  @@index([storeId, status])
+  @@index([storeId, tableNumber])
 }

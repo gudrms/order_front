@@ -6,7 +6,7 @@ const withPWA = withPWAInit({
   dest: "public",
   register: true,
   skipWaiting: true,
-  disable: process.env.NODE_ENV === "development", // 개발 환경에서는 비활성화
+  disable: false, // 항상 활성화 (개발/프로덕션 모두)
   cacheOnFrontEndNav: true,
   aggressiveFrontEndNavCaching: true,
   reloadOnOnline: true,
