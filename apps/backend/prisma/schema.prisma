@@ -1,0 +1,74 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Store {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  categories Category[]
+  menus      Menu[]
+}
+
+model Category {
+  id        String   @id @default(uuid())
+  name      String
+  sortOrder Int      @default(0)
+  storeId   String
+  store     Store    @relation(fields: [storeId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  menus Menu[]
+}
+
+model Menu {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  price       Int
+  imageUrl    String?
+  isSoldOut   Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id])
+  storeId     String
+  store       Store    @relation(fields: [storeId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  optionGroups MenuOptionGroup[]
+}
+
+model MenuOptionGroup {
+  id        String   @id @default(uuid())
+  name      String
+  minSelect Int      @default(0)
+  maxSelect Int      @default(1)
+  menuId    String
+  menu      Menu     @relation(fields: [menuId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  options MenuOption[]
+}
+
+model MenuOption {
+  id            String          @id @default(uuid())
+  name          String
+  price         Int             @default(0)
+  isSoldOut     Boolean         @default(false)
+  optionGroupId String
+  optionGroup   MenuOptionGroup @relation(fields: [optionGroupId], references: [id])
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+}
