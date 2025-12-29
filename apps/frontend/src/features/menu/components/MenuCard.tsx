@@ -17,10 +17,19 @@ interface MenuCardProps {
  */
 export function MenuCard({ menu, onClick }: MenuCardProps) {
   const handleClick = () => {
+    console.log('🎯 MenuCard 클릭됨:', menu.id, menu.name);
+    console.log('🎯 MenuCard onClick 타입:', typeof onClick);
+    
     if (!menu.soldOut) {
+      console.log('✅ onClick 호출 시작');
       onClick(menu.id);
+      console.log('✅ onClick 호출 완료');
+    } else {
+      console.warn('⚠️ 품절 메뉴 클릭:', menu.name);
     }
   };
+
+  console.log('🔄 MenuCard 렌더링:', menu.name, 'onClick:', typeof onClick);
 
   return (
     <button

@@ -21,6 +21,16 @@ let StoresService = class StoresService {
             where: { id: storeId },
         });
     }
+    async getStoreByPath(storeType, branchId) {
+        return this.prisma.store.findUnique({
+            where: {
+                storeType_branchId: {
+                    storeType,
+                    branchId,
+                },
+            },
+        });
+    }
 };
 exports.StoresService = StoresService;
 exports.StoresService = StoresService = __decorate([

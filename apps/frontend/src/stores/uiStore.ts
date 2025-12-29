@@ -3,28 +3,30 @@ import { create } from 'zustand';
 /**
  * 상세 패널 타입
  */
-export type DetailPanelType = 'menu' | 'call' | null;
+export type DetailPanelType = 'call' | null;
 
 /**
- * 상세 패널 상태
+ * 상세 패널 상태 (직원호출용으로만 사용)
  */
 interface DetailPanelState {
   isOpen: boolean;
   type: DetailPanelType;
-  menuId?: string; // 메뉴 상세일 때만 사용 (UUID)
 }
 
 /**
  * UI 스토어 상태
  */
 interface UIState {
-  // 상세 패널 (메뉴 상세 또는 직원호출)
+  // 메뉴 상세 모달 (중앙)
+  selectedMenuId: string | null;
+
+  // 상세 패널 (직원호출용)
   detailPanel: DetailPanelState;
 
   // 사이드바 (모바일에서 햄버거 메뉴)
   isSidebarOpen: boolean;
 
-  // 장바구니 드로어
+  // 장바구니 패널 (우측)
   isCartOpen: boolean;
 }
 
@@ -32,8 +34,11 @@ interface UIState {
  * UI 스토어 액션
  */
 interface UIActions {
-  // 상세 패널
+  // 메뉴 상세 모달
   openMenuDetail: (menuId: string) => void;
+  closeMenuDetail: () => void;
+
+  // 상세 패널 (직원호출)
   openCallPanel: () => void;
   closeDetailPanel: () => void;
 
@@ -54,6 +59,7 @@ type UIStore = UIState & UIActions;
  */
 export const useUIStore = create<UIStore>((set) => ({
   // 초기 상태
+  selectedMenuId: null,
   detailPanel: {
     isOpen: false,
     type: null,
@@ -61,27 +67,30 @@ export const useUIStore = create<UIStore>((set) => ({
   isSidebarOpen: false,
   isCartOpen: true, // 기본값: 열림
 
-  // 상세 패널 액션
+  // 메뉴 상세 모달 액션
   openMenuDetail: (menuId) => {
+    console.log('🏪 uiStore.openMenuDetail 호출:', menuId);
     set({
-      detailPanel: {
-        isOpen: true,
-        type: 'menu',
-        menuId,
-      },
-      // 다른 UI 요소 닫기
-      isCartOpen: false,
+      selectedMenuId: menuId,
+    });
+    console.log('🏪 uiStore.openMenuDetail 완료 - selectedMenuId 설정됨');
+  },
+
+  closeMenuDetail: () => {
+    console.log('🏪 uiStore.closeMenuDetail 호출');
+    set({
+      selectedMenuId: null,
     });
   },
 
+  // 직원호출 패널 액션
   openCallPanel: () => {
     set({
       detailPanel: {
         isOpen: true,
         type: 'call',
-        menuId: undefined,
       },
-      // 다른 UI 요소 닫기
+      // 장바구니 닫기
       isCartOpen: false,
     });
   },
@@ -91,7 +100,6 @@ export const useUIStore = create<UIStore>((set) => ({
       detailPanel: {
         isOpen: false,
         type: null,
-        menuId: undefined,
       },
     });
   },
@@ -113,12 +121,6 @@ export const useUIStore = create<UIStore>((set) => ({
   openCart: () => {
     set({
       isCartOpen: true,
-      // 다른 UI 요소 닫기
-      detailPanel: {
-        isOpen: false,
-        type: null,
-        menuId: undefined,
-      },
     });
   },
 
@@ -131,16 +133,6 @@ export const useUIStore = create<UIStore>((set) => ({
   toggleCart: () => {
     set((state) => ({
       isCartOpen: !state.isCartOpen,
-      // 장바구니 열 때 다른 UI 요소 닫기
-      ...(state.isCartOpen
-        ? {}
-        : {
-            detailPanel: {
-              isOpen: false,
-              type: null,
-              menuId: undefined,
-            },
-          }),
     }));
   },
 }));

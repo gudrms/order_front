@@ -24,9 +24,9 @@ export class CreateOrderItemDto {
 }
 
 export class CreateOrderDto {
-    @IsString()
-    @IsOptional()
-    tableId?: string; // 나중에 테이블 주문 연동 시 사용
+    @IsInt()
+    @IsNotEmpty()
+    tableNumber: number;
 
     @IsArray()
     @ValidateNested({ each: true })

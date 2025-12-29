@@ -12,13 +12,14 @@ import { OrderSuccessModal } from '@/features/order';
 /**
  * CartPanel 컴포넌트
  * 우측 고정 장바구니 패널
+ * - 슬라이드 인/아웃 애니메이션
  * - 장바구니 아이템 목록
  * - 수량 조절
  * - 총 금액 표시
  * - 닫기 / 주문하기 버튼
  */
 export function CartPanel() {
-  const { isCartOpen, closeCart } = useUIStore();
+  const { isCartOpen, toggleCart } = useUIStore();
   const {
     items,
     totalPrice,
@@ -42,7 +43,7 @@ export function CartPanel() {
             menuId: item.menuId,
             menuName: item.menuName,
             quantity: item.quantity,
-            unitPrice: item.unitPrice, // basePrice → unitPrice
+            unitPrice: item.unitPrice,
             totalPrice: item.totalPrice,
             options: item.options,
           })),
@@ -81,14 +82,25 @@ export function CartPanel() {
     orderMutation.mutate();
   };
 
-  if (!isCartOpen) return null;
-
   return (
     <>
-      <div className="fixed right-0 top-0 flex h-screen w-96 flex-col bg-white shadow-lg">
+      {/* 우측 고정 패널 - 슬라이드 애니메이션 */}
+      <div
+        className={`fixed right-0 top-0 z-40 flex h-screen w-96 flex-col bg-white shadow-lg transition-transform duration-300 ${
+          isCartOpen ? 'translate-x-0' : 'translate-x-full'
+        }`}
+      >
         {/* 헤더 */}
-        <div className="border-b p-4">
+        <div className="flex items-center justify-between border-b p-4">
           <h2 className="text-lg font-bold">🛒 장바구니</h2>
+          {/* 닫기 버튼 */}
+          <button
+            onClick={toggleCart}
+            className="text-2xl text-gray-400 transition-colors hover:text-gray-600"
+            aria-label="장바구니 닫기"
+          >
+            ×
+          </button>
         </div>
 
         {/* 아이템 목록 (스크롤) */}
@@ -115,7 +127,7 @@ export function CartPanel() {
 
           <div className="flex gap-2">
             <button
-              onClick={closeCart}
+              onClick={toggleCart}
               className="flex-1 rounded border border-gray-300 py-3 font-medium hover:bg-gray-50"
             >
               닫기
@@ -130,6 +142,17 @@ export function CartPanel() {
           </div>
         </div>
       </div>
+
+      {/* 장바구니 닫혔을 때 열기 버튼 */}
+      {!isCartOpen && (
+        <button
+          onClick={toggleCart}
+          className="fixed right-4 top-4 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-2xl text-white shadow-lg transition-transform hover:scale-110"
+          aria-label="장바구니 열기"
+        >
+          🛒
+        </button>
+      )}
 
       {/* 주문 성공 모달 */}
       <OrderSuccessModal

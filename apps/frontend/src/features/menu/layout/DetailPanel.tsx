@@ -1,26 +1,21 @@
 'use client';
 
 import { useUIStore } from '@/stores';
-import { MenuDetailContent } from '../components/MenuDetailContent';
 import { CallContent } from '../components/CallContent';
 
 /**
  * DetailPanel 컴포넌트
  * 우측에서 슬라이드인되는 상세 패널
- * - 메뉴 상세 (type='menu')
- * - 직원호출 (type='call')
+ * - 직원호출 전용 (type='call')
  */
 export function DetailPanel() {
   const { detailPanel, closeDetailPanel } = useUIStore();
-  const { isOpen, type, menuId } = detailPanel;
+  const { isOpen, type } = detailPanel;
 
-  // 패널이 닫혀있으면 아무것도 렌더링하지 않음
-  if (!isOpen) {
+  // 패널이 닫혀있거나 call이 아니면 아무것도 렌더링하지 않음
+  if (!isOpen || type !== 'call') {
     return null;
   }
-
-  // 제목 결정
-  const title = type === 'menu' ? '메뉴 상세' : '직원 호출';
 
   return (
     <>
@@ -34,7 +29,7 @@ export function DetailPanel() {
       <div className="fixed top-0 right-0 z-50 h-full w-[400px] bg-white shadow-2xl">
         {/* 헤더 */}
         <div className="flex items-center justify-between border-b p-6">
-          <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
+          <h2 className="text-2xl font-bold text-gray-900">직원 호출</h2>
           <button
             onClick={closeDetailPanel}
             className="text-3xl leading-none text-gray-400 transition-colors hover:text-gray-600"
@@ -46,8 +41,7 @@ export function DetailPanel() {
 
         {/* 내용 (스크롤 가능) */}
         <div className="h-[calc(100%-80px)] overflow-y-auto">
-          {type === 'menu' && menuId && <MenuDetailContent menuId={menuId} />}
-          {type === 'call' && <CallContent />}
+          <CallContent />
         </div>
       </div>
     </>

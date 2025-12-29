@@ -5,7 +5,28 @@ export declare class OrdersController {
     private readonly ordersService;
     constructor(ordersService: OrdersService);
     createOrder(storeId: string, createOrderDto: CreateOrderDto): Promise<{
+        items: ({
+            selectedOptions: {
+                id: string;
+                createdAt: Date;
+                optionGroupName: string;
+                optionName: string;
+                optionPrice: number;
+                orderItemId: string;
+            }[];
+        } & {
+            id: string;
+            createdAt: Date;
+            menuId: string;
+            menuName: string;
+            menuPrice: number;
+            quantity: number;
+            totalPrice: number;
+            orderId: string;
+        })[];
+    } & {
         id: string;
+        storeId: string;
         orderNumber: string;
         tableNumber: number;
         status: import(".prisma/client").$Enums.OrderStatus;
@@ -14,8 +35,56 @@ export declare class OrdersController {
         okposOrderId: string | null;
         createdAt: Date;
         updatedAt: Date;
-        storeId: string;
     }>;
-    getOrders(storeId: string, status?: OrderStatus, page?: number): Promise<any>;
-    updateOrderStatus(storeId: string, orderId: string, status: OrderStatus): Promise<any>;
+    getOrders(storeId: string, status?: OrderStatus, page?: number): Promise<{
+        data: ({
+            items: ({
+                selectedOptions: {
+                    id: string;
+                    createdAt: Date;
+                    optionGroupName: string;
+                    optionName: string;
+                    optionPrice: number;
+                    orderItemId: string;
+                }[];
+            } & {
+                id: string;
+                createdAt: Date;
+                menuId: string;
+                menuName: string;
+                menuPrice: number;
+                quantity: number;
+                totalPrice: number;
+                orderId: string;
+            })[];
+        } & {
+            id: string;
+            storeId: string;
+            orderNumber: string;
+            tableNumber: number;
+            status: import(".prisma/client").$Enums.OrderStatus;
+            totalAmount: number;
+            note: string | null;
+            okposOrderId: string | null;
+            createdAt: Date;
+            updatedAt: Date;
+        })[];
+        meta: {
+            total: number;
+            page: number;
+            lastPage: number;
+        };
+    }>;
+    updateOrderStatus(storeId: string, orderId: string, status: OrderStatus): Promise<{
+        id: string;
+        storeId: string;
+        orderNumber: string;
+        tableNumber: number;
+        status: import(".prisma/client").$Enums.OrderStatus;
+        totalAmount: number;
+        note: string | null;
+        okposOrderId: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+    }>;
 }

@@ -19,6 +19,13 @@ let StoresController = class StoresController {
     constructor(storesService) {
         this.storesService = storesService;
     }
+    async getStoreByPath(storeType, branchId) {
+        const store = await this.storesService.getStoreByPath(storeType, branchId);
+        if (!store) {
+            throw new common_1.NotFoundException('Store not found');
+        }
+        return store;
+    }
     async getStore(storeId) {
         const store = await this.storesService.getStore(storeId);
         if (!store) {
@@ -28,6 +35,14 @@ let StoresController = class StoresController {
     }
 };
 exports.StoresController = StoresController;
+__decorate([
+    (0, common_1.Get)('identifier/:storeType/:branchId'),
+    __param(0, (0, common_1.Param)('storeType')),
+    __param(1, (0, common_1.Param)('branchId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", Promise)
+], StoresController.prototype, "getStoreByPath", null);
 __decorate([
     (0, common_1.Get)(':storeId'),
     __param(0, (0, common_1.Param)('storeId')),

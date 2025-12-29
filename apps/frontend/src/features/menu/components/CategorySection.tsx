@@ -18,10 +18,23 @@ interface CategorySectionProps {
  */
 export const CategorySection = forwardRef<HTMLElement, CategorySectionProps>(
   ({ category, menus, onMenuClick }, ref) => {
+    console.log('📂 CategorySection - onMenuClick:', typeof onMenuClick, onMenuClick);
+
     // 메뉴가 없으면 렌더링하지 않음
     if (!menus || menus.length === 0) {
       return null;
     }
+
+    const handleClick = (menuId: string) => {
+      console.log('🔗 CategorySection handleClick:', menuId);
+      try {
+        console.log('🔗 onMenuClick 호출 직전');
+        onMenuClick(menuId);
+        console.log('🔗 onMenuClick 호출 완료');
+      } catch (error) {
+        console.error('❌ CategorySection handleClick 에러:', error);
+      }
+    };
 
     return (
       <section
@@ -44,7 +57,7 @@ export const CategorySection = forwardRef<HTMLElement, CategorySectionProps>(
         {/* 메뉴 그리드 */}
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           {menus.map((menu) => (
-            <MenuCard key={menu.id} menu={menu} onClick={onMenuClick} />
+            <MenuCard key={menu.id} menu={menu} onClick={handleClick} />
           ))}
         </div>
       </section>

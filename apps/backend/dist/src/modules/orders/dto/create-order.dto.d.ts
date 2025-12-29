@@ -7,6 +7,6 @@ export declare class CreateOrderItemDto {
     options?: CreateOrderItemOptionDto[];
 }
 export declare class CreateOrderDto {
-    tableId?: string;
+    tableNumber: number;
     items: CreateOrderItemDto[];
 }

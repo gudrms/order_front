@@ -56,7 +56,7 @@ const pastaSideOption: MenuOption = {
  * UUID 형식: menu-{category}-{number}-{name}
  */
 export const mockMenus: Menu[] = [
-  // 치킨 (카테고리 cat-1-chicken)
+  // 치킨 (카테고리 cat-1-chicken) - 옵션 있음
   {
     id: 'menu-chicken-1-fried',
     name: '후라이드 치킨',
@@ -67,6 +67,7 @@ export const mockMenus: Menu[] = [
     categoryName: '치킨',
     soldOut: false,
     displayOrder: 1,
+    options: [chickenSizeOption],
   },
   {
     id: 'menu-chicken-2-sauce',
@@ -78,6 +79,7 @@ export const mockMenus: Menu[] = [
     categoryName: '치킨',
     soldOut: false,
     displayOrder: 2,
+    options: [chickenSizeOption],
   },
   {
     id: 'menu-chicken-3-soy',
@@ -89,6 +91,7 @@ export const mockMenus: Menu[] = [
     categoryName: '치킨',
     soldOut: false,
     displayOrder: 3,
+    options: [chickenSizeOption],
   },
   {
     id: 'menu-chicken-4-half',
@@ -100,6 +103,7 @@ export const mockMenus: Menu[] = [
     categoryName: '치킨',
     soldOut: false,
     displayOrder: 4,
+    options: [chickenSizeOption],
   },
   {
     id: 'menu-chicken-5-honey',
@@ -111,9 +115,10 @@ export const mockMenus: Menu[] = [
     categoryName: '치킨',
     soldOut: true,
     displayOrder: 5,
+    options: [chickenSizeOption],
   },
 
-  // 피자 (카테고리 cat-2-pizza)
+  // 피자 (카테고리 cat-2-pizza) - 옵션 있음
   {
     id: 'menu-pizza-1-margherita',
     name: '마르게리타',
@@ -124,6 +129,7 @@ export const mockMenus: Menu[] = [
     categoryName: '피자',
     soldOut: false,
     displayOrder: 1,
+    options: [pizzaSizeOption, toppingOption],
   },
   {
     id: 'menu-pizza-2-pepperoni',
@@ -135,6 +141,7 @@ export const mockMenus: Menu[] = [
     categoryName: '피자',
     soldOut: false,
     displayOrder: 2,
+    options: [pizzaSizeOption, toppingOption],
   },
   {
     id: 'menu-pizza-3-bulgogi',
@@ -146,6 +153,7 @@ export const mockMenus: Menu[] = [
     categoryName: '피자',
     soldOut: false,
     displayOrder: 3,
+    options: [pizzaSizeOption, toppingOption],
   },
   {
     id: 'menu-pizza-4-combination',
@@ -157,6 +165,7 @@ export const mockMenus: Menu[] = [
     categoryName: '피자',
     soldOut: false,
     displayOrder: 4,
+    options: [pizzaSizeOption, toppingOption],
   },
   {
     id: 'menu-pizza-5-potato',
@@ -168,9 +177,10 @@ export const mockMenus: Menu[] = [
     categoryName: '피자',
     soldOut: false,
     displayOrder: 5,
+    options: [pizzaSizeOption, toppingOption],
   },
 
-  // 파스타 (카테고리 cat-3-pasta)
+  // 파스타 (카테고리 cat-3-pasta) - 옵션 있음
   {
     id: 'menu-pasta-1-carbonara',
     name: '까르보나라',
@@ -181,6 +191,7 @@ export const mockMenus: Menu[] = [
     categoryName: '파스타',
     soldOut: false,
     displayOrder: 1,
+    options: [pastaSideOption],
   },
   {
     id: 'menu-pasta-2-aglio',
@@ -192,6 +203,7 @@ export const mockMenus: Menu[] = [
     categoryName: '파스타',
     soldOut: false,
     displayOrder: 2,
+    options: [pastaSideOption],
   },
   {
     id: 'menu-pasta-3-tomato',
@@ -203,6 +215,7 @@ export const mockMenus: Menu[] = [
     categoryName: '파스타',
     soldOut: false,
     displayOrder: 3,
+    options: [pastaSideOption],
   },
   {
     id: 'menu-pasta-4-rose',
@@ -214,6 +227,7 @@ export const mockMenus: Menu[] = [
     categoryName: '파스타',
     soldOut: false,
     displayOrder: 4,
+    options: [pastaSideOption],
   },
   {
     id: 'menu-pasta-5-seafood',
@@ -225,9 +239,10 @@ export const mockMenus: Menu[] = [
     categoryName: '파스타',
     soldOut: false,
     displayOrder: 5,
+    options: [pastaSideOption],
   },
 
-  // 음료 (카테고리 cat-4-drink)
+  // 음료 (카테고리 cat-4-drink) - 옵션 없음
   {
     id: 'menu-drink-1-cola',
     name: '콜라',
@@ -238,6 +253,7 @@ export const mockMenus: Menu[] = [
     categoryName: '음료',
     soldOut: false,
     displayOrder: 1,
+    options: [], // 옵션 없음
   },
   {
     id: 'menu-drink-2-sprite',
@@ -249,6 +265,7 @@ export const mockMenus: Menu[] = [
     categoryName: '음료',
     soldOut: false,
     displayOrder: 2,
+    options: [], // 옵션 없음
   },
   {
     id: 'menu-drink-3-orange',
@@ -260,6 +277,7 @@ export const mockMenus: Menu[] = [
     categoryName: '음료',
     soldOut: false,
     displayOrder: 3,
+    options: [], // 옵션 없음
   },
   {
     id: 'menu-drink-4-americano',
@@ -271,6 +289,7 @@ export const mockMenus: Menu[] = [
     categoryName: '음료',
     soldOut: false,
     displayOrder: 4,
+    options: [], // 옵션 없음
   },
   {
     id: 'menu-drink-5-beer',
@@ -282,9 +301,10 @@ export const mockMenus: Menu[] = [
     categoryName: '음료',
     soldOut: false,
     displayOrder: 5,
+    options: [], // 옵션 없음
   },
 
-  // 디저트 (카테고리 cat-5-dessert)
+  // 디저트 (카테고리 cat-5-dessert) - 옵션 없음
   {
     id: 'menu-dessert-1-tiramisu',
     name: '티라미수',
@@ -295,6 +315,7 @@ export const mockMenus: Menu[] = [
     categoryName: '디저트',
     soldOut: false,
     displayOrder: 1,
+    options: [], // 옵션 없음
   },
   {
     id: 'menu-dessert-2-cheesecake',
@@ -306,6 +327,7 @@ export const mockMenus: Menu[] = [
     categoryName: '디저트',
     soldOut: false,
     displayOrder: 2,
+    options: [], // 옵션 없음
   },
   {
     id: 'menu-dessert-3-brownie',
@@ -317,6 +339,7 @@ export const mockMenus: Menu[] = [
     categoryName: '디저트',
     soldOut: false,
     displayOrder: 3,
+    options: [], // 옵션 없음
   },
   {
     id: 'menu-dessert-4-icecream',
@@ -328,6 +351,7 @@ export const mockMenus: Menu[] = [
     categoryName: '디저트',
     soldOut: false,
     displayOrder: 4,
+    options: [], // 옵션 없음
   },
   {
     id: 'menu-dessert-5-fruit',
@@ -339,6 +363,7 @@ export const mockMenus: Menu[] = [
     categoryName: '디저트',
     soldOut: false,
     displayOrder: 5,
+    options: [], // 옵션 없음
   },
 ];
 

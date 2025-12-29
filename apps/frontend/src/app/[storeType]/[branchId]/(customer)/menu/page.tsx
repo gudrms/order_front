@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useParams } from 'next/navigation';
 import { useUIStore, useTableStore, useCartStore } from '@/stores';
 import { useMenus } from '@/hooks/queries/useMenus';
+import { useStore } from '@/hooks/queries/useStore';
 import {
   TopBar,
   Sidebar,
@@ -12,6 +13,7 @@ import {
 } from '@/features/menu/layout';
 import { MenuGrid } from '@/features/menu/components';
 import { CartPanel } from '@/features/cart';
+import { MenuDetailModal } from '@/features/menu/components/MenuDetailModal';
 
 /**
  * 고객용 메뉴 페이지
@@ -20,10 +22,19 @@ import { CartPanel } from '@/features/cart';
  * - 자동 활성 섹션 추적
  * - URL Query Parameter에서 테이블 번호 읽기 (?table=5)
  */
-export default function MenuPage() {
-  // URL Query Parameter
+import { Suspense } from 'react';
+
+function MenuContent() {
+  // URL Params & Query Parameter
+  const params = useParams();
   const searchParams = useSearchParams();
   const { setTableNumber } = useTableStore();
+
+  const storeType = params.storeType as string;
+  const branchId = params.branchId as string;
+
+  // Store 조회
+  const { data: store, isLoading: isStoreLoading } = useStore(storeType, branchId);
 
   // 현재 활성화된 카테고리 (Intersection Observer가 자동으로 감지)
   const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
@@ -32,9 +43,8 @@ export default function MenuPage() {
   const { openMenuDetail, openCart, isCartOpen } = useUIStore();
   const { addItem } = useCartStore();
 
-  // 메뉴 데이터
-  const storeId = process.env.NEXT_PUBLIC_STORE_ID || 'default-store-id';
-  const { data: menus } = useMenus(storeId);
+  // 메뉴 데이터 (Store ID가 있을 때만 조회)
+  const { data: menus, isLoading: isMenusLoading } = useMenus(store?.id || '');
 
   /**
    * URL에서 테이블 번호 읽어서 Store에 저장
@@ -79,8 +89,10 @@ export default function MenuPage() {
    */
   const handleMenuClick = useCallback(
     (menuId: string) => {
+      if (!menus) return;
+
       // 메뉴 찾기
-      const menu = menus?.find((m) => m.id === menuId);
+      const menu = menus.find((m) => m.id === menuId);
       if (!menu) {
         console.error('메뉴를 찾을 수 없습니다:', menuId);
         return;
@@ -111,6 +123,22 @@ export default function MenuPage() {
     },
     [menus, openMenuDetail, addItem, openCart, isCartOpen]
   );
+
+  if (isStoreLoading || isMenusLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <div className="text-xl font-semibold text-gray-500">메뉴를 불러오는 중...</div>
+      </div>
+    );
+  }
+
+  if (!store) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <div className="text-xl font-semibold text-red-500">매장을 찾을 수 없습니다.</div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -143,11 +171,26 @@ export default function MenuPage() {
         </div>
       </div>
 
-      {/* 우측 상세 패널 (fixed이므로 레이아웃 밖에 배치) */}
+      {/* 메뉴 상세 모달 (중앙) */}
+      <MenuDetailModal />
+
+      {/* 우측 상세 패널 (직원 호출 등) */}
       <DetailPanel />
 
-      {/* 우측 장바구니 패널 (fixed이므로 레이아웃 밖에 배치) */}
+      {/* 우측 장바구니 패널 */}
       <CartPanel />
     </>
+  );
+}
+
+export default function MenuPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <div className="text-xl font-semibold text-gray-500">로딩 중...</div>
+      </div>
+    }>
+      <MenuContent />
+    </Suspense>
   );
 }

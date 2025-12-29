@@ -6,18 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import type { Menu, MenuCategory, MenuDetail } from '@/types';
 import { mockCategories, mockMenus, mockMenuDetails } from '@/mocks';
-
-// Mock 모드 확인
-const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === 'true';
-
-/**
- * Mock 데이터 반환 헬퍼 함수
- */
-function mockQuery<T>(data: T, delay = 500) {
-  return new Promise<T>((resolve) => {
-    setTimeout(() => resolve(data), delay);
-  });
-}
+import { USE_MOCK, mockQuery } from '@/lib/mock-config';
 
 /**
  * 카테고리 목록 조회 훅
@@ -43,12 +32,12 @@ export function useMenus(storeId: string, categoryId?: string) {
     queryKey: ['menus', storeId, categoryId],
     queryFn: USE_MOCK
       ? () => {
-          // 카테고리 필터링
-          const filteredMenus = categoryId
-            ? mockMenus.filter((menu) => menu.categoryId === categoryId)
-            : mockMenus;
-          return mockQuery(filteredMenus);
-        }
+        // 카테고리 필터링
+        const filteredMenus = categoryId
+          ? mockMenus.filter((menu) => menu.categoryId === categoryId)
+          : mockMenus;
+        return mockQuery(filteredMenus);
+      }
       : () => api.menu.getMenus(storeId, categoryId),
     enabled: !!storeId,
     // 캐싱 설정
@@ -65,12 +54,12 @@ export function useMenuDetail(menuId?: string) {
     queryKey: ['menu', menuId],
     queryFn: USE_MOCK
       ? () => {
-          const menuDetail = mockMenuDetails[menuId!];
-          if (!menuDetail) {
-            throw new Error('Menu not found');
-          }
-          return mockQuery(menuDetail);
+        const menuDetail = mockMenuDetails[menuId!];
+        if (!menuDetail) {
+          throw new Error('Menu not found');
         }
+        return mockQuery(menuDetail);
+      }
       : () => api.menu.getMenuDetail(menuId!),
     enabled: !!menuId,
     // 캐싱 설정
