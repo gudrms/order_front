@@ -127,7 +127,6 @@ function MenuContent() {
           basePrice: menu.price,
           quantity: 1,
           imageUrl: menu.imageUrl,
-          options: [],
         });
 
         // 장바구니가 닫혀있으면 열기

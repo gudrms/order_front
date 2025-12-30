@@ -41,8 +41,9 @@ export interface SelectedOption {
  */
 export interface CartSelectedOption {
   id: string; // 옵션 그룹 ID (UUID)
+  groupName: string; // 옵션 그룹 이름 (예: "사이즈", "토핑")
   itemId: string; // 옵션 아이템 ID (UUID)
-  name: string; // 옵션 아이템 이름
+  itemName: string; // 옵션 아이템 이름 (예: "2인분", "치즈추가")
   price: number; // 옵션 아이템 가격
 }
 
