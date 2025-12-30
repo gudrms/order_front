@@ -1,17 +1,8 @@
 import { MenusService } from './menus.service';
-export declare class MenusController {
+export declare class MenuDetailController {
     private readonly menusService;
     constructor(menusService: MenusService);
-    getCategories(storeId: string): Promise<{
-        id: string;
-        storeId: string;
-        okposCategoryCode: string | null;
-        name: string;
-        displayOrder: number;
-        createdAt: Date;
-        updatedAt: Date;
-    }[]>;
-    getMenus(storeId: string, categoryId?: string): Promise<({
+    getMenuDetail(menuId: string): Promise<{
         category: {
             id: string;
             name: string;
@@ -20,10 +11,10 @@ export declare class MenusController {
             options: {
                 id: string;
                 name: string;
+                price: number;
                 displayOrder: number;
                 createdAt: Date;
                 updatedAt: Date;
-                price: number;
                 optionGroupId: string;
                 okposOptionCode: string | null;
                 isSoldOut: boolean;
@@ -58,18 +49,18 @@ export declare class MenusController {
     } & {
         id: string;
         storeId: string;
-        name: string;
-        displayOrder: number;
-        createdAt: Date;
-        updatedAt: Date;
         categoryId: string;
         okposMenuCode: string | null;
+        name: string;
         price: number;
         description: string | null;
         imageUrl: string | null;
+        displayOrder: number;
         soldOut: boolean;
         isHidden: boolean;
         isActive: boolean;
         lastSyncedAt: Date;
-    })[]>;
+        createdAt: Date;
+        updatedAt: Date;
+    }>;
 }

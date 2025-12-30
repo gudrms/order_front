@@ -119,24 +119,24 @@ export function MenuDetailContent({ menuId }: MenuDetailContentProps) {
       </p>
 
       {/* 옵션 선택 (간단 버전 - 실제로는 옵션 그룹별로 분리) */}
-      {menu.options && menu.options.length > 0 && (
+      {menu.optionGroups && menu.optionGroups.length > 0 && (
         <div className="mb-6">
           <h4 className="mb-3 font-semibold text-gray-900">옵션 선택</h4>
           <div className="space-y-2">
-            {menu.options.map((optionGroup) =>
-              optionGroup.items.map((item) => {
+            {menu.optionGroups.map((optionGroup) =>
+              optionGroup.options?.map((option) => {
                 const isSelected = selectedOptions.some(
-                  (opt) => opt.itemId === item.id
+                  (opt) => opt.itemId === option.id
                 );
                 return (
                   <button
-                    key={item.id}
+                    key={option.id}
                     onClick={() =>
                       handleOptionToggle({
                         id: optionGroup.id,
-                        itemId: item.id,
-                        name: item.name,
-                        price: item.price,
+                        itemId: option.id,
+                        name: option.name,
+                        price: option.price,
                       })
                     }
                     className={`flex w-full items-center justify-between rounded-lg border p-3 text-left transition-colors ${
@@ -145,9 +145,9 @@ export function MenuDetailContent({ menuId }: MenuDetailContentProps) {
                         : 'border-gray-200 hover:border-gray-300'
                     } `}
                   >
-                    <span className="font-medium text-gray-900">{item.name}</span>
+                    <span className="font-medium text-gray-900">{option.name}</span>
                     <span className="text-gray-900">
-                      +{item.price.toLocaleString()}원
+                      +{option.price.toLocaleString()}원
                     </span>
                   </button>
                 );

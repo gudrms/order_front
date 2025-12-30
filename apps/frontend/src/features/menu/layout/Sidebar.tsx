@@ -5,6 +5,7 @@ import { useUIStore } from '@/stores';
 import { CategoryButton } from '../components/CategoryButton';
 
 interface SidebarProps {
+  storeId?: string;
   activeCategoryId: string | null;
   onCategoryClick: (categoryId: string) => void;
 }
@@ -17,9 +18,9 @@ interface SidebarProps {
  * - 하단: 직원호출 버튼 (고정)
  * - 클릭 시 해당 카테고리로 스크롤 이동
  */
-export function Sidebar({ activeCategoryId, onCategoryClick }: SidebarProps) {
-  const storeId = process.env.NEXT_PUBLIC_STORE_ID || 'default-store-id';
-  const { data: categories, isLoading } = useCategories(storeId);
+export function Sidebar({ storeId, activeCategoryId, onCategoryClick }: SidebarProps) {
+  const finalStoreId = storeId || process.env.NEXT_PUBLIC_STORE_ID || 'default-store-id';
+  const { data: categories, isLoading } = useCategories(finalStoreId);
   const { toggleSidebar, openMenuDetail } = useUIStore();
 
   const handleStaffCall = () => {

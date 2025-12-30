@@ -14,7 +14,12 @@ async function bootstrap() {
     // Global Prefix 설정
     app.setGlobalPrefix('api/v1');
 
-    await app.listen(3001);
-    console.log(`Application is running on: ${await app.getUrl()}`);
+    // Vercel 환경인지 확인
+    if (process.env.VERCEL) {
+        await app.init();
+    } else {
+        await app.listen(3001);
+        console.log(`Application is running on: ${await app.getUrl()}`);
+    }
 }
 bootstrap();

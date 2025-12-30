@@ -29,14 +29,14 @@ export interface MenuOptionItem {
 }
 
 /**
- * 메뉴 옵션
+ * 메뉴 옵션 그룹
  */
 export interface MenuOption {
   id: string; // UUID
   name: string;
   type: MenuOptionType;
   required: boolean;
-  items: MenuOptionItem[];
+  options: MenuOptionItem[];
 }
 
 /**
@@ -52,7 +52,7 @@ export interface Menu {
   categoryName?: string;
   soldOut: boolean;
   displayOrder: number;
-  options?: MenuOption[];
+  optionGroups?: any[]; // 옵션 그룹 목록
   createdAt?: string;
   updatedAt?: string;
 }
@@ -61,7 +61,7 @@ export interface Menu {
  * 메뉴 상세 (옵션 포함)
  */
 export interface MenuDetail extends Menu {
-  options: MenuOption[];
+  optionGroups: any[];
 }
 
 /**

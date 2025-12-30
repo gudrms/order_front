@@ -10,8 +10,13 @@ async function bootstrap() {
         credentials: true,
     });
     app.setGlobalPrefix('api/v1');
-    await app.listen(3001);
-    console.log(`Application is running on: ${await app.getUrl()}`);
+    if (process.env.VERCEL) {
+        await app.init();
+    }
+    else {
+        await app.listen(3001);
+        console.log(`Application is running on: ${await app.getUrl()}`);
+    }
 }
 bootstrap();
 //# sourceMappingURL=main.js.map
