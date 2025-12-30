@@ -60,7 +60,7 @@ export function CartItemCard({ item }: CartItemCardProps) {
         <div className="mb-2">
           {item.options.map((option, index) => (
             <p key={index} className="text-xs text-gray-500">
-              + {option.name}
+              + {option.groupName}: {option.itemName}
               {option.price > 0 && ` (${option.price.toLocaleString()}원)`}
             </p>
           ))}

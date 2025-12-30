@@ -123,8 +123,8 @@ export function MenuDetailContent({ menuId }: MenuDetailContentProps) {
         <div className="mb-6">
           <h4 className="mb-3 font-semibold text-gray-900">옵션 선택</h4>
           <div className="space-y-2">
-            {menu.optionGroups.map((optionGroup) =>
-              optionGroup.options?.map((option) => {
+            {menu.optionGroups.map((optionGroup: any) =>
+              optionGroup.options?.map((option: any) => {
                 const isSelected = selectedOptions.some(
                   (opt) => opt.itemId === option.id
                 );
@@ -134,8 +134,9 @@ export function MenuDetailContent({ menuId }: MenuDetailContentProps) {
                     onClick={() =>
                       handleOptionToggle({
                         id: optionGroup.id,
+                        groupName: optionGroup.name,
                         itemId: option.id,
-                        name: option.name,
+                        itemName: option.name,
                         price: option.price,
                       })
                     }
