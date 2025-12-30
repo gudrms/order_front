@@ -2,7 +2,15 @@ import { Controller, Post, Body, Param, ValidationPipe, UsePipes, Get, Query, Pa
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { SupabaseGuard } from '../auth/guards/supabase.guard';
-import { OrderStatus } from '@prisma/client';
+
+// Prisma Client 생성 전까지 임시로 enum 정의
+export enum OrderStatus {
+    PENDING = 'PENDING',
+    CONFIRMED = 'CONFIRMED',
+    COOKING = 'COOKING',
+    COMPLETED = 'COMPLETED',
+    CANCELLED = 'CANCELLED',
+}
 
 @Controller('stores/:storeId/orders')
 export class OrdersController {
