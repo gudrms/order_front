@@ -19,11 +19,5 @@
                 "OPTIONS"
             ]
         }
-    ],
-    "crons": [
-        {
-            "path": "/api/v1/health",
-            "schedule": "*/10 * * * *"
-        }
     ]
 }
