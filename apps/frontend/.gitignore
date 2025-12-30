@@ -34,11 +34,11 @@ yarn-error.log*
 # 개인별 오버라이드만 Git에서 제외
 .env*.local
 
-# 공통/환경별 설정은 Git 커밋 허용
-!.env
-!.env.development
-!.env.production
-!.env.example
+# 공통/환경별 설정도 Git 커밋 제외 (Public 전환 시 보안)
+.env
+.env.development
+.env.production
+.env.example
 
 # vercel
 .vercel
