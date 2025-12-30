@@ -318,7 +318,7 @@ const { data: menuDetail, isLoading } = useMenuDetail(menuId);
 ⏳ **Phase 4**: 주문 내역 페이지  
 ⏳ **Phase 5**: 관리자 페이지
 
-자세한 내용은 [CHECKLIST.md](./CHECKLIST.md) 참조
+자세한 내용은 [CHECKLIST.md](FRONT_CHECKLIST.md) 참조
 
 ---
 
