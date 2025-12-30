@@ -16,36 +16,72 @@ let MenusService = class MenusService {
     constructor(prisma) {
         this.prisma = prisma;
     }
-    async getMenus(storeId) {
-        const categories = await this.prisma.menuCategory.findMany({
+    async getCategories(storeId) {
+        return this.prisma.menuCategory.findMany({
             where: { storeId },
             orderBy: { displayOrder: 'asc' },
+        });
+    }
+    async getMenus(storeId, categoryId) {
+        const where = {
+            storeId,
+            isActive: true,
+            isHidden: false,
+        };
+        if (categoryId) {
+            where.categoryId = categoryId;
+        }
+        return this.prisma.menu.findMany({
+            where,
+            orderBy: { displayOrder: 'asc' },
             include: {
-                menus: {
-                    where: {
-                        isActive: true,
-                        isHidden: false,
+                category: {
+                    select: {
+                        id: true,
+                        name: true,
                     },
+                },
+                optionGroups: {
                     orderBy: { displayOrder: 'asc' },
                     include: {
-                        optionGroups: {
+                        options: {
                             orderBy: { displayOrder: 'asc' },
-                            include: {
-                                options: {
-                                    orderBy: { displayOrder: 'asc' },
-                                },
-                            },
                         },
-                        tags: {
-                            include: {
-                                tag: true,
-                            },
-                        },
+                    },
+                },
+                tags: {
+                    include: {
+                        tag: true,
                     },
                 },
             },
         });
-        return categories;
+    }
+    async getMenuDetail(menuId) {
+        return this.prisma.menu.findUnique({
+            where: { id: menuId },
+            include: {
+                category: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+                optionGroups: {
+                    orderBy: { displayOrder: 'asc' },
+                    include: {
+                        options: {
+                            orderBy: { displayOrder: 'asc' },
+                        },
+                    },
+                },
+                tags: {
+                    include: {
+                        tag: true,
+                    },
+                },
+            },
+        });
     }
 };
 exports.MenusService = MenusService;

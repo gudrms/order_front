@@ -4,6 +4,7 @@ import { useCategories } from '@/hooks/queries/useMenus';
 import { CategoryButton } from '../components/CategoryButton';
 
 interface TopBarProps {
+  storeId?: string;
   tableNumber?: number;
   activeCategoryId: string | null;
   onCategoryClick: (categoryId: string) => void;
@@ -17,12 +18,13 @@ interface TopBarProps {
  * - 클릭 시 해당 카테고리로 스크롤 이동
  */
 export function TopBar({
+  storeId,
   tableNumber = 12,
   activeCategoryId,
   onCategoryClick,
 }: TopBarProps) {
-  const storeId = process.env.NEXT_PUBLIC_STORE_ID || 'default-store-id';
-  const { data: categories, isLoading } = useCategories(storeId);
+  const finalStoreId = storeId || process.env.NEXT_PUBLIC_STORE_ID || 'default-store-id';
+  const { data: categories, isLoading } = useCategories(finalStoreId);
 
   return (
     <div className="flex h-16 items-center justify-between border-b bg-white px-6">

@@ -12,38 +12,27 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.MenusController = void 0;
+exports.MenuDetailController = void 0;
 const common_1 = require("@nestjs/common");
 const menus_service_1 = require("./menus.service");
-let MenusController = class MenusController {
+let MenuDetailController = class MenuDetailController {
     constructor(menusService) {
         this.menusService = menusService;
     }
-    async getCategories(storeId) {
-        return this.menusService.getCategories(storeId);
-    }
-    async getMenus(storeId, categoryId) {
-        return this.menusService.getMenus(storeId, categoryId);
+    async getMenuDetail(menuId) {
+        return this.menusService.getMenuDetail(menuId);
     }
 };
-exports.MenusController = MenusController;
+exports.MenuDetailController = MenuDetailController;
 __decorate([
-    (0, common_1.Get)('categories'),
-    __param(0, (0, common_1.Param)('storeId')),
+    (0, common_1.Get)(':menuId'),
+    __param(0, (0, common_1.Param)('menuId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
-], MenusController.prototype, "getCategories", null);
-__decorate([
-    (0, common_1.Get)('menus'),
-    __param(0, (0, common_1.Param)('storeId')),
-    __param(1, (0, common_1.Query)('categoryId')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String]),
-    __metadata("design:returntype", Promise)
-], MenusController.prototype, "getMenus", null);
-exports.MenusController = MenusController = __decorate([
-    (0, common_1.Controller)('stores/:storeId'),
+], MenuDetailController.prototype, "getMenuDetail", null);
+exports.MenuDetailController = MenuDetailController = __decorate([
+    (0, common_1.Controller)('menus'),
     __metadata("design:paramtypes", [menus_service_1.MenusService])
-], MenusController);
-//# sourceMappingURL=menus.controller.js.map
+], MenuDetailController);
+//# sourceMappingURL=menu-detail.controller.js.map

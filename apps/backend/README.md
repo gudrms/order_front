@@ -194,6 +194,8 @@ app.enableCors({
 
 ```bash
 # 개발 서버 실행 (Hot Reload)
+cd D:\work\order_change\order_front\apps\backend
+
 npm run start:dev
 
 # 프로덕션 빌드

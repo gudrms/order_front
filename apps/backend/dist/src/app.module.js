@@ -14,6 +14,7 @@ const menus_module_1 = require("./modules/menus/menus.module");
 const stores_module_1 = require("./modules/stores/stores.module");
 const orders_module_1 = require("./modules/orders/orders.module");
 const auth_module_1 = require("./modules/auth/auth.module");
+const health_controller_1 = require("./health.controller");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -29,6 +30,7 @@ exports.AppModule = AppModule = __decorate([
             orders_module_1.OrdersModule,
             auth_module_1.AuthModule,
         ],
+        controllers: [health_controller_1.HealthController],
     })
 ], AppModule);
 //# sourceMappingURL=app.module.js.map

@@ -114,7 +114,7 @@ function MenuContent() {
       }
 
       // 옵션 유무 확인
-      const hasOptions = menu.options && menu.options.length > 0;
+      const hasOptions = menu.optionGroups && menu.optionGroups.length > 0;
 
       if (hasOptions) {
         // 옵션 있음 → 상세 모달 열기
@@ -161,6 +161,7 @@ function MenuContent() {
       <div className="flex h-screen bg-gray-50">
         {/* 좌측 사이드바 */}
         <Sidebar
+          storeId={store.id}
           activeCategoryId={activeCategoryId}
           onCategoryClick={handleCategoryClick}
         />
@@ -169,6 +170,7 @@ function MenuContent() {
         <div className="flex flex-1 flex-col">
           {/* 상단 바 */}
           <TopBar
+            storeId={store.id}
             activeCategoryId={activeCategoryId}
             onCategoryClick={handleCategoryClick}
           />
@@ -176,6 +178,7 @@ function MenuContent() {
           {/* 메뉴 그리드 (스크롤 영역) */}
           <div className="flex-1 overflow-auto">
             <MenuGrid
+              storeId={store.id}
               onCategoryActive={handleCategoryActive}
               onMenuClick={handleMenuClick}
             />
