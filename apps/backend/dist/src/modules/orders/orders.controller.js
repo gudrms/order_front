@@ -12,12 +12,19 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.OrdersController = void 0;
+exports.OrdersController = exports.OrderStatus = void 0;
 const common_1 = require("@nestjs/common");
 const orders_service_1 = require("./orders.service");
 const create_order_dto_1 = require("./dto/create-order.dto");
 const supabase_guard_1 = require("../auth/guards/supabase.guard");
-const client_1 = require("@prisma/client");
+var OrderStatus;
+(function (OrderStatus) {
+    OrderStatus["PENDING"] = "PENDING";
+    OrderStatus["CONFIRMED"] = "CONFIRMED";
+    OrderStatus["COOKING"] = "COOKING";
+    OrderStatus["COMPLETED"] = "COMPLETED";
+    OrderStatus["CANCELLED"] = "CANCELLED";
+})(OrderStatus || (exports.OrderStatus = OrderStatus = {}));
 let OrdersController = class OrdersController {
     constructor(ordersService) {
         this.ordersService = ordersService;

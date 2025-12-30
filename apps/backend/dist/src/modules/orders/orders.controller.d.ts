@@ -1,6 +1,12 @@
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
-import { OrderStatus } from '@prisma/client';
+export declare enum OrderStatus {
+    PENDING = "PENDING",
+    CONFIRMED = "CONFIRMED",
+    COOKING = "COOKING",
+    COMPLETED = "COMPLETED",
+    CANCELLED = "CANCELLED"
+}
 export declare class OrdersController {
     private readonly ordersService;
     constructor(ordersService: OrdersService);
@@ -26,8 +32,6 @@ export declare class OrdersController {
         })[];
     } & {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         storeId: string;
         orderNumber: string;
         tableNumber: number;
@@ -35,6 +39,8 @@ export declare class OrdersController {
         totalAmount: number;
         note: string | null;
         okposOrderId: string | null;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
     getOrders(storeId: string, status?: OrderStatus, page?: number): Promise<{
         data: ({
@@ -59,8 +65,6 @@ export declare class OrdersController {
             })[];
         } & {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
             storeId: string;
             orderNumber: string;
             tableNumber: number;
@@ -68,6 +72,8 @@ export declare class OrdersController {
             totalAmount: number;
             note: string | null;
             okposOrderId: string | null;
+            createdAt: Date;
+            updatedAt: Date;
         })[];
         meta: {
             total: number;
@@ -77,8 +83,6 @@ export declare class OrdersController {
     }>;
     updateOrderStatus(storeId: string, orderId: string, status: OrderStatus): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         storeId: string;
         orderNumber: string;
         tableNumber: number;
@@ -86,5 +90,7 @@ export declare class OrdersController {
         totalAmount: number;
         note: string | null;
         okposOrderId: string | null;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
 }
