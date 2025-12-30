@@ -7,7 +7,8 @@ export class HealthController {
         return {
             status: 'ok',
             timestamp: new Date().toISOString(),
-            version: '0.0.1'
+            version: '0.0.2',
+            express: 'fixed'
         };
     }
 }

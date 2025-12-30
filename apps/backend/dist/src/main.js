@@ -3,8 +3,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const core_1 = require("@nestjs/core");
 const platform_express_1 = require("@nestjs/platform-express");
 const app_module_1 = require("./app.module");
-const express_1 = require("express");
-const expressApp = (0, express_1.default)();
+const express = require("express");
+const expressApp = express();
 let cachedApp = null;
 async function bootstrap() {
     if (cachedApp) {
