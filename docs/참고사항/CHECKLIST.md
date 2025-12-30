@@ -66,9 +66,9 @@
     - [ ] 실패한 OKPOS 주문 재시도 (5분마다)
 - [ ] **문서화**
     - [ ] Swagger 설정 (@nestjs/swagger)
-- [ ] **테스트 및 배포**
-    - [ ] 로컬 개발 환경 테스트
-    - [ ] Vercel Serverless 배포 테스트
+- [x] **테스트 및 배포**
+    - [x] 로컬 개발 환경 테스트
+    - [x] Vercel Serverless 배포 테스트 (완료)
 
 ## 4. 🧪 테스트 (Testing)
 - [ ] 단위 테스트 (Unit Test)
@@ -76,10 +76,10 @@
 - [ ] 사용자 인수 테스트 (UAT) - 태블릿/모바일 환경 테스트
 
 ## 5. 🚀 배포 (Deployment)
-- [ ] **Vercel 배포**
-    - [ ] Frontend 배포 (Edge Network)
-    - [ ] Backend 배포 (Serverless Functions)
-    - [ ] 환경 변수 설정
+- [x] **Vercel 배포**
+    - [x] Frontend 배포 (Edge Network) ✅
+    - [x] Backend 배포 (Serverless Functions) ✅
+    - [ ] 환경 변수 설정 (Frontend → Backend URL 연결)
 - [ ] **Supabase 설정**
     - [ ] PostgreSQL Database 생성
     - [ ] Realtime 채널 설정

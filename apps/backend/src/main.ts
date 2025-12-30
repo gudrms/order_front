@@ -27,8 +27,10 @@ async function bootstrap() {
         credentials: true,
     });
 
-    // Global Prefix 설정
-    app.setGlobalPrefix('api/v1');
+    // Global Prefix 설정 (AppController는 제외)
+    app.setGlobalPrefix('api/v1', {
+        exclude: ['/'],
+    });
 
     // Vercel 환경에서는 초기화만
     await app.init();
