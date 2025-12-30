@@ -1,7 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ExpressAdapter } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
-import express from 'express';
+import * as express from 'express';
 
 // Express 인스턴스 생성 (Vercel Serverless용)
 const expressApp = express();
