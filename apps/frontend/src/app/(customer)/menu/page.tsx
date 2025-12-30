@@ -83,7 +83,7 @@ function MenuContent() {
       }
 
       // 옵션 유무 확인
-      const hasOptions = menu.options && menu.options.length > 0;
+      const hasOptions = menu.optionGroups && menu.optionGroups.length > 0;
 
       if (hasOptions) {
         // 옵션 있음 → 상세 모달 열기
