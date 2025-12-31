@@ -1,44 +1,19 @@
 /**
- * 타입 정의 통합 export
- * 사용 예: import { Menu, Order, Table } from '@/types';
+ * @deprecated
+ * 이 파일은 하위 호환성을 위해 유지됩니다.
+ * 새 코드에서는 @order/shared를 직접 import하세요.
+ *
+ * 사용 예:
+ * // ✅ 권장
+ * import { Menu, Order, ORDER_STATUS_LABEL } from '@order/shared';
+ *
+ * // ❌ 레거시 (동작은 하지만 권장하지 않음)
+ * import { Menu, Order } from '@/types';
  */
 
-// API 공통 타입
-export type {
-  ApiResponse,
-  PaginatedResponse,
-  ApiError,
-  ApiStatus,
-} from './api';
+// @order/shared로 리다이렉트
+export * from '@order/shared';
 
-// 메뉴 타입
-export type {
-  MenuCategory,
-  MenuOptionType,
-  MenuOptionItem,
-  MenuOption,
-  Menu,
-  MenuDetail,
-  MenuFormData,
-} from './menu';
-
-// 주문 타입
-export type {
-  OrderStatus,
-  SelectedOptionItem,
-  SelectedOption,
-  CartSelectedOption,
-  OrderItem,
-  Order,
-  CreateOrderRequest,
-  UpdateOrderStatusRequest,
-} from './order';
-export { OrderStatusLabel } from './order';
-
-// 테이블 타입
-export type { TableStatus, Table, UpdateTableStatusRequest } from './table';
-export { TableStatusLabel } from './table';
-
-// 직원 호출 타입
+// 호출 타입 (Frontend 전용)
 export type { CallType, CallStatus, Call, CreateCallRequest } from './call';
 export { CallTypeLabel, CallStatusLabel } from './call';

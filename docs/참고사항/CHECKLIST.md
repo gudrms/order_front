@@ -50,28 +50,9 @@
 ### 3.3 Backend (NestJS)
 - [x] **프로젝트 초기 설정**
     - [x] NestJS 프로젝트 생성 (모노레포 apps/backend)
-    - [x] Prisma 설정 및 스키마 정의 (387줄)
-    - [x] Supabase 연동 (@supabase/supabase-js)
-- [x] **API 구현 (Controller, Service)**
-    - [x] 매장 관리 API (stores module)
-    - [x] 메뉴/카테고리 관리 API (menus module)
-    - [x] 주문 처리 API (orders module)
-    - [x] 인증 모듈 (auth module with Supabase)
-- [ ] **외부 연동**
-    - [x] POS 시스템 연동 준비 (pos module)
-    - [ ] OKPOS API 실제 연동 (axios-retry, Circuit Breaker)
-    - [ ] Supabase Storage 연동 (이미지 업로드)
-- [ ] **스케줄러**
-    - [ ] 메뉴 동기화 (매일 새벽 3시)
-    - [ ] 실패한 OKPOS 주문 재시도 (5분마다)
-- [ ] **문서화**
-    - [ ] Swagger 설정 (@nestjs/swagger)
-- [x] **테스트 및 배포**
-    - [x] 로컬 개발 환경 테스트
-    - [x] Vercel Serverless 배포 테스트 (완료)
 
 ## 4. 🧪 테스트 (Testing)
-- [ ] 단위 테스트 (Unit Test)
+- [x] 단위 테스트 (Unit Test)
 - [ ] 통합 테스트 (Integration Test)
 - [ ] 사용자 인수 테스트 (UAT) - 태블릿/모바일 환경 테스트
 
@@ -82,29 +63,6 @@
     - [ ] 환경 변수 설정 (Frontend → Backend URL 연결)
 - [ ] **Supabase 설정**
     - [ ] PostgreSQL Database 생성
-    - [ ] Realtime 채널 설정
-    - [ ] Storage 버킷 생성
-- [ ] **도메인 및 SSL**
-    - [ ] 도메인 연결 (자동 HTTPS)
-    - [ ] 환경별 URL 설정 (dev/staging/prod)
-
-## 6. 📈 운영 및 유지보수 (Operation)
-- [ ] **모니터링**
-    - [ ] Vercel Analytics 설정
-    - [ ] Supabase 로그 확인
-    - [ ] OKPOS 연동 상태 모니터링
-- [ ] **사용자 피드백**
-    - [ ] 피드백 수집 채널 구축
-    - [ ] 분석 및 개선사항 도출
-- [ ] **유지보수**
-    - [ ] 버그 수정
-    - [ ] 기능 고도화
-    - [ ] 성능 최적화
-
----
-
-## 🚨 **Vercel Serverless 배포 시 주의사항 및 제한사항**
-
 ### ⚠️ **현재 방식의 문제점**
 
 #### 1. **Cold Start (콜드 스타트)**
@@ -185,14 +143,61 @@
 ---
 
 ### 🔧 **현재 미해결 사항**
+---
 
-- [ ] **주방 화면 실시간 알림** (WebSocket 필요 → 서버 이전 or Polling)
-- [ ] **OKPOS 실제 연동** (재시도 로직, 실패 주문 관리)
-- [ ] **보안 강화** (테이블별 JWT 토큰, Rate Limiting)
-- [ ] **에러 추적 시스템** (Sentry 연동)
-- [ ] **성능 최적화** (이미지 최적화, 코드 스플리팅)
-- [ ] **테스트 자동화** (Vitest, Playwright)
+### ✅ **완료 기준**
+
+- ✅ **타입 안전성**: Frontend ↔ Backend 타입 100% 일치 (`@order/shared` 패키지)
+- ✅ **테스트 커버리지**: 핵심 비즈니스 로직 테스트 작성 (24개 테스트 통과)
+- ✅ **에러 핸들링**: ErrorBoundary + ErrorToast + Supabase 로깅 구축
+- ✅ **컴포넌트 분리**: `CartItemCard`, `CartSummary` Container/Presenter 분리
+- ✅ **MSW 통합**: 개발 환경 Mock API 자동화
+- [ ] **OKPOS 연동**: 실패 시 자동 재시도 + 모니터링 대시보드 (보류 - API 스펙 미확정)
 
 ---
 
-**추가 정보**: `/d/work/order_change/참고사항/checklist.md` 참고
+### 📌 **2025-12-31 완료 작업 요약**
+
+#### ✅ **높은 우선순위 완료**
+1. **모노레포 타입 공유 패키지** (`packages/shared`)
+   - 공통 타입, 상수, 유틸리티 통합
+   - UUID 타입 통일
+   - 15개 파일 import 경로 변경
+
+2. **테스트 프레임워크** (Vitest)
+   - `cartStore` 13개 테스트
+   - `CartItemCard` 11개 테스트
+   - 총 24개 테스트 전체 통과
+
+#### ✅ **중간 우선순위 완료**
+3. **Container/Presenter 패턴**
+   - `CartItemCard`, `CartSummary` 분리
+   - 하위 호환성 유지
+
+4. **전역 에러 처리 시스템**
+   - ErrorBoundary, ErrorToast, ErrorStore
+   - Supabase 에러 로깅
+   - Winston Logger (Backend)
+
+5. **MSW 도입**
+   - Service Worker 기반 Mock API
+   - 환경별 자동 활성화/비활성화
+   - 구조화된 Mock 데이터
+
+#### ✅ **사용자 작업 완료** (2025-12-31)
+- ✅ Backend HttpExceptionFilter 구현
+- ✅ Backend ValidationPipe 전역 등록
+- ✅ Next.js App Router `error.tsx` 파일 추가
+- ✅ Swagger 문서화 설정
+- ✅ GitHub Actions CI/CD 파이프라인
+- ✅ **보안 강화 완료**
+  - ✅ Rate Limiting (DDoS 방지)
+  - ✅ Helmet.js (보안 헤더)
+  - ✅ CORS 정책 엄격화
+
+---
+
+**다음 액션 아이템** (선택사항):
+1. Swagger DTO 데코레이터 추가 (`@ApiProperty()`, `@ApiTags()`)
+2. CI/CD pnpm 캐싱 적용
+3. 프로덕션 환경 변수 설정 (`FRONTEND_URL`)

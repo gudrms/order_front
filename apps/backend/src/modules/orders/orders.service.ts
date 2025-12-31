@@ -1,16 +1,40 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateOrderDto } from './dto/create-order.dto';
-import { PosService } from '../integrations/pos/pos.service';
+import { ResilientPosService } from '../integrations/pos/pos.resilience';
+import { SessionsService } from '../sessions/sessions.service';
 
 @Injectable()
 export class OrdersService {
     constructor(
         private readonly prisma: PrismaService,
-        private readonly posService: PosService,
+        private readonly posService: ResilientPosService,
+        private readonly sessionsService: SessionsService,
     ) { }
 
-    async createOrder(storeId: string, dto: CreateOrderDto) {
+    /**
+     * 첫 주문 (세션 시작)
+     */
+    async createFirstOrder(storeId: string, tableNumber: number, dto: CreateOrderDto) {
+        // 1. 세션 시작
+        const session = await this.sessionsService.startSession(storeId, tableNumber);
+
+        // 2. 주문 생성
+        const order = await this.createOrder(storeId, session.id, dto);
+
+        return {
+            session,
+            order,
+        };
+    }
+
+    /**
+     * 주문 생성 (기존 세션)
+     */
+    async createOrder(storeId: string, sessionId: string, dto: CreateOrderDto) {
+        // 세션 존재 확인
+        const session = await this.sessionsService.getSessionById(sessionId);
+
         // 트랜잭션 시작
         const order = await this.prisma.$transaction(async (tx) => {
             // 1. 메뉴 및 옵션 정보 조회 (가격 검증용)
@@ -86,7 +110,8 @@ export class OrdersService {
             return tx.order.create({
                 data: {
                     storeId,
-                    tableNumber: dto.tableNumber,
+                    sessionId,
+                    tableNumber: session.tableNumber,
                     orderNumber: await this.generateOrderNumber(storeId),
                     status: 'PENDING',
                     totalAmount: totalPrice,
@@ -111,9 +136,12 @@ export class OrdersService {
             });
         });
 
+        // 세션 총액 업데이트
+        await this.sessionsService.updateSessionTotal(sessionId, order.totalAmount);
+
         // 4. POS 전송 (Mock) - 트랜잭션 완료 후 실행
         try {
-            await this.posService.sendOrderToPos(order);
+            await this.posService.sendOrder(order);
         } catch (error) {
             console.error('Failed to send order to POS:', error);
             // POS 전송 실패가 주문 생성을 취소시키지는 않음

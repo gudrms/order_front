@@ -2,7 +2,7 @@
  * 테이블 관련 API 엔드포인트
  */
 
-import type { Table } from '@/types';
+import type { Table } from '@order/shared';
 import { apiClient } from '../client';
 
 /**

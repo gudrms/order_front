@@ -1,16 +1,19 @@
 {
     "name": "table-order-monorepo",
     "private": true,
-    "workspaces": [
-        "apps/*"
-    ],
+    "packageManager": "pnpm@10.27.0",
     "scripts": {
-        "dev": "npm run dev --workspaces",
-        "build": "npm run build --workspaces",
-        "lint": "npm run lint --workspaces",
-        "supa:start": "npx supabase start",
-        "supa:stop": "npx supabase stop",
-        "supa:status": "npx supabase status",
+        "dev": "turbo dev",
+        "build": "turbo build",
+        "lint": "turbo lint",
+        "test": "turbo test",
+        "type-check": "turbo type-check",
+        "supa:start": "pnpm supabase start",
+        "supa:stop": "pnpm supabase stop",
+        "supa:status": "pnpm supabase status",
         "supa:pull-data": "node scripts/pull-db.js"
+    },
+    "devDependencies": {
+        "turbo": "^2.7.2"
     }
 }

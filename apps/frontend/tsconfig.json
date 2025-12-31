@@ -19,7 +19,8 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@order/shared": ["../../packages/shared/src"]
     },
     "typeRoots": ["./node_modules/@types", "./types"]
   },

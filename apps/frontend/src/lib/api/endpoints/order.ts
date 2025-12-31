@@ -1,9 +1,8 @@
 /**
- * Order API - Mock Implementation
- * localStorage 기반 주문 관리
+ * Order API - MSW 기반 주문 관리
  */
 
-import type { CartSelectedOption } from '@/types';
+import type { CartSelectedOption } from '@order/shared';
 
 /**
  * 주문 상태
@@ -61,128 +60,31 @@ export interface Order {
 }
 
 /**
- * 주문번호 생성
- * Format: {branchCode}-{순번}
- * 예시: GM-001, GM-002 (매일 리셋)
- */
-function generateOrderNumber(branchId: string): string {
-  // branchId를 대문자 2자리 코드로 변환
-  const branchCode = branchId.slice(0, 2).toUpperCase(); // "gimpo" → "GI", "gangnam" → "GA"
-
-  // 오늘 날짜 (YYYY-MM-DD)
-  const today = new Date().toISOString().slice(0, 10);
-  const key = `order_count_${branchCode}_${today}`;
-
-  // 오늘 주문 개수 가져오기
-  const count = parseInt(localStorage.getItem(key) || '0') + 1;
-
-  // 카운터 저장
-  localStorage.setItem(key, count.toString());
-
-  // 주문번호 생성 (3자리 패딩)
-  return `${branchCode}-${count.toString().padStart(3, '0')}`;
-}
-
-/**
- * UUID 생성 (간단 버전)
- */
-function generateUUID(): string {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0;
-    const v = c === 'x' ? r : (r & 0x3) | 0x8;
-    return v.toString(16);
-  });
-}
-
-/**
- * 주문 생성
- */
-export async function createOrder(
-  data: CreateOrderRequest,
-  branchId: string = 'gimpo' // 기본값: 김포점
-): Promise<CreateOrderResponse> {
-  // 지연 시뮬레이션 (실제 API 호출처럼)
-  await new Promise((resolve) => setTimeout(resolve, 500));
-
-  // 주문번호 생성
-  const orderNumber = generateOrderNumber(branchId);
-
-  // 주문 아이템에 ID 추가
-  const items: OrderItem[] = data.items.map((item) => ({
-    ...item,
-    id: generateUUID(),
-  }));
-
-  // 주문 객체 생성
-  const order: Order = {
-    id: generateUUID(),
-    orderNumber,
-    tableNumber: data.tableNumber,
-    items,
-    totalAmount: data.totalAmount,
-    status: 'PENDING',
-    createdAt: new Date().toISOString(),
-  };
-
-  // localStorage에 저장
-  localStorage.setItem(`order_${orderNumber}`, JSON.stringify(order));
-
-  // 주문 목록에 추가 (주문 내역 조회용)
-  const orderListKey = `order_list_table_${data.tableNumber}`;
-  const orderList: string[] = JSON.parse(
-    localStorage.getItem(orderListKey) || '[]'
-  );
-  orderList.push(orderNumber);
-  localStorage.setItem(orderListKey, JSON.stringify(orderList));
-
-  return {
-    orderNumber,
-    createdAt: order.createdAt,
-  };
-}
-
-/**
- * 주문 조회 (주문번호로)
- */
-export async function getOrder(orderNumber: string): Promise<Order | null> {
-  // 지연 시뮬레이션
-  await new Promise((resolve) => setTimeout(resolve, 300));
-
-  const stored = localStorage.getItem(`order_${orderNumber}`);
-  if (!stored) {
-    return null;
-  }
-
-  return JSON.parse(stored) as Order;
-}
-
-/**
  * 테이블별 주문 목록 조회
+ * MSW를 사용하여 세션 기반으로 주문 조회
  */
 export async function getOrdersByTable(
   tableNumber: number
 ): Promise<Order[]> {
-  // 지연 시뮬레이션
-  await new Promise((resolve) => setTimeout(resolve, 300));
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+  const storeId = 'store-1'; // 실제로는 context에서 가져와야 함
 
-  const orderListKey = `order_list_table_${tableNumber}`;
-  const orderNumbers: string[] = JSON.parse(
-    localStorage.getItem(orderListKey) || '[]'
-  );
+  // 현재 활성 세션 조회
+  const sessionResponse = await fetch(`${API_URL}/stores/${storeId}/tables/${tableNumber}/current-session`);
+  const sessionData = await sessionResponse.json();
 
-  const orders: Order[] = [];
-  for (const orderNumber of orderNumbers) {
-    const stored = localStorage.getItem(`order_${orderNumber}`);
-    if (stored) {
-      orders.push(JSON.parse(stored) as Order);
-    }
+  if (!sessionData.data) {
+    // 활성 세션이 없으면 빈 배열 반환
+    return [];
   }
 
-  // 최신순 정렬
-  return orders.sort(
-    (a, b) =>
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
+  const sessionId = sessionData.data.id;
+
+  // 세션의 주문 내역 조회
+  const ordersResponse = await fetch(`${API_URL}/stores/${storeId}/orders?sessionId=${sessionId}`);
+  const ordersData = await ordersResponse.json();
+
+  return ordersData.data || [];
 }
 
 /**

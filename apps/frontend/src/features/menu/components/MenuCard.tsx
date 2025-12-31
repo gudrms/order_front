@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import type { Menu } from '@/types';
+import type { Menu } from '@order/shared';
 
 interface MenuCardProps {
   menu: Menu;

@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [18.x]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+
+    - name: Install Dependencies
+      run: npm install
+
+    - name: Generate Prisma Client
+      run: npm run postinstall --workspace=apps/backend
+
+    - name: Test Backend
+      run: npm run test --workspace=apps/backend
+
+    - name: Build Backend
+      run: npm run build --workspace=apps/backend
+
+    - name: Lint Frontend
+      run: npm run lint --workspace=apps/frontend
+
+    - name: Test Frontend
+      run: npm run test --workspace=apps/frontend
+
+    - name: Build Frontend
+      run: npm run build --workspace=apps/frontend

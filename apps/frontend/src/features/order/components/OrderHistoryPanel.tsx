@@ -5,6 +5,8 @@ import { useTableStore } from '@/stores/tableStore';
 import { useOrdersByTable } from '@/hooks/queries/useOrders';
 import { OrderHistoryCard } from './OrderHistoryCard';
 import { Spinner } from '@/components/ui/Spinner';
+import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 
 /**
  * OrderHistoryPanel 컴포넌트
@@ -16,12 +18,45 @@ import { Spinner } from '@/components/ui/Spinner';
 export function OrderHistoryPanel() {
   const { isOrderHistoryOpen, toggleOrderHistory } = useUIStore();
   const { tableNumber } = useTableStore();
+  const [isResetting, setIsResetting] = useState(false);
+  const queryClient = useQueryClient();
 
   // 테이블별 주문 내역 조회
   const { data: orders, isLoading } = useOrdersByTable(tableNumber ?? undefined);
 
   // 전체 총액 계산
   const totalAmount = orders?.reduce((sum, order) => sum + order.totalAmount, 0) || 0;
+
+  // 주문내역 초기화 (테스트용)
+  const handleReset = async () => {
+    if (!confirm('주문내역을 초기화하시겠습니까?')) {
+      return;
+    }
+
+    setIsResetting(true);
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+      const storeId = 'store-1'; // 실제로는 props나 store에서 가져와야 함
+      const response = await fetch(
+        `${API_URL}/stores/${storeId}/tables/${tableNumber}/reset`,
+        { method: 'POST' }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to reset');
+      }
+
+      // React Query 캐시 무효화하여 주문내역 다시 불러오기
+      await queryClient.invalidateQueries({ queryKey: ['orders', 'table', tableNumber] });
+
+      alert('주문내역이 초기화되었습니다.');
+    } catch (error) {
+      alert('초기화에 실패했습니다. 다시 시도해주세요.');
+      console.error('Reset error:', error);
+    } finally {
+      setIsResetting(false);
+    }
+  };
 
   return (
     <>
@@ -34,14 +69,25 @@ export function OrderHistoryPanel() {
         {/* 헤더 */}
         <div className="flex items-center justify-between border-b p-4">
           <h2 className="text-lg font-bold">📋 주문내역</h2>
-          {/* 닫기 버튼 */}
-          <button
-            onClick={toggleOrderHistory}
-            className="text-2xl text-gray-400 transition-colors hover:text-gray-600"
-            aria-label="주문내역 닫기"
-          >
-            ×
-          </button>
+          <div className="flex items-center gap-2">
+            {/* 초기화 버튼 (테스트용) */}
+            <button
+              onClick={handleReset}
+              disabled={isResetting}
+              className="rounded-lg bg-red-500 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-50"
+              aria-label="주문내역 초기화"
+            >
+              {isResetting ? '초기화 중...' : '🔄 초기화'}
+            </button>
+            {/* 닫기 버튼 */}
+            <button
+              onClick={toggleOrderHistory}
+              className="text-2xl text-gray-400 transition-colors hover:text-gray-600"
+              aria-label="주문내역 닫기"
+            >
+              ×
+            </button>
+          </div>
         </div>
 
         {/* 주문 목록 (스크롤) */}
@@ -57,8 +103,8 @@ export function OrderHistoryPanel() {
             </div>
           ) : (
             <div className="space-y-4">
-              {orders.map((order) => (
-                <OrderHistoryCard key={order.id} order={order} />
+              {orders.map((order, index) => (
+                <OrderHistoryCard key={`${order.id}-${index}`} order={order} />
               ))}
             </div>
           )}

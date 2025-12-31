@@ -29,6 +29,13 @@ enum OrderStatus {
   CANCELLED    // 취소
 }
 
+/// 세션 상태
+enum SessionStatus {
+  ACTIVE       // 활성 (손님 있음)
+  COMPLETED    // 완료 (계산 완료)
+  CANCELLED    // 취소
+}
+
 /// 테이블 상태
 enum TableStatus {
   AVAILABLE  // 사용 가능
@@ -91,6 +98,7 @@ model Store {
   menuTags        MenuTag[]
   orders          Order[]
   tables          Table[]
+  tableSessions   TableSession[]
   staffCalls      StaffCall[]
   
   /// 복합 unique key (같은 업종에서 같은 지점명 불가)
@@ -107,29 +115,69 @@ model Store {
 model User {
   /// Supabase Auth의 UUID와 동일해야 함
   id              String   @id
-  
+
   /// 이메일
   email           String   @unique
-  
+
   /// 이름
   name            String?
-  
+
   /// 전화번호
   phoneNumber     String?
-  
+
   /// 역할 (ADMIN: 전체 관리자, OWNER: 점주, USER: 일반)
   role            UserRole @default(OWNER)
-  
+
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
   stores          Store[]
+  errorLogs       ErrorLog[]
 }
 
 enum UserRole {
   ADMIN
   OWNER
   USER
+}
+
+/// 손님 정보 (비회원 포함)
+model Guest {
+  id              String         @id @default(uuid())
+
+  /// 전화번호 (적립/할인 시 입력, 고유 식별자)
+  phoneNumber     String?        @unique
+
+  /// 이름 (선택)
+  name            String?
+
+  /// 이메일 (선택)
+  email           String?
+
+  /// 생일 (선택 - 마케팅용)
+  birthday        DateTime?
+
+  /// 방문 횟수
+  visitCount      Int            @default(0)
+
+  /// 누적 결제 금액
+  totalSpent      Int            @default(0)
+
+  /// 마지막 방문일
+  lastVisitedAt   DateTime?
+
+  /// 메모 (단골 손님 특이사항 등)
+  note            String?
+
+  /// 세션 이력
+  sessions        TableSession[]
+
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([phoneNumber])
+  @@index([visitCount])
+  @@index([totalSpent])
 }
 
 /// 메뉴 카테고리
@@ -275,15 +323,64 @@ model MenuTagRelation {
   @@index([tagId])
 }
 
+/// 테이블 세션 (손님이 앉아서 나갈 때까지의 단위)
+model TableSession {
+  id            String        @id @default(uuid())
+  storeId       String
+  store         Store         @relation(fields: [storeId], references: [id])
+
+  /// 테이블 번호
+  tableNumber   Int
+
+  /// 손님 정보 (선택 - 적립 고객인 경우)
+  guestId       String?
+  guest         Guest?        @relation(fields: [guestId], references: [id])
+
+  /// 손님 수 (필수)
+  guestCount    Int
+
+  /// 세션 번호 (예: SES-20241231-001)
+  sessionNumber String        @unique
+
+  /// 세션 상태
+  status        SessionStatus @default(ACTIVE)
+
+  /// 총 주문 금액 (누적)
+  totalAmount   Int           @default(0)
+
+  /// 세션 시작 시간
+  startedAt     DateTime      @default(now())
+
+  /// 세션 종료 시간 (계산 완료)
+  endedAt       DateTime?
+
+  /// 특이사항
+  note          String?
+
+  orders        Order[]
+
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([storeId, tableNumber, status])
+  @@index([storeId, status])
+  @@index([guestId])
+  @@index([sessionNumber])
+}
+
 /// 주문 정보
 model Order {
   id            String      @id @default(uuid())
   storeId       String
   store         Store       @relation(fields: [storeId], references: [id])
-  
+
+  /// 세션 ID (어떤 손님의 주문인지)
+  sessionId     String
+  session       TableSession @relation(fields: [sessionId], references: [id])
+
   /// 주문 번호 (예: ORD-20241229-001)
   orderNumber   String      @unique
-  /// 테이블 번호
+  /// 테이블 번호 (세션에서 가져옴, 중복 저장)
   tableNumber   Int
   /// 주문 상태
   status        OrderStatus @default(PENDING)
@@ -291,15 +388,16 @@ model Order {
   totalAmount   Int
   /// 특이사항/요청사항
   note          String?
-  
+
   /// OKPOS 주문 ID (연동 후 저장)
   okposOrderId  String?
-  
+
   items         OrderItem[]
-  
+
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
-  
+
+  @@index([sessionId])
   @@index([storeId, status])
   @@index([storeId, tableNumber])
   @@index([orderNumber])
@@ -369,7 +467,7 @@ model StaffCall {
   id          String     @id @default(uuid())
   storeId     String
   store       Store      @relation(fields: [storeId], references: [id])
-  
+
   /// 테이블 번호
   tableNumber Int
   /// 호출 유형 (물, 수저, 계산 등)
@@ -378,10 +476,66 @@ model StaffCall {
   status      CallStatus @default(PENDING)
   /// 처리 완료 시간
   completedAt DateTime?
-  
+
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
-  
+
   @@index([storeId, status])
   @@index([storeId, tableNumber])
+}
+
+/// 에러 심각도
+enum ErrorSeverity {
+  INFO
+  WARNING
+  ERROR
+  CRITICAL
+}
+
+/// 에러 소스 (Frontend/Backend)
+enum ErrorSource {
+  FRONTEND
+  BACKEND
+}
+
+/// 에러 로그 (Frontend + Backend 통합)
+model ErrorLog {
+  id          String        @id @default(uuid())
+
+  /// 에러 코드 (예: NETWORK_ERROR, AUTH_FAILED)
+  errorCode   String
+  /// 에러 메시지
+  message     String
+  /// 심각도
+  severity    ErrorSeverity
+  /// 에러 발생 소스
+  source      ErrorSource
+
+  /// 스택 트레이스 (있으면)
+  stackTrace  String?       @db.Text
+  /// 발생 URL (Frontend만)
+  url         String?
+  /// User Agent (Frontend만)
+  userAgent   String?
+
+  /// 사용자 정보 (로그인 상태일 때)
+  userId      String?
+  user        User?         @relation(fields: [userId], references: [id])
+
+  /// 매장 정보 (컨텍스트)
+  storeId     String?
+
+  /// 테이블 번호 (컨텍스트)
+  tableNumber Int?
+
+  /// 추가 메타데이터 (JSON)
+  metadata    Json?
+
+  createdAt   DateTime      @default(now())
+
+  @@index([createdAt])
+  @@index([severity])
+  @@index([source])
+  @@index([errorCode])
+  @@index([storeId])
 }

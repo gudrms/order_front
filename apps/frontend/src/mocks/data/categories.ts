@@ -1,8 +1,7 @@
-import type { MenuCategory } from '@/types';
+import type { MenuCategory } from '@order/shared';
 
 /**
  * Mock 카테고리 데이터
- * UUID 형식: cat-{number}-{name}
  */
 export const mockCategories: MenuCategory[] = [
   {
@@ -10,6 +9,7 @@ export const mockCategories: MenuCategory[] = [
     name: '치킨',
     description: '바삭하고 맛있는 치킨 메뉴',
     displayOrder: 1,
+    storeId: 'store-1',
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z',
   },
@@ -18,6 +18,7 @@ export const mockCategories: MenuCategory[] = [
     name: '피자',
     description: '다양한 토핑의 수제 피자',
     displayOrder: 2,
+    storeId: 'store-1',
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z',
   },
@@ -26,6 +27,7 @@ export const mockCategories: MenuCategory[] = [
     name: '파스타',
     description: '정통 이탈리안 파스타',
     displayOrder: 3,
+    storeId: 'store-1',
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z',
   },
@@ -34,6 +36,7 @@ export const mockCategories: MenuCategory[] = [
     name: '음료',
     description: '시원한 음료와 주류',
     displayOrder: 4,
+    storeId: 'store-1',
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z',
   },
@@ -42,6 +45,7 @@ export const mockCategories: MenuCategory[] = [
     name: '디저트',
     description: '달콤한 디저트 메뉴',
     displayOrder: 5,
+    storeId: 'store-1',
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z',
   },
