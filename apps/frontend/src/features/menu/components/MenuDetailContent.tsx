@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { useMenuDetail } from '@/hooks/queries/useMenus';
 import { useCartStore, useUIStore } from '@/stores';
-import type { CartSelectedOption } from '@/types';
+import type { CartSelectedOption } from '@order/shared';
 
 interface MenuDetailContentProps {
   menuId: string; // UUID
@@ -18,6 +18,7 @@ export function MenuDetailContent({ menuId }: MenuDetailContentProps) {
   const { data: menu, isLoading } = useMenuDetail(menuId);
   const addItem = useCartStore((state) => state.addItem);
   const closeMenuDetail = useUIStore((state) => state.closeMenuDetail);
+  const { openCart, closeOrderHistory } = useUIStore();
 
   const [quantity, setQuantity] = useState(1);
   const [selectedOptions, setSelectedOptions] = useState<CartSelectedOption[]>(
@@ -67,6 +68,10 @@ export function MenuDetailContent({ menuId }: MenuDetailContentProps) {
       options: selectedOptions.length > 0 ? selectedOptions : undefined,
       imageUrl: menu.imageUrl,
     });
+
+    // 주문내역 닫고 장바구니 열기
+    closeOrderHistory();
+    openCart();
 
     // 메뉴 상세 모달 닫기
     closeMenuDetail();

@@ -2,7 +2,7 @@
  * 직원 호출 관련 API 엔드포인트
  */
 
-import type { Call, CreateCallRequest } from '@/types';
+import type { Call, CreateCallRequest } from '@order/shared';
 import { apiClient } from '../client';
 
 /**

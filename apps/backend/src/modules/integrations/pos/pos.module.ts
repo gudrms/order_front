@@ -1,8 +1,16 @@
 import { Module } from '@nestjs/common';
-import { PosService } from './pos.service';
+import { MockPosService } from './pos.service';
+import { ResilientPosService } from './pos.resilience';
 
 @Module({
-    providers: [PosService],
-    exports: [PosService],
+    providers: [
+        MockPosService,
+        {
+            provide: 'POS_PROVIDER',
+            useExisting: MockPosService,
+        },
+        ResilientPosService,
+    ],
+    exports: [ResilientPosService],
 })
 export class PosModule { }

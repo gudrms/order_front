@@ -1,0 +1,20 @@
+export const mockStore = {
+    id: 'store-1',
+    name: '타코몰리 김포점',
+    storeType: 'tacomolly',
+    branchId: 'gimpo',
+    branchName: '김포점',
+    type: 'RESTAURANT',
+    description: '정통 멕시칸 레스토랑',
+    address: '경기도 김포시 김포대로 123',
+    phoneNumber: '031-123-4567',
+    businessHours: {
+        open: '11:00',
+        close: '22:00',
+    },
+    isOpen: true,
+    isActive: true,
+    tableCount: 20,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+};

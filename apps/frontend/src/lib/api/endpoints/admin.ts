@@ -2,7 +2,7 @@
  * 관리자 관련 API 엔드포인트
  */
 
-import type { Order, OrderStatus } from '@/types';
+import type { Order, OrderStatus } from '@order/shared';
 import { apiClient } from '../client';
 
 /**

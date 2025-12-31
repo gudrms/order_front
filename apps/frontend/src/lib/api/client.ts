@@ -3,7 +3,7 @@
  * Fetch API 기반 HTTP 클라이언트
  */
 
-import type { ApiError, ApiResponse } from '@/types';
+import type { ApiError, ApiResponse } from '@order/shared';
 
 /**
  * API 기본 URL
@@ -99,7 +99,7 @@ async function handleResponse<T>(response: Response): Promise<T> {
 
   // 성공 응답에서 data 추출
   if (data && typeof data === 'object' && 'data' in data) {
-    return (data as ApiResponse<T>).data;
+    return (data as ApiResponse<T>).data!; // Non-null assertion
   }
 
   return data as T;

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { CartSelectedOption } from '@/types';
+import type { CartSelectedOption } from '@order/shared';
 
 /**
  * 장바구니 아이템 타입

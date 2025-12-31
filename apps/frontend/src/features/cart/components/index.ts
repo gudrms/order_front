@@ -2,6 +2,6 @@
  * Cart Components
  */
 
-export { CartItemCard } from './CartItemCard';
-export { CartSummary } from './CartSummary';
+export { CartItemCardContainer as CartItemCard } from './CartItemCardContainer';
+export { CartSummaryContainer as CartSummary } from './CartSummaryContainer';
 export { CartPanel } from './CartPanel';

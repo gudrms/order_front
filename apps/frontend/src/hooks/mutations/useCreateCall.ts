@@ -4,7 +4,7 @@
 
 import { useMutation } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import type { Call, CreateCallRequest } from '@/types';
+import type { Call, CreateCallRequest } from '@order/shared';
 
 /**
  * 직원 호출 생성 훅

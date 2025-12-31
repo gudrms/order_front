@@ -2,7 +2,7 @@
  * 메뉴 관련 API 엔드포인트
  */
 
-import type { Menu, MenuCategory, MenuDetail } from '@/types';
+import type { Menu, MenuCategory, MenuDetail } from '@order/shared';
 import { apiClient } from '../client';
 
 /**

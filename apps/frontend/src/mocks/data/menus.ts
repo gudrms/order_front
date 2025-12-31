@@ -1,4 +1,4 @@
-import type { Menu, MenuDetail, MenuOption } from '@/types';
+import type { Menu, MenuDetail, MenuOption } from '@order/shared';
 
 /**
  * Mock 메뉴 옵션

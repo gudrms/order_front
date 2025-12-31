@@ -1,7 +1,7 @@
 'use client';
 
 import { forwardRef } from 'react';
-import type { MenuCategory, Menu } from '@/types';
+import type { MenuCategory, Menu } from '@order/shared';
 import { MenuCard } from './MenuCard';
 
 interface CategorySectionProps {

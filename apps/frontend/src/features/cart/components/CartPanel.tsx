@@ -1,12 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
-import { createOrder } from '@/lib/api/endpoints/order';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCartStore } from '@/stores/cartStore';
 import { useTableStore } from '@/stores/tableStore';
 import { useUIStore } from '@/stores/uiStore';
-import { CartItemCard } from './CartItemCard';
+import { CartItemCardContainer } from './CartItemCardContainer';
 import { OrderSuccessModal } from '@/features/order';
 
 /**
@@ -27,38 +26,51 @@ export function CartPanel() {
     clearCart,
   } = useCartStore();
   const { tableNumber } = useTableStore();
+  const queryClient = useQueryClient();
 
   const [successModal, setSuccessModal] = useState({
     isOpen: false,
     orderNumber: '',
   });
 
-  // 주문 생성 mutation
+  // 주문 생성 mutation (MSW API 사용)
   const orderMutation = useMutation({
-    mutationFn: () =>
-      createOrder(
-        {
+    mutationFn: async () => {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+      const storeId = 'store-1';
+
+      const response = await fetch(`${API_URL}/stores/${storeId}/orders/first`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           tableNumber: tableNumber || 0,
           items: items.map((item) => ({
             menuId: item.menuId,
-            menuName: item.menuName,
             quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            totalPrice: item.totalPrice,
+            price: item.unitPrice,
             options: item.options,
           })),
-          totalAmount: totalPrice,
-        },
-        'gimpo' // branchId - TODO: 동적으로 변경
-      ),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create order');
+      }
+
+      const data = await response.json();
+      return data.data; // { session, order }
+    },
     onSuccess: (data) => {
       // 장바구니 비우기
       clearCart();
 
+      // React Query 캐시 무효화 (주문내역 갱신)
+      queryClient.invalidateQueries({ queryKey: ['orders', 'table', tableNumber] });
+
       // 성공 모달 표시
       setSuccessModal({
         isOpen: true,
-        orderNumber: data.orderNumber,
+        orderNumber: data.order.orderNumber,
       });
     },
     onError: () => {
@@ -109,7 +121,9 @@ export function CartPanel() {
               장바구니가 비어있습니다
             </div>
           ) : (
-            items.map((item) => <CartItemCard key={item.id} item={item} />)
+            items.map((item) => (
+              <CartItemCardContainer key={item.id} item={item} />
+            ))
           )}
         </div>
 

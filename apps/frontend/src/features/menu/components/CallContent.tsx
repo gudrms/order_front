@@ -2,7 +2,7 @@
 
 import { useCreateCall } from '@/hooks/mutations/useCreateCall';
 import { useUIStore } from '@/stores';
-import type { CallType } from '@/types';
+import type { CallType } from '@order/shared';
 
 /**
  * CallContent 컴포넌트
