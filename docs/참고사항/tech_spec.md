@@ -2,7 +2,6 @@
 
 > **Stack**: Next.js 14 + NestJS 10 + Prisma 5 + Supabase  
 > **Deployment**: Vercel (Serverless)  
-> **Last Updated**: 2024-12-28
 
 ---
 
