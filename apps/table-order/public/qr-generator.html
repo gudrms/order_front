@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>테이블 QR 코드 생성기</title>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+      background: #f5f5f5;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 8px;
+      padding: 30px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    h1 {
+      font-size: 28px;
+      margin-bottom: 10px;
+      color: #333;
+    }
+
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: #333;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 16px;
+    }
+
+    input:focus, select:focus {
+      outline: none;
+      border-color: #007bff;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 14px 28px;
+      border-radius: 6px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 10px;
+      margin-right: 10px;
+    }
+
+    button:hover {
+      background: #0056b3;
+    }
+
+    button.secondary {
+      background: #6c757d;
+    }
+
+    button.secondary:hover {
+      background: #545b62;
+    }
+
+    .qr-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 20px;
+      margin-top: 30px;
+    }
+
+    .qr-item {
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+      background: white;
+      page-break-inside: avoid;
+    }
+
+    .qr-item h3 {
+      margin-bottom: 15px;
+      font-size: 24px;
+      color: #333;
+    }
+
+    .qr-item canvas {
+      margin: 0 auto;
+      display: block;
+    }
+
+    .qr-item p {
+      margin-top: 15px;
+      color: #666;
+      font-size: 12px;
+      word-break: break-all;
+    }
+
+    @media print {
+      body {
+        background: white;
+        padding: 0;
+      }
+
+      .container {
+        box-shadow: none;
+        padding: 0;
+      }
+
+      .form-section, button {
+        display: none;
+      }
+
+      .qr-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .qr-item {
+        border: 2px dashed #333;
+        margin-bottom: 20px;
+      }
+    }
+
+    .preview-info {
+      background: #e7f3ff;
+      border: 1px solid #b3d9ff;
+      border-radius: 6px;
+      padding: 15px;
+      margin-top: 20px;
+      display: none;
+    }
+
+    .preview-info.show {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎯 테이블 QR 코드 생성기</h1>
+    <p class="subtitle">매장의 테이블별 주문용 QR 코드를 생성하고 인쇄하세요</p>
+
+    <div class="form-section">
+      <div class="form-group">
+        <label for="baseUrl">도메인 주소</label>
+        <input
+          type="text"
+          id="baseUrl"
+          placeholder="https://yourdomain.com"
+          value="http://localhost:3000"
+        />
+      </div>
+
+      <div class="row">
+        <div class="form-group">
+          <label for="storeType">매장 타입</label>
+          <input
+            type="text"
+            id="storeType"
+            placeholder="tacomolly"
+            value="tacomolly"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="branchId">지점 ID</label>
+          <input
+            type="text"
+            id="branchId"
+            placeholder="gimpo"
+            value="gimpo"
+          />
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="form-group">
+          <label for="startTable">시작 테이블 번호</label>
+          <input
+            type="number"
+            id="startTable"
+            min="1"
+            value="1"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="endTable">끝 테이블 번호</label>
+          <input
+            type="number"
+            id="endTable"
+            min="1"
+            value="10"
+          />
+        </div>
+      </div>
+
+      <div>
+        <button onclick="generateQRCodes()">QR 코드 생성</button>
+        <button class="secondary" onclick="window.print()">인쇄하기</button>
+      </div>
+
+      <div id="previewInfo" class="preview-info">
+        <strong>생성된 QR 코드 미리보기</strong><br>
+        고객이 QR 코드를 스캔하면 자동으로 해당 테이블 번호가 설정되어 주문할 수 있습니다.
+      </div>
+    </div>
+
+    <div id="qrGrid" class="qr-grid"></div>
+  </div>
+
+  <script>
+    function generateQRCodes() {
+      const baseUrl = document.getElementById('baseUrl').value.trim();
+      const storeType = document.getElementById('storeType').value.trim();
+      const branchId = document.getElementById('branchId').value.trim();
+      const startTable = parseInt(document.getElementById('startTable').value);
+      const endTable = parseInt(document.getElementById('endTable').value);
+
+      if (!baseUrl || !storeType || !branchId) {
+        alert('모든 필드를 입력해주세요.');
+        return;
+      }
+
+      if (startTable > endTable || startTable < 1) {
+        alert('테이블 번호를 올바르게 입력해주세요.');
+        return;
+      }
+
+      const qrGrid = document.getElementById('qrGrid');
+      qrGrid.innerHTML = '';
+
+      for (let tableNum = startTable; tableNum <= endTable; tableNum++) {
+        const url = `${baseUrl}/${storeType}/${branchId}/table/${tableNum}`;
+
+        const qrItem = document.createElement('div');
+        qrItem.className = 'qr-item';
+
+        const title = document.createElement('h3');
+        title.textContent = `테이블 ${tableNum}`;
+
+        const canvas = document.createElement('canvas');
+        canvas.id = `qr-${tableNum}`;
+
+        const urlText = document.createElement('p');
+        urlText.textContent = url;
+
+        qrItem.appendChild(title);
+        qrItem.appendChild(canvas);
+        qrItem.appendChild(urlText);
+
+        qrGrid.appendChild(qrItem);
+
+        // QR 코드 생성
+        QRCode.toCanvas(canvas, url, {
+          width: 200,
+          margin: 2,
+          color: {
+            dark: '#000000',
+            light: '#FFFFFF'
+          }
+        }, function (error) {
+          if (error) console.error(error);
+        });
+      }
+
+      // 미리보기 정보 표시
+      document.getElementById('previewInfo').classList.add('show');
+    }
+
+    // 페이지 로드 시 자동 생성 (개발 편의)
+    window.addEventListener('load', function() {
+      generateQRCodes();
+    });
+  </script>
+</body>
+</html>
