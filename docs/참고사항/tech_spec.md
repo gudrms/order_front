@@ -241,7 +241,7 @@
 ### 6.1 Required Tools
 
 - Node.js v20.x (LTS)
-- npm or pnpm (최신 버전)
+- pnpm (v9.x 권장 - Vercel 호환성)
 - Git (버전 관리)
 - VSCode (권장 IDE)
 - Prisma Extension (DB 스키마 관리)
@@ -273,7 +273,11 @@ root/
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
+
+NEXT_PUBLIC_TOSS_CLIENT_KEY=
 NEXT_PUBLIC_API_URL=
+NEXT_PUBLIC_STORE_ID=
+NEXT_PUBLIC_USE_MOCK=
 ```
 
 **Backend (.env)**:

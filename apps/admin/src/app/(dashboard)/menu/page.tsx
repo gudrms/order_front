@@ -5,8 +5,7 @@ import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import { Plus, Edit, Trash2 } from 'lucide-react';
-import { Menu } from '@order/shared/types'; // 공통 타입 사용
-import { formatCurrency } from '@order/shared/utils';
+import { Menu, formatCurrency } from '@order/shared'; // 공통 모듈 사용
 
 export default function MenuListPage() {
   const storeId = 'store-1'; // 임시

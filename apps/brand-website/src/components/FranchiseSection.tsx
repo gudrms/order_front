@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { TrendingUp, Users, Store, DollarSign } from 'lucide-react';
 
 export default function FranchiseSection() {

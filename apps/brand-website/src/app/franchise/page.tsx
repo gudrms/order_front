@@ -1,6 +1,6 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { CheckCircle2, TrendingUp, Users, DollarSign, ArrowRight } from 'lucide-react';
+import { CheckCircle2, TrendingUp, Users, DollarSign, ArrowRight, Phone } from 'lucide-react';
 
 export default function FranchisePage() {
     return (

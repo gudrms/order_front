@@ -63,7 +63,7 @@ Bearer Token을 사용하여 인증합니다.
 \`Authorization: Bearer <token>\`
 
 ### Base URL
-- Development: http://localhost:3001/api/v1
+- Development: http://localhost:4000/api/v1
 - Production: https://order-front-backend.vercel.app/api/v1
         `)
         .setVersion('1.0.0')
@@ -73,7 +73,7 @@ Bearer Token을 사용하여 인증합니다.
             'support@ordersystem.com'
         )
         .setLicense('MIT', 'https://opensource.org/licenses/MIT')
-        .addServer('http://localhost:3001', 'Development Server')
+        .addServer('http://localhost:4000', 'Development Server')
         .addServer('https://order-front-backend.vercel.app', 'Production Server')
         .addBearerAuth(
             {
@@ -111,7 +111,7 @@ Bearer Token을 사용하여 인증합니다.
             process.env.FRONTEND_URL || 'https://order-front-frontend.vercel.app',
             // 추가 도메인이 있다면 여기에 추가
         ]
-        : ['http://localhost:3000', 'http://localhost:3001']; // 개발 환경
+        : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003']; // 개발 환경
 
     app.enableCors({
         origin: (origin, callback) => {
@@ -152,7 +152,7 @@ export default async (req: any, res: any) => {
 // 로컬 개발 환경
 if (!process.env.VERCEL) {
     bootstrap().then((app) => {
-        const port = process.env.PORT || 3001;
+        const port = process.env.PORT || 4000;
         app.listen(port);
         console.log(`Application is running on: http://localhost:${port}`);
     });

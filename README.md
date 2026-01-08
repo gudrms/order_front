@@ -6,78 +6,90 @@
 
 ```
 apps/
-  ├── table-order/          # 테이블 주문 (태블릿 웹앱)
-  ├── delivery-customer/    # 배달 주문 (PWA → 향후 Capacitor 앱)
-  ├── brand-website/        # 브랜드 홈페이지 (마케팅)
-  ├── admin/                # 관리자 앱 (주방 화면, 대시보드)
-  └── backend/              # 통합 백엔드 (NestJS)
-
+  ├── table-order/          # 📱 테이블 주문 (태블릿 웹앱)
+  │   ├── src/app           # Next.js App Router
+  │   └── src/features      # 기능별 모듈 (Cart, Menu)
+  │
+  ├── delivery-customer/    # 🛵 배달 주문 (PWA + Capacitor)
+  │   ├── src/app           # Next.js App Router
+  │   ├── android/          # Android Native Project
+  │   └── ios/              # iOS Native Project
+  │
+  ├── brand-website/        # 🎨 브랜드 홈페이지 (마케팅)
+  │   └── src/app           # Next.js SSG
+  │
+  ├── admin/                # 👨‍🍳 관리자 앱 (주방 화면, 대시보드)
+  │   └── src/app           # Next.js Dashboard
+  │
+  └── backend/              # ⚙️ 통합 백엔드 (NestJS)
+      ├── src/modules       # 도메인 모듈 (Orders, Menus)
+      └── prisma/           # DB 스키마
+ 
 packages/
-  ├── shared/               # 공통 타입, 유틸, 상수
-  ├── ui/                   # 공통 UI 컴포넌트
-  ├── order-core/           # 주문 관련 프론트엔드 비즈니스 로직
-  └── config/               # 공통 설정 (ESLint, TSConfig)
+  ├── shared/               # 📦 공통 로직 (Type-safe)
+  │   ├── src/types         # 공통 타입 (DTO)
+  │   └── src/api           # API 클라이언트
+  │
+  ├── ui/                   # 🎨 공통 UI (Design System)
+  │   └── src/components    # Shadcn UI + Tailwind
+  │
+  ├── order-core/           # 🧠 주문 핵심 로직
+  │   └── src/hooks         # 장바구니, 주문 상태 관리
+# Table Order Monorepo
+
+테이블 오더 시스템 모노레포 (pnpm + Turborepo)
+
+## 📁 프로젝트 구조
+
+```
+apps/
+  ├── table-order/          # 📱 테이블 주문 (태블릿 웹앱)
+  │   ├── src/app           # Next.js App Router
+  │   └── src/features      # 기능별 모듈 (Cart, Menu)
+  │
+  ├── delivery-customer/    # 🛵 배달 주문 (PWA + Capacitor)
+  │   ├── src/app           # Next.js App Router
+  │   ├── android/          # Android Native Project
+  │   └── ios/              # iOS Native Project
+  │
+  ├── brand-website/        # 🎨 브랜드 홈페이지 (마케팅)
+  │   └── src/app           # Next.js SSG
+  │
+  ├── admin/                # 👨‍🍳 관리자 앱 (주방 화면, 대시보드)
+  │   └── src/app           # Next.js Dashboard
+  │
+  └── backend/              # ⚙️ 통합 백엔드 (NestJS)
+      ├── src/modules       # 도메인 모듈 (Orders, Menus)
+      └── prisma/           # DB 스키마
+ 
+packages/
+  ├── shared/               # 📦 공통 로직 (Type-safe)
+  │   ├── src/types         # 공통 타입 (DTO)
+  │   └── src/api           # API 클라이언트
+  │
+  ├── ui/                   # 🎨 공통 UI (Design System)
+  │   └── src/components    # Shadcn UI + Tailwind
+  │
+  ├── order-core/           # 🧠 주문 핵심 로직
+  │   └── src/hooks         # 장바구니, 주문 상태 관리
+  │
+  └── config/               # 🔧 공통 설정
+      └── eslint, tsconfig  # 개발 환경 설정
 ```
 
 ## 🚀 시작하기
 
-### 필수 요구사항
+자세한 실행 및 빌드 방법은 **[실행 가이드 (run.md)](./run.md)**를 참고하세요.
 
-- Node.js 20.x
-- **pnpm 10.x** (필수!)
-
-### pnpm 설치
+### 퀵 스타트
 
 ```bash
-# 방법 1: npm으로 설치
-npm install -g pnpm
-
-# 방법 2: Corepack 사용 (Node.js 16.13+)
-corepack enable
-corepack prepare pnpm@latest --activate
-```
-
-### 의존성 설치
-
-```bash
-# ⚠️ npm이 아닌 pnpm 사용!
+# 1. 의존성 설치 (pnpm 필수)
 pnpm install
-```
 
-### 개발 서버 실행
-
-```bash
-# 모든 앱 동시 실행
+# 2. 개발 서버 실행
 pnpm dev
-
-# 특정 앱만 실행
-pnpm --filter table-order dev         # localhost:3000
-pnpm --filter delivery-customer dev   # localhost:3001
-pnpm --filter brand-website dev       # localhost:3002
-pnpm --filter admin dev               # localhost:3003
-pnpm --filter backend dev             # localhost:4000
 ```
-
-### 빌드
-
-```bash
-# 모든 앱 빌드
-pnpm build
-
-# 특정 앱만 빌드
-pnpm --filter table-order build
-```
-
-### QR 코드 생성 (테이블 주문용)
-
-```bash
-# 개발 서버 실행 후
-# 브라우저에서 접속: http://localhost:3000/qr-generator.html
-
-# 매장 정보 입력 후 QR 코드 생성 및 인쇄
-```
-
-자세한 내용: [QR 코드 주문 가이드](./docs/QR_ORDERING.md)
 
 ## 📦 패키지 설명
 
@@ -163,26 +175,6 @@ pnpm ios
 
 자세한 내용: [delivery-customer README](./apps/delivery-customer/README.md)
 
-## 🔧 유용한 명령어
-
-```bash
-# 의존성 추가
-pnpm --filter table-order add lodash
-pnpm --filter @order/ui add clsx
-
-# 타입 체크
-pnpm type-check
-
-# 린트
-pnpm lint
-
-# 테스트
-pnpm test
-
-# 클린
-pnpm clean
-```
-
 ## 📚 문서
 
 - [리팩토링 가이드](./REFACTORING.md)
@@ -223,17 +215,7 @@ pnpm clean
 
 ## ⚠️ 중요: pnpm 필수!
 
-이 프로젝트는 **pnpm 워크스페이스**를 사용합니다.
-
-```bash
-# ❌ 작동 안 함
-npm install
-
-# ✅ 올바른 방법
-pnpm install
-```
-
-**이유**: `workspace:*` 프로토콜은 pnpm 전용입니다.
+이 프로젝트는 **pnpm 워크스페이스**를 사용합니다. 자세한 내용은 [실행 가이드](./run.md)를 확인하세요.
 
 ## 🚀 배포 전략
 
@@ -274,27 +256,6 @@ Private
 
 ## 🆘 문제 해결
 
-### pnpm이 없다는 에러
-```bash
-npm install -g pnpm
-```
-
-### workspace:* 에러
-```bash
-# npm 대신 pnpm 사용
-pnpm install
-```
-
-### 모듈을 찾을 수 없음 (@order/*)
-```bash
-# 루트에서 재설치
-pnpm install
-```
-
-### Capacitor 빌드 실패
-```bash
-cd apps/delivery-customer
-pnpm cap:sync
-```
+[실행 가이드](./run.md#🆘-문제-해결-troubleshooting)를 참고하세요.
 
 더 많은 정보: [REFACTORING.md](./REFACTORING.md)

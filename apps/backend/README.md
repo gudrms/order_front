@@ -60,10 +60,11 @@ pnpm prisma db push
 
 # 개발 서버
 pnpm dev
-# → http://localhost:3001
+# → http://localhost:4000
 
 # Swagger 문서
-# → http://localhost:3001/api/docs
+#        .addServer('http://localhost:4000', 'Development Server') 문서
+# → http://localhost:4000/api/docs
 
 # 빌드
 pnpm build
