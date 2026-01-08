@@ -67,6 +67,7 @@
 - [x] 단위 테스트 (Unit Test) - Vitest 기반 24개 항목 통과
 - [x] **공통 라이브러리 검증**
     - [x] `@order/shared` 패키지 빌드 에러 및 인코딩 복구 완료
+    - [x] `OrderStatus` 모든 상태에 대한 라벨 및 색상 정의 완료 (PAID, PREPARING, READY, DELIVERING 추가) ✅
 - **문제**: 일정 시간 요청이 없으면 서버가 sleep 모드로 전환
 - **영향**: 다음 첫 요청 시 3~5초 지연 발생 → 고객 경험 저하
 - **현재 대응**: Keep-Alive 미구현 (LocalStorage 기반 Leader Election은 서로 다른 기기 간 조율 불가)

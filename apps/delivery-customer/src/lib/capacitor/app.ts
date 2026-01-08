@@ -21,11 +21,13 @@ export function addAppStateListener(
   }
 
   // 네이티브 앱
-  const listener = App.addListener('appStateChange', ({ isActive }) => {
+  const listenerPromise = App.addListener('appStateChange', ({ isActive }) => {
     callback(isActive);
   });
 
-  return () => listener.remove();
+  return () => {
+    listenerPromise.then(handle => handle.remove());
+  };
 }
 
 /**
@@ -34,11 +36,13 @@ export function addAppStateListener(
 export function addBackButtonListener(callback: () => void) {
   if (!isNative) return () => {};
 
-  const listener = App.addListener('backButton', () => {
+  const listenerPromise = App.addListener('backButton', () => {
     callback();
   });
 
-  return () => listener.remove();
+  return () => {
+    listenerPromise.then(handle => handle.remove());
+  };
 }
 
 /**

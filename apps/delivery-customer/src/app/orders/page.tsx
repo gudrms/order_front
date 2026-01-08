@@ -7,8 +7,10 @@ import type { OrderStatus } from '@order/shared';
 
 const statusConfig: Record<OrderStatus, { label: string; icon: any; color: string }> = {
     PENDING: { label: '접수 대기', icon: Clock, color: 'text-gray-500' },
+    CONFIRMED: { label: '접수 완료', icon: CheckCircle, color: 'text-blue-500' },
     PAID: { label: '결제 완료', icon: CheckCircle, color: 'text-blue-500' },
-    PREPARING: { label: '조리 중', icon: Loader, color: 'text-orange-500' },
+    COOKING: { label: '조리 중', icon: Loader, color: 'text-orange-500' },
+    PREPARING: { label: '준비 중', icon: Loader, color: 'text-orange-500' },
     READY: { label: '준비 완료', icon: CheckCircle, color: 'text-green-500' },
     DELIVERING: { label: '배달 중', icon: Loader, color: 'text-purple-500' },
     COMPLETED: { label: '완료', icon: CheckCircle, color: 'text-green-600' },
@@ -96,7 +98,7 @@ export default function OrdersPage() {
                                                 {item.menuName} x {item.quantity}
                                             </span>
                                             <span className="font-medium">
-                                                {item.price.toLocaleString()}원
+                                                {item.unitPrice.toLocaleString()}원
                                             </span>
                                         </div>
                                     ))}
@@ -111,7 +113,7 @@ export default function OrdersPage() {
                                 <div className="border-t border-gray-100 mt-3 pt-3 flex justify-between items-center">
                                     <span className="font-bold">총 결제 금액</span>
                                     <span className="font-bold text-lg text-brand-yellow">
-                                        {order.totalAmount.toLocaleString()}원
+                                        {order.totalPrice.toLocaleString()}원
                                     </span>
                                 </div>
                             </div>

@@ -11,18 +11,18 @@
 ```
 Frontend (apps/delivery-customer):
   URL: http://localhost:3001
-  API: http://localhost:3000/api/v1
+  API: http://localhost:4000/api/v1
   DB: Supabase Dev
 
 Backend (apps/backend):
-  URL: http://localhost:3000
+  URL: http://localhost:4000
   DB: PostgreSQL (로컬) 또는 Supabase Dev
 ```
 
 **설정**:
 ```env
 # apps/delivery-customer/.env.local
-NEXT_PUBLIC_API_URL=http://localhost:3000/api/v1
+NEXT_PUBLIC_API_URL=http://localhost:4000/api/v1
 NEXT_PUBLIC_SUPABASE_URL=https://xxx-dev.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=dev-key
 NEXT_PUBLIC_USE_MOCK=true
@@ -339,7 +339,7 @@ NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 
 # API
-NEXT_PUBLIC_API_URL=http://localhost:3000/api/v1
+NEXT_PUBLIC_API_URL=http://localhost:4000/api/v1
 NEXT_PUBLIC_STORE_ID=store-1
 
 # 토스페이먼츠
@@ -369,7 +369,7 @@ const API_URL = 'https://api.yourdomain.com'; // 하드코딩
 
 ✅ 좋은 예:
 ```typescript
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 ```
 
 ---

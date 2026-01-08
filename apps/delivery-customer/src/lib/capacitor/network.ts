@@ -43,11 +43,13 @@ export function addNetworkListener(
   }
 
   // 네이티브 앱
-  const listener = Network.addListener('networkStatusChange', (status) => {
+  const listenerPromise = Network.addListener('networkStatusChange', (status) => {
     callback(status.connected);
   });
 
-  return () => listener.remove();
+  return () => {
+    listenerPromise.then(handle => handle.remove());
+  };
 }
 
 /**
