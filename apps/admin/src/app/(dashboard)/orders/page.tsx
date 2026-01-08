@@ -20,6 +20,7 @@ import {
   MoreVertical 
 } from 'lucide-react';
 
+import { useAuth } from '@/contexts/AuthContext';
 import { useRealtimeOrders } from '@/hooks/useRealtimeOrders';
 
 export default function OrdersPage() {

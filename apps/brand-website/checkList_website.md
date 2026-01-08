@@ -41,8 +41,17 @@
 - **Framework**: Next.js 16 (App Router)
 - **Styling**: Tailwind CSS 4
 - **Language**: TypeScript
-- **Deployment**: Vercel
+- **Deployment**: Vercel (완료)
 - **Maps**: Kakao Map API (예정)
+
+## 3.1 🌍 환경 변수 (Environment Variables)
+| 변수명 | 설명 | 비고 |
+| :--- | :--- | :--- |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase 프로젝트 URL | 필수 |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase Anon Key | 필수 |
+| `NEXT_PUBLIC_TOSS_CLIENT_KEY` | 토스페이먼츠 Client Key | 필수 |
+| `NEXT_PUBLIC_API_URL` | 백엔드 API URL | 필수 |
+| `NEXT_PUBLIC_STORE_ID` | 매장 ID | 선택 (기본: store-1) |
 
 ## 4. ✅ 개발 체크리스트
 
