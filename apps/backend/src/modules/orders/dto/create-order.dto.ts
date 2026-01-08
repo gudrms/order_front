@@ -60,6 +60,16 @@ export class CreateOrderDto {
     tableNumber: number;
 
     @ApiProperty({
+        description: 'Toss Place 주문 ID (SDK로 생성된 경우)',
+        example: 'TOSS-20240101-001',
+        required: false,
+        type: String,
+    })
+    @IsString()
+    @IsOptional()
+    tossOrderId?: string;
+
+    @ApiProperty({
         description: '주문 항목 목록',
         type: [CreateOrderItemDto],
         example: [

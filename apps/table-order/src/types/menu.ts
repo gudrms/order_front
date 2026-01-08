@@ -71,7 +71,7 @@ export interface MenuFormData {
   name: string;
   price: number;
   description: string;
-  categoryId: number;
+  categoryId: string;
   imageUrl?: string | null;
   soldOut?: boolean;
   displayOrder?: number;

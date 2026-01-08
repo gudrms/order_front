@@ -2,6 +2,7 @@
 
 브랜드 마케팅 홈페이지
 
+https://www.yupdduk.com/ 참고사이트
 ## 기술 스택
 
 - **Framework**: Next.js 16 (App Router)

@@ -4,11 +4,11 @@ import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
 import { useCartStore, useTableStore } from '@/stores';
-import { createOrder } from '@/lib/api/endpoints/order';
+import { api } from '@order/shared';
 import type {
   CreateOrderRequest,
   OrderItemInput,
-} from '@/lib/api/endpoints/order';
+} from '@order/shared/endpoints/order';
 
 /**
  * OrderConfirmModal Props

@@ -3,7 +3,7 @@
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '@/lib/api';
+import { api } from '@order/shared';
 import type {
   CreateOrderRequest,
   CreateOrderResponse,

@@ -3,7 +3,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import { api } from '@/lib/api';
+import { api } from '@order/shared';
 import type { Menu, MenuCategory, MenuDetail } from '@order/shared';
 import { mockCategories, mockMenus, mockMenuDetails } from '@/mocks';
 import { USE_MOCK, mockQuery } from '@/lib/mock-config';

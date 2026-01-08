@@ -22,3 +22,6 @@ export * from './call';
 
 // Error types
 export * from './error';
+
+// Payment types
+export * from './payment';

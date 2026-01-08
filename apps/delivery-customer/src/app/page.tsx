@@ -1,10 +1,21 @@
-export default function HomePage() {
+import HomeHeader from "@/components/HomeHeader";
+import Dashboard from "@/components/Dashboard";
+import ServiceButtons from "@/components/ServiceButtons";
+import QuickMenu from "@/components/QuickMenu";
+import BottomNav from "@/components/BottomNav";
+
+export default function Home() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-24">
-      <h1 className="text-4xl font-bold">배달 주문 앱</h1>
-      <p className="mt-4 text-gray-600">
-        Next.js PWA + Capacitor (준비 중)
-      </p>
+    <main className="min-h-screen bg-gray-50 pb-20">
+      <HomeHeader />
+
+      <div className="relative -mt-6 z-10">
+        <Dashboard />
+        <ServiceButtons />
+        <QuickMenu />
+      </div>
+
+      <BottomNav />
     </main>
   );
 }

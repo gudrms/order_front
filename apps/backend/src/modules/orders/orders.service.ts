@@ -115,6 +115,7 @@ export class OrdersService {
                     orderNumber: await this.generateOrderNumber(storeId),
                     status: 'PENDING',
                     totalAmount: totalPrice,
+                    tossOrderId: dto.tossOrderId, // SDK 연동 ID 저장
                     items: {
                         create: orderItemsData.map((item) => ({
                             menuId: item.menuId,
@@ -138,14 +139,6 @@ export class OrdersService {
 
         // 세션 총액 업데이트
         await this.sessionsService.updateSessionTotal(sessionId, order.totalAmount);
-
-        // 4. POS 전송 (Mock) - 트랜잭션 완료 후 실행
-        try {
-            await this.posService.sendOrder(order);
-        } catch (error) {
-            console.error('Failed to send order to POS:', error);
-            // POS 전송 실패가 주문 생성을 취소시키지는 않음
-        }
 
         return order;
     }
