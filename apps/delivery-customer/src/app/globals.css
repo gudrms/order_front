@@ -1,1 +1,24 @@
-@import 'tailwindcss';
+@import "tailwindcss";
+
+:root {
+    --background: #ffffff;
+    --foreground: #171717;
+}
+
+@theme {
+    --color-brand-yellow: #FFC107;
+    --color-brand-green: #008F39;
+    --color-brand-black: #1A1A1A;
+    --color-brand-gray: #F5F5F5;
+}
+
+body {
+    color: var(--foreground);
+    background: var(--background);
+    font-family: Arial, Helvetica, sans-serif;
+    max-width: 600px;
+    /* Mobile View Constraint */
+    margin: 0 auto;
+    min-height: 100vh;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+}

@@ -10,7 +10,7 @@
 | 구분         | 현재 (Java/Spring) | 변경 필요 (NestJS/Prisma)      | 우선순위 |
 | :----------- | :----------------- | :----------------------------- | :------- |
 | **ID 타입**  | `number`           | `string` (UUID)                | 🔴 높음  |
-| **API URL**  | `localhost:8080`   | `localhost:3000` (또는 Vercel) | 🔴 높음  |
+| **API URL**  | `localhost:8080`   | `localhost:4000` (또는 Vercel) | 🔴 높음  |
 | **Realtime** | WebSocket (STOMP)  | Supabase Realtime              | 🟡 중간  |
 | **환경변수** | WS_URL 등          | Supabase URL/Key 추가          | 🔴 높음  |
 | **API 응답** | Spring 표준 응답   | NestJS 표준 응답               | 🟢 낮음  |
@@ -229,7 +229,7 @@ export async function getMenuDetail(menuId: string): Promise<MenuDetail> {
 
 # ✅ 추가
 # NestJS Backend (Vercel Serverless 또는 로컬)
-NEXT_PUBLIC_API_URL=http://localhost:3000/api/v1
+NEXT_PUBLIC_API_URL=http://localhost:4000/api/v1
 
 # Supabase 설정
 NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
@@ -256,7 +256,7 @@ NODE_ENV=development
 # ============================================
 
 # NestJS Backend
-NEXT_PUBLIC_API_URL=http://localhost:3000/api/v1
+NEXT_PUBLIC_API_URL=http://localhost:4000/api/v1
 
 # Supabase
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
@@ -284,7 +284,7 @@ const API_BASE_URL =
 
 // ✅ 변경 후
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
+  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 ```
 
 ---
@@ -409,7 +409,7 @@ export const mockCategories: MenuCategory[] = [
 
 ```bash
 # .env.development 수정
-NEXT_PUBLIC_API_URL=http://localhost:3000/api/v1
+NEXT_PUBLIC_API_URL=http://localhost:4000/api/v1
 NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
 ```

@@ -3,8 +3,8 @@
  * 클라이언트 상태 관리
  */
 
-export { useCartStore } from './cartStore';
-export type { CartItem, AddCartItemInput } from './cartStore';
+export { useCartStore } from '@order/shared';
+export type { CartItem, AddCartItemInput } from '@order/shared';
 
 export { useUIStore } from './uiStore';
 export type { DetailPanelType } from './uiStore';

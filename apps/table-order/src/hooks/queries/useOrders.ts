@@ -3,7 +3,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import { api } from '@/lib/api';
+import { api } from '@order/shared';
 import type { Order } from '@/lib/api/endpoints/order';
 
 /**

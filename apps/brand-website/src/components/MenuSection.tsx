@@ -76,9 +76,12 @@ export default function MenuSection() {
                 </div>
 
                 <div className="text-center mt-12">
-                    <button className="inline-flex items-center justify-center px-8 py-3 border-2 border-brand-black text-brand-black font-bold rounded-full hover:bg-brand-black hover:text-white transition-colors">
+                    <Link 
+                        href="/menu"
+                        className="inline-flex items-center justify-center px-8 py-3 border-2 border-brand-black text-brand-black font-bold rounded-full hover:bg-brand-black hover:text-white transition-colors"
+                    >
                         전체 메뉴 보기
-                    </button>
+                    </Link>
                 </div>
             </div>
         </section>

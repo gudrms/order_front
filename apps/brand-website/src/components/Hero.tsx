@@ -27,13 +27,13 @@ export default function Hero() {
 
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                     <Link
-                        href="#menu"
+                        href="/menu"
                         className="w-full sm:w-auto px-8 py-4 bg-brand-yellow text-brand-black font-bold text-lg rounded-full hover:bg-white hover:text-brand-green transition-all transform hover:scale-105 shadow-[0_0_20px_rgba(255,193,7,0.4)]"
                     >
                         메뉴 보기
                     </Link>
                     <Link
-                        href="#store"
+                        href="/store"
                         className="w-full sm:w-auto px-8 py-4 bg-transparent border-2 border-white text-white font-bold text-lg rounded-full hover:bg-white hover:text-brand-black transition-all"
                     >
                         매장 찾기

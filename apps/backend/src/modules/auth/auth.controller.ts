@@ -35,6 +35,16 @@ export class AuthController {
                     description: '사용자 이름 (선택사항)',
                     example: '홍길동',
                 },
+                phoneNumber: {
+                    type: 'string',
+                    description: '전화번호 (선택사항)',
+                    example: '010-1234-5678',
+                },
+                inviteCode: {
+                    type: 'string',
+                    description: '매장 초대 코드 (선택사항)',
+                    example: 'TACO-1234',
+                },
             },
         },
     })
@@ -48,6 +58,7 @@ export class AuthController {
                     id: '123e4567-e89b-12d3-a456-426614174000',
                     email: 'user@example.com',
                     name: '홍길동',
+                    phoneNumber: '010-1234-5678',
                     createdAt: '2024-01-01T00:00:00Z',
                 },
             },
@@ -55,7 +66,7 @@ export class AuthController {
     })
     @ApiResponse({ status: 400, description: '잘못된 요청' })
     @ApiResponse({ status: 409, description: '이미 등록된 사용자' })
-    async register(@Body() body: { id: string; email: string; name?: string }) {
+    async register(@Body() body: { id: string; email: string; name?: string; phoneNumber?: string; inviteCode?: string }) {
         return this.authService.register(body);
     }
 

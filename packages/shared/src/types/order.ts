@@ -73,9 +73,9 @@ export interface Order {
 }
 
 /**
- * 주문 생성 요청 DTO
+ * 테이블 주문 생성 요청 DTO (매장 내 테이블 주문용)
  */
-export interface CreateOrderRequest {
+export interface CreateTableOrderRequest {
   tableId: string; // UUID
   storeId: string; // UUID
   items: {
@@ -87,6 +87,12 @@ export interface CreateOrderRequest {
     }[];
   }[];
 }
+
+/**
+ * 일반 주문 생성 요청 DTO (배달/포장용 - 레거시)
+ * @deprecated CreateTableOrderRequest 사용 권장
+ */
+export type CreateOrderRequest = CreateTableOrderRequest;
 
 /**
  * 주문 상태 변경 요청 DTO

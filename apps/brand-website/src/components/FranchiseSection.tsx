@@ -32,9 +32,12 @@ export default function FranchiseSection() {
                             </div>
                         </div>
 
-                        <button className="w-full sm:w-auto px-8 py-4 bg-brand-green text-white font-bold text-lg rounded-full hover:bg-brand-black transition-colors shadow-lg shadow-brand-green/20">
+                        <Link 
+                            href="/franchise"
+                            className="inline-block w-full sm:w-auto px-8 py-4 bg-brand-green text-white font-bold text-lg rounded-full hover:bg-brand-black transition-colors shadow-lg shadow-brand-green/20 text-center"
+                        >
                             가맹 상담 신청하기
-                        </button>
+                        </Link>
                     </div>
 
                     {/* Right Image */}

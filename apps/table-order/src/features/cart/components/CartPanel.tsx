@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useCartStore } from '@/stores/cartStore';
+import { useCartStore } from '@/stores';
 import { useTableStore } from '@/stores/tableStore';
 import { useUIStore } from '@/stores/uiStore';
 import { CartItemCardContainer } from './CartItemCardContainer';

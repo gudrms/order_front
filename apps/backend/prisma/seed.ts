@@ -77,10 +77,18 @@ async function main() {
                 okposCategoryCode: 'CAT_DESSERT',
             },
         }),
+        prisma.menuCategory.create({
+            data: {
+                name: '직원 호출',
+                displayOrder: 6,
+                storeId: store.id,
+                okposCategoryCode: 'CAT_STAFF_CALL',
+            },
+        }),
     ]);
     console.log(`Created ${categories.length} Categories`);
 
-    const [chickenCat, pizzaCat, pastaCat, drinkCat, dessertCat] = categories;
+    const [chickenCat, pizzaCat, pastaCat, drinkCat, dessertCat, staffCallCat] = categories;
 
     // 3. 태그 생성
     const bestTag = await prisma.menuTag.create({
@@ -714,8 +722,51 @@ async function main() {
     });
     console.log(`Created ${dessertMenus.count} Dessert Menus`);
 
+    // 9. 직원 호출 메뉴 생성 (0원)
+    const staffCallMenus = await prisma.menu.createMany({
+        data: [
+            {
+                name: '물',
+                price: 0,
+                description: '시원한 물을 가져다 드립니다.',
+                categoryId: staffCallCat.id,
+                storeId: store.id,
+                okposMenuCode: 'MENU_CALL_WATER',
+                displayOrder: 1,
+            },
+            {
+                name: '앞치마',
+                price: 0,
+                description: '일회용 앞치마를 가져다 드립니다.',
+                categoryId: staffCallCat.id,
+                storeId: store.id,
+                okposMenuCode: 'MENU_CALL_APRON',
+                displayOrder: 2,
+            },
+            {
+                name: '물티슈',
+                price: 0,
+                description: '물티슈를 가져다 드립니다.',
+                categoryId: staffCallCat.id,
+                storeId: store.id,
+                okposMenuCode: 'MENU_CALL_TISSUE',
+                displayOrder: 3,
+            },
+            {
+                name: '직원 호출',
+                price: 0,
+                description: '기타 도움이 필요하시면 호출해주세요.',
+                categoryId: staffCallCat.id,
+                storeId: store.id,
+                okposMenuCode: 'MENU_CALL_STAFF',
+                displayOrder: 4,
+            },
+        ],
+    });
+    console.log(`Created ${staffCallMenus.count} Staff Call Menus`);
+
     console.log('Seeding finished.');
-    console.log('총 메뉴 개수: 25개 (치킨 5 + 피자 5 + 파스타 5 + 음료 5 + 디저트 5)');
+    console.log('총 메뉴 개수: 29개 (기존 25개 + 직원 호출 4개)');
 }
 
 main()

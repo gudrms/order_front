@@ -69,6 +69,9 @@ model Store {
   /// 매장 타입 Enum
   type            StoreType @default(GENERAL)
   
+  /// 초대 코드 (사장님 가입 시 매장 연결용)
+  inviteCode      String?   @unique
+
   /// OKPOS 지점 코드 (연동용)
   okposBranchCode String?   @unique
   
@@ -389,8 +392,8 @@ model Order {
   /// 특이사항/요청사항
   note          String?
 
-  /// OKPOS 주문 ID (연동 후 저장)
-  okposOrderId  String?
+  /// Toss Place 주문 ID (SDK 연동)
+  tossOrderId   String?
 
   items         OrderItem[]
 

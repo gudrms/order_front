@@ -2,7 +2,7 @@
 
 import { useCartStore } from '@/stores';
 import type { CartItem } from '@/stores/cartStore';
-import { CartItemCard } from '@/components/ui/CartItemCard';
+import { CartItemCard } from '@order/ui';
 
 interface CartItemCardContainerProps {
   item: CartItem;
@@ -44,10 +44,11 @@ export function CartItemCardContainer({ item }: CartItemCardContainerProps) {
 
   return (
     <CartItemCard
-      menuName={item.menuName}
+      name={item.menuName}
       quantity={item.quantity}
-      totalPrice={item.totalPrice}
+      price={item.totalPrice}
       options={item.options}
+      imageUrl={item.imageUrl}
       onIncrease={handleIncrease}
       onDecrease={handleDecrease}
       onRemove={handleRemove}
