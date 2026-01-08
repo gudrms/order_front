@@ -36,9 +36,10 @@
 
 ### 5. 주문 내역
 - [x] 주문 내역 페이지 (/orders)
-- [x] 주문 상태별 아이콘/색상
+- [x] 주문 상태별 아이콘/색상 (정의 및 연동 완료)
 - [x] 빈 상태 처리
 - [x] useOrders Hook (React Query)
+- [x] 주문 데이터 모델 정합성 수정 (totalPrice, unitPrice 필드 통일)
 
 ### 6. PWA 설정
 - [x] manifest.json 생성
@@ -53,11 +54,11 @@
 - [x] Status Bar
 - [x] Haptics
 - [x] Local Notifications
-- [x] Network
+- [x] Network (비동기 리스너 해제 로직 개선)
 - [x] Share
 - [x] Toast
 - [x] Browser
-- [x] App
+- [x] App (비동기 리스너 해제 로직 개선)
 
 ### 8. Shared Packages
 - [x] API Client (GET, POST, PATCH, PUT, DELETE)
@@ -66,9 +67,9 @@
 - [x] Daum Postcode (주소 검색)
 - [x] Toss Payments (결제)
 - [x] Supabase Client (인증)
-- [x] Types 체계 정리
-  - [x] CreateTableOrderRequest (테이블 주문용)
-  - [x] CreateDeliveryOrderRequest (배달/결제용)
+- [x] Types 체계 정리 및 버그 수정
+  - [x] CreateOrderRequest (Table/Delivery 유니온 타입 적용)
+  - [x] OrderStatus 상태 확장 (PAID, DELIVERING 등)
   - [x] PaymentOrderItemInput / PaymentOrderResponse
   - [x] 레거시 호환 alias 추가
 - [x] Validation & Format Utils
@@ -115,12 +116,12 @@
 
 | 카테고리 | 진행률 | 상태 |
 |---------|--------|------|
-| **Phase 1** | **98%** | ✅ 완료 |
+| **Phase 1** | **100%** | ✅ 완료 |
 | 홈 화면 | 100% | ✅ |
 | 메뉴 & 주문 | 100% | ✅ |
 | 배달 주소 | 100% | ✅ |
 | 결제 | 100% | ✅ |
-| 주문 내역 | 90% | ⚠️ (API 연동만 남음) |
+| 주문 내역 | 100% | ✅ |
 | PWA | 100% | ✅ |
 | Capacitor | 100% | ✅ |
 | Shared | 100% | ✅ |

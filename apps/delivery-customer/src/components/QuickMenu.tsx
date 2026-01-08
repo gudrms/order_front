@@ -1,4 +1,4 @@
-import { Gift, Clock } from 'lucide-react';
+import { Gift, Clock, MapPin } from 'lucide-react';
 
 export default function QuickMenu() {
     return (

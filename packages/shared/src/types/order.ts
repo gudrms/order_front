@@ -1,3 +1,5 @@
+import type { CreateDeliveryOrderRequest } from './payment';
+
 /**
  * 주문 관련 공통 타입 정의
  * Frontend ↔ Backend 공유
@@ -6,7 +8,7 @@
 /**
  * 주문 상태 (Prisma enum과 일치)
  */
-export type OrderStatus = 'PENDING' | 'CONFIRMED' | 'COOKING' | 'COMPLETED' | 'CANCELLED';
+export type OrderStatus = 'PENDING' | 'CONFIRMED' | 'COOKING' | 'COMPLETED' | 'CANCELLED' | 'PAID' | 'PREPARING' | 'READY' | 'DELIVERING';
 
 /**
  * 선택된 옵션 항목
@@ -92,7 +94,7 @@ export interface CreateTableOrderRequest {
  * 일반 주문 생성 요청 DTO (배달/포장용 - 레거시)
  * @deprecated CreateTableOrderRequest 사용 권장
  */
-export type CreateOrderRequest = CreateTableOrderRequest;
+export type CreateOrderRequest = CreateTableOrderRequest | CreateDeliveryOrderRequest;
 
 /**
  * 주문 상태 변경 요청 DTO
