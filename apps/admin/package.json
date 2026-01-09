@@ -2,7 +2,6 @@
   "name": "admin",
   "version": "0.1.0",
   "private": true,
-  "packageManager": "pnpm@8.15.9",
   "scripts": {
     "dev": "next dev --port 3003",
     "build": "next build",
