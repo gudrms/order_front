@@ -49,18 +49,18 @@
     - `/topic/store/{storeId}/orders`: 신규 주문 알림 (주방용)
     - `/topic/table/{tableId}`: 내 주문 상태 변경 알림 (고객용)
 
-## 4. External API Integration (OKPOS)
+## 4. External API Integration (Toss 오더)
 
 ### 4.1 연동 개요
-- **Base URL**: `https://dum.okpos.co.kr/api`
+- **Base URL**: `https://dum.toss-order.co.kr/api`
 - **인증 방식**: API Key (Header: `X-API-KEY`)
-- **상세 문서**: [okpos.md](./okpos.md)
+- **상세 문서**: [toss-order.md](./toss-order.md)
 
 ### 4.2 주요 API 엔드포인트
 
 | API | Purpose | Trigger Point |
 |:----|:--------|:--------------|
-| `POST /api/order/create` | OKPOS 주문 전송 | 고객 주문 완료 시 |
+| `POST /api/order/create` | Toss 오더 주문 전송 | 고객 주문 완료 시 |
 | `GET /api/menu/items` | 메뉴 동기화 | 매일 새벽 3시 (Scheduler) |
 | `GET /api/order/{orderId}` | 주문 상태 조회 | 주문 상태 확인 시 |
 
@@ -88,7 +88,7 @@
 ```json
 {
   "success": true,
-  "okposOrderId": "OKPOS-202412-001",
+  "toss-orderOrderId": "Toss 오더-202412-001",
   "status": "PENDING"
 }
 ```
@@ -96,4 +96,4 @@
 ### 4.4 에러 처리
 - **재시도**: Spring Retry 사용 (최대 3회, 2초 간격)
 - **Circuit Breaker**: Resilience4j 적용
-- **실패 주문**: `failed_okpos_orders` 테이블에 저장 후 스케줄러로 재시도
+- **실패 주문**: `failed_toss-order_orders` 테이블에 저장 후 스케줄러로 재시도

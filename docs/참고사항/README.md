@@ -5,9 +5,9 @@
 주문 누락을 방지하고, 홀 직원의 업무 효율을 높이며, 고객에게 편리한 주문 경험을 제공합니다.
 
 ## 🔗 외부 연동 (Integrations)
-- **OKPOS POS 시스템**: 실시간 주문 전송 및 메뉴 동기화
-  - API Base URL: `https://dum.okpos.co.kr/api`
-  - 연동 문서: [okpos.md](./okpos.md)
+- **Toss 오더 POS 시스템**: 실시간 주문 전송 및 메뉴 동기화
+  - API Base URL: `https://dum.toss-order.co.kr/api`
+  - 연동 문서: [toss-order.md](./toss-order.md)
   - 주요 기능: 주문 생성, 메뉴 조회, 주문 상태 추적
 
 ## 🎯 주요 기능 (Features)
@@ -35,7 +35,7 @@
 - `name`: 매장명
 - `address`: 주소
 - `phone`: 전화번호
-- `okpos_store_id`: OKPOS 매장 ID (연동용)
+- `toss-order_store_id`: Toss 오더 매장 ID (연동용)
 - `business_hours`: 영업시간 (JSONB)
 - `holiday_info`: 정기 휴무일 (JSONB)
 - `created_at`: 생성일시
@@ -73,7 +73,7 @@
 - `image_url`: 이미지 경로
 - `is_sold_out`: 품절 여부 (Boolean)
 - `is_visible`: 노출 여부 (Boolean)
-- `okpos_menu_id`: OKPOS 메뉴 ID (연동용)
+- `toss-order_menu_id`: Toss 오더 메뉴 ID (연동용)
 - `sort_order`: 정렬 순서
 - `created_at`: 생성일시
 - `updated_at`: 수정일시
@@ -94,8 +94,8 @@
 - `status`: 주문 상태 (PENDING, COOKING, SERVED, COMPLETED, CANCELLED)
 - `total_price`: 총 결제 금액
 - `customer_count`: 인원 수
-- `okpos_order_id`: OKPOS 주문 ID (연동용)
-- `okpos_sync_status`: OKPOS 동기화 상태 (PENDING, SUCCESS, FAILED)
+- `toss-order_order_id`: Toss 오더 주문 ID (연동용)
+- `toss-order_sync_status`: Toss 오더 동기화 상태 (PENDING, SUCCESS, FAILED)
 - `created_at`: 주문 일시
 - `updated_at`: 수정일시
 - `deleted_at`: 삭제일시
@@ -121,10 +121,10 @@
 ### 9. Payments (결제 정보) ⭐ 신규
 - `id` (PK): UUID
 - `order_id` (FK): 주문 ID
-- `payment_method`: 결제 수단 (CARD, CASH, QR, OKPOS)
+- `payment_method`: 결제 수단 (CARD, CASH, QR, Toss 오더)
 - `amount`: 결제 금액
 - `status`: 결제 상태 (PENDING, COMPLETED, FAILED, REFUNDED)
-- `okpos_payment_id`: OKPOS 결제 ID (연동용)
+- `toss-order_payment_id`: Toss 오더 결제 ID (연동용)
 - `paid_at`: 결제 완료 일시
 - `created_at`: 생성일시
 - `updated_at`: 수정일시
@@ -146,9 +146,9 @@
 - `reason`: 취소 사유
 - `created_at`: 취소 일시
 
-### 12. OKPOS 연동 테이블
+### 12. Toss 오더 연동 테이블
 
-#### 12-1. okpos_sync_log (연동 로그)
+#### 12-1. toss-order_sync_log (연동 로그)
 - `id` (PK): UUID
 - `sync_type`: 동기화 유형 (MENU, ORDER, PAYMENT)
 - `entity_id`: 연관 엔티티 ID (주문 ID 등)
@@ -158,7 +158,7 @@
 - `error_message`: 에러 메시지
 - `created_at`: 생성일시
 
-#### 12-2. failed_okpos_orders (실패한 주문 큐)
+#### 12-2. failed_toss-order_orders (실패한 주문 큐)
 - `id` (PK): UUID
 - `order_id` (FK): 주문 ID
 - `request_json`: 요청 데이터 (TEXT)
@@ -179,14 +179,14 @@
 - **OrderCancellations 테이블**: 주문 취소 이력 추적
 - **StaffCalls 테이블**: 직원 호출 이력 관리
 
-### ✅ OKPOS 연동 강화
-- **매핑 컬럼 추가**: stores.okpos_store_id, menus.okpos_menu_id, orders.okpos_order_id
-- **동기화 상태 추적**: orders.okpos_sync_status
-- **연동 로그**: okpos_sync_log 테이블로 모든 API 호출 기록
+### ✅ Toss 오더 연동 강화
+- **매핑 컬럼 추가**: stores.toss-order_store_id, menus.toss-order_menu_id, orders.toss-order_order_id
+- **동기화 상태 추적**: orders.toss-order_sync_status
+- **연동 로그**: toss-order_sync_log 테이블로 모든 API 호출 기록
 
 ### ✅ 결제 정보 분리
-- **Payments 테이블 신규 추가**: 결제 수단, 상태, OKPOS 결제 ID 등 상세 관리
-- **다양한 결제 수단 지원**: 카드, 현금, QR, OKPOS 결제
+- **Payments 테이블 신규 추가**: 결제 수단, 상태, Toss 오더 결제 ID 등 상세 관리
+- **다양한 결제 수단 지원**: 카드, 현금, QR, Toss 오더 결제
 
 ### ✅ 운영 편의성
 - **Soft Delete**: deleted_at 컬럼으로 실수 삭제 시 복구 가능
@@ -202,7 +202,7 @@
 2. **실시간 알림**: 주문 발생 시 주방/카운터에 1초 이내에 알림이 전달되어야 한다. (Supabase Realtime)
 3. **메뉴 관리**: 관리자는 메뉴의 품절 상태를 즉시 반영할 수 있어야 한다.
 4. **주문 현황**: 관리자는 테이블별 주문 상태를 한눈에 파악할 수 있어야 한다.
-5. **OKPOS 연동**: 주문 생성 시 OKPOS POS 시스템으로 실시간 전송되어야 한다.
+5. **Toss 오더 연동**: 주문 생성 시 Toss 오더 POS 시스템으로 실시간 전송되어야 한다.
 6. **직원 호출**: 고객이 물, 티슈 등을 요청할 수 있고, 관리자가 확인할 수 있어야 한다.
 
 ### 비기능적 요구사항
@@ -218,7 +218,7 @@
 
 - **[API 명세서](./api_spec.md)**: REST API 엔드포인트 및 Request/Response 형식
 - **[기술 스펙](./tech_spec.md)**: 기술 스택, 인프라, 배포 방식
-- **[OKPOS 연동 가이드](./okpos.md)**: OKPOS API 연동 상세 구현 방법
+- **[Toss 오더 연동 가이드](./toss-order.md)**: Toss 오더 API 연동 상세 구현 방법
 
 ---
 

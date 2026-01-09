@@ -116,11 +116,11 @@ pnpm dev
 
 ### 백엔드: Modular Monolith
 
-```typescript
+```
 apps/backend/src/modules/
   ├── table-order/      # 테이블 주문 전용
   ├── delivery/         # 배달 주문 전용
-  ├── shared/           # 공통 (메뉴, 주문, OKPOS)
+  ├── shared/           # 공통 (메뉴, 주문, Toss 오더)
   └── brand-site/       # 브랜드 홈페이지 API
 ```
 
@@ -208,7 +208,7 @@ pnpm ios
 - ⚙️ 설정
 
 ### backend (백엔드)
-- 🔗 OKPOS 연동
+- 🔗 Toss 오더 연동
 - 🔄 Realtime (Supabase)
 - 🔒 보안 (Rate Limiting, Helmet)
 - 📝 Swagger API 문서

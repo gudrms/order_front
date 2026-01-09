@@ -61,8 +61,8 @@ SUPABASE_URL="https://abcdefghijk.supabase.co"
 SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.실제키..."
 SUPABASE_SERVICE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.실제키..."
 
-OKPOS_API_KEY=""
-OKPOS_BASE_URL="https://dum.okpos.co.kr/api"
+Toss 오더_API_KEY=""
+Toss 오더_BASE_URL="https://dum.toss-order.co.kr/api"
 
 NODE_ENV=development
 ```
@@ -291,7 +291,7 @@ npx prisma generate
 1. **Admin Dashboard 개발** - 주문 접수 화면
 2. **Supabase Realtime 연동** - 실시간 주문 알림
 3. **이미지 업로드** - Supabase Storage 연동
-4. **OKPOS 연동** - 실제 POS 시스템 연동 (업체 연락 후)
+4. **Toss 오더 연동** - 실제 POS 시스템 연동 (업체 연락 후)
 
 ---
 

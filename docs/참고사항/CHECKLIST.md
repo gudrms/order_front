@@ -79,7 +79,7 @@
 - **Hobby 플랜**: 10초
 - **Pro 플랜**: 60초
 - **문제**: 대용량 파일 처리, 복잡한 계산 등 긴 작업 시 타임아웃
-- **대응**: OKPOS 전송 시 8초 timeout 설정 필요
+- **대응**: Toss 오더 전송 시 8초 timeout 설정 필요
 
 #### 3. **WebSocket 미지원**
 - **문제**: 실시간 양방향 통신 불가
@@ -154,7 +154,7 @@
 - ✅ **에러 핸들링**: ErrorBoundary + ErrorToast + Supabase 로깅 구축
 - ✅ **컴포넌트 분리**: `CartItemCard`, `CartSummary` Container/Presenter 분리
 - ✅ **MSW 통합**: 개발 환경 Mock API 자동화
-- [ ] **OKPOS 연동**: 실패 시 자동 재시도 + 모니터링 대시보드 (보류 - API 스펙 미확정)
+- [ ] **Toss 오더 연동**: 실패 시 자동 재시도 + 모니터링 대시보드 (보류 - API 스펙 미확정)
 
 ---
 
