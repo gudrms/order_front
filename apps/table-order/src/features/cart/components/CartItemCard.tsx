@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import { useCartStore } from '@/stores';
-import type { CartItem } from '@/stores/cartStore';
+import type { CartItem } from '@/stores';
 
 interface CartItemCardProps {
   item: CartItem;

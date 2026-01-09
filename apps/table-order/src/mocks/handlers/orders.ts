@@ -3,7 +3,7 @@
  */
 
 import { http, HttpResponse } from 'msw';
-import type { CreateOrderRequest } from '@order/shared';
+import type { CreateOrderRequest } from '@/lib/api/endpoints/order';
 import { createMockSession, findActiveSession, updateSessionTotal, addOrderToSession } from './sessions';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
@@ -27,7 +27,7 @@ export const ordersHandlers = [
 
     // 2. 주문 생성
     const orderNumber = `ORD-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${String(orderCounter++).padStart(3, '0')}`;
-    const totalAmount = body.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const totalAmount = body.items.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0);
 
     const newOrder = {
       id: crypto.randomUUID(),
@@ -42,8 +42,8 @@ export const ordersHandlers = [
         menuId: item.menuId,
         menuName: item.menuName || '',
         quantity: item.quantity,
-        unitPrice: item.price,
-        totalPrice: item.price * item.quantity,
+        unitPrice: item.unitPrice,
+        totalPrice: item.unitPrice * item.quantity,
         options: item.options,
       })),
       createdAt: new Date().toISOString(),
@@ -74,7 +74,7 @@ export const ordersHandlers = [
     const { storeId, sessionId } = params;
 
     const orderNumber = `ORD-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${String(orderCounter++).padStart(3, '0')}`;
-    const totalAmount = body.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const totalAmount = body.items.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0);
 
     const newOrder = {
       id: crypto.randomUUID(),
@@ -89,8 +89,8 @@ export const ordersHandlers = [
         menuId: item.menuId,
         menuName: item.menuName || '',
         quantity: item.quantity,
-        unitPrice: item.price,
-        totalPrice: item.price * item.quantity,
+        unitPrice: item.unitPrice,
+        totalPrice: item.unitPrice * item.quantity,
         options: item.options,
       })),
       createdAt: new Date().toISOString(),
