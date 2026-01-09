@@ -1,6 +1,5 @@
 {
   "buildCommand": "cd ../.. && pnpm install && pnpm turbo build --filter=brand-website",
-  "installCommand": "echo 'Skipping default install'",
   "framework": "nextjs",
   "outputDirectory": ".next"
 }
