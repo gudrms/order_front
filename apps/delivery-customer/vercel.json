@@ -1,6 +1,5 @@
 {
-  "buildCommand": "cd ../.. && pnpm install && pnpm turbo build --filter=delivery-customer",
-  "installCommand": "pnpm install --no-frozen-lockfile",
+  "buildCommand": "cd ../.. && pnpm turbo build --filter=delivery-customer",
   "framework": "nextjs",
   "outputDirectory": ".next"
 }
