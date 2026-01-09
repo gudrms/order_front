@@ -2,13 +2,12 @@
 
 import { useState } from 'react';
 import { useParams } from 'next/navigation';
-import { useMutation } from '@tanstack/react-query';
 import { useCartStore, useTableStore } from '@/stores';
-import { api } from '@order/shared';
+import { useCreateOrder } from '@/hooks/mutations/useCreateOrder';
 import type {
   CreateOrderRequest,
   OrderItemInput,
-} from '@order/shared/endpoints/order';
+} from '@/lib/api/endpoints/order';
 
 /**
  * OrderConfirmModal Props
@@ -35,63 +34,58 @@ export function OrderConfirmModal({
   onSuccess,
 }: OrderConfirmModalProps) {
   const params = useParams();
-  const branchId = params?.branchId as string;
+  // const branchId = params?.branchId as string; // Not used in local CreateOrderRequest
 
   const { tableNumber } = useTableStore();
   const { items, totalPrice } = useCartStore();
 
   const [error, setError] = useState<string | null>(null);
 
-  /**
-   * 주문 생성 Mutation
-   */
-  const createOrderMutation = useMutation({
-    mutationFn: async () => {
-      if (!tableNumber) {
-        throw new Error('테이블 번호가 설정되지 않았습니다.');
-      }
-
-      if (items.length === 0) {
-        throw new Error('장바구니가 비어있습니다.');
-      }
-
-      // 장바구니 아이템을 주문 아이템으로 변환
-      const orderItems: OrderItemInput[] = items.map((item) => ({
-        menuId: item.menuId,
-        menuName: item.menuName,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-        totalPrice: item.totalPrice,
-        options: item.options,
-      }));
-
-      // 주문 생성 요청
-      const request: CreateOrderRequest = {
-        tableNumber,
-        items: orderItems,
-        totalAmount: totalPrice,
-      };
-
-      return createOrder(request, branchId);
-    },
-    onSuccess: (data) => {
-      // 성공 시 부모 컴포넌트로 주문번호 전달
-      onSuccess(data.orderNumber);
-    },
-    onError: (err) => {
-      // 에러 처리
-      const errorMessage =
-        err instanceof Error ? err.message : '주문 생성에 실패했습니다.';
-      setError(errorMessage);
-    },
-  });
+  const { mutate: createOrder, isPending } = useCreateOrder();
 
   /**
    * 주문하기 버튼 클릭
    */
   const handleConfirm = () => {
     setError(null);
-    createOrderMutation.mutate();
+
+    if (!tableNumber) {
+      setError('테이블 번호가 설정되지 않았습니다.');
+      return;
+    }
+
+    if (items.length === 0) {
+      setError('장바구니가 비어있습니다.');
+      return;
+    }
+
+    // 장바구니 아이템을 주문 아이템으로 변환
+    const orderItems: OrderItemInput[] = items.map((item) => ({
+      menuId: item.menuId,
+      menuName: item.menuName,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+      totalPrice: item.totalPrice,
+      options: item.options,
+    }));
+
+    // 주문 생성 요청
+    const request: CreateOrderRequest = {
+      tableNumber,
+      items: orderItems,
+      totalAmount: totalPrice,
+    };
+
+    createOrder(request, {
+      onSuccess: (data) => {
+        onSuccess(data.orderNumber);
+      },
+      onError: (err) => {
+        const errorMessage =
+          err instanceof Error ? err.message : '주문 생성에 실패했습니다.';
+        setError(errorMessage);
+      },
+    });
   };
 
   if (!isOpen) return null;
@@ -146,17 +140,17 @@ export function OrderConfirmModal({
         <div className="flex gap-3">
           <button
             onClick={onClose}
-            disabled={createOrderMutation.isPending}
+            disabled={isPending}
             className="flex-1 rounded-lg border border-gray-300 py-3 font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
           >
             취소
           </button>
           <button
             onClick={handleConfirm}
-            disabled={createOrderMutation.isPending}
+            disabled={isPending}
             className="flex-1 rounded-lg bg-primary py-3 font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {createOrderMutation.isPending ? '주문 중...' : '주문하기'}
+            {isPending ? '주문 중...' : '주문하기'}
           </button>
         </div>
       </div>

@@ -60,6 +60,40 @@ export interface Order {
 }
 
 /**
+ * 주문 생성 (Mock / Local)
+ */
+export async function createOrder(
+  request: CreateOrderRequest
+): Promise<CreateOrderResponse> {
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+  const storeId = 'store-1';
+
+  // 실제 API 연동 시도
+  try {
+    // 1. 세션 조회
+    const sessionResponse = await fetch(`${API_URL}/stores/${storeId}/tables/${request.tableNumber}/current-session`);
+    const sessionData = await sessionResponse.json();
+    
+    if (sessionData.data) {
+       const sessionId = sessionData.data.id;
+       // 2. 주문 생성 (Session ID 기반)
+       // NOTE: 백엔드 API 스펙에 따라 다를 수 있음. 일단은 Mock 응답 반환.
+       // 실제로는: await fetch(`${API_URL}/stores/${storeId}/orders`, ... );
+    }
+  } catch (e) {
+    console.warn('Backend connection failed, falling back to mock', e);
+  }
+
+  // Mock 응답
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+  
+  return {
+    orderNumber: `ORD-${Date.now().toString().slice(-4)}`,
+    createdAt: new Date().toISOString(),
+  };
+}
+
+/**
  * 테이블별 주문 목록 조회
  * MSW를 사용하여 세션 기반으로 주문 조회
  */

@@ -1,7 +1,7 @@
 'use client';
 
 import { useCartStore } from '@/stores';
-import type { CartItem } from '@/stores/cartStore';
+import type { CartItem } from '@/stores';
 import { CartItemCard } from '@order/ui';
 
 interface CartItemCardContainerProps {

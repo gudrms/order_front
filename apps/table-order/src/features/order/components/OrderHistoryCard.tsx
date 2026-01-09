@@ -1,6 +1,6 @@
 'use client';
 
-import type { Order } from '@order/shared/endpoints/order';
+import type { Order } from '@/lib/api/endpoints/order';
 import { Badge } from '@/components/ui/Badge';
 
 interface OrderHistoryCardProps {
