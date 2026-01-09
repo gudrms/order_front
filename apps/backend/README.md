@@ -30,7 +30,7 @@ src/
 │   ├── orders/         # 주문 처리
 │   ├── stores/         # 매장 관리
 │   ├── auth/           # 인증
-│   ├── integrations/   # OKPOS 연동
+│   ├── integrations/   # Toss 오더 연동
 │   ├── error-logs/     # 에러 로그
 │   └── prisma/         # Prisma Service
 ├── common/
@@ -175,7 +175,7 @@ this.logger.log('주문 생성 성공', 'OrdersService');
 this.logger.error('주문 생성 실패', error.stack, 'OrdersService');
 
 // Critical 로그 (Console + Supabase DB)
-this.logger.critical('OKPOS 연동 심각 오류', {
+this.logger.critical('Toss 오더 연동 심각 오류', {
   orderId: order.id,
   storeId: order.storeId,
 });
@@ -187,12 +187,12 @@ this.logger.critical('OKPOS 연동 심각 오류', {
 
 ---
 
-## 🔗 OKPOS 연동 (준비중)
+## 🔗 Toss 오더 연동 (준비중)
 
 ```typescript
 // pos.service.ts
 export class PosService {
-  async sendOrderToOKPOS(order: Order) {
+  async sendOrderToToss 오더(order: Order) {
     // Circuit Breaker + Retry 로직 (구현 예정)
     // axios-retry, opossum 사용
   }

@@ -10,7 +10,7 @@
 1. [Architecture Overview](#1-architecture-overview)
 2. [Technology Stack](#2-technology-stack)
 3. [Infrastructure](#3-infrastructure)
-4. [OKPOS Integration](#4-okpos-integration)
+4. [Toss 오더 Integration](#4-toss-order-integration)
 5. [Realtime Communication](#5-realtime-communication)
 6. [Development Environment](#6-development-environment)
 7. [Deployment Strategy](#7-deployment-strategy)
@@ -51,12 +51,12 @@
 │  │  Modules:                                                │  │
 │  │  - OrdersModule: 주문 생성/조회/상태 변경               │  │
 │  │  - MenusModule: 메뉴 CRUD, 품절 처리                   │  │
-│  │  - OkposModule: OKPOS API 연동                          │  │
+│  │  - OkposModule: Toss 오더 API 연동                          │  │
 │  │  - PrismaModule: Database ORM                           │  │
 │  │                                                          │  │
 │  │  Services:                                               │  │
 │  │  - OkposService: axios-retry, Circuit Breaker          │  │
-│  │  - OrderService: 주문 로직 + OKPOS 전송                │  │
+│  │  - OrderService: 주문 로직 + Toss 오더 전송                │  │
 │  │                                                          │  │
 │  │  Scheduler:                                              │  │
 │  │  - @Cron('0 3 * * *'): 메뉴 동기화 (매일 새벽 3시)     │  │
@@ -66,8 +66,8 @@
                    │ Prisma             │ axios
                    ▼                    ▼
     ┌──────────────────────────┐  ┌────────────────────────┐
-    │   Supabase Platform      │  │   OKPOS O2O API        │
-    │  ┌────────────────────┐  │  │ dum.okpos.co.kr        │
+    │   Supabase Platform      │  │   Toss 오더 O2O API        │
+    │  ┌────────────────────┐  │  │ dum.toss-order.co.kr        │
     │  │ PostgreSQL 14      │  │  │                        │
     │  │ - 12 Tables        │  │  │ - POST /order/create   │
     │  │ - JSONB Support    │  │  │ - GET /menu/items      │
@@ -98,9 +98,9 @@
    ↓
 4. OrderService.createOrder()
    ├─ Prisma로 DB에 주문 저장
-   ├─ OKPOS API 호출 (비동기)
-   │  → 성공: okposOrderId 업데이트
-   │  → 실패: failed_okpos_orders 테이블에 저장
+   ├─ Toss 오더 API 호출 (비동기)
+   │  → 성공: toss-orderOrderId 업데이트
+   │  → 실패: failed_toss-order_orders 테이블에 저장
    └─ 응답 반환: { success: true, orderId }
    ↓
 5. Supabase Realtime 자동 발동
@@ -286,8 +286,8 @@ NEXT_PUBLIC_USE_MOCK=
 DATABASE_URL=
 DIRECT_URL=
 SUPABASE_SERVICE_KEY=
-OKPOS_API_KEY=
-OKPOS_BASE_URL=
+Toss 오더_API_KEY=
+Toss 오더_BASE_URL=
 ```
 
 ---

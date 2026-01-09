@@ -1,4 +1,4 @@
-# 🔗 OKPOS API 연동 가이드
+# 🔗 Toss 오더 API 연동 가이드
 
 ## 📋 목차
 1. [개요](#1-개요)
@@ -16,23 +16,23 @@
 
 ## 1. 개요
 
-### 1.1 OKPOS O2O API
-- **Base URL**: `https://dum.okpos.co.kr/api`
-- **API Documentation**: `https://dum.okpos.co.kr/api/swagger-ui.html`
+### 1.1 Toss 오더 O2O API
+- **Base URL**: `https://dum.toss-order.co.kr/api`
+- **API Documentation**: `https://dum.toss-order.co.kr/api/swagger-ui.html`
 - **Protocol**: REST API (JSON)
 - **인증 방식**: API Key (추정)
 
 ### 1.2 연동 목적
-- **실시간 주문 전송**: 테이블오더에서 받은 주문을 OKPOS 단말기로 실시간 전송
-- **메뉴 동기화**: OKPOS의 메뉴 정보를 테이블오더 시스템과 동기화
-- **주문 상태 추적**: OKPOS에서 처리되는 주문 상태를 실시간으로 확인
+- **실시간 주문 전송**: 테이블오더에서 받은 주문을 Toss 오더 단말기로 실시간 전송
+- **메뉴 동기화**: Toss 오더의 메뉴 정보를 테이블오더 시스템과 동기화
+- **주문 상태 추적**: Toss 오더에서 처리되는 주문 상태를 실시간으로 확인
 
 ### 1.3 연동 범위
 | 기능 | 방향 | 설명 |
 |:-----|:-----|:-----|
-| 메뉴 조회 | OKPOS → 테이블오더 | 메뉴 정보 가져오기 (스케줄러) |
-| 주문 생성 | 테이블오더 → OKPOS | 고객 주문 실시간 전송 |
-| 주문 상태 조회 | OKPOS ← 테이블오더 | 주문 처리 상태 확인 |
+| 메뉴 조회 | Toss 오더 → 테이블오더 | 메뉴 정보 가져오기 (스케줄러) |
+| 주문 생성 | 테이블오더 → Toss 오더 | 고객 주문 실시간 전송 |
+| 주문 상태 조회 | Toss 오더 ← 테이블오더 | 주문 처리 상태 확인 |
 | 결제 정보 | 양방향 | 결제 완료 시 동기화 |
 
 ---
@@ -51,13 +51,13 @@
            │ HTTP/WebSocket
            ▼
 ┌─────────────────────┐       ┌──────────────────┐
-│  Spring Boot API    │◄─────►│  OKPOS O2O API   │
-│  (테이블오더 백엔드)   │       │ dum.okpos.co.kr  │
+│  Spring Boot API    │◄─────►│  Toss 오더 O2O API   │
+│  (테이블오더 백엔드)   │       │ dum.toss-order.co.kr  │
 └──────────┬──────────┘       └────────┬─────────┘
            │                           │
            ▼                           ▼
 ┌─────────────────────┐       ┌──────────────────┐
-│   PostgreSQL DB     │       │  OKPOS 단말기     │
+│   PostgreSQL DB     │       │  Toss 오더 단말기     │
 │  (주문/메뉴 로컬 저장) │       │  (POS 프로그램)   │
 └─────────────────────┘       └──────────────────┘
 ```
@@ -70,9 +70,9 @@
    ↓
 3. DB 저장 (PostgreSQL)
    ↓
-4. OKPOS API 호출 (POST /api/order/create)
+4. Toss 오더 API 호출 (POST /api/order/create)
    ↓
-5. 성공 시: okpos_order_id 업데이트
+5. 성공 시: toss-order_order_id 업데이트
    실패 시: 재시도 큐 추가 또는 알림
    ↓
 6. WebSocket으로 주방/고객에게 알림
@@ -83,12 +83,12 @@
 ## 3. 인증 방식
 
 ### 3.1 API Key 인증 (추정)
-OKPOS API는 HTTP Header에 API Key를 포함하여 인증합니다.
+Toss 오더 API는 HTTP Header에 API Key를 포함하여 인증합니다.
 
 **Request Header 예시:**
 ```http
 POST /api/order/create HTTP/1.1
-Host: dum.okpos.co.kr
+Host: dum.toss-order.co.kr
 Content-Type: application/json
 X-API-KEY: your-api-key-here
 ```
@@ -100,7 +100,7 @@ Authorization: Bearer your-api-key-here
 ```
 
 ### 3.2 API Key 발급 방법
-1. OKPOS 파트너 센터 또는 담당자에게 문의
+1. Toss 오더 파트너 센터 또는 담당자에게 문의
 2. 매장 정보 등록 후 API Key 발급
 3. 환경변수에 안전하게 저장 (`application-prod.yml` 또는 NCP Secrets Manager)
 
@@ -111,7 +111,7 @@ Authorization: Bearer your-api-key-here
 ### 4.1 프로젝트 구조
 ```
 src/main/java/com/tableorder/
-├── okpos/
+├── toss-order/
 │   ├── config/
 │   │   ├── OkposApiConfig.java          # RestTemplate 설정
 │   │   └── OkposProperties.java         # application.yml 매핑
@@ -161,7 +161,7 @@ dependencies {
 
 #### 4.3.1 OkposProperties.java
 ```java
-package com.tableorder.okpos.config;
+package com.tableorder.toss-order.config;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -171,7 +171,7 @@ import org.springframework.stereotype.Component;
 @Getter
 @Setter
 @Component
-@ConfigurationProperties(prefix = "okpos.api")
+@ConfigurationProperties(prefix = "toss-order.api")
 public class OkposProperties {
     private String baseUrl;
     private String apiKey;
@@ -189,7 +189,7 @@ public class OkposProperties {
 
 #### 4.3.2 OkposApiConfig.java
 ```java
-package com.tableorder.okpos.config;
+package com.tableorder.toss-order.config;
 
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
@@ -205,26 +205,26 @@ import java.util.Collections;
 @EnableRetry
 public class OkposApiConfig {
     
-    private final OkposProperties okposProperties;
+    private final OkposProperties toss-orderProperties;
     
-    public OkposApiConfig(OkposProperties okposProperties) {
-        this.okposProperties = okposProperties;
+    public OkposApiConfig(OkposProperties toss-orderProperties) {
+        this.toss-orderProperties = toss-orderProperties;
     }
     
-    @Bean(name = "okposRestTemplate")
-    public RestTemplate okposRestTemplate(RestTemplateBuilder builder) {
+    @Bean(name = "toss-orderRestTemplate")
+    public RestTemplate toss-orderRestTemplate(RestTemplateBuilder builder) {
         return builder
-            .rootUri(okposProperties.getBaseUrl())
-            .setConnectTimeout(Duration.ofMillis(okposProperties.getTimeout()))
-            .setReadTimeout(Duration.ofMillis(okposProperties.getTimeout()))
-            .interceptors(Collections.singletonList(okposApiInterceptor()))
+            .rootUri(toss-orderProperties.getBaseUrl())
+            .setConnectTimeout(Duration.ofMillis(toss-orderProperties.getTimeout()))
+            .setReadTimeout(Duration.ofMillis(toss-orderProperties.getTimeout()))
+            .interceptors(Collections.singletonList(toss-orderApiInterceptor()))
             .build();
     }
     
     @Bean
-    public ClientHttpRequestInterceptor okposApiInterceptor() {
+    public ClientHttpRequestInterceptor toss-orderApiInterceptor() {
         return (request, body, execution) -> {
-            request.getHeaders().set("X-API-KEY", okposProperties.getApiKey());
+            request.getHeaders().set("X-API-KEY", toss-orderProperties.getApiKey());
             request.getHeaders().set("Content-Type", "application/json");
             return execution.execute(request, body);
         };
@@ -234,12 +234,12 @@ public class OkposApiConfig {
 
 #### 4.3.3 OkposApiClient.java
 ```java
-package com.tableorder.okpos.client;
+package com.tableorder.toss-order.client;
 
-import com.tableorder.okpos.dto.request.OkposOrderRequest;
-import com.tableorder.okpos.dto.response.OkposOrderResponse;
-import com.tableorder.okpos.dto.response.OkposMenuResponse;
-import com.tableorder.okpos.exception.OkposApiException;
+import com.tableorder.toss-order.dto.request.OkposOrderRequest;
+import com.tableorder.toss-order.dto.response.OkposOrderResponse;
+import com.tableorder.toss-order.dto.response.OkposMenuResponse;
+import com.tableorder.toss-order.exception.OkposApiException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -254,17 +254,17 @@ import org.springframework.web.client.RestTemplate;
 @RequiredArgsConstructor
 public class OkposApiClient {
     
-    @Qualifier("okposRestTemplate")
+    @Qualifier("toss-orderRestTemplate")
     private final RestTemplate restTemplate;
     
     /**
-     * OKPOS에 주문 생성
+     * Toss 오더에 주문 생성
      */
     public OkposOrderResponse createOrder(OkposOrderRequest request) {
         String url = "/order/create";
         
         try {
-            log.info("OKPOS 주문 생성 요청: {}", request);
+            log.info("Toss 오더 주문 생성 요청: {}", request);
             
             ResponseEntity<OkposOrderResponse> response = restTemplate.postForEntity(
                 url,
@@ -273,26 +273,26 @@ public class OkposApiClient {
             );
             
             if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
-                log.info("OKPOS 주문 생성 성공: {}", response.getBody());
+                log.info("Toss 오더 주문 생성 성공: {}", response.getBody());
                 return response.getBody();
             }
             
-            throw new OkposApiException("OKPOS 주문 생성 실패: 응답이 비어있음");
+            throw new OkposApiException("Toss 오더 주문 생성 실패: 응답이 비어있음");
             
         } catch (HttpClientErrorException | HttpServerErrorException e) {
-            log.error("OKPOS API 에러: {} - {}", e.getStatusCode(), e.getResponseBodyAsString());
-            throw new OkposApiException("OKPOS API 호출 실패: " + e.getMessage(), e);
+            log.error("Toss 오더 API 에러: {} - {}", e.getStatusCode(), e.getResponseBodyAsString());
+            throw new OkposApiException("Toss 오더 API 호출 실패: " + e.getMessage(), e);
         }
     }
     
     /**
-     * OKPOS에서 메뉴 목록 조회
+     * Toss 오더에서 메뉴 목록 조회
      */
     public OkposMenuResponse getMenuList(String storeId) {
         String url = "/menu/items?storeId=" + storeId;
         
         try {
-            log.info("OKPOS 메뉴 조회 요청: storeId={}", storeId);
+            log.info("Toss 오더 메뉴 조회 요청: storeId={}", storeId);
             
             ResponseEntity<OkposMenuResponse> response = restTemplate.getForEntity(
                 url,
@@ -300,23 +300,23 @@ public class OkposApiClient {
             );
             
             if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
-                log.info("OKPOS 메뉴 조회 성공: {} 건", response.getBody().getItems().size());
+                log.info("Toss 오더 메뉴 조회 성공: {} 건", response.getBody().getItems().size());
                 return response.getBody();
             }
             
-            throw new OkposApiException("OKPOS 메뉴 조회 실패");
+            throw new OkposApiException("Toss 오더 메뉴 조회 실패");
             
         } catch (HttpClientErrorException | HttpServerErrorException e) {
-            log.error("OKPOS 메뉴 조회 에러: {}", e.getMessage());
-            throw new OkposApiException("OKPOS 메뉴 조회 실패: " + e.getMessage(), e);
+            log.error("Toss 오더 메뉴 조회 에러: {}", e.getMessage());
+            throw new OkposApiException("Toss 오더 메뉴 조회 실패: " + e.getMessage(), e);
         }
     }
     
     /**
      * 주문 상태 조회
      */
-    public OkposOrderResponse getOrderStatus(String okposOrderId) {
-        String url = "/order/" + okposOrderId;
+    public OkposOrderResponse getOrderStatus(String toss-orderOrderId) {
+        String url = "/order/" + toss-orderOrderId;
         
         try {
             ResponseEntity<OkposOrderResponse> response = restTemplate.getForEntity(
@@ -328,10 +328,10 @@ public class OkposApiClient {
                 return response.getBody();
             }
             
-            throw new OkposApiException("OKPOS 주문 상태 조회 실패");
+            throw new OkposApiException("Toss 오더 주문 상태 조회 실패");
             
         } catch (HttpClientErrorException | HttpServerErrorException e) {
-            throw new OkposApiException("OKPOS 주문 상태 조회 실패: " + e.getMessage(), e);
+            throw new OkposApiException("Toss 오더 주문 상태 조회 실패: " + e.getMessage(), e);
         }
     }
 }
@@ -339,15 +339,15 @@ public class OkposApiClient {
 
 #### 4.3.4 OkposOrderService.java
 ```java
-package com.tableorder.okpos.service;
+package com.tableorder.toss-order.service;
 
 import com.tableorder.entity.Order;
 import com.tableorder.entity.OrderItem;
-import com.tableorder.okpos.client.OkposApiClient;
-import com.tableorder.okpos.dto.request.OkposOrderRequest;
-import com.tableorder.okpos.dto.request.OkposOrderItemRequest;
-import com.tableorder.okpos.dto.response.OkposOrderResponse;
-import com.tableorder.okpos.exception.OkposApiException;
+import com.tableorder.toss-order.client.OkposApiClient;
+import com.tableorder.toss-order.dto.request.OkposOrderRequest;
+import com.tableorder.toss-order.dto.request.OkposOrderItemRequest;
+import com.tableorder.toss-order.dto.response.OkposOrderResponse;
+import com.tableorder.toss-order.exception.OkposApiException;
 import com.tableorder.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -364,11 +364,11 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class OkposOrderService {
     
-    private final OkposApiClient okposApiClient;
+    private final OkposApiClient toss-orderApiClient;
     private final OrderRepository orderRepository;
     
     /**
-     * 주문을 OKPOS로 전송
+     * 주문을 Toss 오더로 전송
      * 재시도: 최대 3번, 2초 간격으로 지수 백오프
      */
     @Transactional
@@ -379,33 +379,33 @@ public class OkposOrderService {
     )
     public void sendOrderToOkpos(Order order) {
         try {
-            log.info("OKPOS 주문 전송 시작: orderId={}", order.getId());
+            log.info("Toss 오더 주문 전송 시작: orderId={}", order.getId());
             
-            // Order 엔티티를 OKPOS API 요청 형식으로 변환
+            // Order 엔티티를 Toss 오더 API 요청 형식으로 변환
             OkposOrderRequest request = convertToOkposRequest(order);
             
-            // OKPOS API 호출
-            OkposOrderResponse response = okposApiClient.createOrder(request);
+            // Toss 오더 API 호출
+            OkposOrderResponse response = toss-orderApiClient.createOrder(request);
             
-            // 성공 시 OKPOS 주문 ID 저장
+            // 성공 시 Toss 오더 주문 ID 저장
             if (response.isSuccess()) {
                 order.setOkposOrderId(response.getOkposOrderId());
                 orderRepository.save(order);
-                log.info("OKPOS 주문 전송 성공: orderId={}, okposOrderId={}", 
+                log.info("Toss 오더 주문 전송 성공: orderId={}, toss-orderOrderId={}", 
                     order.getId(), response.getOkposOrderId());
             } else {
-                throw new OkposApiException("OKPOS 주문 생성 실패: " + response.getErrorMessage());
+                throw new OkposApiException("Toss 오더 주문 생성 실패: " + response.getErrorMessage());
             }
             
         } catch (OkposApiException e) {
-            log.error("OKPOS 주문 전송 실패: orderId={}, error={}", order.getId(), e.getMessage());
+            log.error("Toss 오더 주문 전송 실패: orderId={}, error={}", order.getId(), e.getMessage());
             // 재시도 가능한 예외는 던져서 @Retryable이 처리하도록 함
             throw e;
         }
     }
     
     /**
-     * Order 엔티티를 OKPOS API 요청 형식으로 변환
+     * Order 엔티티를 Toss 오더 API 요청 형식으로 변환
      */
     private OkposOrderRequest convertToOkposRequest(Order order) {
         List<OkposOrderItemRequest> items = order.getOrderItems().stream()
@@ -436,7 +436,7 @@ public class OkposOrderService {
 
 **OkposOrderRequest.java**
 ```java
-package com.tableorder.okpos.dto.request;
+package com.tableorder.toss-order.dto.request;
 
 import lombok.Builder;
 import lombok.Getter;
@@ -455,7 +455,7 @@ public class OkposOrderRequest {
 
 **OkposOrderItemRequest.java**
 ```java
-package com.tableorder.okpos.dto.request;
+package com.tableorder.toss-order.dto.request;
 
 import lombok.Builder;
 import lombok.Getter;
@@ -473,7 +473,7 @@ public class OkposOrderItemRequest {
 
 **OkposOrderResponse.java**
 ```java
-package com.tableorder.okpos.dto.response;
+package com.tableorder.toss-order.dto.response;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -482,7 +482,7 @@ import lombok.Setter;
 @Setter
 public class OkposOrderResponse {
     private Boolean success;
-    private String okposOrderId;
+    private String toss-orderOrderId;
     private String status;
     private String errorMessage;
     
@@ -494,7 +494,7 @@ public class OkposOrderResponse {
 
 **OkposMenuResponse.java**
 ```java
-package com.tableorder.okpos.dto.response;
+package com.tableorder.toss-order.dto.response;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -523,7 +523,7 @@ public class OkposMenuResponse {
 
 #### 4.3.6 Exception 클래스
 ```java
-package com.tableorder.okpos.exception;
+package com.tableorder.toss-order.exception;
 
 public class OkposApiException extends RuntimeException {
     
@@ -566,7 +566,7 @@ Request Body:
 Response:
 {
   "success": true,
-  "okposOrderId": "OKPOS-202412-001",
+  "toss-orderOrderId": "Toss 오더-202412-001",
   "status": "PENDING"
 }
 ```
@@ -595,13 +595,13 @@ Response:
 
 ### 5.3 주문 상태 조회
 ```http
-GET /api/order/{okposOrderId}
+GET /api/order/{toss-orderOrderId}
 X-API-KEY: {your-api-key}
 
 Response:
 {
   "success": true,
-  "okposOrderId": "OKPOS-202412-001",
+  "toss-orderOrderId": "Toss 오더-202412-001",
   "status": "COOKING", // PENDING, COOKING, SERVED, COMPLETED
   "updatedAt": "2024-12-26T14:30:00"
 }
@@ -628,7 +628,7 @@ Response:
 resilience4j:
   circuitbreaker:
     instances:
-      okposApi:
+      toss-orderApi:
         sliding-window-size: 10
         failure-rate-threshold: 50
         wait-duration-in-open-state: 60000
@@ -637,16 +637,16 @@ resilience4j:
 
 **적용 예시:**
 ```java
-@CircuitBreaker(name = "okposApi", fallbackMethod = "fallbackCreateOrder")
+@CircuitBreaker(name = "toss-orderApi", fallbackMethod = "fallbackCreateOrder")
 public OkposOrderResponse createOrder(OkposOrderRequest request) {
-    return okposApiClient.createOrder(request);
+    return toss-orderApiClient.createOrder(request);
 }
 
 private OkposOrderResponse fallbackCreateOrder(OkposOrderRequest request, Exception e) {
-    log.error("OKPOS API Circuit Breaker 작동: {}", e.getMessage());
+    log.error("Toss 오더 API Circuit Breaker 작동: {}", e.getMessage());
     // 실패 주문을 별도 큐에 저장
     saveFailedOrder(request);
-    throw new OkposApiException("OKPOS 서비스 일시적 장애");
+    throw new OkposApiException("Toss 오더 서비스 일시적 장애");
 }
 ```
 
@@ -685,17 +685,17 @@ public void retryFailedOrders() {
 
 ### 7.1 기존 테이블 수정
 ```sql
--- orders 테이블에 OKPOS 주문 ID 컬럼 추가
+-- orders 테이블에 Toss 오더 주문 ID 컬럼 추가
 ALTER TABLE orders 
-ADD COLUMN okpos_order_id VARCHAR(100),
-ADD COLUMN okpos_sync_status VARCHAR(20) DEFAULT 'PENDING'; -- PENDING, SUCCESS, FAILED
+ADD COLUMN toss-order_order_id VARCHAR(100),
+ADD COLUMN toss-order_sync_status VARCHAR(20) DEFAULT 'PENDING'; -- PENDING, SUCCESS, FAILED
 
-CREATE INDEX idx_orders_okpos_order_id ON orders(okpos_order_id);
+CREATE INDEX idx_orders_toss-order_order_id ON orders(toss-order_order_id);
 ```
 
-### 7.2 OKPOS 연동 로그 테이블
+### 7.2 Toss 오더 연동 로그 테이블
 ```sql
-CREATE TABLE okpos_sync_log (
+CREATE TABLE toss-order_sync_log (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     sync_type VARCHAR(50) NOT NULL, -- MENU, ORDER, PAYMENT
     entity_id UUID, -- 연관된 주문 ID 등
@@ -706,13 +706,13 @@ CREATE TABLE okpos_sync_log (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_okpos_sync_log_created_at ON okpos_sync_log(created_at);
-CREATE INDEX idx_okpos_sync_log_status ON okpos_sync_log(status);
+CREATE INDEX idx_toss-order_sync_log_created_at ON toss-order_sync_log(created_at);
+CREATE INDEX idx_toss-order_sync_log_status ON toss-order_sync_log(status);
 ```
 
 ### 7.3 실패한 주문 큐 테이블
 ```sql
-CREATE TABLE failed_okpos_orders (
+CREATE TABLE failed_toss-order_orders (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     order_id UUID NOT NULL REFERENCES orders(id),
     request_json TEXT NOT NULL,
@@ -722,7 +722,7 @@ CREATE TABLE failed_okpos_orders (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_failed_okpos_orders_retry_count ON failed_okpos_orders(retry_count);
+CREATE INDEX idx_failed_toss-order_orders_retry_count ON failed_toss-order_orders(retry_count);
 ```
 
 ---
@@ -731,10 +731,10 @@ CREATE INDEX idx_failed_okpos_orders_retry_count ON failed_okpos_orders(retry_co
 
 ### 8.1 application.yml
 ```yaml
-okpos:
+toss-order:
   api:
-    base-url: https://dum.okpos.co.kr/api
-    api-key: ${OKPOS_API_KEY:default-key-for-dev}
+    base-url: https://dum.toss-order.co.kr/api
+    api-key: ${Toss 오더_API_KEY:default-key-for-dev}
     timeout: 30000 # 30초
     retry:
       max-attempts: 3
@@ -746,18 +746,18 @@ spring:
     activate:
       on-profile: prod
 
-okpos:
+toss-order:
   api:
-    api-key: ${OKPOS_API_KEY} # 환경변수에서 주입
+    api-key: ${Toss 오더_API_KEY} # 환경변수에서 주입
 ```
 
 ### 8.2 환경변수 설정 (NCP Server)
 ```bash
 # /etc/environment 또는 .bashrc
-export OKPOS_API_KEY="your-production-api-key-here"
+export Toss 오더_API_KEY="your-production-api-key-here"
 
 # 또는 systemd service 파일에서
-Environment="OKPOS_API_KEY=your-production-api-key-here"
+Environment="Toss 오더_API_KEY=your-production-api-key-here"
 ```
 
 ---
@@ -765,7 +765,7 @@ Environment="OKPOS_API_KEY=your-production-api-key-here"
 ## 9. 테스트 방법
 
 ### 9.1 Swagger UI 테스트
-1. `https://dum.okpos.co.kr/api/swagger-ui.html` 접속
+1. `https://dum.toss-order.co.kr/api/swagger-ui.html` 접속
 2. **Authorize** 버튼 클릭 → API Key 입력
 3. 각 엔드포인트 테스트
 
@@ -773,7 +773,7 @@ Environment="OKPOS_API_KEY=your-production-api-key-here"
 ```json
 {
   "info": {
-    "name": "OKPOS API Test"
+    "name": "Toss 오더 API Test"
   },
   "item": [
     {
@@ -804,27 +804,27 @@ Environment="OKPOS_API_KEY=your-production-api-key-here"
 class OkposOrderServiceTest {
     
     @Autowired
-    private OkposOrderService okposOrderService;
+    private OkposOrderService toss-orderOrderService;
     
     @MockBean
-    private OkposApiClient okposApiClient;
+    private OkposApiClient toss-orderApiClient;
     
     @Test
-    void 주문_OKPOS_전송_성공() {
+    void 주문_Toss 오더_전송_성공() {
         // Given
         Order order = createTestOrder();
         OkposOrderResponse mockResponse = new OkposOrderResponse();
         mockResponse.setSuccess(true);
-        mockResponse.setOkposOrderId("OKPOS-TEST-001");
+        mockResponse.setOkposOrderId("Toss 오더-TEST-001");
         
-        when(okposApiClient.createOrder(any())).thenReturn(mockResponse);
+        when(toss-orderApiClient.createOrder(any())).thenReturn(mockResponse);
         
         // When
-        okposOrderService.sendOrderToOkpos(order);
+        toss-orderOrderService.sendOrderToOkpos(order);
         
         // Then
         assertNotNull(order.getOkposOrderId());
-        assertEquals("OKPOS-TEST-001", order.getOkposOrderId());
+        assertEquals("Toss 오더-TEST-001", order.getOkposOrderId());
     }
 }
 ```
@@ -835,7 +835,7 @@ class OkposOrderServiceTest {
 
 ### 10.1 API Key 관리
 ✅ **권장 사항:**
-- 환경변수로 관리 (`OKPOS_API_KEY`)
+- 환경변수로 관리 (`Toss 오더_API_KEY`)
 - Git에 절대 커밋하지 않기 (`.gitignore`에 추가)
 - NCP Secrets Manager 사용 고려
 
@@ -848,9 +848,9 @@ String apiKey = "sk-live-abc123...";
 ### 10.2 HTTPS 강제
 ```java
 @Bean
-public RestTemplate okposRestTemplate(RestTemplateBuilder builder) {
-    if (!okposProperties.getBaseUrl().startsWith("https://")) {
-        throw new IllegalStateException("OKPOS API는 HTTPS만 허용됩니다.");
+public RestTemplate toss-orderRestTemplate(RestTemplateBuilder builder) {
+    if (!toss-orderProperties.getBaseUrl().startsWith("https://")) {
+        throw new IllegalStateException("Toss 오더 API는 HTTPS만 허용됩니다.");
     }
     // ...
 }
@@ -868,14 +868,14 @@ public void sendOrderToOkpos(Order order) {
         throw new IllegalArgumentException("주문 금액 불일치");
     }
     
-    // OKPOS 전송
+    // Toss 오더 전송
     // ...
 }
 ```
 
 ### 10.4 로그 마스킹
 ```java
-log.info("OKPOS 주문 전송: orderId={}, tableNumber={}, totalPrice={}", 
+log.info("Toss 오더 주문 전송: orderId={}, tableNumber={}, totalPrice={}", 
     order.getId(), 
     order.getTable().getTableNumber(),
     order.getTotalPrice()
@@ -889,12 +889,12 @@ log.info("OKPOS 주문 전송: orderId={}, tableNumber={}, totalPrice={}",
 
 ### 11.1 배포 전
 - [ ] API Key 환경변수 설정 확인
-- [ ] OKPOS Swagger에서 API 테스트 완료
+- [ ] Toss 오더 Swagger에서 API 테스트 완료
 - [ ] 재시도 로직 테스트 완료
 - [ ] 에러 알림 시스템 구축 (Slack, Email 등)
 
 ### 11.2 배포 후
-- [ ] OKPOS 연동 성공률 모니터링 (CloudWatch, Grafana)
+- [ ] Toss 오더 연동 성공률 모니터링 (CloudWatch, Grafana)
 - [ ] 실패한 주문 큐 주기적 확인
 - [ ] API 호출 성능 모니터링 (평균 응답 시간)
 
@@ -902,27 +902,27 @@ log.info("OKPOS 주문 전송: orderId={}, tableNumber={}, totalPrice={}",
 
 ## 12. FAQ
 
-**Q1. OKPOS API가 응답이 없을 때는?**
+**Q1. Toss 오더 API가 응답이 없을 때는?**
 - Circuit Breaker가 작동하여 추가 호출을 차단합니다.
-- 실패한 주문은 `failed_okpos_orders` 테이블에 저장됩니다.
+- 실패한 주문은 `failed_toss-order_orders` 테이블에 저장됩니다.
 - 스케줄러가 5분마다 재시도합니다.
 
 **Q2. 메뉴 동기화 주기는?**
 - 기본: 매일 새벽 3시 (Scheduler)
 - 필요 시 관리자가 수동 동기화 가능
 
-**Q3. OKPOS 주문 ID가 중복될 수 있나요?**
-- OKPOS에서 UUID 또는 고유 ID를 반환하므로 중복 없음
+**Q3. Toss 오더 주문 ID가 중복될 수 있나요?**
+- Toss 오더에서 UUID 또는 고유 ID를 반환하므로 중복 없음
 - 만약을 대비해 DB에 UNIQUE 제약조건 추가 권장
 
 **Q4. 결제 정보는 어떻게 동기화하나요?**
-- 고객이 테이블에서 결제 완료 → OKPOS에 결제 완료 API 호출
-- 또는 OKPOS에서 결제 완료 시 Webhook으로 알림 (지원 여부 확인 필요)
+- 고객이 테이블에서 결제 완료 → Toss 오더에 결제 완료 API 호출
+- 또는 Toss 오더에서 결제 완료 시 Webhook으로 알림 (지원 여부 확인 필요)
 
 ---
 
 ## 13. 참고 자료
-- **OKPOS Swagger**: https://dum.okpos.co.kr/api/swagger-ui.html
+- **Toss 오더 Swagger**: https://dum.toss-order.co.kr/api/swagger-ui.html
 - **Spring Retry 문서**: https://docs.spring.io/spring-retry/docs/current/reference/html/
 - **Resilience4j 가이드**: https://resilience4j.readme.io/docs/circuitbreaker
 
