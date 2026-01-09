@@ -13,6 +13,7 @@ coverage
 # Next.js
 .next/
 out/
+*.tsbuildinfo
 
 # Production
 build
@@ -51,3 +52,6 @@ Desktop.ini
 
 # Vercel
 .vercel
+
+# Turborepo
+.turbo
