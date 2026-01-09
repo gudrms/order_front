@@ -1,5 +1,6 @@
 {
-  "buildCommand": "cd ../.. && pnpm turbo build --filter=delivery-customer",
+  "buildCommand": "cd ../.. && pnpm install && pnpm turbo build --filter=delivery-customer",
+  "installCommand": "echo 'Skipping default install'",
   "framework": "nextjs",
-  "outputDirectory": ".next"
+  "outputDirectory": "apps/delivery-customer/.next"
 }

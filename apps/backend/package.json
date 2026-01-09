@@ -2,6 +2,7 @@
     "name": "backend",
     "version": "0.0.1",
     "private": true,
+    "packageManager": "pnpm@8.15.9",
     "scripts": {
         "dev": "nest start --watch --entryFile apps/backend/src/main",
         "build": "npx prisma generate && nest build",
