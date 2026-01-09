@@ -2,5 +2,5 @@
   "buildCommand": "cd ../.. && pnpm install && pnpm turbo build --filter=admin",
   "installCommand": "echo 'Skipping default install'",
   "framework": "nextjs",
-  "outputDirectory": "apps/admin/.next"
+  "outputDirectory": ".next"
 }
