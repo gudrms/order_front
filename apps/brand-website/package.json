@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@order/shared": "workspace:*",
+    "@sentry/nextjs": "^10.32.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.562.0",
     "next": "16.1.1",

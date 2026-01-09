@@ -13,6 +13,7 @@
   "dependencies": {
     "@order/shared": "workspace:*",
     "@order/ui": "workspace:*",
+    "@sentry/nextjs": "^10.32.1",
     "@supabase/supabase-js": "^2.89.0",
     "@tanstack/react-query": "^5.90.12",
     "axios": "^1.13.2",
