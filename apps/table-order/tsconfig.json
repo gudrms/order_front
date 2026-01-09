@@ -24,7 +24,8 @@
       "@order/ui": ["../../packages/ui/src"],
       "@order/order-core": ["../../packages/order-core/src"]
     },
-    "typeRoots": ["./node_modules/@types", "./types"]
+    "typeRoots": ["./node_modules/@types", "./types"],
+    "types": ["node", "react", "react-dom"]
   },
   "include": [
     "next-env.d.ts",

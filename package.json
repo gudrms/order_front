@@ -17,6 +17,7 @@
         "supa:pull-data": "node scripts/pull-db.js"
     },
     "devDependencies": {
+        "@types/minimatch": "^6.0.0",
         "turbo": "^2.7.2"
     }
 }
