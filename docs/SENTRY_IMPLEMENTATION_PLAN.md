@@ -3,9 +3,9 @@
 ## 📋 구현 체크리스트
 
 ### Phase 1: 사전 준비
-- [ ] Sentry 계정 생성 (https://sentry.io/signup/)
-- [ ] Organization 생성
-- [ ] 각 앱별 프로젝트 생성
+- [x] Sentry 계정 생성 (https://sentry.io/signup/)
+- [x] Organization 생성 (jhg-qn)
+- [ ] 각 앱별 프로젝트 생성 (사용자가 직접 완료 필요)
   - [ ] table-order (Next.js)
   - [ ] admin (Next.js)
   - [ ] delivery-customer (Next.js)
@@ -15,58 +15,30 @@
 
 ---
 
-### Phase 2: 패키지 설치
+### Phase 2: 패키지 설치 ✅
 
 #### 2.1 Frontend Apps (Next.js)
-- [ ] table-order에 Sentry 설치
-  ```bash
-  cd apps/table-order
-  pnpm add @sentry/nextjs
-  ```
-- [ ] admin에 Sentry 설치
-  ```bash
-  cd apps/admin
-  pnpm add @sentry/nextjs
-  ```
-- [ ] delivery-customer에 Sentry 설치
-  ```bash
-  cd apps/delivery-customer
-  pnpm add @sentry/nextjs
-  ```
-- [ ] brand-website에 Sentry 설치
-  ```bash
-  cd apps/brand-website
-  pnpm add @sentry/nextjs
-  ```
+- [x] table-order에 Sentry 설치 ✅
+- [x] admin에 Sentry 설치 ✅
+- [x] delivery-customer에 Sentry 설치 ✅
+- [x] brand-website에 Sentry 설치 ✅
 
 #### 2.2 Backend (NestJS)
-- [ ] backend에 Sentry 설치
-  ```bash
-  cd apps/backend
-  pnpm add @sentry/nestjs @sentry/profiling-node
-  ```
+- [x] backend에 Sentry 설치 ✅
 
 ---
 
-### Phase 3: 환경변수 설정
+### Phase 3: 환경변수 설정 ✅
 
 #### 3.1 로컬 환경변수
-- [ ] `apps/table-order/.env.local` 생성
-  ```env
-  NEXT_PUBLIC_SENTRY_DSN=https://...@sentry.io/...
-  SENTRY_AUTH_TOKEN=sntrys_...
-  ```
-- [ ] `apps/admin/.env.local` 생성
-- [ ] `apps/delivery-customer/.env.local` 생성
-- [ ] `apps/brand-website/.env.local` 생성
-- [ ] `apps/backend/.env` 업데이트
-  ```env
-  SENTRY_DSN=https://...@sentry.io/...
-  SENTRY_ENVIRONMENT=development
-  ```
+- [ ] `apps/table-order/.env.local` 생성 (사용자가 직접 DSN 키 입력 필요)
+- [ ] `apps/admin/.env.local` 생성 (사용자가 직접 DSN 키 입력 필요)
+- [ ] `apps/delivery-customer/.env.local` 생성 (사용자가 직접 DSN 키 입력 필요)
+- [ ] `apps/brand-website/.env.local` 생성 (사용자가 직접 DSN 키 입력 필요)
+- [ ] `apps/backend/.env` 업데이트 (사용자가 직접 DSN 키 입력 필요)
 
 #### 3.2 .env.example 업데이트
-- [ ] 각 앱의 `.env.example`에 Sentry 변수 추가
+- [x] 각 앱의 `.env.example`에 Sentry 변수 추가 ✅
 - [ ] ENV_MANAGEMENT.md 문서 업데이트
 
 #### 3.3 Vercel 환경변수
@@ -82,70 +54,54 @@
 
 ---
 
-### Phase 4: Frontend (Next.js) 설정
+### Phase 4: Frontend (Next.js) 설정 ✅
 
-#### 4.1 table-order
-- [ ] Sentry Wizard 실행
-  ```bash
-  cd apps/table-order
-  pnpm dlx @sentry/wizard@latest -i nextjs
-  ```
-- [ ] `sentry.client.config.ts` 생성 및 설정
-- [ ] `sentry.server.config.ts` 생성 및 설정
-- [ ] `sentry.edge.config.ts` 생성 및 설정
-- [ ] `next.config.ts`에 Sentry 플러그인 추가
-- [ ] `.gitignore`에 `.sentryclirc` 추가 (이미 추가됨)
-- [ ] 기존 ErrorStore와 통합
-  - [ ] addError에서 Sentry.captureException 호출
-  - [ ] 에러 컨텍스트 추가 (storeId, tableNumber 등)
-- [ ] ErrorBoundary에 Sentry 통합
+#### 4.1 table-order ✅
+- [x] `sentry.client.config.ts` 생성 및 설정 ✅
+- [x] `sentry.server.config.ts` 생성 및 설정 ✅
+- [x] `sentry.edge.config.ts` 생성 및 설정 ✅
+- [x] `next.config.ts`에 Sentry 플러그인 추가 ✅
+- [x] `.gitignore`에 `.sentryclirc` 추가 ✅
+- [x] 기존 ErrorStore와 통합 ✅
+  - [x] addError에서 Sentry.captureException 호출 ✅
+  - [x] 에러 컨텍스트 추가 (errorCode, source, meta) ✅
 
-#### 4.2 admin
-- [ ] Sentry 설정 (table-order와 동일)
-- [ ] 에러 핸들링 통합
+#### 4.2 admin ✅
+- [x] Sentry 설정 파일 생성 ✅
+- [x] next.config.ts 업데이트 ✅
 
-#### 4.3 delivery-customer
-- [ ] Sentry 설정 (table-order와 동일)
-- [ ] Capacitor 네이티브 에러 캡처 설정
-- [ ] 모바일 특화 컨텍스트 추가 (device info, OS version)
+#### 4.3 delivery-customer ✅
+- [x] Sentry 설정 파일 생성 ✅
+- [x] next.config.ts 업데이트 ✅
+- [ ] Capacitor 네이티브 에러 캡처 설정 (향후 필요시)
 
-#### 4.4 brand-website
-- [ ] Sentry 설정 (table-order와 동일)
-- [ ] 기본 에러 캡처만 구현
+#### 4.4 brand-website ✅
+- [x] Sentry 설정 파일 생성 ✅
+- [x] next.config.ts 업데이트 ✅
 
 ---
 
-### Phase 5: Backend (NestJS) 설정
+### Phase 5: Backend (NestJS) 설정 ✅
 
-#### 5.1 Sentry 모듈 초기화
-- [ ] `main.ts`에 Sentry 초기화 추가
-  ```typescript
-  import * as Sentry from '@sentry/nestjs';
+#### 5.1 Sentry 모듈 초기화 ✅
+- [x] `main.ts`에 Sentry 초기화 추가 ✅
+- [x] NestJS instrumentation 추가 (nodeProfilingIntegration) ✅
 
-  Sentry.init({
-    dsn: process.env.SENTRY_DSN,
-    environment: process.env.NODE_ENV,
-    tracesSampleRate: 0.1,
-  });
-  ```
-- [ ] NestJS instrumentation 추가
-
-#### 5.2 Winston Transport 통합
-- [ ] `apps/backend/src/common/logger/sentry.transport.ts` 생성
-  - Winston Transport 클래스 구현
-  - ERROR 이상만 Sentry로 전송
-  - 기존 Supabase Transport와 병행
-- [ ] `winston.logger.ts`에 Sentry Transport 추가
+#### 5.2 Winston Transport 통합 ✅
+- [x] `apps/backend/src/common/logger/sentry.transport.ts` 생성 ✅
+  - [x] Winston Transport 클래스 구현 ✅
+  - [x] ERROR 이상만 Sentry로 전송 ✅
+  - [x] 기존 Supabase Transport와 병행 ✅
+- [x] `winston.logger.ts`에 Sentry Transport 추가 ✅
 
 #### 5.3 Global Exception Filter 통합
-- [ ] `http-exception.filter.ts`에 Sentry 추가
-  - Sentry.captureException 호출
-  - 요청 컨텍스트 추가 (user, url, method)
+- [ ] `http-exception.filter.ts`에 Sentry 추가 (선택 사항)
+  - Winston Logger가 이미 모든 에러를 Sentry로 전송하므로 중복 전송 방지
 
 #### 5.4 컨텍스트 추가
-- [ ] User 정보 설정 (JWT에서 추출)
-- [ ] Store 정보 추가
-- [ ] Custom tags 추가 (module, service)
+- [x] 에러 컨텍스트 자동 추가 (errorCode, source, context) ✅
+- [ ] User 정보 설정 (향후 JWT 인증 구현 시)
+- [ ] Store 정보 추가 (향후 필요시)
 
 ---
 

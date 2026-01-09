@@ -1,10 +1,11 @@
 /**
  * Winston Logger 설정
- * Console + Supabase DB에 로그 저장
+ * Console + Supabase DB + Sentry에 로그 저장
  */
 
 import * as winston from 'winston';
 import { SupabaseTransport } from './supabase.transport';
+import { SentryTransport } from './sentry.transport';
 
 /**
  * 애플리케이션 전역 Winston Logger
@@ -35,9 +36,14 @@ export const winstonLogger = winston.createLogger({
       ),
     }),
 
-    // 2. Supabase DB Transport (error 이상만)
+    // 2. Sentry Transport (error 이상만 - 실시간 알림용)
+    new SentryTransport({
+      level: 'error',
+    }),
+
+    // 3. Supabase DB Transport (error 이상만 - 백업/감사 로그용)
     new SupabaseTransport({
-      level: 'error', // error, critical만 DB 저장
+      level: 'error',
     }),
   ],
 });

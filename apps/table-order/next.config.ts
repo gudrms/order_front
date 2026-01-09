@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import withPWAInit from "@ducanh2912/next-pwa";
+import { withSentryConfig } from "@sentry/nextjs";
 
 // PWA 설정
 const withPWA = withPWAInit({
@@ -96,4 +97,24 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withPWA(nextConfig);
+// Sentry 설정
+const sentryWebpackPluginOptions = {
+  // 추가 설정 옵션은 여기에 추가
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+
+  // 소스맵만 Sentry에 업로드, 프로덕션 빌드에는 포함 안 함
+  silent: true,
+  widenClientFileUpload: true,
+  hideSourceMaps: true,
+
+  // Webpack treeshaking 설정으로 disableLogger 대체
+  webpack: {
+    treeshake: {
+      removeDebugLogging: true,
+    },
+  },
+};
+
+// PWA -> Sentry 순서로 플러그인 적용
+export default withSentryConfig(withPWA(nextConfig), sentryWebpackPluginOptions);

@@ -7,6 +7,34 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
+import * as Sentry from '@sentry/nestjs';
+import { nodeProfilingIntegration } from '@sentry/profiling-node';
+
+// Sentry 초기화 (최상단에서 실행)
+Sentry.init({
+  dsn: process.env.SENTRY_DSN,
+  environment: process.env.NODE_ENV || 'development',
+
+  // 성능 모니터링 샘플링 (10% - 무료 플랜 고려)
+  tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
+
+  // Profiling 샘플링
+  profilesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
+
+  integrations: [
+    nodeProfilingIntegration(),
+  ],
+
+  // 민감정보 필터링
+  beforeSend(event) {
+    // Authorization 헤더 제거
+    if (event.request?.headers) {
+      delete event.request.headers['authorization'];
+      delete event.request.headers['cookie'];
+    }
+    return event;
+  },
+});
 
 // Express 인스턴스 생성 (Vercel Serverless용)
 const expressApp = express();

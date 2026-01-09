@@ -55,3 +55,7 @@ Desktop.ini
 
 # Turborepo
 .turbo
+
+# Sentry
+.sentryclirc
+sentry.properties

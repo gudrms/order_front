@@ -4,6 +4,7 @@
 
 import { create } from 'zustand';
 import type { AppError, ErrorSeverity } from '@order/shared';
+import * as Sentry from '@sentry/nextjs';
 
 interface ErrorState {
   /** 발생한 모든 에러 목록 */
@@ -51,7 +52,10 @@ export const useErrorStore = create<ErrorState>((set, get) => ({
       });
     }
 
-    // Critical 에러만 Backend로 전송 (프로덕션)
+    // Sentry에 에러 전송 (모든 환경)
+    sendErrorToSentry(newError);
+
+    // Critical 에러만 Backend로 전송 (프로덕션 - 백업용)
     if (error.severity === 'critical' && process.env.NODE_ENV === 'production') {
       sendErrorToBackend(newError);
     }
@@ -98,7 +102,53 @@ function getAutoRemoveTimeout(severity: ErrorSeverity): number {
 }
 
 /**
- * Critical 에러를 Backend API로 전송
+ * Sentry에 에러 전송
+ */
+function sendErrorToSentry(error: AppError): void {
+  try {
+    // Severity 매핑 (AppError -> Sentry)
+    const sentryLevel = mapSeverityToSentryLevel(error.severity);
+
+    // Sentry에 에러 전송
+    Sentry.captureException(new Error(error.message), {
+      level: sentryLevel,
+      tags: {
+        errorCode: error.code || 'UNKNOWN',
+        source: 'table-order',
+      },
+      extra: {
+        ...error.meta,
+        timestamp: error.timestamp,
+      },
+    });
+  } catch (err) {
+    // Sentry 전송 실패는 무시
+    console.error('[ErrorStore] Failed to send error to Sentry:', err);
+  }
+}
+
+/**
+ * AppError severity를 Sentry level로 매핑
+ */
+function mapSeverityToSentryLevel(
+  severity: ErrorSeverity,
+): Sentry.SeverityLevel {
+  switch (severity) {
+    case 'info':
+      return 'info';
+    case 'warning':
+      return 'warning';
+    case 'error':
+      return 'error';
+    case 'critical':
+      return 'fatal';
+    default:
+      return 'error';
+  }
+}
+
+/**
+ * Critical 에러를 Backend API로 전송 (백업용)
  */
 async function sendErrorToBackend(error: AppError): Promise<void> {
   try {
