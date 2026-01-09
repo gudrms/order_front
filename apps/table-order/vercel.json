@@ -2,5 +2,5 @@
   "buildCommand": "cd ../.. && pnpm install && pnpm turbo build --filter=table-order",
   "installCommand": "echo 'Skipping default install'",
   "framework": "nextjs",
-  "outputDirectory": "apps/table-order/.next"
+  "outputDirectory": ".next"
 }
