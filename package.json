@@ -1,7 +1,7 @@
 {
     "name": "table-order-monorepo",
     "private": true,
-    "packageManager": "pnpm@9.15.0",
+    "packageManager": "pnpm@9.1.0",
     "engines": {
         "node": ">=20.0.0"
     },
