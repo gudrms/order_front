@@ -145,6 +145,7 @@ apps/backend/src/modules/
 | **Backend** | NestJS 10, Prisma 5 |
 | **Database** | Supabase (PostgreSQL 14) |
 | **Realtime** | Supabase Realtime |
+| **Error Monitoring** | Sentry (모든 앱 통합) |
 | **Deployment** | Vercel (Serverless) |
 | **Monorepo** | pnpm, Turborepo |
 
@@ -182,6 +183,7 @@ pnpm ios
 - [아키텍처 결정](./docs/ARCHITECTURE_DECISIONS.md)
 - [QR 코드 주문 가이드](./docs/QR_ORDERING.md)
 - [배달앱 기능 목록](./apps/delivery-customer/FEATURES.md)
+- [Sentry 에러 모니터링](./docs/SENTRY_QUICK_START.md)
 
 ## 🎯 주요 기능
 

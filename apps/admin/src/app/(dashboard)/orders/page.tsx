@@ -1,32 +1,38 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
-import { 
-  ORDER_STATUS_LABEL, 
+import {
+  ORDER_STATUS_LABEL,
   ORDER_STATUS_COLOR,
-  Order, 
+  Order,
   OrderStatus,
-  formatCurrency, 
+  formatCurrency,
   formatDate
 } from '@order/shared';
 import { Badge } from '@order/ui';
-import { 
-  CheckCircle2, 
-  Clock, 
-  ChefHat, 
-  XCircle, 
-  MoreVertical 
+import {
+  CheckCircle2,
+  Clock,
+  ChefHat,
+  XCircle,
+  MoreVertical,
+  Printer,
+  X
 } from 'lucide-react';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useRealtimeOrders } from '@/hooks/useRealtimeOrders';
+import { OrderReceipt } from '@/components/OrderReceipt';
 
 export default function OrdersPage() {
   const { session } = useAuth();
   const queryClient = useQueryClient();
   const storeId = 'store-1'; // 임시: 나중에 선택 가능하도록 변경
+
+  // 프린트 모달 상태
+  const [printOrder, setPrintOrder] = useState<Order | null>(null);
 
   // 실시간 주문 구독
   useRealtimeOrders(storeId);
