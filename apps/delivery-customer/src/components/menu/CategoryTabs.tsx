@@ -9,7 +9,8 @@ export default function CategoryTabs() {
     const { data: categories } = useCategories();
 
     // 데이터가 없을 때를 대비한 기본 카테고리 (로딩 중 등)
-    const displayCategories = categories || [];
+    // TODO: 이벤트 메뉴 에러로 인한 임시 숨김 처리
+    const displayCategories = (categories || []).filter(cat => cat.name !== '이벤트' && cat.name !== 'Event');
 
     return (
         <div className="sticky top-0 z-40 bg-white border-b border-gray-100 shadow-sm">

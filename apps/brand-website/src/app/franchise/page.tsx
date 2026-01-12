@@ -1,122 +1,143 @@
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-import { CheckCircle2, TrendingUp, Users, DollarSign, ArrowRight, Phone } from 'lucide-react';
+'use client';
+
+
+
+import { useActionState } from 'react';
+import { submitFranchiseInquiry } from './actions';
+import { useEffect } from 'react';
+
+const initialState = {
+    success: false,
+    message: '',
+};
 
 export default function FranchisePage() {
+    const [state, formAction, isPending] = useActionState(submitFranchiseInquiry, initialState);
+
+    // Reset form or show alert based on state
+    useEffect(() => {
+        if (state.message) {
+            alert(state.message);
+            if (state.success) {
+                // Optional: Reset form fields if needed
+            }
+        }
+    }, [state]);
+
     return (
-        <main className="min-h-screen bg-white">
-            <Navbar />
-            
-            <section className="py-24 bg-brand-black text-center relative overflow-hidden">
-                <div className="absolute inset-0 opacity-20">
-                    <div className="w-full h-full bg-[url('https://images.unsplash.com/photo-1556742049-0cfed4f7a07d?q=80&w=2880&auto=format&fit=crop')] bg-cover bg-center" />
-                </div>
-                <div className="relative z-10">
-                    <h1 className="text-4xl md:text-6xl font-black text-white mb-6">성공의 동반자,<br />타코몰리와 함께하세요</h1>
-                    <p className="text-brand-yellow text-xl font-bold">체계적인 시스템으로 예비 창업주의 성공을 지원합니다.</p>
-                </div>
+        <main className="min-h-screen bg-white text-brand-black">
+            {/* Hero */}
+            <section className="py-20 bg-brand-yellow text-brand-black text-center px-4">
+                <h1 className="text-4xl md:text-6xl font-bold mb-6">FRANCHISE</h1>
+                <p className="text-xl md:text-2xl font-medium max-w-2xl mx-auto">
+                    타코몰리와 함께 성공적인 창업의 꿈을 이루세요.
+                </p>
             </section>
 
-            {/* Why Tacomoly */}
-            <section className="py-24">
-                <div className="container mx-auto px-4">
-                    <h2 className="text-3xl font-black text-center mb-16">타코몰리만의 <span className="text-brand-green">차별화된 경쟁력</span></h2>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        <div className="bg-gray-50 p-10 rounded-3xl text-center hover:bg-white hover:shadow-xl transition-all border border-transparent hover:border-brand-yellow/30 group">
-                            <div className="w-16 h-16 bg-brand-yellow rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
-                                <TrendingUp className="text-brand-black" size={32} />
-                            </div>
-                            <h3 className="text-2xl font-bold mb-4">안정적인 수익구조</h3>
-                            <p className="text-gray-600">낮은 원가율과 효율적인 오퍼레이션으로 극대화된 수익률을 보장합니다.</p>
-                        </div>
-                        <div className="bg-gray-50 p-10 rounded-3xl text-center hover:bg-white hover:shadow-xl transition-all border border-transparent hover:border-brand-yellow/30 group">
-                            <div className="w-16 h-16 bg-brand-green rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
-                                <Users className="text-white" size={32} />
-                            </div>
-                            <h3 className="text-2xl font-bold mb-4">체계적인 교육</h3>
-                            <p className="text-gray-600">초보 창업자도 전문가가 될 수 있도록 1:1 전담 교육 시스템을 제공합니다.</p>
-                        </div>
-                        <div className="bg-gray-50 p-10 rounded-3xl text-center hover:bg-white hover:shadow-xl transition-all border border-transparent hover:border-brand-yellow/30 group">
-                            <div className="w-16 h-16 bg-brand-black rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
-                                <CheckCircle2 className="text-brand-yellow" size={32} />
-                            </div>
-                            <h3 className="text-2xl font-bold mb-4">트렌디한 브랜딩</h3>
-                            <p className="text-gray-600">MZ세대를 사로잡는 감각적인 인테리어와 압도적인 비주얼의 메뉴.</p>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* Procedure */}
-            <section className="py-24 bg-gray-50">
-                <div className="container mx-auto px-4">
-                    <h2 className="text-3xl font-black text-center mb-16">창업 절차</h2>
-                    <div className="flex flex-col md:flex-row justify-between items-start gap-8 relative">
-                        {[
-                            { step: '01', title: '가맹상담', desc: '사업 계획 및 시장 분석' },
-                            { step: '02', title: '점포개발', desc: '입지 분석 및 상권 확인' },
-                            { step: '03', title: '가맹계약', desc: '정보공개서 및 계약 체결' },
-                            { step: '04', title: '인테리어', desc: '공사 진행 및 기기 입고' },
-                            { step: '05', title: '교육 및 오픈', desc: '운영 교육 후 정식 오픈' }
-                        ].map((item, idx, arr) => (
-                            <div key={idx} className="flex-1 text-center relative z-10">
-                                <div className="w-16 h-16 bg-white border-2 border-brand-green text-brand-green rounded-full flex items-center justify-center mx-auto mb-6 font-black text-xl shadow-sm">
-                                    {item.step}
-                                </div>
-                                <h4 className="text-xl font-bold mb-2">{item.title}</h4>
-                                <p className="text-gray-500 text-sm">{item.desc}</p>
-                                {idx < arr.length - 1 && (
-                                    <div className="hidden md:block absolute top-8 left-[calc(50%+40px)] w-[calc(100%-80px)] h-0.5 bg-gray-200" />
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </section>
-
-            {/* Contact Form */}
-            <section className="py-24">
-                <div className="container mx-auto px-4 max-w-4xl">
-                    <div className="bg-white rounded-4xl shadow-2xl overflow-hidden flex flex-col md:flex-row border border-gray-100">
-                        <div className="bg-brand-green p-12 text-white md:w-1/3">
-                            <h2 className="text-3xl font-black mb-6">가맹 상담<br />신청하기</h2>
-                            <p className="text-brand-yellow font-bold mb-8">빠른 시일 내에 전문가가 연락드리겠습니다.</p>
-                            <div className="space-y-4 text-sm">
-                                <p className="flex items-center gap-2 opacity-80"><Phone size={16} /> 1588-0000</p>
-                                <p className="flex items-center gap-2 opacity-80"><CheckCircle2 size={16} /> 24시간 온라인 접수 가능</p>
-                            </div>
-                        </div>
-                        <div className="p-12 md:w-2/3">
-                            <form className="space-y-6">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-bold text-gray-700">이름</label>
-                                        <input type="text" className="w-full p-4 bg-gray-50 rounded-xl outline-none focus:ring-2 ring-brand-green/20" placeholder="성함을 입력하세요" />
+            <div className="container mx-auto px-4 py-20 grid grid-cols-1 lg:grid-cols-2 gap-16">
+                {/* Info Section */}
+                <div className="space-y-12">
+                    <div>
+                        <h2 className="text-3xl font-bold text-brand-black mb-6">Why TACO MOLE?</h2>
+                        <ul className="space-y-6">
+                            {[
+                                { title: '검증된 맛과 메뉴', desc: '남녀노소 누구나 좋아하는 대중적인 멕시칸 푸드' },
+                                { title: '쉬운 조리 시스템', desc: '초보자도 1주일 교육이면 마스터 가능한 레시피' },
+                                { title: '높은 수익률', desc: '효율적인 식자재 관리와 낮은 원가율' },
+                            ].map((item, idx) => (
+                                <li key={idx} className="flex gap-4">
+                                    <div className="w-12 h-12 bg-brand-black rounded-full flex items-center justify-center text-brand-yellow font-bold text-xl shrink-0">
+                                        {idx + 1}
                                     </div>
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-bold text-gray-700">연락처</label>
-                                        <input type="text" className="w-full p-4 bg-gray-50 rounded-xl outline-none focus:ring-2 ring-brand-green/20" placeholder="010-0000-0000" />
+                                    <div>
+                                        <h3 className="text-xl font-bold text-brand-green mb-2">{item.title}</h3>
+                                        <p className="text-gray-600">{item.desc}</p>
                                     </div>
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-sm font-bold text-gray-700">희망 지역</label>
-                                    <input type="text" className="w-full p-4 bg-gray-50 rounded-xl outline-none focus:ring-2 ring-brand-green/20" placeholder="예: 서울 마포구" />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-sm font-bold text-gray-700">문의 내용 (선택)</label>
-                                    <textarea className="w-full p-4 bg-gray-50 rounded-xl outline-none focus:ring-2 ring-brand-green/20 h-32" placeholder="궁금하신 사항을 입력해주세요"></textarea>
-                                </div>
-                                <button className="w-full py-4 bg-brand-black text-white font-black rounded-xl hover:bg-brand-green transition-colors shadow-lg">
-                                    상담 신청하기
-                                </button>
-                            </form>
-                        </div>
+                                </li>
+                            ))}
+                        </ul>
                     </div>
-                </div>
-            </section>
 
-            <Footer />
-        </main>
+                    <div className="bg-gray-50 p-8 rounded-2xl border border-gray-200">
+                        <h3 className="text-xl font-bold text-brand-black mb-4">가맹 개설 비용</h3>
+                        <div className="space-y-4 text-gray-600">
+                            <div className="flex justify-between border-b border-gray-200 pb-2">
+                                <span>가맹비</span>
+                                <span className="text-brand-black font-bold">1,000 만원</span>
+                            </div>
+                            <div className="flex justify-between border-b border-gray-200 pb-2">
+                                <span>교육비</span>
+                                <span className="text-brand-black font-bold">500 만원</span>
+                            </div>
+                            <div className="flex justify-between border-b border-gray-200 pb-2">
+                                <span>인테리어 (15평 기준)</span>
+                                <span className="text-brand-black font-bold">3,500 만원</span>
+                            </div>
+                            <div className="flex justify-between pt-2 text-lg">
+                                <span className="text-brand-green font-bold">총 예상 비용</span>
+                                <span className="text-brand-green font-bold">5,000 만원</span>
+                            </div>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-4">* 점포 임대료 및 별도 공사 비용 제외</p>
+                    </div>
+                </div >
+
+                {/* Form Section */}
+                < div className="bg-white text-brand-black p-8 md:p-10 rounded-3xl shadow-2xl" >
+                    <h2 className="text-3xl font-bold mb-2">가맹 상담 신청</h2>
+                    <p className="text-gray-600 mb-8">정보를 남겨주시면 상세한 안내 자료를 보내드립니다.</p>
+
+                    <form action={formAction} className="space-y-6">
+                        <div>
+                            <label className="block font-bold mb-2">이름</label>
+                            <input
+                                name="name"
+                                type="text"
+                                required
+                                className="w-full bg-gray-100 border border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:border-brand-green transition-colors"
+                                placeholder="홍길동"
+                            />
+                        </div>
+                        <div>
+                            <label className="block font-bold mb-2">연락처</label>
+                            <input
+                                name="phone"
+                                type="tel"
+                                required
+                                className="w-full bg-gray-100 border border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:border-brand-green transition-colors"
+                                placeholder="010-1234-5678"
+                            />
+                        </div>
+                        <div>
+                            <label className="block font-bold mb-2">희망 창업 지역</label>
+                            <input
+                                name="area"
+                                type="text"
+                                required
+                                className="w-full bg-gray-100 border border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:border-brand-green transition-colors"
+                                placeholder="서울시 강남구"
+                            />
+                        </div>
+                        <div>
+                            <label className="block font-bold mb-2">문의 내용</label>
+                            <textarea
+                                name="message"
+                                rows={4}
+                                className="w-full bg-gray-100 border border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:border-brand-green transition-colors resize-none"
+                                placeholder="궁금하신 점을 자유롭게 적어주세요."
+                            />
+                        </div>
+
+                        <button
+                            type="submit"
+                            disabled={isPending}
+                            className="w-full bg-brand-black text-white font-bold py-4 rounded-xl hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {isPending ? '전송 중...' : '상담 신청하기'}
+                        </button>
+                    </form>
+                </div >
+            </div >
+        </main >
     );
 }

@@ -4,8 +4,9 @@
 
 import { http, HttpResponse } from 'msw';
 import { mockStore } from '../data/store';
+import { DOMAINS } from '@/lib/constants/domains';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+const API_BASE = DOMAINS.API;
 
 export const storesHandlers = [
   // GET /api/v1/stores/identifier/:storeType/:branchId

@@ -1,111 +1,165 @@
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+'use client';
 
-const MENU_CATEGORIES = [
-    { id: 'taco', name: '타코' },
-    { id: 'burrito', name: '부리또' },
-    { id: 'quesadilla', name: '퀘사디아' },
-    { id: 'side', name: '사이드 & 음료' },
+import { useState } from 'react';
+
+// Mock Data
+const CATEGORIES = [
+    { id: 'taco', name: '타코 (Taco)' },
+    { id: 'burrito', name: '부리또 (Burrito)' },
+    { id: 'quesadilla', name: '퀘사디아 (Quesadilla)' },
+    { id: 'sides', name: '사이드 & 음료' },
 ];
 
-const ALL_MENU = [
+const MENU_ITEMS = [
     {
         id: 1,
         category: 'taco',
-        name: "시그니처 타코",
-        desc: "직화구이 고기와 신선한 살사의 조화",
-        price: "4,500원",
-        image: "https://images.unsplash.com/photo-1551504734-5ee1c4a1479b?q=80&w=800&auto=format&fit=crop",
-        tag: "BEST"
+        name: '비프 타코',
+        description: '직화로 구운 소고기와 신선한 야채가 어우러진 정통 타코',
+        image: '🌮',
+        spicy: 1,
     },
     {
         id: 2,
-        category: 'burrito',
-        name: "비프 부리또",
-        desc: "든든한 한 끼, 꽉 찬 속재료",
-        price: "8,900원",
-        image: "https://images.unsplash.com/photo-1626700051175-6818013e1d4f?q=80&w=800&auto=format&fit=crop",
-        tag: "HIT"
+        category: 'taco',
+        name: '스파이시 포크 타코',
+        description: '매콤한 제육볶음 스타일의 퓨전 타코',
+        image: '🌮',
+        spicy: 2,
     },
     {
         id: 3,
-        category: 'quesadilla',
-        name: "치즈 퀘사디아",
-        desc: "4가지 치즈의 풍미가 가득",
-        price: "7,500원",
-        image: "https://images.unsplash.com/photo-1618040996337-56904b7850b9?q=80&w=800&auto=format&fit=crop",
-        tag: null
+        category: 'taco',
+        name: '쉬림프 타코',
+        description: '탱글탱글한 새우와 상큼한 라임 소스의 조화',
+        image: '🍤',
+        spicy: 0,
     },
     {
         id: 4,
-        category: 'side',
-        name: "나초 플래터",
-        desc: "맥주와 찰떡궁합, 바삭한 즐거움",
-        price: "12,000원",
-        image: "https://images.unsplash.com/photo-1513456852971-30c0b8199d4d?q=80&w=800&auto=format&fit=crop",
-        tag: "NEW"
-    }
+        category: 'burrito',
+        name: '비프 부리또',
+        description: '든든한 한 끼! 소고기, 라이스, 콩, 치즈가 듬뿍',
+        image: '🌯',
+        spicy: 1,
+    },
+    {
+        id: 5,
+        category: 'burrito',
+        name: '치킨 부리또',
+        description: '담백한 닭가슴살과 부드러운 소스의 만남',
+        image: '🌯',
+        spicy: 0,
+    },
+    {
+        id: 6,
+        category: 'quesadilla',
+        name: '치즈 퀘사디아',
+        description: '모짜렐라와 체다 치즈가 녹아내리는 고소한 맛',
+        image: '🧀',
+        spicy: 0,
+    },
+    {
+        id: 7,
+        category: 'quesadilla',
+        name: '불고기 퀘사디아',
+        description: '달콤짭짤한 불고기와 치즈의 환상 궁합',
+        image: '🧀',
+        spicy: 0,
+    },
+    {
+        id: 8,
+        category: 'sides',
+        name: '나초 & 살사',
+        description: '바삭한 나초칩과 매장에서 직접 만든 살사 소스',
+        image: '🥨',
+        spicy: 1,
+    },
+    {
+        id: 9,
+        category: 'sides',
+        name: '감자튀김',
+        description: '케이준 스타일의 바삭한 감자튀김',
+        image: '🍟',
+        spicy: 0,
+    },
+    {
+        id: 10,
+        category: 'sides',
+        name: '탄산음료',
+        description: '콜라 / 사이다 / 환타',
+        image: '🥤',
+        spicy: 0,
+    },
 ];
 
 export default function MenuPage() {
+    const [activeCategory, setActiveCategory] = useState('taco');
+
+    const filteredItems = MENU_ITEMS.filter(item => item.category === activeCategory);
+
     return (
-        <main className="min-h-screen bg-white">
-            <Navbar />
-            
-            {/* Page Header */}
-            <section className="py-20 bg-brand-black text-center">
-                <h1 className="text-4xl md:text-5xl font-black text-white mb-4">MENU</h1>
-                <p className="text-brand-yellow font-bold">타코몰리의 정성 가득한 메뉴를 소개합니다.</p>
-            </section>
-
-            {/* Category Tabs */}
-            <section className="sticky top-20 z-40 bg-white border-b border-gray-100">
-                <div className="container mx-auto px-4">
-                    <div className="flex justify-center gap-4 md:gap-12 py-6 overflow-x-auto whitespace-nowrap scrollbar-hide">
-                        {MENU_CATEGORIES.map((cat) => (
-                            <button 
-                                key={cat.id}
-                                className="text-lg font-bold text-gray-400 hover:text-brand-green transition-colors pb-2 border-b-2 border-transparent hover:border-brand-green"
-                            >
-                                {cat.name}
-                            </button>
-                        ))}
-                    </div>
+        <main className="min-h-screen bg-white text-brand-black pt-10 pb-20">
+            <div className="container mx-auto px-4">
+                {/* Header */}
+                <div className="text-center mb-12">
+                    <h1 className="text-4xl md:text-5xl font-bold text-brand-black mb-4">MENU</h1>
+                    <p className="text-gray-600">타코몰리의 다양한 메뉴를 만나보세요.</p>
                 </div>
-            </section>
 
-            {/* Menu Grid */}
-            <section className="py-16">
-                <div className="container mx-auto px-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10">
-                        {ALL_MENU.map((item) => (
-                            <div key={item.id} className="group">
-                                <div className="relative aspect-square rounded-3xl overflow-hidden mb-6 bg-gray-100 shadow-md">
-                                    <img
-                                        src={item.image}
-                                        alt={item.name}
-                                        className="object-cover w-full h-full group-hover:scale-110 transition-transform duration-500"
-                                    />
-                                    {item.tag && (
-                                        <div className="absolute top-5 left-5 bg-[#E60012] text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-lg">
-                                            {item.tag}
+                {/* Category Tabs */}
+                <div className="flex flex-wrap justify-center gap-4 mb-12">
+                    {CATEGORIES.map((cat) => (
+                        <button
+                            key={cat.id}
+                            onClick={() => setActiveCategory(cat.id)}
+                            className={`px-6 py-3 rounded-full font-bold transition-all ${activeCategory === cat.id
+                                ? 'bg-brand-yellow text-brand-black scale-105 shadow-lg shadow-brand-yellow/20'
+                                : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                                }`}
+                        >
+                            {cat.name}
+                        </button>
+                    ))}
+                </div>
+
+                {/* Menu Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {filteredItems.map((item) => (
+                        <div
+                            key={item.id}
+                            className="bg-white rounded-2xl overflow-hidden border border-gray-200 hover:border-brand-yellow hover:shadow-lg transition-all group"
+                        >
+                            {/* Image Placeholder */}
+                            <div className="h-48 bg-gray-50 flex items-center justify-center text-6xl group-hover:scale-105 transition-transform duration-500">
+                                {item.image}
+                            </div>
+
+                            <div className="p-6">
+                                <div className="flex justify-between items-start mb-2">
+                                    <h3 className="text-xl font-bold text-brand-black group-hover:text-brand-green transition-colors">
+                                        {item.name}
+                                    </h3>
+                                </div>
+
+                                <p className="text-gray-500 text-sm mb-4 min-h-[40px]">
+                                    {item.description}
+                                </p>
+
+                                <div className="flex items-center gap-2">
+                                    {item.spicy > 0 && (
+                                        <div className="flex gap-1">
+                                            {[...Array(item.spicy)].map((_, i) => (
+                                                <span key={i} className="text-red-500 text-xs">🌶️</span>
+                                            ))}
                                         </div>
                                     )}
                                 </div>
-                                <div className="px-2">
-                                    <h2 className="text-2xl font-black text-brand-black mb-2 group-hover:text-brand-green transition-colors">
-                                        {item.name}
-                                    </h2>
-                                    <p className="text-gray-500 text-sm mb-4 leading-relaxed">{item.desc}</p>
-                                    <p className="text-brand-yellow font-black text-xl">{item.price}</p>
-                                </div>
                             </div>
-                        ))}
-                    </div>
+                        </div>
+                    ))}
                 </div>
-            </section>
-
-            <Footer />
+            </div>
         </main>
     );
 }

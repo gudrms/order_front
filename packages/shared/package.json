@@ -10,6 +10,8 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.89.0",
     "@tosspayments/payment-sdk": "^1.9.2",
+    "@types/nodemailer": "^7.0.5",
+    "nodemailer": "^7.0.12",
     "react": "^19.0.0",
     "zustand": "^5.0.9"
   },

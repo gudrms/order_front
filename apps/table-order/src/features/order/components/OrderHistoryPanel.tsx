@@ -7,6 +7,7 @@ import { OrderHistoryCard } from './OrderHistoryCard';
 import { Spinner } from '@/components/ui/Spinner';
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { DOMAINS } from '@/lib/constants/domains';
 
 /**
  * OrderHistoryPanel 컴포넌트
@@ -35,7 +36,7 @@ export function OrderHistoryPanel() {
 
     setIsResetting(true);
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+      const API_URL = DOMAINS.API;
       const storeId = 'store-1'; // 실제로는 props나 store에서 가져와야 함
       const response = await fetch(
         `${API_URL}/stores/${storeId}/tables/${tableNumber}/reset`,
