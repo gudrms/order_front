@@ -131,11 +131,20 @@ export default function StorePage() {
                     </div>
                     <button
                         onClick={handleFindNearby}
-                        className="w-full flex items-center justify-center gap-2 bg-brand-black text-white py-3 rounded-lg hover:bg-gray-800 transition-colors font-bold"
+                        className="w-full flex items-center justify-center gap-2 bg-brand-black text-white py-3 rounded-lg hover:bg-gray-800 transition-colors font-bold mb-3"
                     >
                         <Navigation size={18} />
                         내 주변 매장 찾기
                     </button>
+                    <a
+                        href={process.env.NEXT_PUBLIC_DELIVERY_URL || 'http://localhost:3001'}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full flex md:hidden items-center justify-center gap-2 bg-brand-green text-white py-3 rounded-lg hover:bg-green-700 transition-colors font-bold"
+                    >
+                        <Phone size={18} />
+                        주문하기
+                    </a>
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
