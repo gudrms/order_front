@@ -5,8 +5,9 @@
 import { http, HttpResponse } from 'msw';
 import { mockMenus } from '../data/menus';
 import { mockCategories } from '../data/categories';
+import { DOMAINS } from '@/lib/constants/domains';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+const API_BASE = DOMAINS.API;
 
 export const menusHandlers = [
   // GET /api/v1/stores/:storeId/categories

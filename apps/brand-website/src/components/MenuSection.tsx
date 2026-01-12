@@ -6,7 +6,6 @@ const MENU_ITEMS = [
         id: 1,
         name: "시그니처 타코",
         desc: "직화구이 고기와 신선한 살사의 조화",
-        price: "4,500원",
         image: "https://images.unsplash.com/photo-1551504734-5ee1c4a1479b?q=80&w=800&auto=format&fit=crop",
         tag: "BEST"
     },
@@ -14,7 +13,6 @@ const MENU_ITEMS = [
         id: 2,
         name: "비프 부리또",
         desc: "든든한 한 끼, 꽉 찬 속재료",
-        price: "8,900원",
         image: "https://images.unsplash.com/photo-1626700051175-6818013e1d4f?q=80&w=800&auto=format&fit=crop",
         tag: "HIT"
     },
@@ -22,7 +20,6 @@ const MENU_ITEMS = [
         id: 3,
         name: "치즈 퀘사디아",
         desc: "4가지 치즈의 풍미가 가득",
-        price: "7,500원",
         image: "https://images.unsplash.com/photo-1618040996337-56904b7850b9?q=80&w=800&auto=format&fit=crop",
         tag: null
     },
@@ -30,7 +27,6 @@ const MENU_ITEMS = [
         id: 4,
         name: "나초 플래터",
         desc: "맥주와 찰떡궁합, 바삭한 즐거움",
-        price: "12,000원",
         image: "https://images.unsplash.com/photo-1513456852971-30c0b8199d4d?q=80&w=800&auto=format&fit=crop",
         tag: "NEW"
     }
@@ -70,14 +66,13 @@ export default function MenuSection() {
                                     {item.name}
                                 </h4>
                                 <p className="text-gray-500 text-sm mb-2">{item.desc}</p>
-                                <p className="text-brand-yellow font-bold text-lg">{item.price}</p>
                             </div>
                         </div>
                     ))}
                 </div>
 
                 <div className="text-center mt-12">
-                    <Link 
+                    <Link
                         href="/menu"
                         className="inline-flex items-center justify-center px-8 py-3 border-2 border-brand-black text-brand-black font-bold rounded-full hover:bg-brand-black hover:text-white transition-colors"
                     >

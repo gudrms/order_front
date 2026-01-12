@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { mockStore } from '@/mocks';
 import { USE_MOCK, mockQuery } from '@/lib/mock-config';
+import { DOMAINS } from '@/lib/constants/domains';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+const API_URL = DOMAINS.API;
 
 export const useStore = (storeType: string, branchId: string) => {
     return useQuery({

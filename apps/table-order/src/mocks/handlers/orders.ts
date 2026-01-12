@@ -5,8 +5,9 @@
 import { http, HttpResponse } from 'msw';
 import type { CreateOrderRequest } from '@/lib/api/endpoints/order';
 import { createMockSession, findActiveSession, updateSessionTotal, addOrderToSession } from './sessions';
+import { DOMAINS } from '@/lib/constants/domains';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+const API_BASE = DOMAINS.API;
 
 // 임시 주문 저장소
 const orders: any[] = [];

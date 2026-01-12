@@ -8,6 +8,18 @@
 
 ---
 
+## 🌐 도메인 설정 (Domain Configuration)
+
+| 서비스 | 도메인 | 설명 |
+|---|---|---|
+| **관리자 (Admin)** | `https://admin.tacomole.kr` | 매장/메뉴 관리 |
+| **웹사이트 (Website)** | `https://tacomole.kr` | 브랜드 소개 |
+| **테이블 오더 (Table Order)** | `https://order.tacomole.kr` | 매장 내 주문 (현재 프로젝트) |
+| **배달 앱 (Delivery)** | `https://delivery.tacomole.kr` | 배달 주문 |
+| **백엔드 서버 (Backend)** | `https://api.tacomole.kr` | API 서버 |
+
+---
+
 ## 🚀 기술 스택
 
 - **Framework**: Next.js 15.1.6 (App Router, TypeScript)
@@ -38,7 +50,11 @@ src/
 
 ```bash
 # 환경 변수 설정 (.env.local)
-NEXT_PUBLIC_API_URL=http://localhost:3001
+# 로컬 개발 시
+NEXT_PUBLIC_API_URL=http://localhost:4000/api/v1
+# 프로덕션/테스트
+# NEXT_PUBLIC_API_URL=https://api.tacomole.kr/api/v1
+
 NEXT_PUBLIC_USE_MOCK=true
 
 # 개발 서버
@@ -94,11 +110,12 @@ export function CartSummaryContainer() {
 
 ## 📦 배포
 
-**Vercel**: https://order-front-frontend.vercel.app
+**테이블 오더**: https://order.tacomole.kr
+(Vercel: https://order-front-frontend.vercel.app)
 
 **환경 변수**:
 ```
-NEXT_PUBLIC_API_URL=https://order-front-backend.vercel.app/api/v1
+NEXT_PUBLIC_API_URL=https://api.tacomole.kr/api/v1
 NEXT_PUBLIC_USE_MOCK=false
 ```
 

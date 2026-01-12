@@ -7,6 +7,7 @@ import { useTableStore } from '@/stores/tableStore';
 import { useUIStore } from '@/stores/uiStore';
 import { CartItemCardContainer } from './CartItemCardContainer';
 import { OrderSuccessModal } from '@/features/order';
+import { DOMAINS } from '@/lib/constants/domains';
 
 /**
  * CartPanel 컴포넌트
@@ -36,7 +37,7 @@ export function CartPanel() {
   // 주문 생성 mutation (MSW API 사용)
   const orderMutation = useMutation({
     mutationFn: async () => {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+      const API_URL = DOMAINS.API;
       const storeId = 'store-1';
 
       const response = await fetch(`${API_URL}/stores/${storeId}/orders/first`, {

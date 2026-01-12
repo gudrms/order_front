@@ -3,6 +3,7 @@
  */
 
 import type { CartSelectedOption } from '@order/shared';
+import { DOMAINS } from '@/lib/constants/domains';
 
 /**
  * 주문 상태
@@ -65,7 +66,7 @@ export interface Order {
 export async function createOrder(
   request: CreateOrderRequest
 ): Promise<CreateOrderResponse> {
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+  const API_URL = DOMAINS.API;
   const storeId = 'store-1';
 
   // 실제 API 연동 시도
@@ -100,7 +101,7 @@ export async function createOrder(
 export async function getOrdersByTable(
   tableNumber: number
 ): Promise<Order[]> {
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+  const API_URL = DOMAINS.API;
   const storeId = 'store-1'; // 실제로는 context에서 가져와야 함
 
   // 현재 활성 세션 조회

@@ -3,8 +3,9 @@
  */
 
 import { http, HttpResponse } from 'msw';
+import { DOMAINS } from '@/lib/constants/domains';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+const API_BASE = DOMAINS.API;
 
 // 임시 세션 저장소
 const sessions: any[] = [];
