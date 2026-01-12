@@ -32,9 +32,8 @@ export default function Footer() {
                     <div>
                         <h4 className="font-bold text-lg mb-6 text-brand-green">CONTACT</h4>
                         <ul className="space-y-3 text-gray-500">
-                            <li><Link href="/franchise" className="hover:text-brand-green transition-colors">가맹문의: 1588-0000</Link></li>
-                            <li>고객센터: 02-1234-5678</li>
-                            <li>이메일: franchise@tacomolly.com</li>
+                            <li>가맹문의: 010-4593-0731</li>
+                            <li>이메일: tacomole26@gmail.com</li>
                         </ul>
                     </div>
                 </div>
@@ -42,8 +41,8 @@ export default function Footer() {
                 <div className="border-t border-gray-200 pt-8 flex flex-col md:flex-row justify-between items-center text-sm text-gray-500">
                     <p>&copy; 2024 TACO MOLE. All rights reserved.</p>
                     <div className="flex gap-6 mt-4 md:mt-0">
-                        <a href="#" className="hover:text-brand-black">이용약관</a>
-                        <a href="#" className="hover:text-brand-black">개인정보처리방침</a>
+                        <span className="cursor-pointer hover:text-brand-black">이용약관</span>
+                        <span className="cursor-pointer hover:text-brand-black">개인정보처리방침</span>
                     </div>
                 </div>
             </div>
