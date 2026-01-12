@@ -1,5 +1,6 @@
 import { Metadata } from 'next';
 import Image from 'next/image';
+import ScrollAnimation from '@/components/ScrollAnimation';
 
 export const metadata: Metadata = {
     title: '브랜드 스토리 | 타코몰리',
@@ -30,7 +31,7 @@ export default function BrandPage() {
             {/* Philosophy Section */}
             <section className="py-20 container mx-auto px-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
-                    <div className="space-y-8">
+                    <ScrollAnimation className="space-y-8">
                         <h2 className="text-3xl md:text-4xl font-bold text-brand-black">
                             <span className="text-brand-green">Fresh</span> Ingredients,<br />
                             <span className="text-brand-yellow">Authentic</span> Taste
@@ -45,36 +46,38 @@ export default function BrandPage() {
                             그리고 비법 향신료로 숙성시킨 고기까지.
                             타협하지 않는 정성이 타코몰리의 자부심입니다.
                         </p>
-                    </div>
-                    <div className="relative h-[400px] bg-gray-100 rounded-3xl overflow-hidden border border-gray-200 transform rotate-2 hover:rotate-0 transition-transform duration-500 shadow-xl">
+                    </ScrollAnimation>
+                    <ScrollAnimation delay={0.2} className="relative h-[400px] bg-gray-100 rounded-3xl overflow-hidden border border-gray-200 transform rotate-2 hover:rotate-0 transition-transform duration-500 shadow-xl">
                         <div className="absolute inset-0 flex items-center justify-center text-gray-300">
                             <span className="text-8xl opacity-20">🥑</span>
                         </div>
-                    </div>
+                    </ScrollAnimation>
                 </div>
             </section>
 
             {/* Values Section */}
             <section className="py-20 bg-brand-yellow/10">
                 <div className="container mx-auto px-4">
-                    <div className="text-center mb-16">
-                        <h2 className="text-3xl font-bold text-brand-green mb-4">CORE VALUES</h2>
-                        <p className="text-gray-600">우리가 지키고자 하는 세 가지 약속</p>
-                    </div>
+                    <ScrollAnimation>
+                        <div className="text-center mb-16">
+                            <h2 className="text-3xl font-bold text-brand-green mb-4">CORE VALUES</h2>
+                            <p className="text-gray-600">우리가 지키고자 하는 세 가지 약속</p>
+                        </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        {[
-                            { title: 'Freshness', icon: '🌿', desc: '당일 손질한 신선한 재료만을 사용합니다.' },
-                            { title: 'Passion', icon: '🔥', desc: '멕시칸 푸드에 대한 열정을 요리에 담습니다.' },
-                            { title: 'Joy', icon: '🎉', desc: '맛있는 음식으로 고객에게 즐거움을 드립니다.' },
-                        ].map((value, idx) => (
-                            <div key={idx} className="bg-white p-8 rounded-2xl text-center border border-gray-100 hover:border-brand-yellow transition-colors shadow-sm hover:shadow-md">
-                                <div className="text-5xl mb-6">{value.icon}</div>
-                                <h3 className="text-xl font-bold text-brand-black mb-4">{value.title}</h3>
-                                <p className="text-gray-500">{value.desc}</p>
-                            </div>
-                        ))}
-                    </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                            {[
+                                { title: 'Freshness', icon: '🌿', desc: '당일 손질한 신선한 재료만을 사용합니다.' },
+                                { title: 'Passion', icon: '🔥', desc: '멕시칸 푸드에 대한 열정을 요리에 담습니다.' },
+                                { title: 'Joy', icon: '🎉', desc: '맛있는 음식으로 고객에게 즐거움을 드립니다.' },
+                            ].map((value, idx) => (
+                                <ScrollAnimation key={idx} delay={idx * 0.1} className="bg-white p-8 rounded-2xl text-center border border-gray-100 hover:border-brand-yellow transition-colors shadow-sm hover:shadow-md">
+                                    <div className="text-5xl mb-6">{value.icon}</div>
+                                    <h3 className="text-xl font-bold text-brand-black mb-4">{value.title}</h3>
+                                    <p className="text-gray-500">{value.desc}</p>
+                                </ScrollAnimation>
+                            ))}
+                        </div>
+                    </ScrollAnimation>
                 </div>
             </section>
         </main>

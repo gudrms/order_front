@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { MapPin, Phone, Clock, Search, Navigation } from 'lucide-react';
 import { Map, MapMarker, useKakaoLoader } from 'react-kakao-maps-sdk';
 import { useGeolocation, STORES } from '@order/shared';
+import ScrollAnimation from '@/components/ScrollAnimation';
 
 // Real Store Data imported from shared package
 
@@ -113,11 +114,11 @@ export default function StorePage() {
     if (error) return <div className="min-h-screen bg-brand-black flex items-center justify-center text-red-500">Map Error: {error.message}</div>;
 
     return (
-        <main className="flex flex-col md:flex-row h-[calc(100vh-80px)] bg-white">
+        <main className="flex flex-col-reverse md:flex-row h-[calc(100vh-60px)] md:h-[calc(100vh-80px)] bg-white">
             {/* Left: Store List */}
-            <div className="w-full md:w-[400px] flex flex-col border-r border-gray-200 bg-white h-full shadow-xl z-10">
-                <div className="p-6 bg-white z-10 border-b border-gray-200 shrink-0">
-                    <h1 className="text-2xl font-bold text-brand-black mb-4">FIND A STORE</h1>
+            <div className="w-full md:w-[400px] flex flex-col border-r border-gray-200 bg-white h-[55%] md:h-full shadow-xl z-10 relative">
+                <div className="p-4 md:p-6 bg-white z-10 border-b border-gray-200 shrink-0">
+                    <h1 className="text-xl md:text-2xl font-bold text-brand-black mb-4">FIND A STORE</h1>
                     <div className="relative mb-3">
                         <input
                             type="text"
@@ -138,53 +139,54 @@ export default function StorePage() {
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
-                    {filteredStores.map((store) => (
-                        <div
-                            key={store.id}
-                            onClick={() => handleStoreSelect(store)}
-                            className={`p-5 rounded-xl border cursor-pointer transition-all group shadow-sm ${selectedStore.id === store.id
-                                ? 'bg-white border-brand-yellow ring-1 ring-brand-yellow shadow-md'
-                                : 'bg-white border-gray-200 hover:border-brand-yellow/50 hover:shadow-md'
-                                }`}
-                        >
-                            <div className="flex justify-between items-start mb-2">
-                                <h3 className={`font-bold text-lg transition-colors ${selectedStore.id === store.id ? 'text-brand-black' : 'text-gray-800 group-hover:text-brand-black'
-                                    }`}>
-                                    {store.name}
-                                </h3>
-                                {store.status === 'open' ? (
-                                    <span className="text-xs bg-brand-green/10 text-brand-green px-2.5 py-1 rounded-full font-medium">영업중</span>
-                                ) : (
-                                    <span className="text-xs bg-gray-100 text-gray-500 px-2.5 py-1 rounded-full font-medium">준비중</span>
-                                )}
-                            </div>
+                    {filteredStores.map((store, idx) => (
+                        <ScrollAnimation key={store.id} delay={idx * 0.05}>
+                            <div
+                                onClick={() => handleStoreSelect(store)}
+                                className={`p-5 rounded-xl border cursor-pointer transition-all group shadow-sm ${selectedStore.id === store.id
+                                    ? 'bg-white border-brand-yellow ring-1 ring-brand-yellow shadow-md'
+                                    : 'bg-white border-gray-200 hover:border-brand-yellow/50 hover:shadow-md'
+                                    }`}
+                            >
+                                <div className="flex justify-between items-start mb-2">
+                                    <h3 className={`font-bold text-lg transition-colors ${selectedStore.id === store.id ? 'text-brand-black' : 'text-gray-800 group-hover:text-brand-black'
+                                        }`}>
+                                        {store.name}
+                                    </h3>
+                                    {store.status === 'open' ? (
+                                        <span className="text-xs bg-brand-green/10 text-brand-green px-2.5 py-1 rounded-full font-medium">영업중</span>
+                                    ) : (
+                                        <span className="text-xs bg-gray-100 text-gray-500 px-2.5 py-1 rounded-full font-medium">준비중</span>
+                                    )}
+                                </div>
 
-                            <div className="space-y-2 text-sm text-gray-500">
-                                <p className="flex items-center gap-2">
-                                    <MapPin size={14} className="text-brand-yellow shrink-0" />
-                                    {store.address}
-                                </p>
-                                <p className="flex items-center gap-2">
-                                    <Phone size={14} className="text-brand-yellow shrink-0" />
-                                    {store.phone}
-                                </p>
-                                <p className="flex items-center gap-2">
-                                    <Clock size={14} className="text-brand-yellow shrink-0" />
-                                    {store.hours}
-                                </p>
-                                {store.distance > 0 && (
-                                    <p className="text-brand-green font-bold text-xs mt-2">
-                                        내 위치에서 {store.distance.toFixed(1)}km
+                                <div className="space-y-2 text-sm text-gray-500">
+                                    <p className="flex items-center gap-2">
+                                        <MapPin size={14} className="text-brand-yellow shrink-0" />
+                                        {store.address}
                                     </p>
-                                )}
+                                    <p className="flex items-center gap-2">
+                                        <Phone size={14} className="text-brand-yellow shrink-0" />
+                                        {store.phone}
+                                    </p>
+                                    <p className="flex items-center gap-2">
+                                        <Clock size={14} className="text-brand-yellow shrink-0" />
+                                        {store.hours}
+                                    </p>
+                                    {store.distance > 0 && (
+                                        <p className="text-brand-green font-bold text-xs mt-2">
+                                            내 위치에서 {store.distance.toFixed(1)}km
+                                        </p>
+                                    )}
+                                </div>
                             </div>
-                        </div>
+                        </ScrollAnimation>
                     ))}
                 </div>
             </div>
 
             {/* Right: Map Area */}
-            <div className="flex-1 bg-gray-800 relative h-full">
+            <div className="w-full md:flex-1 bg-gray-800 relative h-[45%] md:h-full">
                 <Map
                     center={mapCenter}
                     style={{ width: "100%", height: "100%" }}
@@ -206,7 +208,7 @@ export default function StorePage() {
                             </MapMarker>
                             {userLocation && (
                                 <MapMarker
-                                    position={userLocation}
+                                    position={userLocation as { lat: number; lng: number }}
                                     image={{
                                         src: "https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_red.png",
                                         size: { width: 24, height: 35 },

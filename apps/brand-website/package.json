@@ -14,6 +14,7 @@
     "@order/shared": "workspace:*",
     "@sentry/nextjs": "^10.32.1",
     "clsx": "^2.1.1",
+    "framer-motion": "^12.25.0",
     "lucide-react": "^0.562.0",
     "next": "16.1.1",
     "react": "19.2.3",

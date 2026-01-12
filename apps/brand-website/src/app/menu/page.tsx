@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import ScrollAnimation from '@/components/ScrollAnimation';
 
 // Mock Data
 const CATEGORIES = [
@@ -125,38 +126,39 @@ export default function MenuPage() {
 
                 {/* Menu Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {filteredItems.map((item) => (
-                        <div
-                            key={item.id}
-                            className="bg-white rounded-2xl overflow-hidden border border-gray-200 hover:border-brand-yellow hover:shadow-lg transition-all group"
-                        >
-                            {/* Image Placeholder */}
-                            <div className="h-48 bg-gray-50 flex items-center justify-center text-6xl group-hover:scale-105 transition-transform duration-500">
-                                {item.image}
-                            </div>
-
-                            <div className="p-6">
-                                <div className="flex justify-between items-start mb-2">
-                                    <h3 className="text-xl font-bold text-brand-black group-hover:text-brand-green transition-colors">
-                                        {item.name}
-                                    </h3>
+                    {filteredItems.map((item, idx) => (
+                        <ScrollAnimation key={item.id} delay={idx * 0.05}>
+                            <div
+                                className="bg-white rounded-2xl overflow-hidden border border-gray-200 hover:border-brand-yellow hover:shadow-lg transition-all group"
+                            >
+                                {/* Image Placeholder */}
+                                <div className="h-48 bg-gray-50 flex items-center justify-center text-6xl group-hover:scale-105 transition-transform duration-500">
+                                    {item.image}
                                 </div>
 
-                                <p className="text-gray-500 text-sm mb-4 min-h-[40px]">
-                                    {item.description}
-                                </p>
+                                <div className="p-6">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <h3 className="text-xl font-bold text-brand-black group-hover:text-brand-green transition-colors">
+                                            {item.name}
+                                        </h3>
+                                    </div>
 
-                                <div className="flex items-center gap-2">
-                                    {item.spicy > 0 && (
-                                        <div className="flex gap-1">
-                                            {[...Array(item.spicy)].map((_, i) => (
-                                                <span key={i} className="text-red-500 text-xs">🌶️</span>
-                                            ))}
-                                        </div>
-                                    )}
+                                    <p className="text-gray-500 text-sm mb-4 min-h-[40px]">
+                                        {item.description}
+                                    </p>
+
+                                    <div className="flex items-center gap-2">
+                                        {item.spicy > 0 && (
+                                            <div className="flex gap-1">
+                                                {[...Array(item.spicy)].map((_, i) => (
+                                                    <span key={i} className="text-red-500 text-xs">🌶️</span>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        </ScrollAnimation>
                     ))}
                 </div>
             </div>

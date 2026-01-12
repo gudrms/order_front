@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import ScrollAnimation from './ScrollAnimation';
 
 const MENU_ITEMS = [
     {
@@ -36,49 +37,53 @@ export default function MenuSection() {
     return (
         <section id="menu" className="py-20 bg-white">
             <div className="container mx-auto px-4">
-                <div className="text-center mb-16">
-                    <h2 className="text-brand-green font-bold tracking-widest mb-2">OUR MENU</h2>
-                    <h3 className="text-4xl font-black text-brand-black">
-                        타코몰리 <span className="text-brand-yellow">대표 메뉴</span>
-                    </h3>
-                </div>
+                <ScrollAnimation>
+                    <div className="text-center mb-16">
+                        <h2 className="text-brand-green font-bold tracking-widest mb-2">OUR MENU</h2>
+                        <h3 className="text-4xl font-black text-brand-black">
+                            타코몰리 <span className="text-brand-yellow">대표 메뉴</span>
+                        </h3>
+                    </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                    {MENU_ITEMS.map((item) => (
-                        <div key={item.id} className="group cursor-pointer">
-                            <div className="relative aspect-square rounded-2xl overflow-hidden mb-4 bg-gray-100">
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img
-                                    src={item.image}
-                                    alt={item.name}
-                                    className="object-cover w-full h-full group-hover:scale-110 transition-transform duration-500"
-                                />
-                                {item.tag && (
-                                    <div className="absolute top-4 left-4 bg-brand-red text-white text-xs font-bold px-3 py-1 rounded-full bg-[#E60012]">
-                                        {item.tag}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                        {MENU_ITEMS.map((item, idx) => (
+                            <ScrollAnimation key={item.id} delay={idx * 0.1}>
+                                <div className="group cursor-pointer">
+                                    <div className="relative aspect-square rounded-2xl overflow-hidden mb-4 bg-gray-100">
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        <img
+                                            src={item.image}
+                                            alt={item.name}
+                                            className="object-cover w-full h-full group-hover:scale-110 transition-transform duration-500"
+                                        />
+                                        {item.tag && (
+                                            <div className="absolute top-4 left-4 bg-brand-red text-white text-xs font-bold px-3 py-1 rounded-full bg-[#E60012]">
+                                                {item.tag}
+                                            </div>
+                                        )}
+                                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
                                     </div>
-                                )}
-                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
-                            </div>
 
-                            <div className="text-center">
-                                <h4 className="text-xl font-bold text-brand-black mb-1 group-hover:text-brand-green transition-colors">
-                                    {item.name}
-                                </h4>
-                                <p className="text-gray-500 text-sm mb-2">{item.desc}</p>
-                            </div>
-                        </div>
-                    ))}
-                </div>
+                                    <div className="text-center">
+                                        <h4 className="text-xl font-bold text-brand-black mb-1 group-hover:text-brand-green transition-colors">
+                                            {item.name}
+                                        </h4>
+                                        <p className="text-gray-500 text-sm mb-2">{item.desc}</p>
+                                    </div>
+                                </div>
+                            </ScrollAnimation>
+                        ))}
+                    </div>
 
-                <div className="text-center mt-12">
-                    <Link
-                        href="/menu"
-                        className="inline-flex items-center justify-center px-8 py-3 border-2 border-brand-black text-brand-black font-bold rounded-full hover:bg-brand-black hover:text-white transition-colors"
-                    >
-                        전체 메뉴 보기
-                    </Link>
-                </div>
+                    <div className="text-center mt-12">
+                        <Link
+                            href="/menu"
+                            className="inline-flex items-center justify-center px-8 py-3 border-2 border-brand-black text-brand-black font-bold rounded-full hover:bg-brand-black hover:text-white transition-colors"
+                        >
+                            전체 메뉴 보기
+                        </Link>
+                    </div>
+                </ScrollAnimation>
             </div>
         </section>
     );
