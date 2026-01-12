@@ -61,6 +61,7 @@ pnpm build
 ### 특정 앱만 빌드
 ```bash
 pnpm --filter table-order build
+pnpm --filter admin dev
 ```
 
 ---
