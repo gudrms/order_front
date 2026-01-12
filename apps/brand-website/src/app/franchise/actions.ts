@@ -1,6 +1,6 @@
 'use server';
 
-import { sendEmail } from '@order/shared';
+import { sendEmail } from '../../../../../packages/shared/src/utils/email';
 
 interface FranchiseInquiryState {
     success: boolean;

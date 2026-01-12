@@ -4,7 +4,7 @@ export * from './api';
 export * from './stores/cartStore';
 export * from './hooks/useMenuSelection';
 export * from './utils';
-export * from './utils/email';
+
 export * from './hooks/useGeolocation';
 export * from './constants/stores';
 export { supabase } from './lib/supabase';
