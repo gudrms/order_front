@@ -21,9 +21,13 @@ apps/
   ├── admin/                # 👨‍🍳 관리자 앱 (주방 화면, 대시보드)
   │   └── src/app           # Next.js Dashboard
   │
-  └── backend/              # ⚙️ 통합 백엔드 (NestJS)
-      ├── src/modules       # 도메인 모듈 (Orders, Menus)
-      └── prisma/           # DB 스키마
+  ├── backend/              # ⚙️ 통합 백엔드 (NestJS)
+  │   ├── src/modules       # 도메인 모듈 (Orders, Menus, POS Sync)
+  │   └── prisma/           # DB 스키마
+  │
+  └── toss-pos-plugin/      # 🔌 Toss POS 연동 플러그인
+      ├── src/              # Plugin Entry Point
+      └── dist/             # Build Output (plugin.zip)
  
 packages/
   ├── shared/               # 📦 공통 로직 (Type-safe)
@@ -58,9 +62,13 @@ apps/
   ├── admin/                # 👨‍🍳 관리자 앱 (주방 화면, 대시보드)
   │   └── src/app           # Next.js Dashboard
   │
-  └── backend/              # ⚙️ 통합 백엔드 (NestJS)
-      ├── src/modules       # 도메인 모듈 (Orders, Menus)
-      └── prisma/           # DB 스키마
+  ├── backend/              # ⚙️ 통합 백엔드 (NestJS)
+  │   ├── src/modules       # 도메인 모듈 (Orders, Menus, POS Sync)
+  │   └── prisma/           # DB 스키마
+  │
+  └── toss-pos-plugin/      # 🔌 Toss POS 연동 플러그인
+      ├── src/              # Plugin Entry Point
+      └── dist/             # Build Output (plugin.zip)
  
 packages/
   ├── shared/               # 📦 공통 로직 (Type-safe)
@@ -102,6 +110,7 @@ pnpm dev
 | **brand-website** | 3002 | 브랜드 마케팅 홈페이지 | Vercel (SSG) |
 | **admin** | 3003 | 주방 화면 + 관리자 대시보드 | Vercel |
 | **backend** | 4000 | NestJS API 서버 | Vercel Serverless |
+| **toss-pos-plugin** | - | Toss POS 연동 플러그인 | Toss Place (ZIP) |
 
 ### Packages
 
@@ -120,7 +129,8 @@ pnpm dev
 apps/backend/src/modules/
   ├── table-order/      # 테이블 주문 전용
   ├── delivery/         # 배달 주문 전용
-  ├── shared/           # 공통 (메뉴, 주문, Toss 오더)
+  ├── pos-sync/         # POS 연동 (Toss POS)
+  ├── shared/           # 공통 (메뉴, 주문)
   └── brand-site/       # 브랜드 홈페이지 API
 ```
 
@@ -128,6 +138,37 @@ apps/backend/src/modules/
 - 데이터 일관성 (메뉴, 재고 공유)
 - 코드 재사용 (OrdersModule, MenusModule)
 - Vercel Serverless에서 자동 격리
+
+### POS 연동: Toss POS Plugin
+
+모든 주문 채널(table-order, delivery-customer)의 주문이 Toss POS로 자동 전달됩니다.
+
+```
+┌─────────────────┐
+│ table-order     │ 태블릿 주문
+└────────┬────────┘
+         │
+         ├────→  ┌──────────────┐      ┌─────────────┐
+         │       │   Backend    │ ←──→ │ toss-pos    │ ←──→ ┌─────────────┐
+┌─────────────────┤   (NestJS)   │      │  -plugin    │      │ Toss POS    │
+│ delivery        │   POS Sync   │      │  (중개자)   │      │ (매장 기기) │
+│ -customer       │   Module     │      └──────────────┘      └─────────────┘
+└─────────────────┘              │
+                                 │
+                   ┌─────────────┴─────────────┐
+                   │ 주방 프린터 + 디스플레이  │
+                   └───────────────────────────┘
+```
+
+**주문 흐름:**
+1. 고객 주문 → Backend API
+2. Backend → Toss POS Plugin (HTTP)
+3. Plugin → Toss POS 기기
+4. POS → 주방 프린터/디스플레이 출력
+
+**배포 방식:**
+- Backend, 프론트 앱들: Vercel 자동 배포
+- Toss POS Plugin: ZIP으로 빌드 → Toss Place 개발자센터 수동 업로드
 
 ### 프론트엔드: 도메인별 분리
 
@@ -210,7 +251,8 @@ pnpm ios
 - ⚙️ 설정
 
 ### backend (백엔드)
-- 🔗 Toss 오더 연동
+- 🔗 Toss POS 연동 (양방향 동기화)
+- 📡 주문 → POS 전송
 - 🔄 Realtime (Supabase)
 - 🔒 보안 (Rate Limiting, Helmet)
 - 📝 Swagger API 문서
@@ -243,6 +285,15 @@ pnpm cap:sync
 pnpm cap:open:ios
 # Xcode → Product → Archive
 # → App Store Connect 업로드
+```
+
+### Toss POS Plugin 배포
+```bash
+cd apps/toss-pos-plugin
+pnpm build
+# → dist/plugin.zip 생성
+# → Toss Place 개발자센터에서 수동 업로드
+# → https://place.toss.im/developer
 ```
 
 ## 🤝 기여하기
