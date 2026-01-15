@@ -227,6 +227,13 @@ pnpm ios
 - [배달앱 기능 목록](./apps/delivery-customer/FEATURES.md)
 - [Sentry 에러 모니터링](./docs/SENTRY_QUICK_START.md)
 
+### 🚨 에러 모니터링 (Sentry)
+각 앱에는 Sentry 연동 테스트를 위한 페이지가 준비되어 있습니다.
+- **배달앱**: `/sentry/error`
+- **브랜드**: `/sentry/error`
+- **관리자**: `/sentry/error`
+- **백엔드**: `/sentry/error` (API 호출 시 500 에러)
+
 ## 🎯 주요 기능
 
 ### table-order (테이블 주문)
