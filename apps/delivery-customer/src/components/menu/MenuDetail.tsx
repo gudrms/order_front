@@ -1,8 +1,12 @@
 "use client";
 
-import { X, Minus, Plus } from 'lucide-react';
+import { X, Minus, Plus, Heart } from 'lucide-react';
+import { useFavorites } from '../../hooks/queries/useFavorites';
 
 export default function MenuDetail() {
+    const { isFavorited, toggleFavorite } = useFavorites();
+    // TODO: Get actual menu ID from props or store
+    const menuId = "test-menu-id";
     return (
         <div className="fixed inset-0 z-50 flex items-end justify-center pointer-events-none">
             {/* Backdrop */}
@@ -21,6 +25,16 @@ export default function MenuDetail() {
                         <X size={24} />
                     </button>
                 </div>
+
+                <button
+                    onClick={() => toggleFavorite(menuId)}
+                    className="absolute top-6 right-16 p-2 text-gray-400 hover:text-red-500"
+                >
+                    <Heart
+                        size={24}
+                        className={isFavorited(menuId) ? "fill-red-500 text-red-500" : ""}
+                    />
+                </button>
 
                 {/* Options - Spiciness */}
                 <div className="mb-8">

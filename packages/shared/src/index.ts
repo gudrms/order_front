@@ -6,5 +6,6 @@ export * from './hooks/useMenuSelection';
 export * from './utils';
 export * from './utils/storage';
 export * from './hooks/useGeolocation';
+export * from './hooks/useOrderStatus';
 export * from './constants/stores';
 export { supabase } from './lib/supabase';

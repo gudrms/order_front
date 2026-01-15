@@ -20,6 +20,13 @@ enum StoreType {
   GENERAL
 }
 
+/// 주문 타입
+enum OrderType {
+  TABLE      // 매장 식사
+  DELIVERY   // 배달
+  PICKUP     // 포장
+}
+
 /// 주문 상태
 enum OrderStatus {
   PENDING      // 접수 대기
@@ -72,8 +79,8 @@ model Store {
   /// 초대 코드 (사장님 가입 시 매장 연결용)
   inviteCode      String?   @unique
 
-  /// OKPOS 지점 코드 (연동용)
-  okposBranchCode String?   @unique
+  /// Toss Place 지점 코드 (연동용)
+  tossBranchCode String?   @unique
   
   /// 매장 설명
   description     String?
@@ -136,6 +143,9 @@ model User {
 
   stores          Store[]
   errorLogs       ErrorLog[]
+  favorites       UserFavorite[]
+  addresses       UserAddress[]
+  orders          Order[]
 }
 
 enum UserRole {
@@ -188,8 +198,8 @@ model MenuCategory {
   id                String   @id @default(uuid())
   storeId           String
   store             Store    @relation(fields: [storeId], references: [id])
-  /// OKPOS 카테고리 코드
-  okposCategoryCode String?
+  /// Toss Place 카테고리 코드
+  tossCategoryCode String?
   /// 카테고리명
   name              String
   /// 표시 순서
@@ -200,7 +210,7 @@ model MenuCategory {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
-  @@unique([storeId, okposCategoryCode])
+  @@unique([storeId, tossCategoryCode])
   @@index([storeId])
 }
 
@@ -212,8 +222,8 @@ model Menu {
   categoryId      String
   category        MenuCategory @relation(fields: [categoryId], references: [id])
 
-  /// OKPOS 메뉴 코드
-  okposMenuCode   String?
+  /// Toss Place 메뉴 코드
+  tossMenuCode   String?
   /// 메뉴명
   name            String
   /// 가격
@@ -225,7 +235,7 @@ model Menu {
   /// 표시 순서
   displayOrder    Int      @default(0)
   
-  /// 품절 여부 (OKPOS 연동)
+  /// 품절 여부 (Toss 연동)
   soldOut         Boolean  @default(false)
   /// 숨김 여부 (키오스크 노출 안함)
   isHidden        Boolean  @default(false)
@@ -236,11 +246,12 @@ model Menu {
 
   optionGroups    MenuOptionGroup[]
   tags            MenuTagRelation[]
+  favoritedBy     UserFavorite[]
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  @@unique([storeId, okposMenuCode])
+  @@unique([storeId, tossMenuCode])
   @@index([storeId, categoryId])
   @@index([storeId, isHidden, isActive])
 }
@@ -268,8 +279,8 @@ model MenuOption {
   optionGroupId   String
   optionGroup     MenuOptionGroup @relation(fields: [optionGroupId], references: [id], onDelete: Cascade)
 
-  /// OKPOS 옵션 코드
-  okposOptionCode String?
+  /// Toss Place 옵션 코드
+  tossOptionCode String?
   /// 옵션명
   name            String
   /// 추가 가격
@@ -377,14 +388,22 @@ model Order {
   storeId       String
   store         Store       @relation(fields: [storeId], references: [id])
 
-  /// 세션 ID (어떤 손님의 주문인지)
-  sessionId     String
-  session       TableSession @relation(fields: [sessionId], references: [id])
+  /// 세션 ID (매장 식사 시 필수)
+  sessionId     String?
+  session       TableSession? @relation(fields: [sessionId], references: [id])
+
+  /// 주문자 ID (앱 주문인 경우)
+  userId        String?
+  user          User?        @relation(fields: [userId], references: [id])
 
   /// 주문 번호 (예: ORD-20241229-001)
   orderNumber   String      @unique
-  /// 테이블 번호 (세션에서 가져옴, 중복 저장)
-  tableNumber   Int
+  
+  /// 주문 타입
+  type          OrderType   @default(TABLE)
+
+  /// 테이블 번호 (매장 식사 시 필수)
+  tableNumber   Int?
   /// 주문 상태
   status        OrderStatus @default(PENDING)
   /// 총 금액
@@ -401,6 +420,7 @@ model Order {
   updatedAt     DateTime    @updatedAt
 
   @@index([sessionId])
+  @@index([userId])
   @@index([storeId, status])
   @@index([storeId, tableNumber])
   @@index([orderNumber])
@@ -541,4 +561,42 @@ model ErrorLog {
   @@index([source])
   @@index([errorCode])
   @@index([storeId])
+}
+
+/// 찜한 메뉴 (즐겨찾기)
+model UserFavorite {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  menuId    String
+  menu      Menu     @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+
+  @@unique([userId, menuId]) // 중복 찜 방지
+  @@index([userId])
+  @@index([menuId])
+}
+
+/// 배달 주소
+model UserAddress {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// 주소 별칭 (예: 집, 회사)
+  name            String
+  /// 기본 주소
+  address         String
+  /// 상세 주소
+  detailAddress   String?
+  /// 우편번호
+  zipCode         String?
+  /// 기본 배달지 여부
+  isDefault       Boolean  @default(false)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId])
 }

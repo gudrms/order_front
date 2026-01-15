@@ -9,6 +9,8 @@ import { CartItemCardContainer } from './CartItemCardContainer';
 import { OrderSuccessModal } from '@/features/order';
 import { DOMAINS } from '@/lib/constants/domains';
 
+import { useStore } from '@/contexts/StoreContext';
+
 /**
  * CartPanel 컴포넌트
  * 우측 고정 장바구니 패널
@@ -27,6 +29,7 @@ export function CartPanel() {
     clearCart,
   } = useCartStore();
   const { tableNumber } = useTableStore();
+  const { id: storeId } = useStore();
   const queryClient = useQueryClient();
 
   const [successModal, setSuccessModal] = useState({
@@ -38,7 +41,6 @@ export function CartPanel() {
   const orderMutation = useMutation({
     mutationFn: async () => {
       const API_URL = DOMAINS.API;
-      const storeId = 'store-1';
 
       const response = await fetch(`${API_URL}/stores/${storeId}/orders/first`, {
         method: 'POST',
@@ -98,9 +100,8 @@ export function CartPanel() {
     <>
       {/* 우측 고정 패널 - 슬라이드 애니메이션 */}
       <div
-        className={`fixed right-0 top-0 z-40 flex h-screen w-96 flex-col bg-white shadow-lg transition-transform duration-300 ${
-          isCartOpen ? 'translate-x-0' : 'translate-x-full'
-        }`}
+        className={`fixed right-0 top-0 z-40 flex h-screen w-96 flex-col bg-white shadow-lg transition-transform duration-300 ${isCartOpen ? 'translate-x-0' : 'translate-x-full'
+          }`}
       >
         {/* 헤더 */}
         <div className="flex items-center justify-between border-b p-4">

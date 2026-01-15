@@ -1,0 +1,12 @@
+{
+    "appId": "kr.tacomole.plugin.order",
+    "name": "TacoMole Order Plugin",
+    "version": "0.1.0",
+    "permissions": [
+        "order",
+        "printer"
+    ],
+    "ui": {
+        "entryPage": "index.html"
+    }
+}

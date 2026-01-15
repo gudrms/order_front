@@ -12,6 +12,8 @@ import { LoggerModule } from './common/logger';
 import { AppController } from './app.controller';
 import { HealthController } from './health.controller';
 import { ErrorLogsModule } from './modules/error-logs/error-logs.module';
+import { TossModule } from './modules/integrations/toss/toss.module';
+import { UsersModule } from './modules/users/users.module';
 
 @Module({
     imports: [
@@ -44,6 +46,8 @@ import { ErrorLogsModule } from './modules/error-logs/error-logs.module';
         SessionsModule,
         AuthModule,
         ErrorLogsModule,
+        TossModule,
+        UsersModule,
     ],
     controllers: [AppController, HealthController],
     providers: [
