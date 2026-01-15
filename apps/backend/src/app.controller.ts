@@ -17,4 +17,9 @@ export class AppController {
             docs: 'https://github.com/gudrms/order_front',
         };
     }
+
+    @Get('sentry/error')
+    getSentryError() {
+        throw new Error('Sentry Test Error (Backend) - API Server');
+    }
 }
