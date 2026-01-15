@@ -29,7 +29,6 @@ export async function submitFranchiseInquiry(prevState: any, formData: FormData)
     const phone = formData.get('phone') as string;
     const email = formData.get('email') as string;
     const area = formData.get('area') as string;
-    const area = formData.get('area') as string;
     const message = formData.get('message') as string;
     const honeypot = formData.get('website') as string;
 
