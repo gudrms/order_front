@@ -132,7 +132,7 @@ function SuccessContent() {
                     <button
                         onClick={() => {
                             const orderId = searchParams.get('orderId');
-                            if (orderId) router.push(`/orders/${orderId}`);
+                            if (orderId) router.push(`/order-detail?id=${orderId}`);
                         }}
                         className="w-full bg-brand-black text-white p-4 rounded-xl font-bold"
                     >

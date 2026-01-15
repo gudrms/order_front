@@ -1,20 +1,23 @@
 'use client';
 
-import { useEffect, useState, use } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ChevronLeft, Receipt } from 'lucide-react';
 import { supabase } from '@order/shared';
 import type { Order } from '@order/shared';
 import { OrderStatusTracker } from '@/components/order/OrderStatusTracker';
 
-export default function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
+
+function OrderDetailContent() {
     const router = useRouter();
-    const { id } = use(params);
+    const searchParams = useSearchParams();
+    const id = searchParams.get('id');
     const [order, setOrder] = useState<Order | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchOrder = async () => {
+            if (!id) return;
             try {
                 const { data, error } = await supabase
                     .from('Order')
@@ -128,5 +131,17 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                 </section>
             </div>
         </main>
+    );
+}
+
+export default function OrderDetailPage() {
+    return (
+        <Suspense fallback={
+            <main className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-yellow" />
+            </main>
+        }>
+            <OrderDetailContent />
+        </Suspense>
     );
 }

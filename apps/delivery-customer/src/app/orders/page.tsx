@@ -66,7 +66,7 @@ export default function OrdersPage() {
                             <div
                                 key={order.id}
                                 className="bg-white rounded-xl p-4 cursor-pointer hover:shadow-md transition-shadow"
-                                onClick={() => router.push(`/orders/${order.id}`)}
+                                onClick={() => router.push(`/order-detail?id=${order.id}`)}
                             >
                                 {/* 주문 헤더 */}
                                 <div className="flex items-center justify-between mb-3">
