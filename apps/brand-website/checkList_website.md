@@ -63,7 +63,7 @@
     - [x] `Hero`: 메인 배너 섹션.
     - [x] `MenuSection`: 베스트 메뉴 미리보기.
     - [x] `FranchiseSection`: 가맹 문의 유도 섹션.
-    - [ ] `BannerSlider`: 메인 배너 슬라이드 기능 추가 (현재 정적 이미지).
+    - [x] `BannerSlider`: 메인 배너 슬라이드 기능 추가 (현재 정적 이미지).
 
 ### Phase 2: 서브 페이지 구현 (핵심)
 - [ ] **메뉴 소개 페이지 (`/menu`)**
@@ -75,14 +75,15 @@
     - [ ] 레이아웃 잡기 (좌측 리스트, 우측 지도).
     - [ ] Kakao Map SDK 연동 및 마커 표시 테스트.
 - [ ] **가맹 안내 페이지 (`/franchise`)**
-    - [ ] 정보 전달용 정적 섹션 (절차, 비용) 퍼블리싱.
-    - [ ] 상담 신청 폼 UI (Input, Textarea, Checkbox).
+    - [x] 정보 전달용 정적 섹션 (절차, 비용) 퍼블리싱.
+    - [x] 상담 신청 폼 UI (Input, Textarea, Checkbox).
+    - [x] 보안 강화 (Honeypot, Rate Limiting, 입력 검증).
 
 ### Phase 3: 기능 연동
 - [ ] **주문 연동**
     - [ ] "주문하기" 버튼 클릭 시 `delivery-customer` 앱 URL로 이동 처리.
 - [ ] **가맹 상담 API (Mock)**
-    - [ ] 상담 신청 폼 제출 시 서버 전송 로직 (일단 콘솔 로그나 Mocking).
+    - [x] 상담 신청 폼 제출 시 서버 전송 로직 (Nodemailer 연동).
 
 ### Phase 4: 폴리싱 및 최적화
 - [ ] **SEO 최적화**: 페이지별 메타 태그 적용.

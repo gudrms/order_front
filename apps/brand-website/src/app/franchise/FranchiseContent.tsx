@@ -85,6 +85,17 @@ export default function FranchiseContent() {
                     <p className="text-gray-600 mb-8">정보를 남겨주시면 상세한 안내 자료를 보내드립니다.</p>
 
                     <form action={formAction} className="space-y-6">
+                        {/* Honeypot Field (Hidden) */}
+                        <div className="hidden" aria-hidden="true">
+                            <label htmlFor="website">Website</label>
+                            <input
+                                type="text"
+                                name="website"
+                                id="website"
+                                tabIndex={-1}
+                                autoComplete="off"
+                            />
+                        </div>
                         <div>
                             <label className="block font-bold mb-2">이름</label>
                             <input
@@ -103,6 +114,21 @@ export default function FranchiseContent() {
                                 required
                                 className="w-full bg-gray-100 border border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:border-brand-green transition-colors"
                                 placeholder="010-1234-5678"
+                                maxLength={11}
+                                onInput={(e) => {
+                                    const target = e.target as HTMLInputElement;
+                                    target.value = target.value.replace(/[^0-9]/g, '');
+                                }}
+                            />
+                        </div>
+                        <div>
+                            <label className="block font-bold mb-2">이메일</label>
+                            <input
+                                name="email"
+                                type="email"
+                                required
+                                className="w-full bg-gray-100 border border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:border-brand-green transition-colors"
+                                placeholder="example@email.com"
                             />
                         </div>
                         <div>

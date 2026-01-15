@@ -38,18 +38,13 @@ export interface DaumAddress {
     zonecode: string; // 우편번호 (5자리)
 }
 
-declare global {
-    interface Window {
-        daum: any;
-    }
-}
 
 /**
  * Daum 우편번호 스크립트 로드
  */
 export function loadDaumPostcodeScript(): Promise<void> {
     return new Promise((resolve, reject) => {
-        if (window.daum && window.daum.Postcode) {
+        if ((window as any).daum && (window as any).daum.Postcode) {
             resolve();
             return;
         }
@@ -72,7 +67,7 @@ export async function openDaumPostcode(
 ): Promise<void> {
     await loadDaumPostcodeScript();
 
-    new window.daum.Postcode({
+    new (window as any).daum.Postcode({
         oncomplete: function (data: DaumAddress) {
             onComplete(data);
         },
