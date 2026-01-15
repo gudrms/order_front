@@ -1,8 +1,9 @@
 'use client';
 
-import { Plus } from 'lucide-react';
+import { Plus, Heart } from 'lucide-react';
 import { useMemo } from 'react';
 import { useMenus } from '../../hooks/queries/useMenus';
+import { useFavorites } from '../../hooks/queries/useFavorites';
 import { useUIStore } from '../../stores/uiStore';
 import { useCartStore } from '@order/shared';
 
@@ -12,6 +13,7 @@ export default function MenuList() {
 
     // 전체 메뉴 조회 (Client-side Filtering을 위해 categoryId 없이 호출)
     const { data: allMenus, isLoading } = useMenus();
+    const { isFavorited, toggleFavorite } = useFavorites();
 
     // useMemo를 사용하여 필터링 로직 최적화
     const filteredMenus = useMemo(() => {
@@ -61,6 +63,18 @@ export default function MenuList() {
                                 품절
                             </div>
                         )}
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                toggleFavorite(item.id);
+                            }}
+                            className="absolute top-2 right-2 p-1.5 rounded-full bg-white/80 backdrop-blur-sm shadow-sm z-10"
+                        >
+                            <Heart
+                                size={16}
+                                className={isFavorited(item.id) ? "fill-red-500 text-red-500" : "text-gray-400"}
+                            />
+                        </button>
                     </div>
 
                     {/* Info */}

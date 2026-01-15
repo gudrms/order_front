@@ -1,0 +1,17 @@
+{
+    "name": "toss-pos-plugin",
+    "version": "0.1.0",
+    "private": true,
+    "scripts": {
+        "dev": "ts-node src/index.ts",
+        "build": "tsc && echo 'Building plugin...' && mkdir -p dist && cp src/index.js dist/ && echo 'Plugin built to dist/'",
+        "lint": "eslint ."
+    },
+    "devDependencies": {
+        "@tossplace/pos-plugin-sdk": "^0.0.16",
+        "typescript": "^5.9.3"
+    },
+    "dependencies": {
+        "@supabase/supabase-js": "^2.89.0"
+    }
+}

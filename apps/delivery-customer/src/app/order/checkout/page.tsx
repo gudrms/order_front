@@ -1,12 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, CreditCard, DollarSign } from 'lucide-react';
-import { useCartStore, requestPayment, generateOrderId } from '@order/shared';
+import { useCartStore, generateOrderId } from '@order/shared';
 import { useDeliveryStore } from '@/stores/deliveryStore';
 import { useCreateOrder } from '@/hooks/mutations/useCreateOrder';
 import type { CreateOrderRequest, OrderItemInput } from '@order/shared';
+import { TossPaymentWidget } from '@order/ui';
+import type { PaymentWidgetInstance } from '@tosspayments/payment-widget-sdk';
+
+const TOSS_CLIENT_KEY = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY || 'test_ck_D5GePWvyJnrK0W0k6q8gLzN97Eoq';
 
 export default function CheckoutPage() {
     const router = useRouter();
@@ -16,6 +20,7 @@ export default function CheckoutPage() {
 
     const [paymentMethod, setPaymentMethod] = useState<'CARD' | 'CASH'>('CARD');
     const [isProcessing, setIsProcessing] = useState(false);
+    const paymentWidgetRef = useRef<PaymentWidgetInstance | null>(null);
 
     // 장바구니가 비어있으면 메뉴 페이지로 리다이렉트
     if (items.length === 0) {
@@ -46,12 +51,18 @@ export default function CheckoutPage() {
 
             // 토스페이먼츠 결제 요청
             if (paymentMethod === 'CARD') {
-                await requestPayment({
-                    amount: totalPrice,
+                const paymentWidget = paymentWidgetRef.current;
+                if (!paymentWidget) {
+                    alert('결제 위젯이 로드되지 않았습니다.');
+                    return;
+                }
+
+                await paymentWidget.requestPayment({
                     orderId: orderId,
                     orderName: `${items[0].menuName} 외 ${items.length - 1}건`,
                     customerName: deliveryInfo.customerName,
-                    successUrl: `${window.location.origin}/order/success?orderId=${orderId}`,
+                    customerEmail: deliveryInfo.customerPhone ? undefined : undefined, // 이메일 정보가 없으면 생략
+                    successUrl: `${window.location.origin}/order/success`,
                     failUrl: `${window.location.origin}/order/fail`,
                 });
 
@@ -81,7 +92,7 @@ export default function CheckoutPage() {
             }
         } catch (error) {
             console.error('Payment error:', error);
-            alert('결제 처리 중 오류가 발생했습니다.');
+            // alert('결제 처리 중 오류가 발생했습니다.'); // 위젯 내부 에러 처리가 있을 수 있음
         } finally {
             setIsProcessing(false);
         }
@@ -162,22 +173,33 @@ export default function CheckoutPage() {
                     <div className="space-y-2">
                         <button
                             onClick={() => setPaymentMethod('CARD')}
-                            className={`w-full p-4 rounded-xl border-2 flex items-center gap-3 transition-colors ${
-                                paymentMethod === 'CARD'
+                            className={`w-full p-4 rounded-xl border-2 flex items-center gap-3 transition-colors ${paymentMethod === 'CARD'
                                     ? 'border-brand-yellow bg-brand-yellow/10'
                                     : 'border-gray-200'
-                            }`}
+                                }`}
                         >
                             <CreditCard size={24} />
-                            <span className="font-medium">카드 결제</span>
+                            <span className="font-medium">온라인 결제 (카드/간편결제)</span>
                         </button>
+
+                        {/* 토스 결제 위젯 */}
+                        <div className={`transition-all duration-300 overflow-hidden ${paymentMethod === 'CARD' ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'}`}>
+                            <TossPaymentWidget
+                                clientKey={TOSS_CLIENT_KEY}
+                                customerKey={deliveryInfo.customerPhone || "ANONYMOUS"} // 고객 식별키 (전화번호 사용)
+                                amount={totalPrice}
+                                onWidgetReady={(widget) => {
+                                    paymentWidgetRef.current = widget;
+                                }}
+                            />
+                        </div>
+
                         <button
                             onClick={() => setPaymentMethod('CASH')}
-                            className={`w-full p-4 rounded-xl border-2 flex items-center gap-3 transition-colors ${
-                                paymentMethod === 'CASH'
+                            className={`w-full p-4 rounded-xl border-2 flex items-center gap-3 transition-colors ${paymentMethod === 'CASH'
                                     ? 'border-brand-yellow bg-brand-yellow/10'
                                     : 'border-gray-200'
-                            }`}
+                                }`}
                         >
                             <DollarSign size={24} />
                             <span className="font-medium">만나서 결제 (현금)</span>
@@ -219,8 +241,8 @@ export default function CheckoutPage() {
                         {isProcessing
                             ? '처리 중...'
                             : paymentMethod === 'CARD'
-                            ? `${totalPrice.toLocaleString()}원 결제하기`
-                            : `${totalPrice.toLocaleString()}원 주문하기`}
+                                ? `${totalPrice.toLocaleString()}원 결제하기`
+                                : `${totalPrice.toLocaleString()}원 주문하기`}
                     </button>
                 </div>
             </div>

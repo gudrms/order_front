@@ -1,8 +1,13 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { useCartStore } from '@/stores';
+import { useState } from 'react';
+import { useRouter, useParams } from 'next/navigation';
+import { useCartStore, useTableStore } from '@/stores';
 import { CartItemCard, CartSummary } from '@/features/cart/components';
+import {
+  OrderConfirmModal,
+  OrderSuccessModal,
+} from '@/features/order';
 
 /**
  * 장바구니 페이지
@@ -13,15 +18,30 @@ import { CartItemCard, CartSummary } from '@/features/cart/components';
  */
 export default function CartPage() {
   const router = useRouter();
-  const { items, totalQuantity } = useCartStore();
+  const params = useParams();
+  const storeType = (params?.storeType as string) || 'tacomolly';
+  const branchId = (params?.branchId as string) || 'gimpo';
+
+  const { items, totalQuantity, clearCart } = useCartStore();
+  const { tableNumber } = useTableStore();
+
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [isSuccessOpen, setIsSuccessOpen] = useState(false);
+  const [orderNumber, setOrderNumber] = useState('');
 
   const handleBack = () => {
     router.push('/menu');
   };
 
   const handleOrder = () => {
-    // TODO: 주문 확인 모달 열기
-    alert('주문 확인 모달이 여기에 표시됩니다!');
+    setIsConfirmOpen(true);
+  };
+
+  const handleOrderSuccess = (newOrderNumber: string) => {
+    setOrderNumber(newOrderNumber);
+    setIsConfirmOpen(false);
+    setIsSuccessOpen(true);
+    clearCart();
   };
 
   return (
@@ -68,6 +88,23 @@ export default function CartPage() {
 
       {/* 하단 요약 (아이템이 있을 때만 표시) */}
       {items.length > 0 && <CartSummary onOrder={handleOrder} />}
+
+      {/* 주문 확인 모달 */}
+      <OrderConfirmModal
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        onSuccess={handleOrderSuccess}
+      />
+
+      {/* 주문 성공 모달 */}
+      <OrderSuccessModal
+        isOpen={isSuccessOpen}
+        onClose={() => setIsSuccessOpen(false)}
+        orderNumber={orderNumber}
+        storeType={storeType}
+        branchId={branchId}
+        tableNumber={tableNumber || undefined}
+      />
     </div>
   );
 }

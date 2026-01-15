@@ -23,14 +23,17 @@
 - [x] 사이드바 컴포넌트 (`Sidebar.tsx`) 및 반응형 네비게이션
 - [x] 대시보드 홈 화면 (`/`) 요약 카드 UI (오늘 주문, 매출 등)
 
-## 🍽️ Phase 4: 메뉴 관리 (POS 연동 보조)
+## 🍽️ Phase 4: 메뉴 관리 (Toss 연동 & 꾸미기)
 - [x] 메뉴 목록 페이지 (`/menu`) API 연동 및 UI 구현
 - [x] 공통 타입(`Menu`) 및 유틸리티(`formatCurrency`) 적용
-- [x] 새 메뉴 등록 페이지 (`/menu/new`) 구현
-- [x] **Supabase Storage 이미지 업로드** 기능 구현 (assets 버킷) ⭐️
-- [ ] 메뉴 수정 페이지 (`/menu/[id]/edit`) 구현
-- [ ] 메뉴 삭제 및 품절 처리(Toggle) 기능 연동
-- [ ] 메뉴 동기화 버튼 (향후 POS 데이터 연동 대비)
+- [ ] **메뉴 동기화 기능** (`POST /sync`) 구현 (Toss 데이터 가져오기) 🔄
+    - [x] Backend API (`POST /stores/:storeId/integrations/toss/sync-menu`) 구현 완료
+    - [ ] Admin Frontend "동기화 버튼" 연동
+- [ ] **메뉴 꾸미기 기능** (Enrichment)
+    - [ ] 고화질 이미지 업로드 (기존 이미지 덮어쓰기) 📸
+    - [ ] 태그(뱃지) 관리 (Best, New, Spicy 등) 🏷️
+    - [ ] 상세 설명(Description) 에디터 📝
+- [ ] 메뉴 숨김/노출 토글 (테이블오더 전용)
 
 ## 📝 Phase 5: 주문 관리 (비상용/모니터링)
 - [x] 주문 목록 페이지 (`/orders`) UI 구현

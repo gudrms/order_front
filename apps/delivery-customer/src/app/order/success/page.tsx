@@ -130,10 +130,13 @@ function SuccessContent() {
 
                 <div className="space-y-2">
                     <button
-                        onClick={() => router.push('/orders')}
+                        onClick={() => {
+                            const orderId = searchParams.get('orderId');
+                            if (orderId) router.push(`/orders/${orderId}`);
+                        }}
                         className="w-full bg-brand-black text-white p-4 rounded-xl font-bold"
                     >
-                        주문 내역 보기
+                        주문 상세 보기
                     </button>
                     <button
                         onClick={() => router.push('/')}

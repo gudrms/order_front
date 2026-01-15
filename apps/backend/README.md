@@ -187,17 +187,26 @@ this.logger.critical('Toss 오더 연동 심각 오류', {
 
 ---
 
-## 🔗 Toss 오더 연동 (준비중)
+## 🔗 Toss Integration
 
-```typescript
-// pos.service.ts
-export class PosService {
-  async sendOrderToToss 오더(order: Order) {
-    // Circuit Breaker + Retry 로직 (구현 예정)
-    // axios-retry, opossum 사용
-  }
-}
-```
+### 1. POS Order Integration (Plugin)
+**Architecture**: Hybrid (Realtime + Polling)
+- **POS Plugin** (`apps/toss-pos-plugin`) runs on the POS device.
+- Plugin receives orders via **Supabase Realtime** (primary) or polls `GET /api/v1/pos/orders/pending` (fallback).
+- Plugin registers orders to POS and updates status via `PATCH /api/v1/pos/orders/:id/status`.
+
+**API Endpoints**:
+- `GET /api/v1/pos/orders/pending`: Fetch pending orders.
+- `PATCH /api/v1/pos/orders/:id/status`: Update order status.
+
+### 2. Menu Synchronization (Open API)
+**Architecture**: Server-to-Server
+- Backend fetches menu data from **Toss Open API**.
+- Syncs Categories, Products, and Options to the database.
+
+**API Endpoints**:
+- `POST /api/v1/stores/:storeId/integrations/toss/sync-menu`: Trigger menu sync.
+- `POST /api/v1/stores/:storeId/integrations/toss/test-connection`: Test API connection.
 
 ---
 

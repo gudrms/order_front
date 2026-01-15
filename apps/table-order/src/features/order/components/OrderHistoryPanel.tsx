@@ -9,6 +9,8 @@ import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { DOMAINS } from '@/lib/constants/domains';
 
+import { useStore } from '@/contexts/StoreContext';
+
 /**
  * OrderHistoryPanel 컴포넌트
  * 우측 고정 주문내역 패널
@@ -19,11 +21,12 @@ import { DOMAINS } from '@/lib/constants/domains';
 export function OrderHistoryPanel() {
   const { isOrderHistoryOpen, toggleOrderHistory } = useUIStore();
   const { tableNumber } = useTableStore();
+  const { id: storeId } = useStore();
   const [isResetting, setIsResetting] = useState(false);
   const queryClient = useQueryClient();
 
   // 테이블별 주문 내역 조회
-  const { data: orders, isLoading } = useOrdersByTable(tableNumber ?? undefined);
+  const { data: orders, isLoading } = useOrdersByTable(tableNumber ?? undefined, storeId);
 
   // 전체 총액 계산
   const totalAmount = orders?.reduce((sum, order) => sum + order.totalAmount, 0) || 0;
@@ -37,7 +40,6 @@ export function OrderHistoryPanel() {
     setIsResetting(true);
     try {
       const API_URL = DOMAINS.API;
-      const storeId = 'store-1'; // 실제로는 props나 store에서 가져와야 함
       const response = await fetch(
         `${API_URL}/stores/${storeId}/tables/${tableNumber}/reset`,
         { method: 'POST' }
@@ -63,9 +65,8 @@ export function OrderHistoryPanel() {
     <>
       {/* 우측 고정 패널 - 슬라이드 애니메이션 */}
       <div
-        className={`fixed right-0 top-0 z-40 flex h-screen w-96 flex-col bg-white shadow-lg transition-transform duration-300 ${
-          isOrderHistoryOpen ? 'translate-x-0' : 'translate-x-full'
-        }`}
+        className={`fixed right-0 top-0 z-40 flex h-screen w-96 flex-col bg-white shadow-lg transition-transform duration-300 ${isOrderHistoryOpen ? 'translate-x-0' : 'translate-x-full'
+          }`}
       >
         {/* 헤더 */}
         <div className="flex items-center justify-between border-b p-4">

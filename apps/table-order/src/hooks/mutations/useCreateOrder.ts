@@ -9,14 +9,17 @@ import type {
   CreateOrderResponse,
 } from '@/lib/api/endpoints/order';
 
+import { useStore } from '@/contexts/StoreContext';
+
 /**
  * 주문 생성 훅
  */
 export function useCreateOrder() {
   const queryClient = useQueryClient();
+  const { id: storeId } = useStore();
 
   return useMutation<CreateOrderResponse, Error, CreateOrderRequest>({
-    mutationFn: (data) => api.order.createOrder(data),
+    mutationFn: (data) => api.order.createOrder(data, storeId),
 
     // 성공 시 주문 목록 쿼리 무효화
     onSuccess: (data) => {

@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, useParams } from 'next/navigation';
 import { useCartStore, useTableStore } from '@/stores';
 import { CartItemCard, CartSummary } from '@/features/cart/components';
-import { OrderConfirmModal } from '@/features/order';
+import { OrderConfirmModal, OrderSuccessModal } from '@/features/order';
 import { getStoreUrl } from '@/lib/utils/store';
 
 /**
@@ -18,11 +18,19 @@ import { getStoreUrl } from '@/lib/utils/store';
 export default function CartPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const params = useParams();
+
+  const storeType = (params?.storeType as string) || 'tacomolly';
+  const branchId = (params?.branchId as string) || 'gimpo';
+
   const { items, totalQuantity, clearCart } = useCartStore();
-  const { setTableNumber } = useTableStore();
+  const { tableNumber, setTableNumber } = useTableStore();
 
   // 주문 확인 모달 상태
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
+  // 주문 성공 모달 상태
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const [orderNumber, setOrderNumber] = useState('');
 
   /**
    * URL에서 테이블 번호 읽어서 Store에 저장
@@ -47,19 +55,14 @@ export default function CartPage() {
     setIsOrderModalOpen(true);
   };
 
-  const handleOrderSuccess = (orderNumber: string) => {
+  const handleOrderSuccess = (newOrderNumber: string) => {
+    setOrderNumber(newOrderNumber);
     // 1. 장바구니 비우기
     clearCart();
-
-    // 2. 모달 닫기
+    // 2. 확인 모달 닫기
     setIsOrderModalOpen(false);
-
-    // 3. 주문 완료 페이지로 이동
-    const table = searchParams.get('table');
-    const url = table
-      ? getStoreUrl(`/order/complete?orderNumber=${orderNumber}&table=${table}`)
-      : getStoreUrl(`/order/complete?orderNumber=${orderNumber}`);
-    router.push(url);
+    // 3. 성공 모달 열기
+    setIsSuccessModalOpen(true);
   };
 
   const handleOrderCancel = () => {
@@ -118,6 +121,16 @@ export default function CartPage() {
         isOpen={isOrderModalOpen}
         onClose={handleOrderCancel}
         onSuccess={handleOrderSuccess}
+      />
+
+      {/* 주문 성공 모달 */}
+      <OrderSuccessModal
+        isOpen={isSuccessModalOpen}
+        onClose={() => setIsSuccessModalOpen(false)}
+        orderNumber={orderNumber}
+        storeType={storeType}
+        branchId={branchId}
+        tableNumber={tableNumber || undefined}
       />
     </>
   );
