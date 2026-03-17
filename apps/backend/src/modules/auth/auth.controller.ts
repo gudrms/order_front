@@ -91,7 +91,7 @@ export class AuthController {
         },
     })
     @ApiResponse({ status: 401, description: '인증 실패 - 유효하지 않은 토큰' })
-    getProfile(@CurrentUser() user) {
-        return user;
+    async getProfile(@CurrentUser() user: { id: string; email: string }) {
+        return this.authService.getProfile(user.id);
     }
 }

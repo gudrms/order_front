@@ -18,9 +18,26 @@ export class UsersController {
 
     @Post('me/addresses')
     async createAddress(@Request() req, @Body() dto: CreateAddressDto) {
-        // const userId = req.user.id;
-        const userId = 'test-user-id'; // TODO: Replace with actual user ID from JWT
-        return this.usersService.createAddress(userId, dto);
+        let userId = 'test-user-id';
+        let email = 'test@example.com';
+        let name = 'Test User';
+
+        const authHeader = req.headers.authorization;
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            const token = authHeader.split(' ')[1];
+            try {
+                const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+                if (payload.sub) {
+                    userId = payload.sub;
+                    email = payload.email || `${userId}@placeholder.com`;
+                    name = payload.user_metadata?.full_name || payload.user_metadata?.name || 'User';
+                }
+            } catch (e) {
+                console.error('Failed to parse JWT in createAddress', e);
+            }
+        }
+
+        return this.usersService.createAddress(userId, email, name, dto);
     }
 
     @Delete('me/addresses/:id')

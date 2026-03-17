@@ -1,3 +1,12 @@
+// @ts-ignore - polyfill for browser-only SDK running in Node.js
+if (typeof self === 'undefined') {
+    (globalThis as any).self = globalThis;
+}
+import * as path from 'path';
+import * as dotenv from 'dotenv';
+dotenv.config({ path: path.resolve(__dirname, '../../.env') }); // Try root first
+dotenv.config({ path: path.resolve(__dirname, '../.env') }); // Then local overrides
+
 import { posPluginSdk } from '@tossplace/pos-plugin-sdk';
 import { createClient } from '@supabase/supabase-js';
 import { BackendOrder, PluginOrderDto } from './types';
@@ -5,9 +14,9 @@ import { BackendOrder, PluginOrderDto } from './types';
 console.log('Toss POS Plugin initialized (Hybrid Mode: Realtime + Polling)');
 
 // TODO: Use env var
-const API_URL = process.env.API_URL || 'http://localhost:4000/api/v1'; // Localhost for testing
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'YOUR_SUPABASE_URL';
-const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'YOUR_SUPABASE_ANON_KEY';
+const API_URL = process.env.API_URL || 'http://localhost:4000/api/v1';
+const SUPABASE_URL = process.env.SUPABASE_URL || '';
+const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY || '';
 const POLLING_INTERVAL = 30000; // 30 seconds (Fallback)
 const STORE_ID = process.env.STORE_ID || 'YOUR_STORE_ID';
 

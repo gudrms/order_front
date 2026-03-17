@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import {
     ChevronRight,
     Receipt,
@@ -26,6 +27,12 @@ export default function MyPage() {
         }
     };
 
+    useEffect(() => {
+        if (!loading && !user) {
+            router.push('/login');
+        }
+    }, [user, loading, router]);
+
     if (loading) {
         return (
             <main className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -35,9 +42,9 @@ export default function MyPage() {
     }
 
     if (!user) {
-        router.push('/login');
         return null;
     }
+
 
     const menuItems = [
         {
