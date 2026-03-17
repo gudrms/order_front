@@ -14,9 +14,9 @@ export class SupabaseStrategy extends PassportStrategy(Strategy) {
                 cache: true,
                 rateLimit: true,
                 jwksRequestsPerMinute: 5,
-                jwksUri: `${configService.get<string>('SUPABASE_URL')}/.well-known/jwks.json`,
+                jwksUri: `${configService.get<string>('SUPABASE_URL')}/auth/v1/.well-known/jwks.json`,
             }),
-            algorithms: ['RS256'], // ECC keys often use RS256 or similar in JWKS context, but Supabase default is RS256 for new projects
+            algorithms: ['ES256', 'RS256'],
         });
     }
 

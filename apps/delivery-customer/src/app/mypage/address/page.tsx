@@ -24,7 +24,10 @@ export default function AddressListPage() {
     const fetchAddresses = async (): Promise<Address[]> => {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/me/addresses`);
         if (!res.ok) throw new Error('Failed to fetch addresses');
-        return res.json();
+
+        const json = await res.json();
+        // 백엔드가 { data: [...] } 나 { items: [...] } 형태로 감싸서 보낼 경우를 대비해 배열 직접 추출
+        return Array.isArray(json) ? json : (json.data || json.items || []);
     };
 
     const { data: addresses, isLoading } = useQuery({

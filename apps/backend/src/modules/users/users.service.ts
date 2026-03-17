@@ -13,7 +13,19 @@ export class UsersService {
         });
     }
 
-    async createAddress(userId: string, dto: CreateAddressDto) {
+    async createAddress(userId: string, email: string, name: string, dto: CreateAddressDto) {
+        // 유저가 DB에 없을 수 있으므로 (Supabase 로그인만 하고 DB 동기화 안 된 경우) upsert로 보장
+        await this.prisma.user.upsert({
+            where: { id: userId },
+            update: {}, // 이미 있으면 무시
+            create: {
+                id: userId,
+                email: email,
+                name: name,
+                role: 'USER', // 기본 역할
+            },
+        });
+
         // 만약 기본 배달지로 설정했다면, 기존 기본 배달지 해제
         if (dto.isDefault) {
             await this.prisma.userAddress.updateMany({

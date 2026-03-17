@@ -39,6 +39,11 @@ self.addEventListener('activate', (event) => {
 
 // Fetch 이벤트 (Network First 전략)
 self.addEventListener('fetch', (event) => {
+  // GET 요청이 아니면 로직을 건너뜀 (POST, PUT, DELETE 등은 캐싱 불가)
+  if (event.request.method !== 'GET') {
+    return;
+  }
+
   event.respondWith(
     fetch(event.request)
       .then((response) => {

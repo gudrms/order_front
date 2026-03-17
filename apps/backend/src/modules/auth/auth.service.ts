@@ -52,4 +52,13 @@ export class AuthService {
 
         return newUser;
     }
+
+    async getProfile(userId: string) {
+        return this.prisma.user.findUnique({
+            where: { id: userId },
+            include: {
+                stores: true,
+            },
+        });
+    }
 }

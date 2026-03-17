@@ -38,7 +38,11 @@ export default function NewAddressPage() {
                 },
                 body: JSON.stringify(data),
             });
-            if (!res.ok) throw new Error('Failed to create address');
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({}));
+                console.error('Backend validation error:', errorData);
+                throw new Error(errorData.message || 'Failed to create address');
+            }
             return res.json();
         },
         onSuccess: () => {
