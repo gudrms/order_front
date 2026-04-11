@@ -66,10 +66,10 @@ pnpm preview   # 빌드 결과물 미리보기
 
 ## 빌드 결과물 (dist/)
 
+웹 워커(Web Worker) 실행 환경 규격에 맞추어 `iife` 포맷의 단일 JS 파일로 빌드됩니다.
+(화면이 없는 백그라운드 구동 방식이므로 `index.html` 및 `manifest.json`은 번들에 포함되지 않으며, 요구 권한 등 메타정보는 토스 플레이스 개발자 센터 화면에서 직접 설정합니다.)
+
 ```
 dist/
-├── index.html       # 웹앱 진입점
-├── manifest.json    # 플러그인 메타정보 (appId, 권한 등)
-└── assets/
-    └── index-xxx.js # 번들된 JS
+└── main.js       # 플러그인 웹 워커 진입점 번들
 ```
