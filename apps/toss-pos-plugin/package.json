@@ -6,7 +6,7 @@
         "dev": "vite",
         "build": "vite build",
         "preview": "vite preview",
-        "zip": "vite build && cd dist && tar -cf ../plugin.zip .",
+        "zip": "vite build && powershell -Command \"Compress-Archive -Path dist\\* -DestinationPath plugin.zip -Force\"",
         "test": "vitest run"
     },
     "devDependencies": {

@@ -7,6 +7,12 @@ node_modules
 pnpm-lock.yaml
 .pnpm-debug.log*
 
+# npm (pnpm 프로젝트에서 불필요)
+package-lock.json
+
+# Service Worker dev builds
+swe-worker-*.js
+
 # Testing
 coverage
 
