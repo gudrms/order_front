@@ -1,5 +1,5 @@
-import { Controller, Get, Patch, Param, Body, NotFoundException } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody } from '@nestjs/swagger';
+import { Controller, Get, Post, Patch, Param, Body, Query, NotFoundException } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody, ApiQuery } from '@nestjs/swagger';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @ApiTags('POS Integration')
@@ -53,20 +53,59 @@ export class PosController {
             },
         });
 
-        // DTO 매핑 (필요한 정보만 전달)
+        // 메뉴 ID 목록으로 토스 매핑 정보 조회
+        const menuIds = [...new Set(orders.flatMap(o => o.items.map(i => i.menuId)))];
+        const menus = await this.prisma.menu.findMany({
+            where: { id: { in: menuIds } },
+            select: {
+                id: true,
+                tossMenuCode: true,
+                category: { select: { id: true, name: true, tossCategoryCode: true } },
+            },
+        });
+        const menuMap = new Map(menus.map(m => [m.id, m]));
+
+        // 옵션의 토스 코드 조회
+        const optionNames = orders.flatMap(o =>
+            o.items.flatMap(i =>
+                i.selectedOptions.map(opt => ({ groupName: opt.optionGroupName, optionName: opt.optionName }))
+            )
+        );
+        const menuOptionMap = new Map<string, string | null>();
+        if (optionNames.length > 0) {
+            const options = await this.prisma.menuOption.findMany({
+                where: {
+                    optionGroup: { menu: { id: { in: menuIds } } },
+                },
+                select: { name: true, tossOptionCode: true },
+            });
+            for (const opt of options) {
+                menuOptionMap.set(opt.name, opt.tossOptionCode);
+            }
+        }
+
+        // DTO 매핑 (토스 매핑 정보 포함)
         return orders.map(order => ({
             id: order.id,
             orderNumber: order.orderNumber,
             totalAmount: order.totalAmount,
-            items: order.items.map(item => ({
-                menuName: item.menuName,
-                menuPrice: item.menuPrice,
-                quantity: item.quantity,
-                options: item.selectedOptions.map(opt => ({
-                    name: opt.optionName,
-                    price: opt.optionPrice,
-                })),
-            })),
+            items: order.items.map(item => {
+                const menu = menuMap.get(item.menuId);
+                return {
+                    menuName: item.menuName,
+                    menuPrice: item.menuPrice,
+                    quantity: item.quantity,
+                    catalogId: menu?.tossMenuCode ?? null,
+                    category: menu?.category
+                        ? { id: menu.category.tossCategoryCode, name: menu.category.name }
+                        : null,
+                    options: item.selectedOptions.map(opt => ({
+                        name: opt.optionName,
+                        price: opt.optionPrice,
+                        tossOptionCode: menuOptionMap.get(opt.optionName) ?? null,
+                    })),
+                };
+            }),
         }));
     }
 
@@ -100,13 +139,126 @@ export class PosController {
             throw new NotFoundException(`Order not found: ${orderId}`);
         }
 
+        // 멱등성: 이미 CONFIRMED 처리된 주문은 그대로 반환
+        if (order.status === status && order.tossOrderId) {
+            return order;
+        }
+
         // 업데이트
         return this.prisma.order.update({
             where: { id: orderId },
             data: {
-                status: status as any, // Enum 타입 캐스팅 필요할 수 있음
+                status: status as any,
                 tossOrderId: tossOrderId,
             },
         });
     }
+
+    @Post('catalogs/sync')
+    @ApiOperation({
+        summary: '토스 POS 카탈로그 동기화',
+        description: '플러그인이 SDK로 조회한 카탈로그 데이터를 받아 DB에 동기화합니다.',
+    })
+    @ApiQuery({ name: 'storeId', description: '매장 ID' })
+    async syncCatalogs(
+        @Query('storeId') storeId: string,
+        @Body() body: { catalogs: TossCatalogDto[] },
+    ) {
+        const store = await this.prisma.store.findUnique({ where: { id: storeId } });
+        if (!store) {
+            throw new NotFoundException(`Store not found: ${storeId}`);
+        }
+
+        await this.prisma.$transaction(async (tx) => {
+            for (const catalog of body.catalogs) {
+                // 카테고리 upsert
+                const category = await tx.menuCategory.upsert({
+                    where: {
+                        storeId_tossCategoryCode: {
+                            storeId,
+                            tossCategoryCode: String(catalog.category.id),
+                        },
+                    },
+                    update: { name: catalog.category.name },
+                    create: {
+                        storeId,
+                        tossCategoryCode: String(catalog.category.id),
+                        name: catalog.category.name,
+                    },
+                });
+
+                // 메뉴 upsert
+                const menu = await tx.menu.upsert({
+                    where: {
+                        storeId_tossMenuCode: {
+                            storeId,
+                            tossMenuCode: String(catalog.id),
+                        },
+                    },
+                    update: {
+                        categoryId: category.id,
+                        name: catalog.title,
+                        price: catalog.price.priceValue,
+                        soldOut: catalog.state === 'SOLD_OUT',
+                        imageUrl: catalog.imageUrl,
+                        lastSyncedAt: new Date(),
+                    },
+                    create: {
+                        storeId,
+                        categoryId: category.id,
+                        tossMenuCode: String(catalog.id),
+                        name: catalog.title,
+                        price: catalog.price.priceValue,
+                        soldOut: catalog.state === 'SOLD_OUT',
+                        imageUrl: catalog.imageUrl,
+                    },
+                });
+
+                // 옵션 동기화
+                for (const option of catalog.options) {
+                    // 옵션 그룹은 SDK에서 flat하게 올 수 있으므로 기본 그룹 사용
+                    let group = await tx.menuOptionGroup.findFirst({
+                        where: { menuId: menu.id, name: '옵션' },
+                    });
+                    if (!group) {
+                        group = await tx.menuOptionGroup.create({
+                            data: { menuId: menu.id, name: '옵션' },
+                        });
+                    }
+
+                    const existing = await tx.menuOption.findFirst({
+                        where: { optionGroupId: group.id, tossOptionCode: String(option.id) },
+                    });
+
+                    if (existing) {
+                        await tx.menuOption.update({
+                            where: { id: existing.id },
+                            data: { name: option.title, price: option.price },
+                        });
+                    } else {
+                        await tx.menuOption.create({
+                            data: {
+                                optionGroupId: group.id,
+                                tossOptionCode: String(option.id),
+                                name: option.title,
+                                price: option.price,
+                            },
+                        });
+                    }
+                }
+            }
+        });
+
+        return { success: true, synced: body.catalogs.length };
+    }
+}
+
+interface TossCatalogDto {
+    id: number;
+    title: string;
+    state: string;
+    category: { id: number; name: string };
+    imageUrl: string | null;
+    price: { priceValue: number };
+    options: { id: number; title: string; price: number }[];
 }

@@ -3,16 +3,19 @@
     "version": "0.1.0",
     "private": true,
     "scripts": {
-        "dev": "ts-node src/index.ts",
-        "build": "tsc && echo 'Building plugin...' && mkdir -p dist && cp src/index.js dist/ && echo 'Plugin built to dist/'",
-        "lint": "eslint ."
+        "dev": "vite",
+        "build": "vite build",
+        "preview": "vite preview",
+        "zip": "vite build && cd dist && tar -cf ../plugin.zip .",
+        "test": "vitest run"
     },
     "devDependencies": {
         "@tossplace/pos-plugin-sdk": "^0.0.16",
-        "typescript": "^5.9.3"
+        "typescript": "^5.9.3",
+        "vite": "^6.3.2",
+        "vitest": "^4.0.16"
     },
     "dependencies": {
-        "@supabase/supabase-js": "^2.89.0",
-        "dotenv": "^16.4.7"
+        "@supabase/supabase-js": "^2.89.0"
     }
 }
