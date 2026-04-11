@@ -10,14 +10,16 @@ export async function syncCatalogs() {
             id: c.id,
             title: c.title,
             state: c.state,
-            category: { id: c.category.id, name: c.category.name },
+            category: { id: c.category.id, name: c.category.title },
             imageUrl: c.imageUrl,
             price: { priceValue: c.price.priceValue },
-            options: c.options.map(opt => ({
-                id: opt.id,
-                title: opt.title,
-                price: opt.price?.priceValue ?? 0,
-            })),
+            options: c.options.flatMap(opt =>
+                opt.choices.map(choice => ({
+                    id: choice.id,
+                    title: choice.title,
+                    price: choice.priceValue,
+                }))
+            ),
         }));
 
         const response = await fetch(`${API_URL}/pos/catalogs/sync?storeId=${STORE_ID}`, {
@@ -35,9 +37,8 @@ export async function syncCatalogs() {
 }
 
 export function setupCatalogListeners() {
+    // add/update/delete로 모든 변경 감지 (sold-out/on-sale은 deprecated)
     posPluginSdk.catalog.on('add', () => syncCatalogs());
     posPluginSdk.catalog.on('update', () => syncCatalogs());
     posPluginSdk.catalog.on('delete', () => syncCatalogs());
-    posPluginSdk.catalog.on('sold-out', () => syncCatalogs());
-    posPluginSdk.catalog.on('on-sale', () => syncCatalogs());
 }
