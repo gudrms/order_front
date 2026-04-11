@@ -1,21 +1,75 @@
 # Toss POS Plugin
 
-Toss POS(Toss Place)와 연동하기 위한 플러그인 프로젝트입니다.
+토스 POS(Toss Place) 디바이스에서 실행되는 웹앱 플러그인입니다.
+배달앱 주문을 토스 POS에 자동 등록하고, 카탈로그 동기화 및 주문 취소를 양방향으로 처리합니다.
 
-## Architecture
-This plugin runs on the Toss Place POS device using a **Hybrid Architecture**:
-1.  **Realtime (Primary)**: Listens for new orders via Supabase Realtime (WebSocket) for instant feedback.
-2.  **Polling (Fallback)**: Checks pending orders every 30 seconds (`GET /api/v1/pos/orders/pending`) to ensure reliability.
-3.  **Sync**: Registers orders to POS and updates status via `PATCH /api/v1/pos/orders/:id/status`.
+## 구조
 
-### 빌드
-```bash
-pnpm build
 ```
-빌드 결과물은 `dist/` 디렉토리에 생성되며, `plugin.zip` 형태로 압축하여 배포합니다.
+src/
+├── index.ts      # 초기화 (카탈로그 sync, realtime, polling, 이벤트 바인딩)
+├── config.ts     # 환경변수, Supabase 클라이언트
+├── catalog.ts    # 토스 POS 카탈로그 → 백엔드 동기화
+├── order.ts      # 주문 처리, 상태 업데이트 (재시도/중복방지), 폴링
+├── realtime.ts   # Supabase Realtime 구독 (INSERT/UPDATE), 재연결
+├── types.ts      # 백엔드 API 응답 타입 (SDK 타입은 @tossplace/pos-plugin-sdk에서 import)
+└── __tests__/    # vitest 테스트
+```
 
-### 배포 방법
-1.  `pnpm build` 실행
-2.  생성된 `dist/plugin.zip` 확인
-3.  [Toss Place 개발자 센터](https://place.toss.im/developer) 접속
-4.  플러그인 업로드 및 심사 요청
+## 동작 흐름
+
+### 주문 등록
+```
+배달앱 주문 → Supabase DB INSERT → 플러그인 Realtime 감지
+→ posPluginSdk.order.add() → 토스 POS에 주문 표시
+→ 백엔드 상태 CONFIRMED 업데이트
+```
+
+### 주문 취소 (양방향)
+- **배달앱 → 토스 POS**: Supabase UPDATE 감지 → `posPluginSdk.order.cancel()`
+- **토스 POS → 백엔드**: `order.on('cancel')` → 백엔드 상태 CANCELLED 업데이트
+
+### 카탈로그 동기화
+```
+토스 POS 상품 → posPluginSdk.catalog.getCatalogs()
+→ POST /pos/catalogs/sync → 백엔드 DB에 매핑 저장
+→ 주문 시 tossMenuCode/tossOptionCode로 SDK DTO 생성
+```
+
+## 환경변수 (.env)
+
+```
+PLUGIN_API_URL=http://localhost:4000/api/v1
+PLUGIN_SUPABASE_URL=https://xxx.supabase.co
+PLUGIN_SUPABASE_ANON_KEY=sb_xxx
+PLUGIN_STORE_ID=store-1
+```
+
+Vite `import.meta.env`로 로드됩니다 (`PLUGIN_` 접두사 필수).
+
+## 스크립트
+
+```bash
+pnpm dev       # 개발 서버 (Vite)
+pnpm build     # 프로덕션 빌드 → dist/
+pnpm zip       # 빌드 + dist/ 압축 → plugin.zip
+pnpm test      # vitest 실행
+pnpm preview   # 빌드 결과물 미리보기
+```
+
+## 배포
+
+1. `pnpm zip` 실행 → `plugin.zip` 생성
+2. [Toss Place 개발자 센터](https://place.toss.im/developer) 접속
+3. 플러그인 번들 업로드
+4. 테스트 매장 연결 후 POS 기기에서 확인
+
+## 빌드 결과물 (dist/)
+
+```
+dist/
+├── index.html       # 웹앱 진입점
+├── manifest.json    # 플러그인 메타정보 (appId, 권한 등)
+└── assets/
+    └── index-xxx.js # 번들된 JS
+```

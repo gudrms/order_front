@@ -65,15 +65,24 @@
     - [x] 초기 로드 시 `posPluginSdk.catalog.getCatalogs()` → `POST /pos/catalogs/sync` 전송
     - [x] 백엔드에서 카테고리/메뉴/옵션 upsert (tossMenuCode, tossOptionCode 매핑)
 - [x] **실시간 카탈로그 변경 감지**
-    - [x] `catalog.on('add' | 'update' | 'delete' | 'sold-out' | 'on-sale')` → 재동기화
+    - [x] `catalog.on('add' | 'update' | 'delete')` → 재동기화 (sold-out/on-sale은 deprecated → update로 대체)
 - [x] **주문 시 토스 매핑 ID 포함**
     - [x] `GET /pos/orders/pending` 응답에 `catalogId`, `category`, `tossOptionCode` 포함
+
+### 3-5. 코드 품질
+- [x] **파일 분리** (index.ts → config, catalog, order, realtime, types)
+- [x] **SDK 타입 직접 사용** (중복 정의 제거, PluginOrderDto 등 SDK에서 import)
+- [x] **TS 에러 수정** (PluginCatalogCategory.title, options.choices.priceValue 등)
+- [x] **테스트 코드** (vitest, 13개 테스트 통과: order 9, catalog 4)
+- [x] **.gitignore** (루트: package-lock.json, swe-worker-*.js 추가)
 
 ## ✅ 4. 빌드 및 배포
 - [x] **빌드 스크립트**
     - [x] Vite 번들링 (`pnpm build` → `dist/`)
     - [x] zip 압축 스크립트 (`pnpm zip` → `plugin.zip`)
+    - [x] 빌드 + 테스트 정상 확인
 - [ ] **업로드 및 테스트**
+    - [ ] `pnpm zip`으로 `plugin.zip` 생성
     - [ ] 개발자 센터에 `plugin.zip` 업로드
     - [ ] '테스트 배포' 후 POS 기기에서 다운로드 및 실행 확인
     - [ ] Realtime 주문 수신 테스트
