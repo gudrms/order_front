@@ -81,9 +81,9 @@
     - [x] Vite 번들링 (`pnpm build` → `dist/`)
     - [x] zip 압축 스크립트 (`pnpm zip` → `plugin.zip`)
     - [x] 빌드 + 테스트 정상 확인
-- [ ] **업로드 및 테스트**
-    - [ ] `pnpm zip`으로 `plugin.zip` 생성
-    - [ ] 개발자 센터에 `plugin.zip` 업로드
+- [x] **업로드 및 테스트**
+    - [x] `pnpm zip`으로 `plugin.zip` 생성 (웹 워커 포맷 최적화)
+    - [x] 개발자 센터에 `plugin.zip` 업로드 완료
     - [ ] '테스트 배포' 후 POS 기기에서 다운로드 및 실행 확인
     - [ ] Realtime 주문 수신 테스트
     - [ ] 카탈로그 동기화 테스트

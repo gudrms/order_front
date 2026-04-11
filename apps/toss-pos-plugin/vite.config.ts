@@ -9,7 +9,7 @@ export default defineConfig({
             input: resolve(__dirname, 'src/index.ts'),
             output: {
                 entryFileNames: 'main.js',
-                format: 'esm',
+                format: 'iife',
             }
         }
     },

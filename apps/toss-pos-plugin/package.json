@@ -6,11 +6,13 @@
         "dev": "vite",
         "build": "vite build",
         "preview": "vite preview",
-        "zip": "vite build && powershell -Command \"Compress-Archive -Path dist\\* -DestinationPath plugin.zip -Force\"",
+        "zip": "vite build && node -e \"const AdmZip = require('adm-zip'); const zip = new AdmZip(); zip.addLocalFile('dist/main.js'); zip.addLocalFile('dist/manifest.json'); zip.writeZip('plugin.zip'); console.log('Clean ZIP created.');\"",
         "test": "vitest run"
     },
     "devDependencies": {
         "@tossplace/pos-plugin-sdk": "^0.0.16",
+        "adm-zip": "^0.5.17",
+        "archiver": "^7.0.1",
         "typescript": "^5.9.3",
         "vite": "^6.3.2",
         "vitest": "^4.0.16"
