@@ -26,11 +26,17 @@ const sampleCatalogs = [
         id: 101,
         title: '비프 타코',
         state: 'ON_SALE',
-        category: { id: 1, name: '메인 메뉴' },
+        category: { id: 1, title: '메인 메뉴' },
         imageUrl: null,
         price: { priceValue: 4500 },
         options: [
-            { id: 201, title: '매운맛', price: { priceValue: 500 } },
+            {
+                id: 301,
+                title: '맵기 선택',
+                choices: [
+                    { id: 201, title: '매운맛', priceValue: 500 },
+                ],
+            },
         ],
     },
 ];
@@ -93,10 +99,10 @@ describe('syncCatalogs', () => {
 });
 
 describe('setupCatalogListeners', () => {
-    it('5개의 이벤트 리스너를 등록한다', () => {
+    it('3개의 이벤트 리스너를 등록한다', () => {
         setupCatalogListeners();
 
         const events = (posPluginSdk.catalog.on as any).mock.calls.map((c: any) => c[0]);
-        expect(events).toEqual(['add', 'update', 'delete', 'sold-out', 'on-sale']);
+        expect(events).toEqual(['add', 'update', 'delete']);
     });
 });
