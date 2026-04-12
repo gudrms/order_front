@@ -61,8 +61,30 @@ pnpm preview   # 빌드 결과물 미리보기
 
 1. `pnpm zip` 실행 → `plugin.zip` 생성
 2. [Toss Place 개발자 센터](https://place.toss.im/developer) 접속
-3. 플러그인 번들 업로드
+3. 플러그인 번들 업로드 → **Toss SDK 배포 완료**
 4. 테스트 매장 연결 후 POS 기기에서 확인
+
+## 테스트 방법
+
+### 유닛 테스트
+```bash
+pnpm test    # vitest 13개 테스트 (order 9, catalog 4)
+```
+
+### 실기기 테스트 (POS 기기 필요)
+1. 개발자센터에서 테스트 매장 연결
+2. POS 기기에서 플러그인 활성화
+3. Supabase `Order` 테이블에 테스트 주문 INSERT → POS 주문 표시 확인
+
+### 간접 검증 (POS 기기 없이)
+- **Supabase Dashboard > Realtime Inspector**: `pos-orders` 채널 구독 상태 확인
+- **백엔드 로그**: `/pos/orders/pending`, `/pos/catalogs/sync` API 호출 확인
+- **Supabase Logs**: Realtime 연결/구독 이벤트 확인
+
+## 개발 환경 참고
+
+- **DB 연결**: Supabase Pooler 도메인 DNS 이슈 시 IP 직접 연결 사용 (`3.39.47.126`)
+- **Turbo TUI**: Windows에서 서비스 선택 불가 시 `--ui stream` 옵션 사용
 
 ## 빌드 결과물 (dist/)
 

@@ -84,7 +84,16 @@
 - [x] **업로드 및 테스트**
     - [x] `pnpm zip`으로 `plugin.zip` 생성 (웹 워커 포맷 최적화)
     - [x] 개발자 센터에 `plugin.zip` 업로드 완료
+    - [x] Toss SDK에 배포 완료
     - [ ] '테스트 배포' 후 POS 기기에서 다운로드 및 실행 확인
-    - [ ] Realtime 주문 수신 테스트
+    - [ ] Realtime 주문 수신 테스트 (Supabase Inspector에서 `pos-orders` 채널 확인)
     - [ ] 카탈로그 동기화 테스트
     - [ ] 주문 취소 양방향 테스트
+
+## ✅ 5. 개발 환경 이슈 해결
+- [x] **환경변수 설정**
+    - [x] 백엔드 `.env` DB 연결: Supabase Pooler 도메인 DNS 이슈 → IP 직접 연결로 해결 (`3.39.47.126`)
+    - [x] `delivery-customer`, `brand-website`, `table-order` 앱 `.env.local` 생성
+    - [x] Prisma client 재생성 (`npx prisma generate`) — TS 타입 에러 해결
+- [x] **Turbo TUI 이슈**
+    - [x] Windows 터미널에서 서비스 선택 불가 → `--ui stream` 또는 `turbo.json`에 `"ui": "stream"` 설정으로 해결
