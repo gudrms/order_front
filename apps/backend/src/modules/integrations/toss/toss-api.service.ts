@@ -53,7 +53,8 @@ export class TossApiService {
 
     async confirmPayment(request: TossPaymentConfirmRequest) {
         const secretKey = this.configService.get<string>('TOSS_PAYMENTS_SECRET_KEY')
-            || this.configService.get<string>('TOSS_SECRET_KEY');
+            || this.configService.get<string>('TOSS_SECRET_KEY')
+            || this.configService.get<string>('TOSS_ACCESS_SECRET');
 
         if (!secretKey) {
             throw new InternalServerErrorException('Toss Payments secret key is not configured');
