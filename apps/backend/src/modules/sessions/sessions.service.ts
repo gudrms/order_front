@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CompleteSessionDto } from './dto/complete-session.dto';
 import { SessionStatus } from '@prisma/client';
@@ -41,6 +41,30 @@ export class SessionsService {
    * 새 세션 시작 (첫 주문 시)
    */
   async startSession(storeId: string, tableNumber: number) {
+    const [store, table] = await Promise.all([
+      this.prisma.store.findUnique({ where: { id: storeId } }),
+      this.prisma.table.findUnique({
+        where: {
+          storeId_tableNumber: {
+            storeId,
+            tableNumber,
+          },
+        },
+      }),
+    ]);
+
+    if (!store || !store.isActive) {
+      throw new NotFoundException('Store not found or inactive');
+    }
+
+    if (!table) {
+      throw new NotFoundException('Table not found');
+    }
+
+    if (table.status === 'RESERVED') {
+      throw new BadRequestException('Table is reserved');
+    }
+
     // 기존 활성 세션이 있는지 확인
     const existingSession = await this.getCurrentSession(storeId, tableNumber);
     if (existingSession) {
