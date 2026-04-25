@@ -9,6 +9,6 @@ import { PrismaModule } from '../../prisma/prisma.module';
     imports: [ConfigModule, PrismaModule],
     controllers: [TossController],
     providers: [TossApiService, MenuSyncService],
-    exports: [MenuSyncService],
+    exports: [MenuSyncService, TossApiService],
 })
 export class TossModule { }

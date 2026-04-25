@@ -23,7 +23,7 @@ async function main() {
             branchName: '김포점',
             type: 'MEXICAN',
             description: '신선한 재료로 만드는 멕시칸 레스토랑',
-            okposBranchCode: 'STORE_TACOMOLLY_GIMPO',
+            tossBranchCode: 'STORE_TACOMOLLY_GIMPO',
             businessHours: { weekday: '11:00-22:00', weekend: '11:00-23:00' },
             theme: { primaryColor: '#FF6B35', logo: 'https://example.com/tacomolly-logo.png' },
             ownerId: user.id,
@@ -36,7 +36,7 @@ async function main() {
                 name: '치킨',
                 displayOrder: 1,
                 storeId: store.id,
-                okposCategoryCode: 'CAT_CHICKEN',
+                tossCategoryCode: 'CAT_CHICKEN',
             },
         }),
         prisma.menuCategory.create({
@@ -44,7 +44,7 @@ async function main() {
                 name: '피자',
                 displayOrder: 2,
                 storeId: store.id,
-                okposCategoryCode: 'CAT_PIZZA',
+                tossCategoryCode: 'CAT_PIZZA',
             },
         }),
         prisma.menuCategory.create({
@@ -52,7 +52,7 @@ async function main() {
                 name: '파스타',
                 displayOrder: 3,
                 storeId: store.id,
-                okposCategoryCode: 'CAT_PASTA',
+                tossCategoryCode: 'CAT_PASTA',
             },
         }),
         prisma.menuCategory.create({
@@ -60,7 +60,7 @@ async function main() {
                 name: '음료',
                 displayOrder: 4,
                 storeId: store.id,
-                okposCategoryCode: 'CAT_DRINK',
+                tossCategoryCode: 'CAT_DRINK',
             },
         }),
         prisma.menuCategory.create({
@@ -68,7 +68,7 @@ async function main() {
                 name: '디저트',
                 displayOrder: 5,
                 storeId: store.id,
-                okposCategoryCode: 'CAT_DESSERT',
+                tossCategoryCode: 'CAT_DESSERT',
             },
         }),
     ]);
@@ -92,7 +92,7 @@ async function main() {
                 description: '바삭바삭한 클래식 후라이드 치킨',
                 categoryId: chickenCat.id,
                 storeId: store.id,
-                okposMenuCode: 'MENU_CHICKEN_FRIED',
+                tossMenuCode: 'MENU_CHICKEN_FRIED',
                 displayOrder: 1,
                 optionGroups: {
                     create: {
@@ -120,7 +120,7 @@ async function main() {
                 description: '달콤매콤한 양념 치킨',
                 categoryId: chickenCat.id,
                 storeId: store.id,
-                okposMenuCode: 'MENU_CHICKEN_SAUCE',
+                tossMenuCode: 'MENU_CHICKEN_SAUCE',
                 displayOrder: 2,
                 optionGroups: {
                     create: {
@@ -148,7 +148,7 @@ async function main() {
                 description: '고소한 간장 소스 치킨',
                 categoryId: chickenCat.id,
                 storeId: store.id,
-                okposMenuCode: 'MENU_CHICKEN_SOY',
+                tossMenuCode: 'MENU_CHICKEN_SOY',
                 displayOrder: 3,
                 optionGroups: {
                     create: {
@@ -176,7 +176,7 @@ async function main() {
                 description: '후라이드와 양념을 반씩',
                 categoryId: chickenCat.id,
                 storeId: store.id,
-                okposMenuCode: 'MENU_CHICKEN_HALF',
+                tossMenuCode: 'MENU_CHICKEN_HALF',
                 displayOrder: 4,
                 optionGroups: {
                     create: {
@@ -204,7 +204,7 @@ async function main() {
                 description: '달콤한 허니 소스 치킨',
                 categoryId: chickenCat.id,
                 storeId: store.id,
-                okposMenuCode: 'MENU_CHICKEN_HONEY',
+                tossMenuCode: 'MENU_CHICKEN_HONEY',
                 displayOrder: 5,
                 soldOut: true,
                 optionGroups: {
@@ -236,7 +236,7 @@ async function main() {
                 description: '클래식 토마토 & 모짜렐라',
                 categoryId: pizzaCat.id,
                 storeId: store.id,
-                okposMenuCode: 'MENU_PIZZA_MARGHERITA',
+                tossMenuCode: 'MENU_PIZZA_MARGHERITA',
                 displayOrder: 1,
                 optionGroups: {
                     create: [
@@ -280,7 +280,7 @@ async function main() {
                 description: '페퍼로니가 가득한 피자',
                 categoryId: pizzaCat.id,
                 storeId: store.id,
-                okposMenuCode: 'MENU_PIZZA_PEPPERONI',
+                tossMenuCode: 'MENU_PIZZA_PEPPERONI',
                 displayOrder: 2,
                 optionGroups: {
                     create: [
@@ -324,7 +324,7 @@ async function main() {
                 description: '한국식 불고기 토핑',
                 categoryId: pizzaCat.id,
                 storeId: store.id,
-                okposMenuCode: 'MENU_PIZZA_BULGOGI',
+                tossMenuCode: 'MENU_PIZZA_BULGOGI',
                 displayOrder: 3,
                 optionGroups: {
                     create: [
@@ -368,7 +368,7 @@ async function main() {
                 description: '다양한 토핑이 어우러진 피자',
                 categoryId: pizzaCat.id,
                 storeId: store.id,
-                okposMenuCode: 'MENU_PIZZA_COMBINATION',
+                tossMenuCode: 'MENU_PIZZA_COMBINATION',
                 displayOrder: 4,
                 optionGroups: {
                     create: [
@@ -412,7 +412,7 @@ async function main() {
                 description: '감자와 베이컨 토핑',
                 categoryId: pizzaCat.id,
                 storeId: store.id,
-                okposMenuCode: 'MENU_PIZZA_POTATO',
+                tossMenuCode: 'MENU_PIZZA_POTATO',
                 displayOrder: 5,
                 optionGroups: {
                     create: [
@@ -459,7 +459,7 @@ async function main() {
                 description: '크림 베이스 베이컨 파스타',
                 categoryId: pastaCat.id,
                 storeId: store.id,
-                okposMenuCode: 'MENU_PASTA_CARBONARA',
+                tossMenuCode: 'MENU_PASTA_CARBONARA',
                 displayOrder: 1,
                 optionGroups: {
                     create: {
@@ -487,7 +487,7 @@ async function main() {
                 description: '마늘과 올리브유 파스타',
                 categoryId: pastaCat.id,
                 storeId: store.id,
-                okposMenuCode: 'MENU_PASTA_AGLIO',
+                tossMenuCode: 'MENU_PASTA_AGLIO',
                 displayOrder: 2,
                 optionGroups: {
                     create: {
@@ -515,7 +515,7 @@ async function main() {
                 description: '신선한 토마토 소스',
                 categoryId: pastaCat.id,
                 storeId: store.id,
-                okposMenuCode: 'MENU_PASTA_TOMATO',
+                tossMenuCode: 'MENU_PASTA_TOMATO',
                 displayOrder: 3,
                 optionGroups: {
                     create: {
@@ -543,7 +543,7 @@ async function main() {
                 description: '크림과 토마토의 조화',
                 categoryId: pastaCat.id,
                 storeId: store.id,
-                okposMenuCode: 'MENU_PASTA_ROSE',
+                tossMenuCode: 'MENU_PASTA_ROSE',
                 displayOrder: 4,
                 optionGroups: {
                     create: {
@@ -571,7 +571,7 @@ async function main() {
                 description: '신선한 해산물 토핑',
                 categoryId: pastaCat.id,
                 storeId: store.id,
-                okposMenuCode: 'MENU_PASTA_SEAFOOD',
+                tossMenuCode: 'MENU_PASTA_SEAFOOD',
                 displayOrder: 5,
                 optionGroups: {
                     create: {
@@ -602,7 +602,7 @@ async function main() {
                 description: '시원한 코카콜라',
                 categoryId: drinkCat.id,
                 storeId: store.id,
-                okposMenuCode: 'MENU_DRINK_COLA',
+                tossMenuCode: 'MENU_DRINK_COLA',
                 displayOrder: 1,
             },
             {
@@ -611,7 +611,7 @@ async function main() {
                 description: '청량한 사이다',
                 categoryId: drinkCat.id,
                 storeId: store.id,
-                okposMenuCode: 'MENU_DRINK_SPRITE',
+                tossMenuCode: 'MENU_DRINK_SPRITE',
                 displayOrder: 2,
             },
             {
@@ -620,7 +620,7 @@ async function main() {
                 description: '100% 오렌지 주스',
                 categoryId: drinkCat.id,
                 storeId: store.id,
-                okposMenuCode: 'MENU_DRINK_ORANGE',
+                tossMenuCode: 'MENU_DRINK_ORANGE',
                 displayOrder: 3,
             },
             {
@@ -629,7 +629,7 @@ async function main() {
                 description: '진한 아메리카노',
                 categoryId: drinkCat.id,
                 storeId: store.id,
-                okposMenuCode: 'MENU_DRINK_AMERICANO',
+                tossMenuCode: 'MENU_DRINK_AMERICANO',
                 displayOrder: 4,
             },
             {
@@ -638,7 +638,7 @@ async function main() {
                 description: '시원한 생맥주',
                 categoryId: drinkCat.id,
                 storeId: store.id,
-                okposMenuCode: 'MENU_DRINK_BEER',
+                tossMenuCode: 'MENU_DRINK_BEER',
                 displayOrder: 5,
             },
         ],
@@ -652,7 +652,7 @@ async function main() {
                 description: '이탈리안 정통 티라미수',
                 categoryId: dessertCat.id,
                 storeId: store.id,
-                okposMenuCode: 'MENU_DESSERT_TIRAMISU',
+                tossMenuCode: 'MENU_DESSERT_TIRAMISU',
                 displayOrder: 1,
             },
             {
@@ -661,7 +661,7 @@ async function main() {
                 description: '부드러운 뉴욕 치즈케이크',
                 categoryId: dessertCat.id,
                 storeId: store.id,
-                okposMenuCode: 'MENU_DESSERT_CHEESECAKE',
+                tossMenuCode: 'MENU_DESSERT_CHEESECAKE',
                 displayOrder: 2,
             },
             {
@@ -670,7 +670,7 @@ async function main() {
                 description: '진한 초콜릿 브라우니',
                 categoryId: dessertCat.id,
                 storeId: store.id,
-                okposMenuCode: 'MENU_DESSERT_BROWNIE',
+                tossMenuCode: 'MENU_DESSERT_BROWNIE',
                 displayOrder: 3,
             },
             {
@@ -679,7 +679,7 @@ async function main() {
                 description: '바닐라 & 초콜릿',
                 categoryId: dessertCat.id,
                 storeId: store.id,
-                okposMenuCode: 'MENU_DESSERT_ICECREAM',
+                tossMenuCode: 'MENU_DESSERT_ICECREAM',
                 displayOrder: 4,
             },
             {
@@ -688,7 +688,7 @@ async function main() {
                 description: '신선한 계절 과일',
                 categoryId: dessertCat.id,
                 storeId: store.id,
-                okposMenuCode: 'MENU_DESSERT_FRUIT',
+                tossMenuCode: 'MENU_DESSERT_FRUIT',
                 displayOrder: 5,
             },
         ],

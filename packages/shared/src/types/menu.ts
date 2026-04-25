@@ -66,7 +66,7 @@ export interface Menu {
   isActive?: boolean; // 선택적 (Mock에서 생략 가능, 기본값: true)
   displayOrder: number;
   storeId?: string; // UUID (선택적, Mock에서 생략 가능)
-  okposMenuId?: string | null; // OKPOS 메뉴 ID (선택적)
+  tossMenuCode?: string | null; // Toss 메뉴 코드 (선택적)
   optionGroups?: MenuOptionGroup[]; // 옵션 그룹 (선택적, JOIN 결과)
   createdAt?: Date | string; // 선택적 (Mock에서 생략 가능)
   updatedAt?: Date | string; // 선택적 (Mock에서 생략 가능)

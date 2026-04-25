@@ -1,14 +1,19 @@
 import { Controller, Post, Body, Param, ValidationPipe, UsePipes, Get, Query, Patch, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 import { OrdersService } from './orders.service';
-import { CreateOrderDto } from './dto/create-order.dto';
+import { CreateDeliveryOrderDto, CreateOrderDto } from './dto/create-order.dto';
 import { SupabaseGuard } from '../auth/guards/supabase.guard';
 
 // Prisma Client 생성 전까지 임시로 enum 정의
 export enum OrderStatus {
     PENDING = 'PENDING',
+    PENDING_PAYMENT = 'PENDING_PAYMENT',
+    PAID = 'PAID',
     CONFIRMED = 'CONFIRMED',
     COOKING = 'COOKING',
+    PREPARING = 'PREPARING',
+    READY = 'READY',
+    DELIVERING = 'DELIVERING',
     COMPLETED = 'COMPLETED',
     CANCELLED = 'CANCELLED',
 }
@@ -231,5 +236,28 @@ export class OrdersController {
         @Body('status') status: OrderStatus,
     ) {
         return this.ordersService.updateOrderStatus(storeId, orderId, status);
+    }
+}
+
+@ApiTags('Orders')
+@Controller('orders')
+export class RootOrdersController {
+    constructor(private readonly ordersService: OrdersService) { }
+
+    @Post()
+    @UsePipes(new ValidationPipe({ transform: true }))
+    @ApiOperation({
+        summary: '배달/포장 주문 생성',
+        description: '배달앱, 홈페이지, 토스 SDK 앱에서 공통으로 사용할 주문 생성 엔드포인트입니다.',
+    })
+    @ApiBody({
+        type: CreateDeliveryOrderDto,
+    })
+    @ApiResponse({
+        status: 201,
+        description: '주문 생성 성공',
+    })
+    async createOrder(@Body() createOrderDto: CreateDeliveryOrderDto) {
+        return this.ordersService.createDeliveryOrder(createOrderDto.storeId, createOrderDto);
     }
 }

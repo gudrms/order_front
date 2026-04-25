@@ -9,6 +9,7 @@ import type { OrderStatus } from '../types';
  */
 export const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
   PENDING: '접수 대기',
+  PENDING_PAYMENT: '결제 대기',
   CONFIRMED: '접수 완료',
   COOKING: '조리 중',
   COMPLETED: '완료',
@@ -24,6 +25,7 @@ export const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
  */
 export const ORDER_STATUS_COLOR: Record<OrderStatus, string> = {
   PENDING: 'bg-yellow-100 text-yellow-800',
+  PENDING_PAYMENT: 'bg-slate-100 text-slate-800',
   CONFIRMED: 'bg-blue-100 text-blue-800',
   COOKING: 'bg-orange-100 text-orange-800',
   COMPLETED: 'bg-green-100 text-green-800',

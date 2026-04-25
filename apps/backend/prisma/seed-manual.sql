@@ -6,7 +6,7 @@ VALUES ('user_123456789', 'owner@example.com', '홍길동 사장님', 'OWNER', N
 ON CONFLICT (id) DO NOTHING;
 
 -- 2. Store 생성
-INSERT INTO "Store" (id, name, "storeType", "branchId", "branchName", type, description, "okposBranchCode", "businessHours", theme, "isActive", "ownerId", "createdAt", "updatedAt")
+INSERT INTO "Store" (id, name, "storeType", "branchId", "branchName", type, description, "tossBranchCode", "businessHours", theme, "isActive", "ownerId", "createdAt", "updatedAt")
 VALUES (
   gen_random_uuid()::text,
   '타코몰리 김포점',

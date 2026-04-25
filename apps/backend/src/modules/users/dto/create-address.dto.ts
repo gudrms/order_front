@@ -17,6 +17,22 @@ export class CreateAddressDto {
     @IsOptional()
     zipCode?: string;
 
+    @IsString()
+    @IsOptional()
+    recipientName?: string;
+
+    @IsString()
+    @IsOptional()
+    recipientPhone?: string;
+
+    @IsString()
+    @IsOptional()
+    deliveryMemo?: string;
+
+    @IsString()
+    @IsOptional()
+    entranceMemo?: string;
+
     @IsBoolean()
     @IsOptional()
     isDefault?: boolean;

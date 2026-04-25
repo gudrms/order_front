@@ -14,6 +14,7 @@ import { HealthController } from './health.controller';
 import { ErrorLogsModule } from './modules/error-logs/error-logs.module';
 import { TossModule } from './modules/integrations/toss/toss.module';
 import { UsersModule } from './modules/users/users.module';
+import { PaymentsModule } from './modules/payments/payments.module';
 
 @Module({
     imports: [
@@ -48,6 +49,7 @@ import { UsersModule } from './modules/users/users.module';
         ErrorLogsModule,
         TossModule,
         UsersModule,
+        PaymentsModule,
     ],
     controllers: [AppController, HealthController],
     providers: [
