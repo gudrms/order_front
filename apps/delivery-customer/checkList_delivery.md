@@ -1,424 +1,382 @@
-# 배달 앱 (Delivery Customer) 개발 체크리스트
+# 배달 앱(delivery-customer) 개발 체크리스트
 
-> **현재 상태**: Phase 1 완료 (100%), Phase 2 진행 중 (90%), 고도화 분석 완료  
-> **최종 업데이트**: 2026-04-12
+> 최종 업데이트: 2026-04-25  
+> 기준: `apps/delivery-customer`, `packages/shared`, `apps/backend` 코드 확인 및 빌드/타입체크 결과  
+> 현재 판정: UI 데모는 가능하지만, 실제 배달 주문 운영 플로우는 아직 미완성
 
-## 🎯 개발 전략: PWA First, Native App Later
+## 현재 요약
 
-### Phase 1: PWA (Progressive Web App) ✅ 완료
-- 브라우저를 통해 즉시 서비스 가능
-- "홈 화면에 추가"를 통해 앱과 유사한 UX 제공
-- Capacitor 플러그인 중 웹 지원 가능한 기능 우선 구현
+- UI 완성도: 약 70%
+- 실서비스 완성도: 약 35~45%
+- 타입체크: 통과
+- 프로덕션 빌드: 정적 페이지 생성까지 성공, 마지막 단계에서 `ReferenceError: location is not defined` 로그 발생
+- 가장 큰 리스크: Toss 결제 성공/실패 서버 기록은 연결됐지만 실제 결제 E2E, 주문 이력/상세 API, 미결제 만료 처리가 아직 남아 있음
 
-### Phase 2: Native App (Capacitor) 🔄 진행 중
-- PWA 안정화 후 Android/iOS 빌드
-- 푸시 알림(FCM), 딥링크 등 네이티브 전용 기능 고도화
-- 스토어 배포 (상세 내용: [DEPLOYMENT.md](./DEPLOYMENT.md) 참고)
+## 확인된 완료 항목
 
----
+### 앱 기본 구조
 
-## ✅ Phase 1: 핵심 기능 구현 (완료)
+- [x] Next.js App Router 기반 `delivery-customer` 앱 구성
+- [x] PWA 설정 기본 구성
+- [x] Capacitor 설정 파일 구성
+- [x] Sentry 설정 파일 구성
+- [x] React Query Provider 구성
+- [x] Supabase Auth Context 구성
+- [x] `packages/shared`의 API, 타입, 장바구니 store, 메뉴 선택 hook 사용 확인
+- [ ] `packages/order-core`는 README상 계획만 있고 실제 구현은 placeholder 상태
 
-### 1.1 홈 화면
-- [x] HomeHeader (헤더)
-- [x] Dashboard (포인트/쿠폰 현황)
-- [x] ServiceButtons (주문 방식 선택: 배달/포장/매장)
-- [x] QuickMenu (원클릭 주문, 선물하기)
-- [x] BottomNav (네비게이션)
+### 홈 화면
 
-### 1.2 메뉴 & 주문
-- [x] 메뉴 페이지 (/menu)
-- [x] CategoryTabs (카테고리 탭, Sticky)
-- [x] MenuList (메뉴 리스트 + 필터링)
-- [x] MenuDetailBottomSheet (옵션 선택)
-- [x] CartBottomSheet (장바구니)
-- [x] 수량 조절 및 삭제
-- [x] 최소 주문 금액 확인 (15,000원)
+- [x] 홈 메인 페이지(`/`) 구성
+- [x] `HomeHeader` 구성
+- [x] `Dashboard` 구성
+- [x] `ServiceButtons` 구성
+- [x] `QuickMenu` 구성
+- [x] `BottomNav` 구성
 
-### 1.3 배달 주소
-- [x] AddressInputBottomSheet (배달 정보 입력)
-- [x] Daum 우편번호 서비스 연동 (packages/shared)
-- [x] 주문자 정보 입력 (이름, 전화번호)
+### 메뉴/장바구니 UI
+
+- [x] 메뉴 페이지(`/menu`) 구성
+- [x] 카테고리 탭 UI 구성
+- [x] 메뉴 목록 UI 구성
+- [x] 메뉴 상세 바텀시트 구성
+- [x] 옵션 선택 UI 연결
+- [x] 수량 변경 UI 연결
+- [x] 장바구니 바텀시트 구성
+- [x] 장바구니 수량 변경/삭제 UI 구성
+- [x] 최소 주문 금액 15,000원 검증 UI 구성
+
+### 배달 정보 입력
+
+- [x] 배달 주소 입력 바텀시트 구성
+- [x] Daum 우편번호 검색 유틸 구성
+- [x] 주문자 이름 입력
+- [x] 주문자 연락처 입력
 - [x] 배달 요청사항 입력
+- [x] 연락처 형식 기본 검증
 
-### 1.4 결제
-- [x] 토스페이먼츠 SDK 설치 (packages/shared)
-- [x] 결제 페이지 (/order/checkout)
-- [x] 결제 방법 선택 (카드/만나서결제)
-- [x] 토스페이먼츠 연동
-- [x] 주문 생성 API
-- [x] 결제 성공 페이지 (/order/success)
-- [x] 결제 실패 페이지 (/order/fail)
-- [x] 주문 완료 페이지 (/order/complete)
+### 결제/주문 화면
 
-### 1.5 주문 내역
-- [x] 주문 내역 페이지 (/orders)
-- [x] 주문 상태별 아이콘/색상 (정의 및 연동 완료)
-- [x] 빈 상태 처리
-- [x] useOrders Hook (React Query)
-- [x] 주문 데이터 모델 정합성 수정 (totalPrice, unitPrice 필드 통일)
+- [x] 결제 페이지(`/order/checkout`) 구성
+- [x] Toss Payment Widget UI 연결
+- [x] 카드 결제 요청 UI 구성
+- [x] 현장 결제 주문 버튼 구성
+- [x] 결제 성공 페이지(`/order/success`) 구성
+- [x] 결제 실패 페이지(`/order/fail`) 구성
+- [x] 현장 결제 완료 페이지(`/order/complete`) 구성
 
-### 1.6 PWA 설정
-- [x] manifest.json 생성
-- [x] Service Worker (sw.js)
-- [x] PWAInstaller 컴포넌트 (앱 설치 배너)
-- [x] Layout 메타데이터 설정
-- [x] 다양한 크기의 아이콘 생성 및 배치
-- [x] Apple Touch Icon 설정
-- [x] Mobile-First 디자인 최적화
+### 주문 이력/상세 UI
 
-### 1.7 Capacitor 네이티브 플러그인
-- [x] Camera (카메라 접근)
-- [x] Geolocation (위치 서비스)
-- [x] Push Notifications (푸시 알림 준비)
-- [x] Status Bar (상태바 스타일)
-- [x] Haptics (햅틱 피드백)
-- [x] Local Notifications (로컬 알림)
-- [x] Network (네트워크 상태 감지, 비동기 리스너 해제 개선)
-- [x] Share (공유하기)
-- [x] Toast (토스트 메시지)
-- [x] Browser (인앱 브라우저)
-- [x] App (앱 생명주기, 비동기 리스너 해제 개선)
+- [x] 주문 이력 페이지(`/orders`) 구성
+- [x] 주문 상세 페이지(`/order-detail`) 구성
+- [x] 주문 상태 트래커 UI 구성
+- [x] Supabase Realtime 기반 주문 상태 hook 초안 구성
 
-### 1.8 Shared Packages
-- [x] API Client (GET, POST, PATCH, PUT, DELETE)
-- [x] Cart Store (Zustand)
-- [x] Menu Selection Hook
-- [x] Daum Postcode (주소 검색)
-- [x] Toss Payments (결제)
-- [x] Supabase Client (인증)
-- [x] Types 체계 정리 및 버그 수정
-  - [x] CreateOrderRequest (Table/Delivery 유니온 타입)
-  - [x] OrderStatus 상태 확장 (PAID, DELIVERING 등)
-  - [x] PaymentOrderItemInput / PaymentOrderResponse
-  - [x] 레거시 호환 alias 추가
-- [x] Validation & Format Utils
-- [x] ENV_MANAGEMENT.md (환경 변수 관리 문서)
+### 로그인/마이페이지 UI
 
----
+- [x] 로그인 페이지(`/login`) 구성
+- [x] Kakao OAuth 호출 코드 구성
+- [x] Apple OAuth 호출 코드 구성
+- [x] OAuth callback 페이지 구성
+- [x] 마이페이지(`/mypage`) 구성
+- [x] 주소 관리 페이지 구성
+- [x] 주소 추가 페이지 구성
+- [x] 찜한 메뉴 페이지 구성
 
-## 🔄 Phase 2: 고급 기능 (진행 중)
+### 네이티브/PWA 유틸
 
-### 2.1 로그인/인증 (80% 완료)
-- [x] Supabase Auth 설정 (packages/shared)
-- [x] AuthContext & AuthProvider (자동 로그인)
-- [x] 카카오 로그인 UI & 연동
-- [x] Apple 로그인 뼈대 (iOS 앱 출시용)
-- [x] 로그인 페이지 (/login)
-- [x] OAuth 콜백 처리 (/auth/callback)
-- [x] 로그아웃 기능
-- [x] AUTH_SETUP.md 문서화
-- [ ] 카카오 Developer 앱 등록 (실제 배포용)
-- [ ] Supabase Dashboard에서 Kakao Provider 설정
-- [ ] Apple Developer 등록 (iOS 앱 출시 시)
+- [x] Camera wrapper 구성
+- [x] Geolocation wrapper 구성
+- [x] Push Notifications wrapper 구성
+- [x] Local Notifications wrapper 구성
+- [x] Haptics wrapper 구성
+- [x] Network wrapper 구성
+- [x] Share wrapper 구성
+- [x] Toast wrapper 구성
+- [x] Browser wrapper 구성
+- [x] Status Bar wrapper 구성
+- [x] App lifecycle wrapper 구성
+- [x] 네이티브 기능 테스트 페이지(`/test-native`) 구성
 
-**로그인 구현 방식**
-```typescript
-// 1. 휴대폰 OTP 인증 (추천)
-await supabase.auth.signInWithOtp({
-  phone: '+821012345678',
-})
+## 확인된 부분 완료 항목
 
-// 2. 자동 로그인 (Refresh Token)
-const { data: { session } } = await supabase.auth.getSession()
+### 메뉴 데이터 연동
 
-// 3. 소셜 로그인 (카카오/애플)
-await supabase.auth.signInWithOAuth({
-  provider: 'kakao',
-})
-```
+- [x] 프론트에서 메뉴/카테고리 API 호출 구조 존재
+- [x] 백엔드에 메뉴/카테고리 조회 API 존재
+- [x] `packages/shared/src/api/endpoints/menu.ts`에서 메뉴 API wrapper 제공
+- [ ] 매장 ID가 `store-1`로 하드코딩되어 있음
+- [ ] `NEXT_PUBLIC_STORE_ID` 또는 URL 기반 Store Context로 통일 필요
+- [ ] 메뉴 검색 UI는 버튼만 있고 실제 검색 기능 없음
 
-### 2.2 주문 추적 (완료)
-- [x] 실시간 주문 상태 업데이트 (Supabase Realtime)
-- [x] 배달 진행 상황 UI (OrderStatusTracker)
-- [x] 주문 상세 페이지 (/orders/[id])
-- [x] 배달 완료 알림 (Local Notification)
+### 결제 연동
 
-### 2.3 사용자 기능 (완료)
-- [x] 마이페이지 (/mypage)
-- [x] 배달 주소 목록 관리 (CRUD + Daum Postcode)
-- [x] 찜한 메뉴 (Favorites)
-- [x] 최근 주문 내역
-- [ ] 쿠폰/포인트 관리 (UI만 구현)
-- [ ] 회원 정보 수정
+- [x] Toss Payment Widget 렌더링 구조 존재
+- [x] 카드 결제 redirect flow 초안 존재
+- [x] Toss 결제 승인 검증 API 추가: `POST /payments/toss/confirm`
+- [x] Toss 결제 실패 기록 API 추가: `POST /payments/toss/fail`
+- [x] Toss `paymentKey`, `orderId`, `amount`를 서버에서 검증하는 흐름으로 success page 전환
+- [x] 카드 결제는 checkout에서 `PENDING_PAYMENT` 주문을 먼저 만들고 success에서 `PAID`로 확정
+- [x] Toss fail redirect와 결제창 abort 시 `FAILED`/`CANCELLED` 상태 기록
+- [x] 공통 `PaymentsModule`이 결제 상태를 담당하고, 실제 Toss HTTP 호출은 백엔드 `TossApiService`로 분리
+- [x] 결제 승인/실패 API Swagger 문서 보강
+- [x] 결제 서비스 단위 테스트 추가
+- [x] Toss provider order id를 payment `idempotencyKey`로 저장
+- [ ] 실제 Toss secret key 환경변수와 결제 테스트키로 E2E 검증 필요
+- [ ] 결제 timeout/만료 배치 처리 필요
+- [ ] 중복 callback/idempotent create-order 재시도 정책 보강 필요
 
-### 2.4 리뷰 & 공유 (계획)
-- [ ] 리뷰 작성 (카메라 연동)
-- [ ] 리뷰 목록 조회
-- [ ] 공유하기 기능 (Web Share API / Capacitor Share)
-- [ ] 선물하기 기능
+### 주문 생성
 
-### 2.5 고객 지원 (계획)
-- [ ] 고객센터/FAQ
-- [ ] 1:1 문의
-- [ ] 주문 취소/변경 요청
-- [ ] 배달비 계산 로직 (거리 기반)
+- [x] 프론트 주문 생성 mutation hook 존재
+- [x] 백엔드 테이블 주문 생성 API 존재
+- [x] `packages/shared/src/types/payment.ts`에 배달 주문 요청 타입(`CreateDeliveryOrderRequest`) 존재
+- [x] `packages/shared/src/api/endpoints/order.ts`에 `createOrder` wrapper 존재
+- [x] `POST /orders` 배달 주문 생성 엔드포인트 추가
+- [x] 백엔드 `CreateDeliveryOrderDto` 추가
+- [x] 배달 주문 생성 시 `Order.type = DELIVERY`, `Order.source = DELIVERY_APP` 저장
+- [x] 배달 주소/연락처/요청사항 저장용 `OrderDelivery` 모델 추가
+- [x] 결제 시도 저장용 `Payment` 모델 추가
+- [x] 프론트 payload에 `delivery`와 옵션 `optionId` 포함
+- [ ] 주문 생성 응답을 프론트 `OrderResponse`/주문 상세 타입과 완전히 매핑하지 않음
+- [x] 카드 결제는 `PENDING_PAYMENT`/`READY` 저장 후 서버 승인 검증으로 `PAID` 확정
+- [x] 결제 승인 실패/사용자 중단 시 pending order 실패/취소 기록
+- [ ] 결제창 이탈 후 fail callback도 오지 않는 timeout 주문 만료 처리 필요
 
----
+### 주문 이력/상세
 
-## 📱 Phase 3: Native App 고도화 (향후)
+- [x] 주문 이력 UI 존재
+- [x] 주문 상세 UI 존재
+- [ ] `useOrders`가 아직 `localStorage` mock 사용
+- [ ] `packages/shared/src/api/endpoints/order.ts`의 `updateOrderStatus`도 `localStorage` 기반 mock 상태
+- [ ] 주문 상세가 백엔드 API가 아니라 Supabase 테이블 직접 조회 사용
+- [ ] Supabase 조회 relation 이름과 실제 Prisma 모델 필드명이 어긋날 가능성 있음
+- [ ] `as any` 타입 우회 존재
+- [ ] API 응답의 `totalAmount/menuPrice`와 프론트 타입의 `totalPrice/unitPrice` 매핑 정리 필요
 
-### 3.1 Capacitor 환경 구축
-- [x] capacitor.config.ts 설정
-- [x] Android 프로젝트 생성 (android/)
-- [ ] iOS 프로젝트 생성 (ios/, Mac 필요)
-- [ ] `npx cap sync` 자동화
+### Shared/Order Core 정리
 
-### 3.2 네이티브 전용 기능
-- [ ] **푸시 알림 (FCM)**
-  - [ ] Firebase 프로젝트 설정
-  - [ ] Android FCM 연동
-  - [ ] iOS APNS 연동
-  - [ ] 알림 권한 처리
-  - [ ] 주문 상태 변경 알림
-  - [ ] 프로모션 알림
+- [x] `@order/shared`가 `types`, `constants`, `api`, `cartStore`, `useMenuSelection`, `useOrderStatus`, `supabase`, utils를 export함
+- [x] 배달앱 장바구니는 `packages/shared/src/stores/cartStore.ts`를 사용함
+- [x] 배달앱 메뉴 옵션 선택은 `packages/shared/src/hooks/useMenuSelection.ts`를 사용함
+- [x] 배달앱 주문 상태 구독은 `packages/shared/src/hooks/useOrderStatus.ts`를 사용함
+- [ ] `useMenuSelection`의 option group id가 임시값(`temp-id`)이라 옵션 검증/주문 payload와 정합성 보강 필요
+- [x] `CreateOrderRequest`의 배달 주문 계약을 백엔드 `POST /orders`와 1차 정렬
+- [x] Prisma `OrderStatus`에 `PENDING_PAYMENT`, `PAID`, `PREPARING`, `READY`, `DELIVERING` 추가
+- [x] `okposOrderId` 명명은 `tossOrderId`로 정리
+- [ ] `Order` 타입은 아직 `totalPrice/unitPrice/tableId` 기준이고 백엔드 Prisma 응답은 `totalAmount/menuPrice/sessionId` 기준이라 mapper 또는 타입 재정의 필요
+- [ ] `packages/order-core`는 현재 placeholder라 공통 주문 비즈니스 로직 패키지로 사용 불가
 
-- [ ] **딥링크 (Deep Linking)**
-  - [ ] Universal Links (iOS) 설정
-  - [ ] App Links (Android) 설정
-  - [ ] 공유 링크 → 앱 자동 실행
+### 사용자 기능
 
-- [ ] **바이오 인증**
-  - [ ] Face ID / Touch ID (iOS)
-  - [ ] 지문 인식 (Android)
-  - [ ] 간편 로그인 옵션
+- [x] Supabase Auth Context 존재
+- [x] 주소 관리 UI 존재
+- [x] 찜하기 UI 존재
+- [ ] 백엔드 `users/me/*` API 대부분이 `test-user-id` 사용
+- [ ] 프론트 주소/찜 API 호출에 Authorization header 없음
+- [ ] 백엔드 Auth Guard 미적용
+- [ ] 찜 목록의 주문하기 버튼이 존재하지 않는 `/menu/[id]`로 이동
+- [ ] 쿠폰/포인트는 UI만 있고 실제 데이터/정책 없음
+- [ ] 회원 정보 수정 없음
 
-- [ ] **카메라 고급 기능**
-  - [ ] 네이티브 카메라 UI
-  - [ ] 사진 편집 (크롭, 필터)
-  - [ ] 다중 사진 업로드
+### 배달 추적
 
-### 3.3 스토어 배포
-- [ ] **Android**
-  - [ ] 스플래시 스크린 디자인
-  - [ ] Keystore 생성 및 관리
-  - [ ] AAB 빌드
-  - [ ] Google Play Console 업로드
-  - [ ] 스토어 등록 정보 작성
-  - [ ] 심사 제출
+- [x] 배달 추적 hook 초안 존재
+- [x] 상태별 로컬 알림/haptics 처리 초안 존재
+- [ ] `/api/delivery/:orderId` mock endpoint 호출 상태
+- [ ] 실제 백엔드 배달 추적 API 없음
+- [ ] Supabase Realtime 구독 주석 처리 상태
+- [ ] 라이더 위치/전화/예상 도착 시간 DB 모델 없음
+- [ ] 배달 취소 API 없음
+- [ ] 지도 연동 없음
 
-- [ ] **iOS**
-  - [ ] 스플래시 스크린 디자인
-  - [ ] Apple Developer 계정 등록
-  - [ ] Bundle Identifier 설정
-  - [ ] Archive 생성
-  - [ ] App Store Connect 업로드
-  - [ ] 스토어 등록 정보 작성
-  - [ ] 심사 제출
+### PWA/빌드
 
-> 📘 **상세 배포 가이드**: [DEPLOYMENT.md](./DEPLOYMENT.md) 참고
+- [x] 타입체크 통과
+- [x] 정적 페이지 생성 18개 성공
+- [ ] 빌드 마지막 단계에서 `ReferenceError: location is not defined` 로그 확인
+- [ ] `public/icons/icon-192x192.png` 경로를 layout에서 참조하지만 실제 public에는 `icon.svg`, `manifest.json`, `sw.js`만 확인됨
+- [ ] manifest icon 경로와 실제 asset 정합성 확인 필요
+- [ ] Service Worker 캐싱 전략 검증 필요
 
-### 3.4 앱 최적화
-- [ ] 앱 번들 크기 최적화
-- [ ] 네이티브 성능 프로파일링
-- [ ] 메모리 누수 점검
-- [ ] 배터리 사용량 최적화
+## 개발 우선순위
 
----
+### P0: 주문 계약 정상화
 
-## 🚀 고도화 체크리스트 (2026-04-12 분석)
+- [x] 배달 주문 API 방향 결정: `POST /orders`는 배달/포장/외부 채널, `POST /stores/:storeId/orders/*`는 테이블오더 유지
+- [x] `packages/shared`의 `CreateDeliveryOrderRequest`와 백엔드 DTO 1차 정렬
+- [x] 프론트 `createOrder` endpoint와 백엔드 root orders endpoint 정렬
+- [x] 백엔드 배달 주문 DTO 추가
+- [x] 주문 타입 `DELIVERY` 저장
+- [x] 배달 주소/연락처/요청사항 저장용 `OrderDelivery` 추가
+- [x] 현장 결제 주문 생성 flow가 실제 API payload를 만들도록 수정
+- [x] 카드 결제 성공 후 주문 생성 flow가 실제 API payload를 만들도록 수정
+- [ ] 주문 생성 응답을 프론트 타입과 맞춤
+- [ ] 실제 DB seed/store id 기준으로 E2E 주문 생성 확인 필요
 
-### 🔴 즉시 해결 (기반 정리)
-- [ ] **Store ID 하드코딩 제거** — `'store-1'` → Store Context/URL 파라미터로 동적 처리
-    - [ ] `useMenus.ts` Store ID 동적 전달
-    - [ ] `CheckoutPage.tsx` Store ID 동적 전달
-    - [ ] `/order/success` Store ID 동적 전달
-    - [ ] 홈화면 매장 선택 UI 추가
-    - [ ] 사용자 마지막 매장 저장 (localStorage or DB)
-- [ ] **주문내역 실제 API 연동** — `useOrders`가 localStorage Mock 사용 중 → 백엔드 API 연결
-- [ ] **결제 보안 강화**
-    - [ ] Success 페이지 결제 검증 로직 보완
-    - [ ] 멱등성 키(idempotency key) 추가 — 중복 주문 방지
-    - [ ] 결제 타임아웃 처리
-- [ ] **타입 에러 수정** — `order-detail/page.tsx`의 `as any` 타입 단언 제거
+### P1: 결제 안정화
 
-### 🟠 핵심 기능 추가
-- [ ] **주문 취소/환불**
-    - [ ] 주문 상세에서 취소 버튼 추가
-    - [ ] 취소 사유 선택 UI
-    - [ ] 취소 API 연동 (백엔드 + Toss 환불)
-    - [ ] 취소 상태 표시
-- [ ] **메뉴 검색**
-    - [ ] 메뉴 페이지 검색바 추가
-    - [ ] 전문검색(full-text search) 또는 클라이언트 필터
-    - [ ] 검색 결과 페이지
-- [ ] **실시간 배달 추적 활성화**
-    - [ ] `useDeliveryTracking` Supabase Realtime 구독 주석 해제 및 연결
-    - [ ] 주문 상태 변경 시 푸시 알림 연동
-- [ ] **푸시 알림 (FCM)**
-    - [ ] Firebase 프로젝트 설정
-    - [ ] 디바이스 토큰 등록 API
-    - [ ] 주문 상태 변경 알림
-    - [ ] 알림 탭 시 해당 주문으로 이동
-- [ ] **UX 개선**
-    - [ ] 토스트 알림 구현 (장바구니 추가 성공 등) — 현재 TODO 상태
-    - [ ] `alert()` → Error Boundary + 재시도 UI 전환
-    - [ ] 로딩 스켈레톤 일관성 개선
-    - [ ] 빈 상태 일러스트 추가
-- [ ] **API 통합 패턴 정리**
-    - [ ] raw `fetch()` → `api.*` 클라이언트로 통일
-    - [ ] React Query retry/에러 처리 설정 강화
-    - [ ] 인증 헤더 인터셉터 추가
+- [x] `Payment` 모델 추가
+- [x] `PaymentStatus` 추가
+- [x] Toss 결제 승인/검증 서버 API 추가
+- [x] 클라이언트 success page에서 직접 주문 생성하지 않도록 정리
+- [x] 주문 생성 후 결제 확정 방식으로 통일
+- [x] 중복 callback 방지용 idempotency key 저장
+- [x] 결제 실패/취소 상태 기록
+- [x] 결제 금액 변조 방지 검증
+- [x] 결제 성공/실패 핵심 단위 테스트
+- [ ] 결제 timeout/만료 상태 처리
 
-### 🟡 고도화 기능
-- [ ] **리뷰 시스템**
-    - [ ] 배달 완료 후 리뷰 작성 페이지
-    - [ ] 별점 + 사진 업로드 (카메라 연동)
-    - [ ] 리뷰 목록 조회
-- [ ] **배달 지도**
-    - [ ] Kakao/Naver Maps 연동
-    - [ ] 라이더 실시간 위치 표시
-    - [ ] 예상 도착 시간(ETA) 계산 — 현재 "30-40분" 하드코딩
-    - [ ] 배달 경로 표시
-- [ ] **쿠폰/포인트**
-    - [ ] 쿠폰 코드 입력/적용 로직
-    - [ ] 포인트 적립/사용
-    - [ ] 쿠폰 관리 페이지
-- [ ] **인앱 채팅**
-    - [ ] 매장/라이더 채팅
-    - [ ] 메시지 히스토리
-- [ ] **결제 수단 확장**
-    - [ ] Apple Pay / Google Pay
-    - [ ] 간편결제 (네이버페이, 카카오페이)
+### P1: 주문 이력/상세 API 전환
 
-### 🟢 장기 과제
-- [ ] **성능 최적화**
-    - [ ] 이미지 최적화 (현재 `unoptimized: true`)
-    - [ ] 라우트 기반 코드 스플리팅
-    - [ ] 주문/주소 목록 페이지네이션
-    - [ ] 번들 사이즈 분석 및 최적화
-- [ ] **다크 모드**
-- [ ] **오프라인 캐싱** (메뉴 데이터 캐시, 오프라인 큐)
-- [ ] **접근성 (a11y)** — ARIA 레이블, 키보드 네비게이션
-- [ ] **iOS/Android 앱스토어 배포**
+- [ ] `useOrders`를 백엔드 API로 교체
+- [ ] 내 주문 목록 API 추가 또는 기존 주문 목록 API 확장
+- [ ] 주문 상세 API 추가
+- [ ] 프론트 Order 타입과 백엔드 응답 mapper 정리
+- [ ] 주문 상세의 Supabase 직접 조회 제거
+- [ ] 주문 상태 tracker가 실제 주문 상태 변경을 구독하도록 정리
 
----
+### P1: 인증/사용자 데이터 연결
 
-## 📊 진행률
+- [ ] 프론트 API client에 Supabase access token 주입
+- [ ] 백엔드 `users/me/*`에 SupabaseGuard 적용
+- [ ] `test-user-id` 제거
+- [ ] 주소 조회/추가/삭제를 실제 사용자 기준으로 동작하게 수정
+- [ ] 찜 조회/추가/삭제를 실제 사용자 기준으로 동작하게 수정
+- [ ] 비로그인 사용자의 주문 가능 정책 결정
 
-| 카테고리 | 진행률 | 상태 |
-|---------|--------|------|
-| **Phase 1: 핵심 기능** | **100%** | ✅ 완료 |
-| 홈 화면 | 100% | ✅ |
-| 메뉴 & 주문 | 100% | ✅ |
-| 배달 주소 | 100% | ✅ |
-| 결제 | 100% | ✅ |
-| 주문 내역 | 100% | ✅ |
-| PWA 설정 | 100% | ✅ |
-| Capacitor 플러그인 | 100% | ✅ |
-| Shared Packages | 100% | ✅ |
-| Sentry 모니터링 | 100% | ✅ (테스트 페이지 포함) |
-| **Phase 2: 고급 기능** | **90%** | 🔄 진행 중 |
-| 로그인/인증 | 80% | 🔄 코드 완료 (외부 설정 대기) |
-| 주문 추적 | 100% | ✅ 완료 (Supabase Realtime) |
-| 사용자 기능 | 90% | ✅ 완료 (마이페이지/주소/찜) |
-| 리뷰 & 공유 | 0% | 📋 계획 |
-| 고객 지원 | 0% | 📋 계획 |
-| **고도화** | **0%** | 📋 분석 완료 |
-| 기반 정리 (Store ID, API, 결제) | 0% | 🔴 우선 |
-| 핵심 추가 (취소, 검색, 알림) | 0% | 🟠 다음 |
-| 고도화 (리뷰, 지도, 쿠폰) | 0% | 🟡 이후 |
-| **Phase 3: Native App** | **30%** | 📋 계획 |
-| 환경 구축 | 70% | 🔄 진행 중 |
-| 네이티브 기능 | 0% | 📋 계획 |
-| 스토어 배포 | 0% | 📋 계획 |
+### P2: 매장 선택/Store Context
 
----
+- [ ] `store-1` 하드코딩 제거
+- [ ] `NEXT_PUBLIC_STORE_ID` 기본값 사용
+- [ ] URL 기반 매장 식별(`/tacomolly/gimpo` 등)을 배달앱에도 적용할지 결정
+- [ ] 마지막 선택 매장 저장 정책 결정
+- [ ] 매장 영업 상태/최소 주문 금액/배달 가능 여부 API 연동
 
-## 🎯 다음 단계 우선순위
+### P2: 배달 추적 실제화
 
-### 1순위: 기반 정리 (고도화 전 필수)
-1. **Store ID 동적 처리** — 하드코딩 제거
-2. **useOrders 실제 API 연동** — Mock 제거
-3. **결제 검증/멱등성** — 보안 강화
-4. **API 패턴 통일** — fetch → api 클라이언트
+- [ ] 배달 상태 모델 확정
+- [ ] 주문 상태와 배달 상태를 분리할지 결정
+- [ ] 예상 조리/배달 시간 저장
+- [ ] 라이더 정보 저장 모델 결정
+- [ ] Realtime 구독 활성화
+- [ ] 상태 변경 시 로컬/푸시 알림 연결
+- [ ] 지도 연동 여부 결정
 
-### 2순위: 핵심 기능
-1. **주문 취소/환불** (사용자 필수 기능)
-2. **메뉴 검색** (UX 핵심)
-3. **토스트 알림 & 에러 처리 개선**
-4. **실시간 추적 활성화**
+### P2: UX/품질 개선
 
-### 3순위: 외부 설정 필요
-1. **카카오 로그인** (카카오 Developer 앱 등록)
-2. **애플 로그인** (Apple Developer 계정, iOS 출시 시)
-3. **FCM 푸시 알림** (Firebase 프로젝트)
+- [ ] 메뉴 검색 기능 구현
+- [ ] 찜 목록 주문하기 동선 수정
+- [ ] alert/confirm을 앱 UI로 교체
+- [ ] 장바구니 추가 toast 구현
+- [ ] 로딩/에러/빈 상태 문구와 UI 정리
+- [ ] 깨진 문구/인코딩 출력 점검
+- [ ] shared/order-core 역할 재정리: 지금은 shared에 상태/비즈니스 로직이 섞여 있음
+- [ ] PWA 아이콘 asset 정리
+- [ ] 빌드 `location is not defined` 원인 제거
 
-### 스토어 배포 준비
-1. **Google Play Console** 계정 ($25)
-2. **Apple Developer** 계정 ($99/년)
-3. **앱 아이콘 & 스크린샷** 준비
-4. **개인정보처리방침** URL 준비
+### P3: 네이티브 고도화
 
----
+- [ ] Android 프로젝트 생성/동기화 상태 재검증
+- [ ] iOS 프로젝트 생성
+- [ ] Firebase FCM 설정
+- [ ] Android FCM 연동
+- [ ] iOS APNS 연동
+- [ ] Deep Link 설정
+- [ ] App Links/Universal Links 설정
+- [ ] 스토어 배포용 splash/icon/권한 문구 정리
 
-## 📚 관련 문서
+## 선택이 필요한 트레이드오프
 
-- [DEPLOYMENT.md](./DEPLOYMENT.md) - Android/iOS 배포 가이드
-- [FEATURES.md](./FEATURES.md) - 기능 목록 및 설명
-- [README.md](./README.md) - 프로젝트 개요
-- [AUTH_SETUP.md](./AUTH_SETUP.md) - 인증 설정 가이드 (packages/shared)
-- [ENV_MANAGEMENT.md](../../packages/shared/ENV_MANAGEMENT.md) - 환경 변수 관리
+### 1. 배달 주문 API 설계
 
----
+- 선택 A: 기존 `orders` API를 확장해서 `type: DELIVERY`를 받게 만든다.
+- 장점: 주문 도메인 하나로 관리되어 admin/POS 연동이 단순해짐.
+- 단점: 테이블 주문 전제(`tableNumber`, `session`)를 분리하는 리팩터링이 필요함.
 
-## 💡 개발 팁
+- 선택 B: `/delivery/orders` 또는 `/stores/:storeId/delivery-orders` API를 새로 만든다.
+- 장점: 빠르게 배달 플로우를 만들 수 있고 테이블 주문 영향이 적음.
+- 단점: 나중에 admin/POS/order history에서 주문 타입별 중복 로직이 생길 수 있음.
 
-### PWA 테스트
-```bash
-# 로컬에서 PWA 테스트
-pnpm dev
-# → Chrome DevTools → Application → Manifest 확인
-# → Service Workers 확인
-# → "홈 화면에 추가" 테스트
-```
+권장: 선택 A. 이미 Prisma `Order.type`에 `DELIVERY`가 있으므로 기존 주문 모델을 확장하는 편이 장기적으로 깔끔함.
 
-### Capacitor 동기화
-```bash
-# 웹 변경사항을 네이티브로 동기화
-pnpm cap:sync
+### 2. 결제/주문 생성 순서
 
-# Android 실행
-pnpm android
+- 선택 A: 결제 성공 후 주문 생성
+- 장점: 결제된 주문만 DB에 남음.
+- 단점: 결제 성공 후 주문 생성 실패 시 수동 복구/환불 처리가 필요함.
 
-# iOS 실행 (Mac 필요)
-pnpm ios
-```
+- 선택 B: 주문을 `PENDING_PAYMENT`로 먼저 만들고 결제 승인 후 `PAID/CONFIRMED`로 변경
+- 장점: 결제 callback 유실/재시도/idempotency 관리가 쉬움.
+- 단점: 주문 상태 enum과 만료 처리 로직이 추가됨.
 
-### 환경 변수 설정
-```bash
-# .env.local 생성
-NEXT_PUBLIC_API_URL=http://localhost:4000
-NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-NEXT_PUBLIC_TOSS_CLIENT_KEY=your-toss-key
-```
+권장: 선택 B. 실서비스 결제 안정성은 이쪽이 더 좋음.
 
----
+### 3. 비로그인 주문 허용 여부
 
-## 🔧 트러블슈팅
+- 선택 A: 비로그인 주문 허용
+- 장점: 주문 전환율이 좋음.
+- 단점: 주문 이력/주소/찜과 연결이 약하고 전화번호 기반 조회가 필요함.
 
-### PWA 설치 버튼이 안 나타날 때
-- HTTPS 환경 확인 (localhost는 예외)
-- manifest.json 문법 오류 확인
-- Service Worker 등록 확인
+- 선택 B: 로그인 필수
+- 장점: 사용자 데이터 관리가 단순함.
+- 단점: 첫 주문 진입 장벽이 생김.
 
-### Capacitor 플러그인 오류
-```bash
-# 플러그인 재설치
-pnpm cap:sync
-cd ios/App && pod install  # iOS만
-```
+권장: MVP는 비로그인 주문 허용 + 전화번호 기반 주문 조회, 마이페이지 기능은 로그인 필수.
 
-### 빌드 오류
-```bash
-# 캐시 삭제 후 재빌드
-pnpm clean  # 있다면
-rm -rf .next
-pnpm build
-```
+### 4. 주문 상태와 배달 상태 분리
 
----
+- 선택 A: 주문 상태에 `DELIVERING` 등 배달 상태까지 포함
+- 장점: 구현이 빠름.
+- 단점: 조리/배달/정산 상태가 섞임.
 
-**마지막 업데이트**: 2026-04-12  
-**다음 목표**: 고도화 1순위 — Store ID 동적 처리, useOrders API 연동, 결제 보안 강화
+- 선택 B: `OrderStatus`와 `DeliveryStatus`를 분리
+- 장점: 확장성과 운영 가시성이 좋음.
+- 단점: 모델과 UI 매핑이 늘어남.
+
+권장: MVP는 주문 상태 확장으로 시작하고, 라이더/지도/배차가 들어가면 분리.
+
+## 다음 개발 순서
+
+1. 실제 DB에 새 migration 적용 후 seed/store id 기준으로 현장 결제 주문 생성 E2E 확인
+2. 실제 Toss test secret key로 카드 결제 성공/실패 E2E 확인
+3. 결제 timeout/만료 pending order 정리
+4. 주문 생성 응답 mapper와 프론트 주문 상세 타입 정리
+5. 주문 이력/상세를 실제 API로 전환
+6. 사용자 주소/찜 API에 인증 연결
+7. 매장 ID 하드코딩 제거
+8. 배달 추적 mock 제거 및 Realtime 연결
+9. UX 오류 처리와 검색/찜 동선 정리
+10. PWA asset/build 경고 정리
+
+## 검증 기록
+
+- [x] `cmd /c .\node_modules\.bin\tsc.cmd --noEmit` 실행: 통과
+- [x] 백엔드 `cmd /c .\node_modules\.bin\tsc.cmd --noEmit` 실행: 통과
+- [x] 백엔드 `vitest run src/modules/payments/payments.service.spec.ts` 실행: 6개 통과
+- [x] 백엔드 `vitest run` 실행: 3개 파일, 14개 테스트 통과
+- [x] `cmd /c .\node_modules\.bin\next.cmd build` 실행: 정적 페이지 생성 성공
+- [ ] 빌드 후 `ReferenceError: location is not defined` 로그 해결 필요
+- [ ] 주문 생성 E2E 검증 필요
+- [ ] Toss 결제 성공/실패/timeout E2E 검증 필요
+- [ ] Sentry 테스트 이벤트 수신 검증 필요
+- [ ] 로그인 후 주소/찜 E2E 검증 필요
+- [ ] PWA 설치/아이콘 검증 필요
+
+## 참고 파일
+
+- `packages/shared/src/index.ts`
+- `apps/delivery-customer/src/app/order/checkout/page.tsx`
+- `apps/delivery-customer/src/app/order/success/page.tsx`
+- `apps/delivery-customer/src/hooks/queries/useOrders.ts`
+- `apps/delivery-customer/src/hooks/queries/useMenus.ts`
+- `packages/shared/src/api/endpoints/order.ts`
+- `packages/shared/src/stores/cartStore.ts`
+- `packages/shared/src/hooks/useMenuSelection.ts`
+- `packages/shared/src/hooks/useOrderStatus.ts`
+- `packages/order-core/src/index.ts`
+- `packages/shared/src/types/payment.ts`
+- `apps/backend/src/modules/orders/orders.controller.ts`
+- `apps/backend/src/modules/orders/dto/create-order.dto.ts`
+- `apps/backend/src/modules/users/users.controller.ts`
+- `apps/backend/prisma/schema.prisma`

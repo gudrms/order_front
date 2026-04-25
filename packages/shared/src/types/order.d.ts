@@ -37,7 +37,7 @@ export interface Order {
     items: OrderItem[];
     totalPrice: number;
     status: OrderStatus;
-    okposOrderId: string | null;
+    tossOrderId: string | null;
     createdAt: Date | string;
     updatedAt: Date | string;
     completedAt: Date | string | null;

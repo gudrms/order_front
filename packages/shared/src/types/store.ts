@@ -18,7 +18,7 @@ export interface Store {
   name: string; // 전체 이름 (예: "타코몰리 김포점")
   branchName: string; // 지점명 (예: "김포점")
   type: StoreType; // 업종 enum
-  okposBranchCode: string | null; // OKPOS 지점 코드
+  tossBranchCode: string | null; // Toss 지점 코드
   description: string | null;
   address: string | null;
   phoneNumber: string | null;

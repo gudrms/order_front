@@ -1,5 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import axios from 'axios';
 
 export interface TossCategory {
     categoryCode: string;
@@ -39,9 +40,61 @@ export interface TossMenuData {
     optionGroups: TossOptionGroup[];
 }
 
+export interface TossPaymentConfirmRequest {
+    paymentKey: string;
+    orderId: string;
+    amount: number;
+    idempotencyKey: string;
+}
+
 @Injectable()
 export class TossApiService {
     constructor(private readonly configService: ConfigService) { }
+
+    async confirmPayment(request: TossPaymentConfirmRequest) {
+        const secretKey = this.configService.get<string>('TOSS_PAYMENTS_SECRET_KEY')
+            || this.configService.get<string>('TOSS_SECRET_KEY');
+
+        if (!secretKey) {
+            throw new InternalServerErrorException('Toss Payments secret key is not configured');
+        }
+
+        const authorization = Buffer.from(`${secretKey}:`).toString('base64');
+
+        try {
+            const response = await axios.post(
+                'https://api.tosspayments.com/v1/payments/confirm',
+                {
+                    paymentKey: request.paymentKey,
+                    orderId: request.orderId,
+                    amount: request.amount,
+                },
+                {
+                    headers: {
+                        Authorization: `Basic ${authorization}`,
+                        'Content-Type': 'application/json',
+                        'Idempotency-Key': request.idempotencyKey,
+                    },
+                    timeout: 8000,
+                },
+            );
+
+            return response.data;
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                const status = error.response?.status || 502;
+                const message = (error.response?.data as any)?.message || error.message;
+                throw new BadRequestException({
+                    code: 'TOSS_CONFIRM_FAILED',
+                    status,
+                    message,
+                    details: error.response?.data,
+                });
+            }
+
+            throw error;
+        }
+    }
 
     async fetchMenuData(storeId: string): Promise<TossMenuData> {
         // 실제 Toss API 연동 대신 Mock Data 반환

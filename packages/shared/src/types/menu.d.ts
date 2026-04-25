@@ -37,7 +37,7 @@ export interface Menu {
     isActive?: boolean;
     displayOrder: number;
     storeId?: string;
-    okposMenuId?: string | null;
+    tossMenuCode?: string | null;
     optionGroups?: MenuOptionGroup[];
     createdAt?: Date | string;
     updatedAt?: Date | string;

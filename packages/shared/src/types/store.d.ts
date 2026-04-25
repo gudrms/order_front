@@ -6,7 +6,7 @@ export interface Store {
     name: string;
     branchName: string;
     type: StoreType;
-    okposBranchCode: string | null;
+    tossBranchCode: string | null;
     description: string | null;
     address: string | null;
     phoneNumber: string | null;

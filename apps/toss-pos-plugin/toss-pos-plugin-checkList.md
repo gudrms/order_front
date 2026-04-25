@@ -1,99 +1,121 @@
-# Toss POS Plugin 개발 체크리스트
-플러그인 가이드 https://docs.tossplace.com/guide/pos-integration/plugin/develop/develop-tutorial.html
+# Toss POS Plugin 체크리스트
 
-## ✅ 1. 개발 환경 준비 (Toss Place)
-- [ ] **개발자 계정 생성**
-    - [ ] [Toss Place 개발자 센터](https://place.toss.im/developer) 가입
-    - [ ] '내 애플리케이션' 생성 및 `App Key` 발급
-- [ ] **테스트 매장 연동**
-    - [ ] 개발용 테스트 매장 생성
-    - [ ] POS 기기(또는 시뮬레이터)에 테스트 매장 로그인
+마지막 업데이트: 2026-04-25
 
-## ✅ 2. 프로젝트 설정
-- [x] **기본 설정**
-    - [x] `manifest.json` 설정 파일 생성 (앱 이름, 권한: order, catalog, printer)
-    - [x] `package.json` 의존성 확인 (vite, @tossplace/pos-plugin-sdk, @supabase/supabase-js)
-    - [x] `tsconfig.json` 브라우저 타겟 설정 (ESNext, bundler)
-    - [x] `index.html` 웹앱 진입점 생성
-    - [x] `.env` 환경변수 설정 (PLUGIN_ 접두사, Vite import.meta.env)
-    - [x] `.gitignore` 추가 (dist/, .env, *.zip)
-- [x] **SDK 설치**
-    - [x] `@tossplace/pos-plugin-sdk` devDependencies 설치 완료
-- [x] **빌드 환경**
-    - [x] Vite 번들러 설정 (`vite.config.ts`)
-    - [x] Node.js → 브라우저 웹앱 구조로 전환 완료
+참고: Toss Place POS Plugin 가이드 기반 개발
 
-## ✅ 3. 핵심 기능 구현
+## 현재 판단
 
-### 3-1. 백엔드 통신 (주문 수신)
-- [x] **주문 수신 로직 (Hybrid)**
-    - [x] **Primary**: Supabase Realtime (`INSERT` 이벤트 구독)
-    - [x] **Fallback**: Polling (30초 간격, `GET /api/v1/pos/orders/pending`)
-- [x] **주문 상태 동기화**
-    - [x] 주문 접수/완료/취소 시 백엔드로 상태 전송 (`PATCH /api/v1/pos/orders/:id/status`)
-    - [x] 상태 업데이트 재시도 로직 (3회, exponential backoff)
-    - [x] 백엔드 멱등성 처리 (이미 처리된 주문 스킵)
-- [x] **중복 처리 방지**
-    - [x] `processingOrders` Set으로 Realtime + Polling 동시 처리 차단
-- [x] **Realtime 재연결**
-    - [x] `CHANNEL_ERROR`/`TIMED_OUT` 시 5초 후 자동 재연결
+- 목적: Toss Place POS와 우리 백엔드 주문/카탈로그를 연결하는 플러그인.
+- 현재 상태: Realtime/Polling 주문 수신, 주문 등록, 카탈로그 동기화, 테스트 골격은 상당 부분 완료.
+- 가장 큰 남은 일: 새 `Payment`/`OrderDelivery`/`OrderChannel` 구조에 맞춰 POS로 보낼 주문 조건과 상태 동기화를 다시 확정하는 것.
 
-### 3-2. 프론트엔드 연동 (`apps/table-order`)
-- [x] **매장 ID 전송 수정**
-    - [x] `StoreContext` 도입하여 URL 기반 매장 UUID 조회
-    - [x] 주문 생성 API 호출 시 하드코딩된 ID 대신 실제 UUID 전송
+## 완료
 
-### 3-3. POS 연동 (SDK 활용)
-- [x] **주문 등록 (`posPluginSdk.order.add`)**
-    - [x] 수신된 주문 데이터를 공식 `PluginOrderDto` 포맷으로 변환 (lineItems, discounts 등)
-    - [x] SDK 함수 호출: `await posPluginSdk.order.add(orderDto)`
-- [ ] **추가 주문 (`posPluginSdk.order.addMenu`)**
-    - [ ] 기존 주문에 메뉴 추가 시 사용
-    - [ ] SDK 함수 호출: `await posPluginSdk.order.addMenu(orderId, orderDto)`
-- [ ] **주문 완료 (`posPluginSdk.order.complete`)**
-    - [ ] 주문 처리 완료 시 호출 (후불 POS 전용)
-    - [ ] SDK 함수 호출: `await posPluginSdk.order.complete(orderId)`
-- [ ] **주문 조회 (`posPluginSdk.order.getOrders`)**
-    - [ ] 필요 시 주문 목록 조회 및 상태 동기화
-- [x] **주문 취소 (`posPluginSdk.order.cancel`)**
-    - [x] 배달앱 취소 → Supabase UPDATE 감지 → `posPluginSdk.order.cancel()` 호출
-- [x] **이벤트 리스너 (`posPluginSdk.order.on`)**
-    - [x] `cancel` 이벤트: 토스 POS에서 취소 시 백엔드 상태 동기화
+### 프로젝트/환경
 
-### 3-4. 카탈로그 동기화
-- [x] **카탈로그 조회 및 백엔드 전송**
-    - [x] 초기 로드 시 `posPluginSdk.catalog.getCatalogs()` → `POST /pos/catalogs/sync` 전송
-    - [x] 백엔드에서 카테고리/메뉴/옵션 upsert (tossMenuCode, tossOptionCode 매핑)
-- [x] **실시간 카탈로그 변경 감지**
-    - [x] `catalog.on('add' | 'update' | 'delete')` → 재동기화 (sold-out/on-sale은 deprecated → update로 대체)
-- [x] **주문 시 토스 매핑 ID 포함**
-    - [x] `GET /pos/orders/pending` 응답에 `catalogId`, `category`, `tossOptionCode` 포함
+- [x] Vite 기반 플러그인 프로젝트 구성
+- [x] `manifest.json` 생성
+- [x] `@tossplace/pos-plugin-sdk` 설치
+- [x] 브라우저 타깃 TypeScript 설정
+- [x] `.env`/`.gitignore` 구성
+- [x] build/zip 스크립트 구성
 
-### 3-5. 코드 품질
-- [x] **파일 분리** (index.ts → config, catalog, order, realtime, types)
-- [x] **SDK 타입 직접 사용** (중복 정의 제거, PluginOrderDto 등 SDK에서 import)
-- [x] **TS 에러 수정** (PluginCatalogCategory.title, options.choices.priceValue 등)
-- [x] **테스트 코드** (vitest, 13개 테스트 통과: order 9, catalog 4)
-- [x] **.gitignore** (루트: package-lock.json, swe-worker-*.js 추가)
+### 주문 수신
 
-## ✅ 4. 빌드 및 배포
-- [x] **빌드 스크립트**
-    - [x] Vite 번들링 (`pnpm build` → `dist/`)
-    - [x] zip 압축 스크립트 (`pnpm zip` → `plugin.zip`)
-    - [x] 빌드 + 테스트 정상 확인
-- [x] **업로드 및 테스트**
-    - [x] `pnpm zip`으로 `plugin.zip` 생성 (웹 워커 포맷 최적화)
-    - [x] 개발자 센터에 `plugin.zip` 업로드 완료
-    - [x] Toss SDK에 배포 완료
-    - [ ] '테스트 배포' 후 POS 기기에서 다운로드 및 실행 확인
-    - [ ] Realtime 주문 수신 테스트 (Supabase Inspector에서 `pos-orders` 채널 확인)
-    - [ ] 카탈로그 동기화 테스트
-    - [ ] 주문 취소 양방향 테스트
+- [x] Supabase Realtime 주문 수신 구조
+- [x] Polling fallback 구조
+- [x] Realtime + Polling 중복 처리 방지
+- [x] 재연결 로직 존재
+- [x] 주문 상태 PATCH 구조 존재
 
-## ✅ 5. 개발 환경 이슈 해결
-- [x] **환경변수 설정**
-    - [x] 백엔드 `.env` DB 연결: Supabase Pooler 도메인 DNS 이슈 → IP 직접 연결로 해결 (`3.39.47.126`)
-    - [x] `delivery-customer`, `brand-website`, `table-order` 앱 `.env.local` 생성
-    - [x] Prisma client 재생성 (`npx prisma generate`) — TS 타입 에러 해결
-- [x] **Turbo TUI 이슈**
-    - [x] Windows 터미널에서 서비스 선택 불가 → `--ui stream` 또는 `turbo.json`에 `"ui": "stream"` 설정으로 해결
+### POS SDK 주문 연동
+
+- [x] `posPluginSdk.order.add` 호출 구조
+- [x] 우리 주문 데이터를 `PluginOrderDto`로 변환
+- [x] 주문 취소 이벤트 처리 구조
+- [x] Toss POS 취소 이벤트를 백엔드 상태로 동기화하는 구조
+
+### 카탈로그 연동
+
+- [x] `catalog.getCatalogs()` 호출 구조
+- [x] 카테고리/메뉴/옵션 upsert 구조
+- [x] `tossMenuCode`, `tossOptionCode` 매핑 구조
+- [x] catalog add/update/delete 이벤트 감지 구조
+
+### 테스트/빌드
+
+- [x] Vitest 테스트 존재
+- [x] order/catalog 테스트 존재
+- [x] `pnpm build` 구조 존재
+- [x] `pnpm zip` 구조 존재
+
+## 이번 큰그림 반영 기준
+
+- [x] 백엔드 주문은 `Order.source`로 유입 앱을 구분할 수 있음
+- [x] POS 플러그인이 처리할 대상은 주로 `source = TABLE_ORDER | DELIVERY_APP | HOMEPAGE | TOSS_SDK` 중 POS 전송이 필요한 주문
+- [x] 결제 상태는 `PaymentStatus`로 분리됨
+- [x] 배달 주문 상세는 `OrderDelivery`에서 조회 가능
+- [x] `okpos*` 명명은 더 이상 사용하지 않고 `toss*`로 정리
+- [x] Toss Payments 승인/실패 처리는 POS 플러그인이 아니라 백엔드 공통 `PaymentsModule`에서 담당
+
+## 남은 일
+
+### P0: POS 전송 조건 재정의
+
+- [ ] POS 전송 대상 상태 결정: `PAID`, `CONFIRMED`, 현장결제 `PENDING` 중 어디까지 보낼지 확정
+- [ ] `PENDING_PAYMENT` 주문은 POS 전송 제외
+- [ ] 현장 결제 주문은 관리자/매장 정책에 따라 즉시 POS 전송할지 결정
+- [ ] `Payment.status`와 `Order.status` 조합별 처리표 작성
+- [ ] 배달 주문의 주소/요청사항을 POS 메모로 보낼지 결정
+- [ ] `paymentStatus = READY | FAILED | CANCELLED` 주문은 POS 전송 제외 정책 적용
+
+### P1: 새 DB 응답 매핑
+
+- [ ] `GET /pos/orders/pending` 응답에 `type`, `source`, `paymentStatus`, `delivery` 포함
+- [ ] `OrderDelivery.deliveryMemo`를 POS 주문 메모에 매핑
+- [ ] `Payment.method`를 POS 주문 결제 메모에 매핑
+- [ ] 옵션 원본 ID(`menuOptionId`)와 Toss option code 매핑 검증
+- [ ] `OrderItemOption`의 snapshot 이름/가격과 Toss catalog code 동시 활용
+
+### P1: POS SDK 기능 보강
+
+- [ ] `order.addMenu` 추가 주문 처리
+- [ ] `order.complete` 주문 완료 처리
+- [ ] `order.getOrders` 조회/상태 동기화
+- [ ] POS에서 취소 시 백엔드 `cancelledAt`, `cancelReason` 기록
+- [ ] POS 처리 실패 시 백엔드 error log 기록
+
+### P1: 실기기 검증
+
+- [ ] Toss 개발자센터 App Key 발급 확인
+- [ ] 테스트 매장/POS 기기 연결
+- [ ] 플러그인 zip 업로드 후 실행 확인
+- [ ] Realtime 주문 수신 실기기 테스트
+- [ ] 카탈로그 동기화 실기기 테스트
+- [ ] 주문 취소 양방향 동기화 테스트
+
+### P2: 운영 안정성
+
+- [ ] 주문 전송 idempotency key 적용
+- [ ] POS 등록 성공 후 `tossOrderId` 저장 정책 확정
+- [ ] 실패 주문 재시도 큐 추가
+- [ ] 플러그인 버전/빌드 정보 표시
+- [ ] 로그 다운로드 또는 원격 로그 전송
+
+## 다음 개발 순서
+
+1. POS 전송 조건표 확정
+2. 백엔드 `/pos/orders/pending` 응답을 새 주문 코어에 맞게 확장
+3. 플러그인 주문 DTO 매핑 수정
+4. Toss 실기기 주문/취소/카탈로그 E2E
+5. 실패 재시도와 idempotency 보강
+
+## 검증 필요
+
+- [ ] `pnpm test`
+- [ ] `pnpm build`
+- [ ] `pnpm zip`
+- [ ] Toss 개발자센터 업로드
+- [ ] 실 POS 기기 주문 수신
+- [ ] 실 POS 기기 카탈로그 동기화

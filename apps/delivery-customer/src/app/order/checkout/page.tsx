@@ -6,6 +6,7 @@ import { ChevronLeft, CreditCard, DollarSign } from 'lucide-react';
 import { useCartStore, generateOrderId } from '@order/shared';
 import { useDeliveryStore } from '@/stores/deliveryStore';
 import { useCreateOrder } from '@/hooks/mutations/useCreateOrder';
+import { useFailTossPayment } from '@/hooks/mutations/useFailTossPayment';
 import type { CreateOrderRequest, OrderItemInput } from '@order/shared';
 import { TossPaymentWidget } from '@order/ui';
 import type { PaymentWidgetInstance } from '@tosspayments/payment-widget-sdk';
@@ -17,6 +18,7 @@ export default function CheckoutPage() {
     const { items, totalPrice, clearCart } = useCartStore();
     const { deliveryInfo } = useDeliveryStore();
     const createOrderMutation = useCreateOrder();
+    const failTossPaymentMutation = useFailTossPayment();
 
     const [paymentMethod, setPaymentMethod] = useState<'CARD' | 'CASH'>('CARD');
     const [isProcessing, setIsProcessing] = useState(false);
@@ -31,6 +33,8 @@ export default function CheckoutPage() {
     const handlePayment = async () => {
         if (isProcessing) return;
 
+        let pendingTossOrderId: string | null = null;
+
         try {
             setIsProcessing(true);
 
@@ -44,10 +48,20 @@ export default function CheckoutPage() {
                 quantity: item.quantity,
                 price: item.unitPrice,
                 options: (item.options || []).map((opt) => ({
+                    optionId: opt.itemId,
                     name: opt.itemName,
                     price: opt.price,
                 })),
             }));
+
+            const delivery = {
+                recipientName: deliveryInfo.customerName || '',
+                recipientPhone: deliveryInfo.customerPhone || '',
+                address: deliveryInfo.address?.address || '',
+                detailAddress: deliveryInfo.address?.detailAddress,
+                zipCode: deliveryInfo.address?.zipCode,
+                deliveryMemo: deliveryInfo.deliveryRequest,
+            };
 
             // 토스페이먼츠 결제 요청
             if (paymentMethod === 'CARD') {
@@ -56,6 +70,20 @@ export default function CheckoutPage() {
                     alert('결제 위젯이 로드되지 않았습니다.');
                     return;
                 }
+
+                await createOrderMutation.mutateAsync({
+                    storeId: 'store-1', // TODO: 실제 매장 ID
+                    delivery,
+                    items: orderItems,
+                    totalAmount: totalPrice,
+                    payment: {
+                        orderId,
+                        amount: totalPrice,
+                        paymentType: 'NORMAL',
+                        method: 'TOSS',
+                    },
+                });
+                pendingTossOrderId = orderId;
 
                 await paymentWidget.requestPayment({
                     orderId: orderId,
@@ -72,6 +100,7 @@ export default function CheckoutPage() {
                 // 만나서 결제 (현금)
                 const orderRequest: CreateOrderRequest = {
                     storeId: 'store-1', // TODO: 실제 매장 ID
+                    delivery,
                     items: orderItems,
                     totalAmount: totalPrice,
                     payment: {
@@ -79,6 +108,7 @@ export default function CheckoutPage() {
                         amount: totalPrice,
                         paymentKey: 'CASH_' + orderId,
                         paymentType: 'NORMAL',
+                        method: 'CASH',
                     },
                 };
 
@@ -92,6 +122,17 @@ export default function CheckoutPage() {
             }
         } catch (error) {
             console.error('Payment error:', error);
+            if (paymentMethod === 'CARD' && pendingTossOrderId) {
+                try {
+                    await failTossPaymentMutation.mutateAsync({
+                        orderId: pendingTossOrderId,
+                        code: 'PAYMENT_WIDGET_ABORTED',
+                        message: error instanceof Error ? error.message : '결제창이 완료되지 않았습니다.',
+                    });
+                } catch (reportError) {
+                    console.error('Failed to report payment failure:', reportError);
+                }
+            }
             // alert('결제 처리 중 오류가 발생했습니다.'); // 위젯 내부 에러 처리가 있을 수 있음
         } finally {
             setIsProcessing(false);

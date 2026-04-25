@@ -27,13 +27,67 @@ enum OrderType {
   PICKUP     // 포장
 }
 
+enum OrderChannel {
+  TABLE_ORDER
+  DELIVERY_APP
+  HOMEPAGE
+  ADMIN
+  TOSS_SDK
+  POS
+}
+
 /// 주문 상태
 enum OrderStatus {
   PENDING      // 접수 대기
+  PENDING_PAYMENT
+  PAID
   CONFIRMED    // 접수 완료
   COOKING      // 조리 중
+  PREPARING
+  READY
+  DELIVERING
   COMPLETED    // 완료
   CANCELLED    // 취소
+}
+
+enum PaymentStatus {
+  PENDING
+  READY
+  PAID
+  FAILED
+  CANCELLED
+  PARTIAL_REFUNDED
+  REFUNDED
+}
+
+enum PaymentProvider {
+  TOSS_PAYMENTS
+  TOSS_PLACE
+  KAKAO
+  NAVER
+  CASH
+  CARD_TERMINAL
+}
+
+enum PaymentMethod {
+  CARD
+  TOSS
+  KAKAO
+  NAVER
+  SAMSUNG
+  PAYCO
+  CASH
+  TRANSFER
+}
+
+enum DeliveryStatus {
+  PENDING
+  ASSIGNED
+  PICKED_UP
+  DELIVERING
+  DELIVERED
+  FAILED
+  CANCELLED
 }
 
 /// 세션 상태
@@ -90,6 +144,13 @@ model Store {
   
   /// 전화번호
   phoneNumber     String?
+
+  isDeliveryEnabled       Boolean @default(false)
+  minimumOrderAmount      Int     @default(0)
+  deliveryFee             Int     @default(0)
+  freeDeliveryThreshold   Int?
+  deliveryRadiusMeters    Int?
+  estimatedDeliveryMinutes Int?
   
   /// 영업 시간 (JSON: { weekday: "...", weekend: "..." })
   businessHours   Json?
@@ -136,7 +197,7 @@ model User {
   phoneNumber     String?
 
   /// 역할 (ADMIN: 전체 관리자, OWNER: 점주, USER: 일반)
-  role            UserRole @default(OWNER)
+  role            UserRole @default(USER)
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -401,11 +462,13 @@ model Order {
   
   /// 주문 타입
   type          OrderType   @default(TABLE)
+  source        OrderChannel @default(TABLE_ORDER)
 
   /// 테이블 번호 (매장 식사 시 필수)
   tableNumber   Int?
   /// 주문 상태
   status        OrderStatus @default(PENDING)
+  paymentStatus PaymentStatus @default(PENDING)
   /// 총 금액
   totalAmount   Int
   /// 특이사항/요청사항
@@ -415,15 +478,91 @@ model Order {
   tossOrderId   String?
 
   items         OrderItem[]
+  payments      Payment[]
+  delivery      OrderDelivery?
 
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
+  completedAt   DateTime?
+  cancelledAt   DateTime?
+  cancelReason  String?
 
   @@index([sessionId])
   @@index([userId])
   @@index([storeId, status])
+  @@index([storeId, type, status])
+  @@index([storeId, paymentStatus])
   @@index([storeId, tableNumber])
   @@index([orderNumber])
+}
+
+model Payment {
+  id              String          @id @default(uuid())
+  orderId         String
+  order           Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  provider        PaymentProvider
+  method          PaymentMethod?
+  status          PaymentStatus   @default(PENDING)
+  amount          Int
+  approvedAmount  Int?
+  cancelledAmount Int             @default(0)
+  currency        String          @default("KRW")
+
+  paymentKey      String?         @unique
+  providerOrderId String?
+  idempotencyKey  String?         @unique
+  receiptUrl      String?
+
+  requestedAt     DateTime        @default(now())
+  approvedAt      DateTime?
+  cancelledAt     DateTime?
+  failedAt        DateTime?
+  failureCode     String?
+  failureMessage  String?
+  rawPayload      Json?
+
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([orderId])
+  @@index([status])
+  @@index([providerOrderId])
+}
+
+model OrderDelivery {
+  id                String         @id @default(uuid())
+  orderId           String         @unique
+  order             Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  addressId         String?
+  addressBookEntry  UserAddress?   @relation(fields: [addressId], references: [id], onDelete: SetNull)
+
+  status            DeliveryStatus @default(PENDING)
+  recipientName     String
+  recipientPhone    String
+  address           String
+  detailAddress     String?
+  zipCode           String?
+  latitude          Decimal?       @db.Decimal(10, 7)
+  longitude         Decimal?       @db.Decimal(10, 7)
+  deliveryMemo      String?
+  riderMemo         String?
+
+  deliveryFee       Int            @default(0)
+  distanceMeters    Int?
+  estimatedMinutes  Int?
+  requestedAt       DateTime       @default(now())
+  assignedAt        DateTime?
+  pickedUpAt        DateTime?
+  deliveredAt       DateTime?
+  cancelledAt       DateTime?
+
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  @@index([addressId])
+  @@index([status])
+  @@index([recipientPhone])
 }
 
 /// 주문 아이템 (주문에 포함된 메뉴)
@@ -456,6 +595,8 @@ model OrderItemOption {
   orderItem       OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
   
   /// 옵션 정보 (스냅샷)
+  menuOptionGroupId String?
+  menuOptionId      String?
   optionGroupName String   // 그룹명 (예: "사이즈 선택")
   optionName      String   // 옵션명 (예: "큰")
   optionPrice     Int      // 추가 가격
@@ -592,11 +733,18 @@ model UserAddress {
   detailAddress   String?
   /// 우편번호
   zipCode         String?
+  recipientName   String?
+  recipientPhone  String?
+  latitude        Decimal? @db.Decimal(10, 7)
+  longitude       Decimal? @db.Decimal(10, 7)
+  deliveryMemo    String?
+  entranceMemo    String?
   /// 기본 배달지 여부
   isDefault       Boolean  @default(false)
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+  orderDeliveries OrderDelivery[]
 
   @@index([userId])
 }

@@ -7,6 +7,7 @@ import type { OrderStatus } from '@order/shared';
 
 const statusConfig: Record<OrderStatus, { label: string; icon: any; color: string }> = {
     PENDING: { label: '접수 대기', icon: Clock, color: 'text-gray-500' },
+    PENDING_PAYMENT: { label: '결제 대기', icon: Clock, color: 'text-slate-500' },
     CONFIRMED: { label: '접수 완료', icon: CheckCircle, color: 'text-blue-500' },
     PAID: { label: '결제 완료', icon: CheckCircle, color: 'text-blue-500' },
     COOKING: { label: '조리 중', icon: Loader, color: 'text-orange-500' },

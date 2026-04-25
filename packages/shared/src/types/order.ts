@@ -8,7 +8,7 @@ import type { CreateDeliveryOrderRequest } from './payment';
 /**
  * 주문 상태 (Prisma enum과 일치)
  */
-export type OrderStatus = 'PENDING' | 'CONFIRMED' | 'COOKING' | 'COMPLETED' | 'CANCELLED' | 'PAID' | 'PREPARING' | 'READY' | 'DELIVERING';
+export type OrderStatus = 'PENDING' | 'PENDING_PAYMENT' | 'PAID' | 'CONFIRMED' | 'COOKING' | 'PREPARING' | 'READY' | 'DELIVERING' | 'COMPLETED' | 'CANCELLED';
 
 /**
  * 선택된 옵션 항목
@@ -68,7 +68,7 @@ export interface Order {
   items: OrderItem[];
   totalPrice: number;
   status: OrderStatus;
-  okposOrderId: string | null; // OKPOS 주문 ID
+  tossOrderId: string | null; // Toss 주문 ID
   createdAt: Date | string;
   updatedAt: Date | string;
   completedAt: Date | string | null;

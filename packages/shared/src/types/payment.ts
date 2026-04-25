@@ -3,8 +3,21 @@ export type PaymentMethod = 'CARD' | 'TOSS' | 'KAKAO' | 'NAVER' | 'SAMSUNG' | 'P
 export interface PaymentRequest {
     orderId: string;
     amount: number;
-    paymentKey: string;
+    paymentKey?: string;
     paymentType: 'NORMAL' | 'BRANDPAY' | 'KEY_IN';
+    method?: PaymentMethod;
+}
+
+export interface ConfirmTossPaymentRequest {
+    paymentKey: string;
+    orderId: string;
+    amount: number;
+}
+
+export interface FailTossPaymentRequest {
+    orderId: string;
+    code?: string;
+    message?: string;
 }
 
 /**
@@ -16,9 +29,20 @@ export interface PaymentOrderItemInput {
     quantity: number;
     price: number;
     options: {
+        optionId?: string;
         name: string;
         price: number;
     }[];
+}
+
+export interface DeliveryOrderAddressInput {
+    recipientName: string;
+    recipientPhone: string;
+    address: string;
+    detailAddress?: string;
+    zipCode?: string;
+    deliveryMemo?: string;
+    addressId?: string;
 }
 
 /**
@@ -27,6 +51,8 @@ export interface PaymentOrderItemInput {
 export interface CreateDeliveryOrderRequest {
     storeId: string;
     tableId?: string; // 선택적 (배달은 없음)
+    userId?: string;
+    delivery: DeliveryOrderAddressInput;
     items: PaymentOrderItemInput[];
     totalAmount: number;
     payment: PaymentRequest;
@@ -38,7 +64,7 @@ export interface CreateDeliveryOrderRequest {
 export interface PaymentOrderResponse {
     id: string;
     orderNumber: string;
-    status: 'PENDING' | 'PAID' | 'PREPARING' | 'COMPLETED' | 'CANCELLED';
+    status: 'PENDING' | 'PENDING_PAYMENT' | 'PAID' | 'CONFIRMED' | 'COOKING' | 'PREPARING' | 'READY' | 'DELIVERING' | 'COMPLETED' | 'CANCELLED';
     totalAmount: number;
     createdAt: string;
 }
