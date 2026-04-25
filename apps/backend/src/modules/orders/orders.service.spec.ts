@@ -39,9 +39,9 @@ describe('OrdersService', () => {
             deliveryMemo: 'Leave at door',
         },
         payment: {
-            method: 'CASH',
+            method: 'TOSS',
             amount: 15000,
-            paymentKey: 'CASH_ORDER_1',
+            paymentKey: 'tgen_ORDER_1',
             orderId: 'ORDER_1',
         },
     };
@@ -95,7 +95,23 @@ describe('OrdersService', () => {
         expect(tx.order.create).not.toHaveBeenCalled();
     });
 
-    it('creates a cash delivery order with store-scoped order numbering', async () => {
+    it('rejects cash delivery orders', async () => {
+        tx.store.findUnique.mockResolvedValue(store);
+
+        await expect(service.createDeliveryOrder('store-1', {
+            ...dto,
+            payment: {
+                ...dto.payment,
+                method: 'CASH',
+                paymentKey: 'CASH_ORDER_1',
+            },
+        })).rejects.toBeInstanceOf(BadRequestException);
+
+        expect(tx.menu.findMany).not.toHaveBeenCalled();
+        expect(tx.order.create).not.toHaveBeenCalled();
+    });
+
+    it('creates a delivery order with PENDING_PAYMENT status awaiting Toss approval', async () => {
         tx.store.findUnique.mockResolvedValue(store);
         tx.menu.findMany.mockResolvedValue([menu]);
         tx.order.count.mockResolvedValue(8);
@@ -108,8 +124,8 @@ describe('OrdersService', () => {
         expect(tx.order.create).toHaveBeenCalledWith(expect.objectContaining({
             data: expect.objectContaining({
                 orderNumber: '0009',
-                status: 'PENDING',
-                paymentStatus: 'PENDING',
+                status: 'PENDING_PAYMENT',
+                paymentStatus: 'READY',
                 totalAmount: 15000,
             }),
         }));

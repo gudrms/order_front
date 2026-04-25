@@ -7,8 +7,7 @@ export type PaymentMethod =
   | 'NAVER_PAY'      // 네이버페이
   | 'TOSS'           // 토스
   | 'SAMSUNG_PAY'    // 삼성페이
-  | 'PAYCO'          // 페이코
-  | 'CASH';          // 현금 (만나서 결제)
+  | 'PAYCO';         // 페이코
 
 /**
  * 결제 정보
@@ -66,11 +65,6 @@ export const PAYMENT_METHODS: Record<
   PAYCO: {
     name: '페이코',
     icon: '🅿️',
-    available: true,
-  },
-  CASH: {
-    name: '만나서 결제',
-    icon: '💵',
     available: true,
   },
 };
