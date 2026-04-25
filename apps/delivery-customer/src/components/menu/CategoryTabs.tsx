@@ -1,16 +1,18 @@
 'use client';
 
 import { cn } from '@/lib/utils';
+import { useCurrentStore } from '@/contexts/StoreContext';
 import { useCategories } from '../../hooks/queries/useMenus';
 import { useUIStore } from '../../stores/uiStore';
 
 export default function CategoryTabs() {
     const { selectedCategory, setSelectedCategory } = useUIStore();
-    const { data: categories } = useCategories();
+    const { storeId } = useCurrentStore();
+    const { data: categories } = useCategories(storeId);
 
-    // 데이터가 없을 때를 대비한 기본 카테고리 (로딩 중 등)
-    // TODO: 이벤트 메뉴 에러로 인한 임시 숨김 처리
-    const displayCategories = (categories || []).filter(cat => cat.name !== '이벤트' && cat.name !== 'Event');
+    const displayCategories = (categories || []).filter(
+        (category) => category.name !== '이벤트' && category.name !== 'Event'
+    );
 
     return (
         <div className="sticky top-0 z-40 bg-white border-b border-gray-100 shadow-sm">

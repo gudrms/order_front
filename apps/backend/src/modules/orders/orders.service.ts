@@ -260,6 +260,62 @@ export class OrdersService {
         };
     }
 
+    async getDeliveryOrders(params: { storeId?: string; phone?: string; userId?: string; page?: number }) {
+        const take = 20;
+        const page = params.page || 1;
+        const skip = (page - 1) * take;
+        const where: any = {
+            type: 'DELIVERY',
+        };
+
+        if (params.storeId) {
+            where.storeId = params.storeId;
+        }
+        if (params.userId) {
+            where.userId = params.userId;
+        }
+        if (params.phone) {
+            where.delivery = {
+                is: {
+                    recipientPhone: params.phone,
+                },
+            };
+        }
+
+        const [orders, total] = await Promise.all([
+            this.prisma.order.findMany({
+                where,
+                include: this.orderInclude(),
+                orderBy: { createdAt: 'desc' },
+                take,
+                skip,
+            }),
+            this.prisma.order.count({ where }),
+        ]);
+
+        return {
+            data: orders,
+            meta: {
+                total,
+                page,
+                lastPage: Math.ceil(total / take),
+            },
+        };
+    }
+
+    async getOrderById(orderId: string) {
+        const order = await this.prisma.order.findUnique({
+            where: { id: orderId },
+            include: this.orderInclude(),
+        });
+
+        if (!order) {
+            throw new NotFoundException(`Order not found: ${orderId}`);
+        }
+
+        return order;
+    }
+
     async updateOrderStatus(storeId: string, orderId: string, status: any) {
         const order = await this.prisma.order.findUnique({
             where: { id: orderId },

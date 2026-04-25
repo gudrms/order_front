@@ -5,7 +5,7 @@
 
 - UI 완성도: 약 70%
 - 서버 연동 완성도: 약 55%
-- 가장 큰 남은 일: `store-1` 하드코딩 제거, 주문내역/상세 API 전환, Toss 카드결제 E2E
+- 가장 큰 남은 일: Toss 카드결제 E2E, 결제 timeout/pending 만료 처리, 주문 상태 실시간화
 
 ## 완료
 
@@ -35,25 +35,34 @@
 - [x] 카드결제는 `PENDING_PAYMENT` 주문 생성 후 서버 승인으로 `PAID` 확정
 - [x] 결제 실패/중단은 서버에 실패 기록
 - [x] 백엔드가 매장 활성 상태, 배달 가능 여부, 최소 주문금액 검증
+- [x] Store Context 추가
+- [x] `NEXT_PUBLIC_STORE_ID` 또는 `NEXT_PUBLIC_STORE_TYPE`/`NEXT_PUBLIC_BRANCH_ID` 기반 매장 조회
+- [x] 메뉴/카테고리/체크아웃이 Store Context의 실제 storeId 사용
+- [x] 체크아웃에서 매장별 최소 주문금액/배달비/무료배달 기준 반영
+- [x] 백엔드 배달 주문 목록 API 추가
+- [x] 백엔드 주문 상세 API 추가
+- [x] shared 주문 mapper 추가
+- [x] 주문내역 페이지를 실제 API로 전환
+- [x] 주문상세 페이지를 실제 API로 전환
 - [x] 현장결제 배달 주문 생성 E2E 확인
 
 ## 남은 일
 
 ### P0: 매장 선택과 주문 흐름 정상화
 
-- [ ] `store-1` 하드코딩 제거
-- [ ] `NEXT_PUBLIC_STORE_ID` 또는 URL 기반 Store Context 결정
-- [ ] `GET /stores/identifier/:storeType/:branchId`로 매장 조회 연결
-- [ ] 매장별 배달 가능 여부, 최소 주문금액, 배달비를 UI에 반영
-- [ ] 주문 생성 응답을 프론트 `OrderResponse` 타입에 맞게 mapper 정리
-- [ ] 주문 생성 후 주문상세로 이동하는 흐름 안정화
+- [x] `store-1` 하드코딩 제거
+- [x] `NEXT_PUBLIC_STORE_ID` 또는 URL 기반 Store Context 결정
+- [x] `GET /stores/identifier/:storeType/:branchId`로 매장 조회 연결
+- [x] 매장별 배달 가능 여부, 최소 주문금액, 배달비를 UI에 반영
+- [x] 주문 생성 응답을 프론트 `OrderResponse` 타입에 맞게 mapper 정리
+- [x] 주문 생성 후 주문상세로 이동하는 흐름 안정화
 
 ### P1: 주문내역/상세 API 전환
 
-- [ ] `useOrders`의 localStorage mock 제거
-- [ ] 내 주문 목록 API 추가 후 연결
-- [ ] 주문 상세 API 추가 후 연결
-- [ ] Supabase 테이블 직접 조회 제거
+- [x] `useOrders`의 localStorage mock 제거
+- [x] 내 주문 목록 API 추가 후 연결
+- [x] 주문 상세 API 추가 후 연결
+- [x] Supabase 테이블 직접 조회 제거
 - [ ] 주문 상태 tracker를 실제 주문 상태와 연결
 - [ ] 비로그인 주문 조회 정책 확정
 
@@ -94,6 +103,9 @@
 ## 검증 기록
 
 - [x] 배달앱 TypeScript 타입체크 통과
+- [x] shared TypeScript 타입체크 통과
+- [x] 백엔드 TypeScript 타입체크 통과
+- [x] 백엔드 `vitest run`: 7 files, 33 tests 통과
 - [x] 백엔드 TypeScript 타입체크 통과
 - [x] 백엔드 `vitest run`: 7 files, 31 tests 통과
 - [x] 백엔드 Prisma validate/generate 통과
@@ -106,9 +118,7 @@
 
 ## 다음 순서
 
-1. Store Context 연결과 `store-1` 제거
-2. 주문 생성 응답 mapper 정리
-3. 주문 상세 API 추가 및 상세 페이지 연결
-4. 내 주문 목록 API 추가 및 주문내역 연결
-5. Toss 테스트 카드결제 E2E
-6. 결제 timeout/pending 만료 처리
+1. Toss 테스트 카드결제 E2E
+2. 결제 timeout/pending 만료 처리
+3. 주문 상태 tracker 실제 상태 변경/Realtime 연결
+4. 비로그인 주문 조회 정책 보강
