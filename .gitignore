@@ -65,3 +65,9 @@ Desktop.ini
 # Sentry
 .sentryclirc
 sentry.properties
+
+# Gemini / local automation artifacts
+.gemini/
+gha-creds-*.json
+.github/commands/
+.github/workflows/gemini-*.yml
