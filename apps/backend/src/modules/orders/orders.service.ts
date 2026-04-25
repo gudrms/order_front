@@ -33,7 +33,7 @@ export class OrdersService {
                     storeId,
                     sessionId,
                     tableNumber: session.tableNumber,
-                    orderNumber: await this.generateOrderNumber(storeId),
+                    orderNumber: await this.generateOrderNumber(tx, storeId),
                     type: 'TABLE',
                     source: 'TABLE_ORDER',
                     status: 'PENDING',
@@ -68,8 +68,18 @@ export class OrdersService {
             if (!store) {
                 throw new NotFoundException(`Store not found: ${storeId}`);
             }
+            if (!store.isActive) {
+                throw new BadRequestException('Store is not active');
+            }
+            if (!store.isDeliveryEnabled) {
+                throw new BadRequestException('Store is not accepting delivery orders');
+            }
 
             const { totalPrice, orderItemsData } = await this.prepareOrderItems(tx, storeId, dto.items);
+            if (totalPrice < store.minimumOrderAmount) {
+                throw new BadRequestException(`Minimum order amount is ${store.minimumOrderAmount}`);
+            }
+
             const deliveryFee = store.freeDeliveryThreshold && totalPrice >= store.freeDeliveryThreshold
                 ? 0
                 : store.deliveryFee;
@@ -86,7 +96,7 @@ export class OrdersService {
                 data: {
                     storeId,
                     userId: dto.userId,
-                    orderNumber: await this.generateOrderNumber(storeId),
+                    orderNumber: await this.generateOrderNumber(tx, storeId),
                     type: 'DELIVERY',
                     source: 'DELIVERY_APP',
                     status: isCashPayment ? 'PENDING' : 'PENDING_PAYMENT',
@@ -213,8 +223,8 @@ export class OrdersService {
         return { totalPrice, orderItemsData };
     }
 
-    private async generateOrderNumber(storeId: string): Promise<string> {
-        const count = await this.prisma.order.count({
+    private async generateOrderNumber(tx: any, storeId: string): Promise<string> {
+        const count = await tx.order.count({
             where: { storeId },
         });
         return String(count + 1).padStart(4, '0');

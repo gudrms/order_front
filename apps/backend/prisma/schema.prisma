@@ -458,7 +458,7 @@ model Order {
   user          User?        @relation(fields: [userId], references: [id])
 
   /// 주문 번호 (예: ORD-20241229-001)
-  orderNumber   String      @unique
+  orderNumber   String
   
   /// 주문 타입
   type          OrderType   @default(TABLE)
@@ -494,6 +494,7 @@ model Order {
   @@index([storeId, paymentStatus])
   @@index([storeId, tableNumber])
   @@index([orderNumber])
+  @@unique([storeId, orderNumber])
 }
 
 model Payment {

@@ -1,4 +1,4 @@
-import { Injectable, ConflictException } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -6,51 +6,51 @@ export class AuthService {
     constructor(private readonly prisma: PrismaService) { }
 
     async register(data: { id: string; email: string; name?: string; phoneNumber?: string; inviteCode?: string }) {
-        // 이미 존재하는지 확인
-        const existingUser = await this.prisma.user.findUnique({
-            where: { id: data.id },
-        });
+        return this.prisma.$transaction(async (tx) => {
+            const store = data.inviteCode
+                ? await tx.store.findUnique({ where: { inviteCode: data.inviteCode } })
+                : null;
 
-        if (existingUser) {
-            // 이미 존재하면 업데이트 (추가 정보 입력)
-            return this.prisma.user.update({
+            if (data.inviteCode && !store) {
+                throw new BadRequestException('Invalid or expired invite code');
+            }
+
+            const existingUser = await tx.user.findUnique({
                 where: { id: data.id },
-                data: {
-                    name: data.name,
-                    phoneNumber: data.phoneNumber,
-                },
             });
-        }
 
-        // 유저 생성
-        const newUser = await this.prisma.user.create({
-            data: {
-                id: data.id,
-                email: data.email,
-                name: data.name,
-                phoneNumber: data.phoneNumber,
-                role: 'OWNER',
-            },
-        });
-
-        // 초대 코드가 있으면 매장 연결
-        if (data.inviteCode) {
-            const store = await this.prisma.store.findUnique({
-                where: { inviteCode: data.inviteCode },
-            });
+            const user = existingUser
+                ? await tx.user.update({
+                    where: { id: data.id },
+                    data: {
+                        email: data.email,
+                        name: data.name,
+                        phoneNumber: data.phoneNumber,
+                        role: store && existingUser.role !== 'ADMIN' ? 'OWNER' : existingUser.role,
+                    },
+                })
+                : await tx.user.create({
+                    data: {
+                        id: data.id,
+                        email: data.email,
+                        name: data.name,
+                        phoneNumber: data.phoneNumber,
+                        role: store ? 'OWNER' : 'USER',
+                    },
+                });
 
             if (store) {
-                await this.prisma.store.update({
+                await tx.store.update({
                     where: { id: store.id },
                     data: {
-                        ownerId: newUser.id,
-                        inviteCode: null, // 코드 사용 후 파기 (재사용 방지)
+                        ownerId: user.id,
+                        inviteCode: null,
                     },
                 });
             }
-        }
 
-        return newUser;
+            return user;
+        });
     }
 
     async getProfile(userId: string) {
