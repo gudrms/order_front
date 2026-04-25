@@ -1,16 +1,16 @@
 # 배달 앱(delivery-customer) 개발 체크리스트
 
-> 최종 업데이트: 2026-04-25  
+> 최종 업데이트: 2026-04-26  
 > 기준: `apps/delivery-customer`, `packages/shared`, `apps/backend` 코드 확인 및 빌드/타입체크 결과  
 > 현재 판정: UI 데모는 가능하지만, 실제 배달 주문 운영 플로우는 아직 미완성
 
 ## 현재 요약
 
 - UI 완성도: 약 70%
-- 실서비스 완성도: 약 35~45%
+- 실서비스 완성도: 약 45~55%
 - 타입체크: 통과
 - 프로덕션 빌드: 정적 페이지 생성까지 성공, 마지막 단계에서 `ReferenceError: location is not defined` 로그 발생
-- 가장 큰 리스크: Toss 결제 성공/실패 서버 기록은 연결됐지만 실제 결제 E2E, 주문 이력/상세 API, 미결제 만료 처리가 아직 남아 있음
+- 가장 큰 리스크: 현장결제 배달 주문 E2E는 통과했지만 실제 Toss 카드결제 E2E, 주문 이력/상세 API, 미결제 만료 처리가 아직 남아 있음
 
 ## 확인된 완료 항목
 
@@ -119,10 +119,12 @@
 - [x] 카드 결제는 checkout에서 `PENDING_PAYMENT` 주문을 먼저 만들고 success에서 `PAID`로 확정
 - [x] Toss fail redirect와 결제창 abort 시 `FAILED`/`CANCELLED` 상태 기록
 - [x] 공통 `PaymentsModule`이 결제 상태를 담당하고, 실제 Toss HTTP 호출은 백엔드 `TossApiService`로 분리
+- [x] Toss Payments secret env는 `TOSS_PAYMENTS_SECRET_KEY`, `TOSS_SECRET_KEY`, 기존 `TOSS_ACCESS_SECRET` fallback 지원
 - [x] 결제 승인/실패 API Swagger 문서 보강
 - [x] 결제 서비스 단위 테스트 추가
 - [x] Toss provider order id를 payment `idempotencyKey`로 저장
-- [ ] 실제 Toss secret key 환경변수와 결제 테스트키로 E2E 검증 필요
+- [x] 개발 환경 Toss secret env fallback 확인
+- [ ] 실제 Toss 테스트 결제로 카드결제 E2E 검증 필요
 - [ ] 결제 timeout/만료 배치 처리 필요
 - [ ] 중복 callback/idempotent create-order 재시도 정책 보강 필요
 
@@ -212,7 +214,7 @@
 - [x] 현장 결제 주문 생성 flow가 실제 API payload를 만들도록 수정
 - [x] 카드 결제 성공 후 주문 생성 flow가 실제 API payload를 만들도록 수정
 - [ ] 주문 생성 응답을 프론트 타입과 맞춤
-- [ ] 실제 DB seed/store id 기준으로 E2E 주문 생성 확인 필요
+- [x] 실제 DB seed/store id 기준으로 현장결제 주문 생성 E2E 확인
 
 ### P1: 결제 안정화
 
@@ -343,10 +345,10 @@
 3. 주문 생성 응답 mapper와 프론트 주문 상세 타입 정리
 4. 주문 이력/상세를 실제 API로 전환
 5. 사용자 주소/찜 API에 인증 연결
-7. 매장 ID 하드코딩 제거
-8. 배달 추적 mock 제거 및 Realtime 연결
-9. UX 오류 처리와 검색/찜 동선 정리
-10. PWA asset/build 경고 정리
+6. 매장 ID 하드코딩 제거
+7. 배달 추적 mock 제거 및 Realtime 연결
+8. UX 오류 처리와 검색/찜 동선 정리
+9. PWA asset/build 경고 정리
 
 ## 검증 기록
 

@@ -1,6 +1,6 @@
 # Taco Mono 루트 체크리스트
 
-마지막 업데이트: 2026-04-25
+마지막 업데이트: 2026-04-26
 
 ## 목적
 
@@ -55,6 +55,7 @@
 - [x] Toss 결제 승인 API `POST /payments/toss/confirm` 추가
 - [x] Toss 결제 실패 기록 API `POST /payments/toss/fail` 추가
 - [x] `PaymentsModule`은 앱 공통 결제 상태/주문 상태를 담당하고, 실제 Toss HTTP 호출은 `TossApiService`로 분리
+- [x] Toss Payments secret env는 `TOSS_PAYMENTS_SECRET_KEY`, `TOSS_SECRET_KEY`, 기존 `TOSS_ACCESS_SECRET` fallback 지원
 - [x] Payment confirm/fail Swagger DTO/API 문서 보강
 - [x] Payment service unit test 추가
 
@@ -92,6 +93,7 @@
 - [x] 테이블 주문 생성 API 존재
 - [x] 배달 주문 생성 API 1차 추가
 - [x] 실제 개발 DB에 새 migration 적용 완료
+- [x] 배달 현장결제 주문 생성 E2E 확인
 - [x] Toss 결제 승인/검증 API 추가
 - [x] Toss 결제 실패 기록 API 추가
 - [x] Toss 결제 승인/실패 Swagger 문서화
@@ -186,9 +188,9 @@
 5. 주문 목록/상세 API 추가
 6. 관리자 주문 상세에 결제/배달 정보 표시
 7. 테이블오더 첫 주문/추가 주문 E2E
-9. POS pending orders API와 Toss Plugin 매핑 수정
-10. 홈페이지 주문 CTA와 Store Context 연결
-11. 앱별 빌드/실기기/PWA 검증
+8. POS pending orders API와 Toss Plugin 매핑 수정
+9. 홈페이지 주문 CTA와 Store Context 연결
+10. 앱별 빌드/실기기/PWA 검증
 
 ## 주요 트레이드오프
 
