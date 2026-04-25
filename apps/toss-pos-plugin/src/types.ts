@@ -7,7 +7,20 @@ export interface BackendOrder {
     id: string;
     orderNumber: string;
     totalAmount: number;
+    note: string | null;
+    payment: BackendPayment | null;
     items: BackendOrderItem[];
+}
+
+export interface BackendPayment {
+    paymentKey: string;
+    approvedNo: string;
+    approvedAt: string;
+    amountMoney: number;
+    supplyMoney: number;
+    taxMoney: number;
+    tipMoney: number;
+    taxExemptMoney: number;
 }
 
 export interface BackendOrderItem {

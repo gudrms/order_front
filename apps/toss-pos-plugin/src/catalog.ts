@@ -36,9 +36,20 @@ export async function syncCatalogs() {
     }
 }
 
+// SDK Rate Limit: 10 req/sec sliding window. 일괄 수정 시 add/update/delete 폭주 방지를 위해 디바운스.
+const SYNC_DEBOUNCE_MS = 800;
+let syncTimer: ReturnType<typeof setTimeout> | null = null;
+function scheduleSync() {
+    if (syncTimer) clearTimeout(syncTimer);
+    syncTimer = setTimeout(() => {
+        syncTimer = null;
+        syncCatalogs();
+    }, SYNC_DEBOUNCE_MS);
+}
+
 export function setupCatalogListeners() {
     // add/update/delete로 모든 변경 감지 (sold-out/on-sale은 deprecated)
-    posPluginSdk.catalog.on('add', () => syncCatalogs());
-    posPluginSdk.catalog.on('update', () => syncCatalogs());
-    posPluginSdk.catalog.on('delete', () => syncCatalogs());
+    posPluginSdk.catalog.on('add', scheduleSync);
+    posPluginSdk.catalog.on('update', scheduleSync);
+    posPluginSdk.catalog.on('delete', scheduleSync);
 }

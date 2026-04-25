@@ -34,12 +34,12 @@ export class PosController {
         }
     })
     async getPendingOrders() {
-        // 1. PENDING 상태이고, tossOrderId가 없는 주문 조회
-        // (또는 tossOrderId가 있어도 PENDING이면 재전송? -> 중복 방지를 위해 tossOrderId가 null인 것만)
+        // 결제 정책: 배달은 토스페이먼츠 카드 결제만 받음 → status=PAID 가 POS 전송 트리거.
+        // tossOrderId IS NULL 로 중복 전송 방지.
         const orders = await this.prisma.order.findMany({
             where: {
-                status: 'PENDING',
-                tossOrderId: null, // 아직 POS에 등록되지 않은 주문
+                status: 'PAID',
+                tossOrderId: null,
             },
             include: {
                 items: {
@@ -47,13 +47,17 @@ export class PosController {
                         selectedOptions: true,
                     },
                 },
+                payments: {
+                    where: { status: 'PAID' },
+                    orderBy: { approvedAt: 'desc' },
+                    take: 1,
+                },
             },
             orderBy: {
-                createdAt: 'asc', // 먼저 들어온 주문부터 처리
+                createdAt: 'asc',
             },
         });
 
-        // 메뉴 ID 목록으로 토스 매핑 정보 조회
         const menuIds = [...new Set(orders.flatMap(o => o.items.map(i => i.menuId)))];
         const menus = await this.prisma.menu.findMany({
             where: { id: { in: menuIds } },
@@ -65,7 +69,6 @@ export class PosController {
         });
         const menuMap = new Map(menus.map(m => [m.id, m]));
 
-        // 옵션의 토스 코드 조회
         const optionNames = orders.flatMap(o =>
             o.items.flatMap(i =>
                 i.selectedOptions.map(opt => ({ groupName: opt.optionGroupName, optionName: opt.optionName }))
@@ -84,29 +87,75 @@ export class PosController {
             }
         }
 
-        // DTO 매핑 (토스 매핑 정보 포함)
-        return orders.map(order => ({
-            id: order.id,
-            orderNumber: order.orderNumber,
-            totalAmount: order.totalAmount,
-            items: order.items.map(item => {
-                const menu = menuMap.get(item.menuId);
-                return {
-                    menuName: item.menuName,
-                    menuPrice: item.menuPrice,
-                    quantity: item.quantity,
-                    catalogId: menu?.tossMenuCode ?? null,
-                    category: menu?.category
-                        ? { id: menu.category.tossCategoryCode, name: menu.category.name }
-                        : null,
-                    options: item.selectedOptions.map(opt => ({
-                        name: opt.optionName,
-                        price: opt.optionPrice,
-                        tossOptionCode: menuOptionMap.get(opt.optionName) ?? null,
-                    })),
-                };
-            }),
-        }));
+        return orders.map(order => {
+            const payment = order.payments[0];
+            const paymentDto = payment ? this.toPosPaymentDto(payment) : null;
+            return {
+                id: order.id,
+                orderNumber: order.orderNumber,
+                totalAmount: order.totalAmount,
+                note: order.note ?? null,
+                payment: paymentDto,
+                items: order.items.map(item => {
+                    const menu = menuMap.get(item.menuId);
+                    return {
+                        menuName: item.menuName,
+                        menuPrice: item.menuPrice,
+                        quantity: item.quantity,
+                        catalogId: menu?.tossMenuCode ?? null,
+                        category: menu?.category
+                            ? { id: menu.category.tossCategoryCode, name: menu.category.name }
+                            : null,
+                        options: item.selectedOptions.map(opt => ({
+                            name: opt.optionName,
+                            price: opt.optionPrice,
+                            tossOptionCode: menuOptionMap.get(opt.optionName) ?? null,
+                        })),
+                    };
+                }),
+            };
+        });
+    }
+
+    private toPosPaymentDto(payment: any) {
+        // 토스 PluginPaymentDto(EXTERNAL) 매핑.
+        // raw payload 우선, 없으면 한국 부가가치세 10% 기준 분할.
+        const raw = (payment.rawPayload ?? {}) as Record<string, any>;
+        const amount = payment.approvedAmount ?? payment.amount;
+        const supplyMoney = typeof raw.suppliedAmount === 'number'
+            ? raw.suppliedAmount
+            : Math.round(amount / 1.1);
+        const taxMoney = typeof raw.vat === 'number' ? raw.vat : amount - supplyMoney;
+        const approvedAt = (payment.approvedAt instanceof Date)
+            ? payment.approvedAt.toISOString()
+            : (payment.approvedAt ?? new Date().toISOString());
+        return {
+            paymentKey: payment.paymentKey ?? '',
+            approvedNo: raw.approveNo ?? raw.approvalNumber ?? payment.paymentKey ?? '',
+            approvedAt,
+            amountMoney: amount,
+            supplyMoney,
+            taxMoney,
+            tipMoney: 0,
+            taxExemptMoney: typeof raw.taxFreeAmount === 'number' ? raw.taxFreeAmount : 0,
+        };
+    }
+
+    @Get('orders/by-toss-id/:tossOrderId')
+    @ApiOperation({
+        summary: 'Toss Order ID로 백엔드 주문 조회 (취소 동기화용)',
+        description: '플러그인이 payment.on(cancel) 이벤트로 받은 tossOrderId를 백엔드 주문 ID로 변환합니다.',
+    })
+    @ApiParam({ name: 'tossOrderId', description: 'Toss POS Order ID' })
+    async getOrderByTossId(@Param('tossOrderId') tossOrderId: string) {
+        const order = await this.prisma.order.findFirst({
+            where: { tossOrderId },
+            select: { id: true, status: true },
+        });
+        if (!order) {
+            throw new NotFoundException(`Order not found for tossOrderId: ${tossOrderId}`);
+        }
+        return order;
     }
 
     @Patch('orders/:orderId/status')
@@ -188,6 +237,15 @@ export class PosController {
                 });
 
                 // 메뉴 upsert
+                // SDK 카탈로그 state: ON_SALE | SOLD_OUT | UNAVAILABLE | DELETED
+                //   - SOLD_OUT       → 일시 품절 (soldOut=true, isActive 유지)
+                //   - UNAVAILABLE    → 기타 판매불가 (isHidden=true, soldOut=true)
+                //   - DELETED        → 제거됨 (isActive=false, 논리삭제)
+                //   - ON_SALE        → 정상 판매중
+                const isSoldOut = catalog.state === 'SOLD_OUT' || catalog.state === 'UNAVAILABLE';
+                const isHidden = catalog.state === 'UNAVAILABLE';
+                const isActive = catalog.state !== 'DELETED';
+
                 const menu = await tx.menu.upsert({
                     where: {
                         storeId_tossMenuCode: {
@@ -199,7 +257,9 @@ export class PosController {
                         categoryId: category.id,
                         name: catalog.title,
                         price: catalog.price.priceValue,
-                        soldOut: catalog.state === 'SOLD_OUT',
+                        soldOut: isSoldOut,
+                        isHidden,
+                        isActive,
                         imageUrl: catalog.imageUrl,
                         lastSyncedAt: new Date(),
                     },
@@ -209,7 +269,9 @@ export class PosController {
                         tossMenuCode: String(catalog.id),
                         name: catalog.title,
                         price: catalog.price.priceValue,
-                        soldOut: catalog.state === 'SOLD_OUT',
+                        soldOut: isSoldOut,
+                        isHidden,
+                        isActive,
                         imageUrl: catalog.imageUrl,
                     },
                 });

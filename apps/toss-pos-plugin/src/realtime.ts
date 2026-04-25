@@ -28,6 +28,12 @@ export function setupRealtime() {
             },
             async (payload) => {
                 const updated = payload.new as any;
+                // 결제 완료(PENDING_PAYMENT → PAID) → 즉시 POS 등록 트리거
+                if (updated.status === 'PAID' && !updated.tossOrderId) {
+                    console.log(`Order ${updated.id} reached PAID, triggering POS registration`);
+                    await pollOrders();
+                    return;
+                }
                 if (updated.status === 'CANCELLED' && updated.tossOrderId) {
                     console.log(`Order ${updated.id} cancelled from delivery app, cancelling in Toss POS`);
                     try {

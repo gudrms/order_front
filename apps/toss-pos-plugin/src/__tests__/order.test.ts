@@ -8,9 +8,17 @@ vi.mock('@tossplace/pos-plugin-sdk', () => ({
             cancel: vi.fn().mockResolvedValue(undefined),
             on: vi.fn(),
         },
+        payment: {
+            add: vi.fn().mockResolvedValue({ id: 'toss-payment-001' }),
+            cancel: vi.fn().mockResolvedValue(undefined),
+            on: vi.fn(),
+        },
         catalog: {
             getCatalogs: vi.fn().mockResolvedValue([]),
             on: vi.fn(),
+        },
+        toast: {
+            open: vi.fn(),
         },
     },
 }));
@@ -41,6 +49,17 @@ const sampleOrder: BackendOrder = {
     id: 'order-001',
     orderNumber: 'ORD-001',
     totalAmount: 9500,
+    note: '문 앞에 두세요',
+    payment: {
+        paymentKey: 'tgen_test_001',
+        approvedNo: '00012345',
+        approvedAt: '2026-04-26T10:00:00.000Z',
+        amountMoney: 9500,
+        supplyMoney: 8636,
+        taxMoney: 864,
+        tipMoney: 0,
+        taxExemptMoney: 0,
+    },
     items: [
         {
             menuName: '비프 타코',
@@ -60,14 +79,15 @@ beforeEach(() => {
 });
 
 describe('processOrder', () => {
-    it('주문을 SDK에 등록하고 백엔드 상태를 업데이트한다', async () => {
+    it('주문을 SDK에 등록하고 결제 원장을 생성하고 백엔드 상태를 업데이트한다', async () => {
         mockFetch.mockResolvedValueOnce({ ok: true });
 
         await processOrder(sampleOrder);
 
-        // SDK order.add 호출 확인
+        // SDK order.add 호출 확인 (memo 포함)
         expect(posPluginSdk.order.add).toHaveBeenCalledWith(
             expect.objectContaining({
+                memo: '문 앞에 두세요',
                 discounts: [],
                 lineItems: expect.arrayContaining([
                     expect.objectContaining({
@@ -85,6 +105,20 @@ describe('processOrder', () => {
             })
         );
 
+        // SDK payment.add 호출 확인 (EXTERNAL)
+        expect(posPluginSdk.payment.add).toHaveBeenCalledWith(
+            { id: 'toss-order-001' },
+            expect.objectContaining({
+                sourceType: 'EXTERNAL',
+                orderId: 'toss-order-001',
+                amountMoney: 9500,
+                taxMoney: 864,
+                supplyMoney: 8636,
+                paymentKey: 'tgen_test_001',
+                approvedNo: '00012345',
+            }),
+        );
+
         // 백엔드 상태 업데이트 호출 확인
         expect(mockFetch).toHaveBeenCalledWith(
             'http://localhost:4000/api/v1/pos/orders/order-001/status',
@@ -96,6 +130,28 @@ describe('processOrder', () => {
                 }),
             })
         );
+    });
+
+    it('미매핑 메뉴는 POS 전송을 skip한다', async () => {
+        const unmapped: BackendOrder = {
+            ...sampleOrder,
+            items: [{ ...sampleOrder.items[0], catalogId: null }],
+        };
+
+        await processOrder(unmapped);
+
+        expect(posPluginSdk.order.add).not.toHaveBeenCalled();
+        expect(posPluginSdk.payment.add).not.toHaveBeenCalled();
+        expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it('PAID payment 정보가 없으면 skip한다', async () => {
+        const noPayment: BackendOrder = { ...sampleOrder, payment: null };
+
+        await processOrder(noPayment);
+
+        expect(posPluginSdk.order.add).not.toHaveBeenCalled();
+        expect(posPluginSdk.payment.add).not.toHaveBeenCalled();
     });
 
     it('중복 주문을 무시한다', async () => {
