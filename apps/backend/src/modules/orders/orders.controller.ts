@@ -244,6 +244,39 @@ export class OrdersController {
 export class RootOrdersController {
     constructor(private readonly ordersService: OrdersService) { }
 
+    @Get()
+    @ApiOperation({
+        summary: '배달 주문 목록 조회',
+        description: '배달앱 주문내역에서 사용할 주문 목록을 조회합니다. 비회원 주문은 전화번호 기준으로 조회합니다.',
+    })
+    @ApiQuery({ name: 'storeId', required: false, description: '매장 ID' })
+    @ApiQuery({ name: 'phone', required: false, description: '비회원 주문 조회용 수령자 전화번호' })
+    @ApiQuery({ name: 'userId', required: false, description: '회원 주문 조회용 사용자 ID' })
+    @ApiQuery({ name: 'page', required: false, type: Number, description: '페이지 번호' })
+    async getDeliveryOrders(
+        @Query('storeId') storeId?: string,
+        @Query('phone') phone?: string,
+        @Query('userId') userId?: string,
+        @Query('page') page: number = 1,
+    ) {
+        return this.ordersService.getDeliveryOrders({
+            storeId,
+            phone,
+            userId,
+            page: Number(page) || 1,
+        });
+    }
+
+    @Get(':orderId')
+    @ApiOperation({
+        summary: '주문 상세 조회',
+        description: '배달앱 주문상세에서 사용할 주문 상세 정보를 조회합니다.',
+    })
+    @ApiParam({ name: 'orderId', description: '주문 ID' })
+    async getOrderById(@Param('orderId') orderId: string) {
+        return this.ordersService.getOrderById(orderId);
+    }
+
     @Post()
     @UsePipes(new ValidationPipe({ transform: true }))
     @ApiOperation({

@@ -1,50 +1,143 @@
-/**
- * Order API
- */
-
-import type { Order, OrderStatus, CreateOrderRequest, OrderResponse } from '../../types';
+import type { CreateOrderRequest, Order, OrderListResponse, OrderStatus, OrderDelivery, OrderPayment } from '../../types';
+import type { OrderResponse } from '../../types';
 import { apiClient } from '../client';
 
-/**
- * 테이블별 주문 목록 조회
- * MSW를 사용하여 세션 기반으로 주문 조회
- */
+interface BackendOrderItem {
+    id: string;
+    orderId: string;
+    menuId: string;
+    menuName: string;
+    menuPrice: number;
+    quantity: number;
+    totalPrice: number;
+    selectedOptions?: {
+        id: string;
+        menuOptionId?: string | null;
+        optionName: string;
+        optionPrice: number;
+        optionGroupName: string;
+    }[];
+    createdAt?: string;
+    updatedAt?: string;
+}
+
+interface BackendOrder {
+    id: string;
+    orderNumber: string;
+    tableNumber?: number | null;
+    storeId: string;
+    userId?: string | null;
+    type?: string;
+    source?: string;
+    status: OrderStatus;
+    paymentStatus?: string;
+    totalAmount: number;
+    tossOrderId?: string | null;
+    note?: string | null;
+    items?: BackendOrderItem[];
+    delivery?: OrderDelivery | null;
+    payments?: OrderPayment[];
+    createdAt: string;
+    updatedAt?: string;
+    completedAt?: string | null;
+}
+
+function mapOrder(order: BackendOrder): Order {
+    return {
+        id: order.id,
+        orderNumber: order.orderNumber,
+        tableId: null,
+        tableNumber: order.tableNumber,
+        storeId: order.storeId,
+        userId: order.userId,
+        type: order.type,
+        source: order.source,
+        status: order.status,
+        paymentStatus: order.paymentStatus,
+        totalAmount: order.totalAmount,
+        totalPrice: order.totalAmount,
+        tossOrderId: order.tossOrderId,
+        note: order.note,
+        delivery: order.delivery,
+        payments: order.payments || [],
+        createdAt: order.createdAt,
+        updatedAt: order.updatedAt,
+        completedAt: order.completedAt,
+        items: (order.items || []).map((item) => ({
+            id: item.id,
+            orderId: item.orderId,
+            menuId: item.menuId,
+            menuName: item.menuName,
+            quantity: item.quantity,
+            unitPrice: item.menuPrice,
+            totalPrice: item.totalPrice,
+            createdAt: item.createdAt,
+            updatedAt: item.updatedAt,
+            options: item.selectedOptions?.map((option) => ({
+                optionGroupId: option.menuOptionId || option.id,
+                optionGroupName: option.optionGroupName,
+                items: [{
+                    optionItemId: option.menuOptionId || option.id,
+                    name: option.optionName,
+                    price: option.optionPrice,
+                }],
+            })),
+        })),
+    };
+}
+
 export async function getOrdersByTable(
-    tableNumber: number
+    tableNumber: number,
+    storeId = process.env.NEXT_PUBLIC_STORE_ID || 'store-1'
 ): Promise<Order[]> {
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
-    const storeId = 'store-1'; // 실제로는 context에서 가져와야 함
 
-    // 현재 활성 세션 조회
     const sessionResponse = await fetch(`${API_URL}/stores/${storeId}/tables/${tableNumber}/current-session`);
     const sessionData = await sessionResponse.json();
 
     if (!sessionData.data) {
-        // 활성 세션이 없으면 빈 배열 반환
         return [];
     }
 
     const sessionId = sessionData.data.id;
-
-    // 세션의 주문 내역 조회
     const ordersResponse = await fetch(`${API_URL}/stores/${storeId}/orders?sessionId=${sessionId}`);
     const ordersData = await ordersResponse.json();
 
-    return ordersData.data || [];
+    return (ordersData.data || []).map(mapOrder);
 }
 
-/**
- * 주문 생성 (배달/포장/매장)
- */
 export async function createOrder(
     request: CreateOrderRequest
 ): Promise<OrderResponse> {
     return apiClient.post<OrderResponse>('/orders', request);
 }
 
-/**
- * 주문 상태 변경 (주방용 - Phase 2)
- */
+export async function getDeliveryOrders(params: {
+    storeId?: string | null;
+    phone?: string | null;
+    userId?: string | null;
+    page?: number;
+}): Promise<OrderListResponse> {
+    const searchParams = new URLSearchParams();
+    if (params.storeId) searchParams.set('storeId', params.storeId);
+    if (params.phone) searchParams.set('phone', params.phone);
+    if (params.userId) searchParams.set('userId', params.userId);
+    if (params.page) searchParams.set('page', String(params.page));
+
+    const response = await apiClient.get<BackendOrder[]>(`/orders?${searchParams.toString()}`);
+    return {
+        orders: response.map(mapOrder),
+        total: response.length,
+        page: params.page || 1,
+        limit: 20,
+    };
+}
+
+export async function getOrder(orderId: string): Promise<Order> {
+    const response = await apiClient.get<BackendOrder>(`/orders/${orderId}`);
+    return mapOrder(response);
+}
+
 export async function updateOrderStatus(
     orderNumber: string,
     status: OrderStatus

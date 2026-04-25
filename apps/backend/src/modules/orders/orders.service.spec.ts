@@ -57,6 +57,8 @@ describe('OrdersService', () => {
             order: {
                 count: vi.fn(),
                 create: vi.fn(),
+                findMany: vi.fn(),
+                findUnique: vi.fn(),
             },
         };
         prisma = {
@@ -117,5 +119,49 @@ describe('OrdersService', () => {
         tx.store.findUnique.mockResolvedValue(null);
 
         await expect(service.createDeliveryOrder('missing-store', dto)).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('lists delivery orders by store and recipient phone', async () => {
+        prisma.order = {
+            findMany: vi.fn().mockResolvedValue([{ id: 'order-1' }]),
+            count: vi.fn().mockResolvedValue(1),
+        };
+
+        const result = await service.getDeliveryOrders({
+            storeId: 'store-1',
+            phone: '010-0000-0000',
+            page: 1,
+        });
+
+        expect(result).toEqual({
+            data: [{ id: 'order-1' }],
+            meta: {
+                total: 1,
+                page: 1,
+                lastPage: 1,
+            },
+        });
+        expect(prisma.order.findMany).toHaveBeenCalledWith(expect.objectContaining({
+            where: {
+                type: 'DELIVERY',
+                storeId: 'store-1',
+                delivery: {
+                    is: {
+                        recipientPhone: '010-0000-0000',
+                    },
+                },
+            },
+        }));
+    });
+
+    it('returns a delivery order detail by id', async () => {
+        prisma.order = {
+            findUnique: vi.fn().mockResolvedValue({ id: 'order-1' }),
+        };
+
+        await expect(service.getOrderById('order-1')).resolves.toEqual({ id: 'order-1' });
+        expect(prisma.order.findUnique).toHaveBeenCalledWith(expect.objectContaining({
+            where: { id: 'order-1' },
+        }));
     });
 });

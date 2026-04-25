@@ -53,8 +53,8 @@
 - [x] Swagger DTO/API 문서 일부 보강
 - [x] 매장/인증/주문/세션/결제 단위 테스트 추가
 - [ ] 주문 생성 응답 mapper 정리
-- [ ] 주문 상세 API 추가
-- [ ] 내 주문 목록 API 추가
+- [x] 주문 상세 API 추가
+- [x] 배달 주문 목록 API 추가
 - [ ] 배달 상태 변경 API 추가
 - [ ] 주문 취소/환불 API 추가
 - [ ] 결제 timeout/pending 만료 처리 추가
@@ -69,10 +69,11 @@
 - [x] Toss 결제 success/fail 서버 검증 흐름 연결
 - [x] 주문 payload에 배달 주소, 연락처, 요청사항, optionId 포함
 - [x] 백엔드가 매장 배달 가능 여부와 최소 주문금액을 검증
-- [ ] 하드코딩된 `store-1` 제거
-- [ ] Store Context를 URL 또는 환경변수 기반으로 연결
-- [ ] 주문 생성 응답 타입과 프론트 주문 상세 타입 정렬
-- [ ] 주문내역/주문상세를 실제 API로 전환
+- [x] 하드코딩된 `store-1` 제거
+- [x] Store Context를 환경변수 또는 매장 경로 기반 조회로 연결
+- [x] 매장별 배달비/최소 주문금액을 체크아웃 금액과 주문 가능 여부에 반영
+- [x] 주문 생성 응답 타입과 프론트 주문 상세 타입 정렬
+- [x] 주문내역/주문상세를 실제 API로 전환
 - [ ] 배달 추적 mock 제거
 - [ ] 실제 Toss 테스트 결제 E2E 확인
 
@@ -144,16 +145,12 @@
 
 ## 다음 개발 순서
 
-1. 배달앱 `store-1` 하드코딩 제거와 Store Context 연결
-2. 주문 생성 응답 mapper 정리
-3. 주문 상세 API와 내 주문 목록 API 추가
-4. 배달앱 주문내역/주문상세 실제 API 전환
-5. Toss 테스트 카드결제 성공/실패 E2E
-6. 결제 timeout/pending 만료 처리
-7. 관리자 매장 등록/운영 설정 화면을 백엔드 API에 연결
-8. 테이블오더 실제 Store UUID/tableNumber 연결과 E2E
-9. POS pending orders API와 Toss SDK/POS 앱 매핑 정리
-10. 홈페이지 주문 CTA와 매장/메뉴 API 연결
+1. Toss 테스트 카드결제 성공/실패 E2E
+2. 결제 timeout/pending 만료 처리
+3. 주문 상태 tracker를 실제 상태 변경/Realtime 흐름에 연결
+4. 관리자 매장 등록/운영 설정 화면을 백엔드 API에 연결
+5. 테이블오더 실제 Store UUID/tableNumber 연결과 E2E
+6. 홈페이지 주문 CTA와 매장/메뉴 API 연결
 
 ## 체크리스트 위치
 
