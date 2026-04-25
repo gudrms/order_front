@@ -338,12 +338,11 @@
 
 ## 다음 개발 순서
 
-1. seed/store id 기준으로 현장 결제 주문 생성 E2E 확인
-2. 실제 Toss test secret key로 카드 결제 성공/실패 E2E 확인
-3. 결제 timeout/만료 pending order 정리
-4. 주문 생성 응답 mapper와 프론트 주문 상세 타입 정리
-5. 주문 이력/상세를 실제 API로 전환
-6. 사용자 주소/찜 API에 인증 연결
+1. 실제 Toss test secret key로 카드 결제 성공/실패 E2E 확인
+2. 결제 timeout/만료 pending order 정리
+3. 주문 생성 응답 mapper와 프론트 주문 상세 타입 정리
+4. 주문 이력/상세를 실제 API로 전환
+5. 사용자 주소/찜 API에 인증 연결
 7. 매장 ID 하드코딩 제거
 8. 배달 추적 mock 제거 및 Realtime 연결
 9. UX 오류 처리와 검색/찜 동선 정리
@@ -356,9 +355,11 @@
 - [x] 백엔드 `vitest run src/modules/payments/payments.service.spec.ts` 실행: 6개 통과
 - [x] 백엔드 `vitest run` 실행: 3개 파일, 14개 테스트 통과
 - [x] 개발 DB `prisma migrate deploy` 실행: migration 7개 기준 up to date
+- [x] 개발 DB 현장결제 배달 주문 생성 E2E: `DELIVERY_APP`/`CASH`/`OrderDelivery` 생성 확인
 - [x] `cmd /c .\node_modules\.bin\next.cmd build` 실행: 정적 페이지 생성 성공
 - [ ] 빌드 후 `ReferenceError: location is not defined` 로그 해결 필요
-- [ ] 주문 생성 E2E 검증 필요
+- [x] 현장결제 주문 생성 E2E 검증 완료
+- [ ] 카드결제 주문 생성/승인 E2E 검증 필요
 - [ ] Toss 결제 성공/실패/timeout E2E 검증 필요
 - [ ] Sentry 테스트 이벤트 수신 검증 필요
 - [ ] 로그인 후 주소/찜 E2E 검증 필요

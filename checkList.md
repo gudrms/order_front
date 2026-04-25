@@ -179,14 +179,13 @@
 
 ## 최우선 개발 순서
 
-1. seed/store id 기준으로 배달 현장결제 주문 생성 E2E 확인
-2. 실제 Toss test secret key로 카드 결제 성공/실패 E2E 확인
-3. Sentry 테스트 이벤트 도착 확인
-4. 결제 timeout/만료 배치 또는 정리 API 추가
-5. 주문 생성 응답 mapper 정리
-6. 주문 목록/상세 API 추가
-7. 관리자 주문 상세에 결제/배달 정보 표시
-8. 테이블오더 첫 주문/추가 주문 E2E
+1. 실제 Toss test secret key로 카드 결제 성공/실패 E2E 확인
+2. Sentry 테스트 이벤트 도착 확인
+3. 결제 timeout/만료 배치 또는 정리 API 추가
+4. 주문 생성 응답 mapper 정리
+5. 주문 목록/상세 API 추가
+6. 관리자 주문 상세에 결제/배달 정보 표시
+7. 테이블오더 첫 주문/추가 주문 E2E
 9. POS pending orders API와 Toss Plugin 매핑 수정
 10. 홈페이지 주문 CTA와 Store Context 연결
 11. 앱별 빌드/실기기/PWA 검증
@@ -234,7 +233,8 @@
 - [ ] `apps/toss-pos-plugin`: `pnpm build`
 - [ ] `apps/toss-pos-plugin`: `pnpm zip`
 - [x] 실제 개발 DB migration 적용
-- [ ] 배달 주문 E2E
+- [x] 배달 현장결제 주문 생성 E2E
+- [ ] 배달 카드결제 주문 생성/승인 E2E
 - [ ] 테이블 주문 E2E
 - [ ] Toss 결제 E2E
 - [ ] Sentry 이벤트 수신 E2E
