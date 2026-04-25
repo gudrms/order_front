@@ -91,7 +91,7 @@
 - [x] POS 연동 API 초안 존재
 - [x] 테이블 주문 생성 API 존재
 - [x] 배달 주문 생성 API 1차 추가
-- [ ] 실제 DB에 새 migration 적용 필요
+- [x] 실제 개발 DB에 새 migration 적용 완료
 - [x] Toss 결제 승인/검증 API 추가
 - [x] Toss 결제 실패 기록 API 추가
 - [x] Toss 결제 승인/실패 Swagger 문서화
@@ -179,15 +179,14 @@
 
 ## 최우선 개발 순서
 
-1. 새 migration을 실제 DB에 적용
-2. seed/store id 기준으로 배달 현장결제 주문 생성 E2E 확인
-3. 실제 Toss test secret key로 카드 결제 성공/실패 E2E 확인
-4. Sentry 테스트 이벤트 도착 확인
-5. 결제 timeout/만료 배치 또는 정리 API 추가
-6. 주문 생성 응답 mapper 정리
-7. 주문 목록/상세 API 추가
-8. 관리자 주문 상세에 결제/배달 정보 표시
-9. 테이블오더 첫 주문/추가 주문 E2E
+1. seed/store id 기준으로 배달 현장결제 주문 생성 E2E 확인
+2. 실제 Toss test secret key로 카드 결제 성공/실패 E2E 확인
+3. Sentry 테스트 이벤트 도착 확인
+4. 결제 timeout/만료 배치 또는 정리 API 추가
+5. 주문 생성 응답 mapper 정리
+6. 주문 목록/상세 API 추가
+7. 관리자 주문 상세에 결제/배달 정보 표시
+8. 테이블오더 첫 주문/추가 주문 E2E
 9. POS pending orders API와 Toss Plugin 매핑 수정
 10. 홈페이지 주문 CTA와 Store Context 연결
 11. 앱별 빌드/실기기/PWA 검증
@@ -234,7 +233,7 @@
 - [ ] `apps/toss-pos-plugin`: `pnpm test`
 - [ ] `apps/toss-pos-plugin`: `pnpm build`
 - [ ] `apps/toss-pos-plugin`: `pnpm zip`
-- [ ] 실제 DB migration 적용
+- [x] 실제 개발 DB migration 적용
 - [ ] 배달 주문 E2E
 - [ ] 테이블 주문 E2E
 - [ ] Toss 결제 E2E
