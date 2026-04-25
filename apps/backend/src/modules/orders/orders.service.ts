@@ -74,6 +74,10 @@ export class OrdersService {
             if (!store.isDeliveryEnabled) {
                 throw new BadRequestException('Store is not accepting delivery orders');
             }
+            const paymentMethod = dto.payment.method as string | undefined;
+            if (paymentMethod === 'CASH' || dto.payment.paymentKey?.startsWith('CASH_')) {
+                throw new BadRequestException('Delivery orders only support prepaid Toss Payments');
+            }
 
             const { totalPrice, orderItemsData } = await this.prepareOrderItems(tx, storeId, dto.items);
             if (totalPrice < store.minimumOrderAmount) {
@@ -89,9 +93,6 @@ export class OrdersService {
                 throw new BadRequestException('Order amount does not match current menu and delivery fee');
             }
 
-            const isCashPayment = dto.payment.method === 'CASH' || dto.payment.paymentKey?.startsWith('CASH_');
-            const paymentStatus = isCashPayment ? 'PENDING' : 'READY';
-
             return tx.order.create({
                 data: {
                     storeId,
@@ -99,8 +100,8 @@ export class OrdersService {
                     orderNumber: await this.generateOrderNumber(tx, storeId),
                     type: 'DELIVERY',
                     source: 'DELIVERY_APP',
-                    status: isCashPayment ? 'PENDING' : 'PENDING_PAYMENT',
-                    paymentStatus,
+                    status: 'PENDING_PAYMENT',
+                    paymentStatus: 'READY',
                     totalAmount: expectedAmount,
                     note: dto.delivery.deliveryMemo,
                     items: {
@@ -128,9 +129,9 @@ export class OrdersService {
                     },
                     payments: {
                         create: {
-                            provider: isCashPayment ? 'CASH' : 'TOSS_PAYMENTS',
-                            method: isCashPayment ? 'CASH' : 'TOSS',
-                            status: paymentStatus,
+                            provider: 'TOSS_PAYMENTS',
+                            method: 'TOSS',
+                            status: 'READY',
                             amount: expectedAmount,
                             paymentKey: dto.payment.paymentKey,
                             providerOrderId: dto.payment.orderId,

@@ -1,4 +1,4 @@
-import { PaymentInfo, PaymentResult, PaymentMethod } from './types';
+import { PaymentInfo, PaymentResult } from './types';
 import { platform } from '@/lib/capacitor';
 import { openBrowser } from '@/lib/capacitor/browser';
 
@@ -33,9 +33,6 @@ export async function processPayment(
 
       case 'PAYCO':
         return await processPaycoPayment(info);
-
-      case 'CASH':
-        return await processCashPayment(info);
 
       default:
         throw new Error('지원하지 않는 결제 수단입니다');
@@ -143,33 +140,6 @@ async function processPaycoPayment(
     success: true,
     message: '페이코 결제가 완료되었습니다',
   };
-}
-
-/**
- * 현금 결제 (만나서 결제)
- */
-async function processCashPayment(
-  info: PaymentInfo
-): Promise<PaymentResult> {
-  // 현금 결제는 서버에 주문만 생성
-  const response = await fetch('/api/orders', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      ...info,
-      paymentMethod: 'CASH',
-      paymentStatus: 'PENDING',
-    }),
-  });
-
-  if (response.ok) {
-    return {
-      success: true,
-      message: '주문이 접수되었습니다. 만나서 결제해주세요.',
-    };
-  } else {
-    throw new Error('주문 생성에 실패했습니다');
-  }
 }
 
 /**

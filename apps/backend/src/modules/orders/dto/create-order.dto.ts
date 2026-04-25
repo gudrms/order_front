@@ -151,7 +151,7 @@ export class DeliveryPaymentDto {
     @ApiProperty({ description: '결제 수단', example: 'TOSS', required: false })
     @IsString()
     @IsOptional()
-    method?: 'CARD' | 'TOSS' | 'KAKAO' | 'NAVER' | 'SAMSUNG' | 'PAYCO' | 'CASH';
+    method?: 'CARD' | 'TOSS' | 'KAKAO' | 'NAVER' | 'SAMSUNG' | 'PAYCO';
 }
 
 export class CreateDeliveryOrderItemOptionDto {

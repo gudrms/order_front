@@ -1,15 +1,17 @@
 'use client';
 
-import { useEffect, useRef, useState, Suspense } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCartStore } from '@order/shared';
 import { useConfirmTossPayment } from '@/hooks/mutations/useConfirmTossPayment';
+import { useCurrentStore } from '@/contexts/StoreContext';
 import { useDeliveryStore } from '@/stores/deliveryStore';
 
 function SuccessContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { clearCart } = useCartStore();
+    const { store } = useCurrentStore();
     const { deliveryInfo } = useDeliveryStore();
     const confirmTossPaymentMutation = useConfirmTossPayment();
     const hasProcessedRef = useRef(false);
@@ -21,10 +23,7 @@ function SuccessContent() {
 
     useEffect(() => {
         const processPayment = async () => {
-            if (hasProcessedRef.current) {
-                return;
-            }
-
+            if (hasProcessedRef.current) return;
             hasProcessedRef.current = true;
 
             const orderId = searchParams.get('orderId');
@@ -73,7 +72,7 @@ function SuccessContent() {
         return (
             <main className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
                 <div className="max-w-md w-full bg-white rounded-xl p-8 text-center">
-                    <div className="text-6xl mb-4">!</div>
+                    <div className="text-5xl mb-4">!</div>
                     <h1 className="text-2xl font-bold mb-2">결제 승인 실패</h1>
                     <p className="text-gray-600 mb-6">{error}</p>
                     <button
@@ -90,10 +89,10 @@ function SuccessContent() {
     return (
         <main className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
             <div className="max-w-md w-full bg-white rounded-xl p-8 text-center">
-                <div className="text-6xl mb-4">OK</div>
+                <div className="text-5xl mb-4">OK</div>
                 <h1 className="text-2xl font-bold mb-2">주문 완료</h1>
                 <p className="text-gray-600 mb-6">
-                    결제가 승인되고 주문이 정상 접수되었습니다.
+                    결제가 승인되었고 주문이 정상 접수되었습니다.
                 </p>
 
                 <div className="bg-gray-50 rounded-lg p-4 mb-6 text-left">
@@ -101,7 +100,7 @@ function SuccessContent() {
                         <span className="text-gray-500">주문번호</span>
                         <span className="font-bold">{orderNumber}</span>
                     </div>
-                    <div className="flex justify-between mb-2">
+                    <div className="flex justify-between mb-2 gap-4">
                         <span className="text-gray-500">배달 주소</span>
                         <span className="font-medium text-sm text-right">
                             {deliveryInfo.address?.address || '-'}
@@ -109,7 +108,7 @@ function SuccessContent() {
                     </div>
                     <div className="flex justify-between">
                         <span className="text-gray-500">예상 배달 시간</span>
-                        <span className="font-medium">30-40분</span>
+                        <span className="font-medium">{store?.estimatedDeliveryMinutes || 40}분</span>
                     </div>
                 </div>
 
