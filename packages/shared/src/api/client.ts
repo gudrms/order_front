@@ -4,6 +4,7 @@
  */
 
 import type { ApiError, ApiResponse } from '../types';
+import { supabase } from '../lib/supabase';
 
 /**
  * API 기본 URL
@@ -36,6 +37,27 @@ export class ApiClientError extends Error {
  */
 interface RequestOptions extends RequestInit {
     timeout?: number;
+}
+
+async function buildHeaders(headers?: HeadersInit): Promise<HeadersInit> {
+    const authHeaders: Record<string, string> = {
+        'Content-Type': 'application/json',
+    };
+
+    try {
+        const { data } = await supabase.auth.getSession();
+        const token = data.session?.access_token;
+        if (token) {
+            authHeaders.Authorization = `Bearer ${token}`;
+        }
+    } catch {
+        // Auth is optional for public APIs; authenticated APIs will still reject without a token.
+    }
+
+    return {
+        ...authHeaders,
+        ...headers,
+    };
 }
 
 /**
@@ -121,10 +143,7 @@ export const apiClient = {
 
         const response = await fetchWithTimeout(url, {
             method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                ...options?.headers,
-            },
+            headers: await buildHeaders(options?.headers),
             ...options,
         });
 
@@ -147,10 +166,7 @@ export const apiClient = {
 
         const response = await fetchWithTimeout(url, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                ...options?.headers,
-            },
+            headers: await buildHeaders(options?.headers),
             body: data ? JSON.stringify(data) : undefined,
             ...options,
         });
@@ -174,10 +190,7 @@ export const apiClient = {
 
         const response = await fetchWithTimeout(url, {
             method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json',
-                ...options?.headers,
-            },
+            headers: await buildHeaders(options?.headers),
             body: data ? JSON.stringify(data) : undefined,
             ...options,
         });
@@ -201,10 +214,7 @@ export const apiClient = {
 
         const response = await fetchWithTimeout(url, {
             method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                ...options?.headers,
-            },
+            headers: await buildHeaders(options?.headers),
             body: data ? JSON.stringify(data) : undefined,
             ...options,
         });
@@ -224,10 +234,7 @@ export const apiClient = {
 
         const response = await fetchWithTimeout(url, {
             method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-                ...options?.headers,
-            },
+            headers: await buildHeaders(options?.headers),
             ...options,
         });
 

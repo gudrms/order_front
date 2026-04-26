@@ -111,6 +111,18 @@ describe('OrdersService', () => {
         expect(tx.order.create).not.toHaveBeenCalled();
     });
 
+    it('rejects delivery orders without an authenticated user', async () => {
+        tx.store.findUnique.mockResolvedValue(store);
+
+        await expect(service.createDeliveryOrder('store-1', {
+            ...dto,
+            userId: undefined,
+        })).rejects.toBeInstanceOf(BadRequestException);
+
+        expect(tx.menu.findMany).not.toHaveBeenCalled();
+        expect(tx.order.create).not.toHaveBeenCalled();
+    });
+
     it('creates a delivery order with PENDING_PAYMENT status awaiting Toss approval', async () => {
         tx.store.findUnique.mockResolvedValue(store);
         tx.menu.findMany.mockResolvedValue([menu]);
@@ -137,7 +149,7 @@ describe('OrdersService', () => {
         await expect(service.createDeliveryOrder('missing-store', dto)).rejects.toBeInstanceOf(NotFoundException);
     });
 
-    it('lists delivery orders by store and recipient phone', async () => {
+    it('lists delivery orders by authenticated user', async () => {
         prisma.order = {
             findMany: vi.fn().mockResolvedValue([{ id: 'order-1' }]),
             count: vi.fn().mockResolvedValue(1),
@@ -145,7 +157,7 @@ describe('OrdersService', () => {
 
         const result = await service.getDeliveryOrders({
             storeId: 'store-1',
-            phone: '010-0000-0000',
+            userId: 'user-1',
             page: 1,
         });
 
@@ -161,23 +173,40 @@ describe('OrdersService', () => {
             where: {
                 type: 'DELIVERY',
                 storeId: 'store-1',
-                delivery: {
-                    is: {
-                        recipientPhone: '010-0000-0000',
-                    },
-                },
+                userId: 'user-1',
             },
         }));
     });
 
-    it('returns a delivery order detail by id', async () => {
+    it('requires a user id to list delivery orders', async () => {
+        await expect(service.getDeliveryOrders({ storeId: 'store-1' })).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('returns a delivery order detail when the authenticated user matches', async () => {
         prisma.order = {
-            findUnique: vi.fn().mockResolvedValue({ id: 'order-1' }),
+            findUnique: vi.fn().mockResolvedValue({
+                id: 'order-1',
+                userId: 'user-1',
+            }),
         };
 
-        await expect(service.getOrderById('order-1')).resolves.toEqual({ id: 'order-1' });
+        await expect(service.getOrderById('order-1', { userId: 'user-1' })).resolves.toEqual({
+            id: 'order-1',
+            userId: 'user-1',
+        });
         expect(prisma.order.findUnique).toHaveBeenCalledWith(expect.objectContaining({
             where: { id: 'order-1' },
         }));
+    });
+
+    it('hides delivery order detail when lookup ownership does not match', async () => {
+        prisma.order = {
+            findUnique: vi.fn().mockResolvedValue({
+                id: 'order-1',
+                userId: 'user-1',
+            }),
+        };
+
+        await expect(service.getOrderById('order-1', { userId: 'user-2' })).rejects.toBeInstanceOf(NotFoundException);
     });
 });

@@ -8,6 +8,7 @@ interface UseOrderStatusProps {
     initialStatus?: OrderStatus;
     onStatusChange?: (status: OrderStatus) => void;
     pollIntervalMs?: number;
+    userId?: string | null;
 }
 
 export function useOrderStatus({
@@ -15,6 +16,7 @@ export function useOrderStatus({
     initialStatus,
     onStatusChange,
     pollIntervalMs = 5000,
+    userId,
 }: UseOrderStatusProps) {
     const [status, setStatus] = useState<OrderStatus | null>(initialStatus || null);
 
@@ -56,7 +58,7 @@ export function useOrderStatus({
     }, [orderId, initialStatus, onStatusChange]);
 
     useEffect(() => {
-        if (!orderId || pollIntervalMs <= 0) return;
+        if (!orderId || pollIntervalMs <= 0 || !userId) return;
 
         let isCancelled = false;
         const poll = async () => {
@@ -77,7 +79,7 @@ export function useOrderStatus({
             isCancelled = true;
             window.clearInterval(intervalId);
         };
-    }, [orderId, pollIntervalMs, onStatusChange]);
+    }, [orderId, pollIntervalMs, onStatusChange, userId]);
 
     return status;
 }

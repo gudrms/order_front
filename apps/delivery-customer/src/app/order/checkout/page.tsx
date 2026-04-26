@@ -11,12 +11,14 @@ import { useCurrentStore } from '@/contexts/StoreContext';
 import { useDeliveryStore } from '@/stores/deliveryStore';
 import { useCreateOrder } from '@/hooks/mutations/useCreateOrder';
 import { useFailTossPayment } from '@/hooks/mutations/useFailTossPayment';
+import { useAuth } from '@/contexts/AuthContext';
 
 const TOSS_CLIENT_KEY = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY || 'test_ck_D5GePWvyJnrK0W0k6q8gLzN97Eoq';
 
 export default function CheckoutPage() {
     const router = useRouter();
     const { store, storeId, isLoading: isStoreLoading, orderTotal } = useCurrentStore();
+    const { user, loading: isAuthLoading } = useAuth();
     const { items, totalPrice } = useCartStore();
     const { deliveryInfo } = useDeliveryStore();
     const createOrderMutation = useCreateOrder();
@@ -29,6 +31,7 @@ export default function CheckoutPage() {
     const deliveryFee = totalAmount - totalPrice;
     const isBelowMinimum = !!store && totalPrice < store.minimumOrderAmount;
     const canOrder = !!storeId
+        && !!user
         && !!store?.isActive
         && !!store?.isDeliveryEnabled
         && !isBelowMinimum
@@ -37,6 +40,7 @@ export default function CheckoutPage() {
         && !!deliveryInfo.address?.address
         && items.length > 0
         && !isProcessing;
+    const isPaymentButtonDisabled = user ? !canOrder : isAuthLoading || isProcessing;
 
     if (items.length === 0) {
         router.push('/menu');
@@ -58,6 +62,7 @@ export default function CheckoutPage() {
 
         return {
             storeId: storeId!,
+            userId: user?.id,
             delivery: {
                 recipientName: deliveryInfo.customerName || '',
                 recipientPhone: deliveryInfo.customerPhone || '',
@@ -126,6 +131,8 @@ export default function CheckoutPage() {
 
     const disabledReason = (() => {
         if (isStoreLoading) return '매장 정보를 불러오는 중입니다.';
+        if (isAuthLoading) return '로그인 상태를 확인하는 중입니다.';
+        if (!user) return '배달 주문은 로그인 후 이용할 수 있습니다.';
         if (!store) return '매장 정보를 찾을 수 없습니다.';
         if (!store.isActive) return '현재 운영하지 않는 매장입니다.';
         if (!store.isDeliveryEnabled) return '현재 배달 주문을 받지 않는 매장입니다.';
@@ -258,11 +265,13 @@ export default function CheckoutPage() {
                         <p className="text-center text-sm text-red-500">{disabledReason}</p>
                     )}
                     <button
-                        onClick={handlePayment}
-                        disabled={!canOrder}
+                        onClick={user ? handlePayment : () => router.push('/login')}
+                        disabled={isPaymentButtonDisabled}
                         className="w-full bg-brand-black text-white p-4 rounded-xl font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        {isProcessing
+                        {!user
+                            ? '로그인하고 주문하기'
+                            : isProcessing
                             ? '처리 중...'
                             : `${totalAmount.toLocaleString()}원 결제하기`}
                     </button>

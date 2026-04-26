@@ -1,13 +1,13 @@
 'use client';
 
-import { CheckCircle, ChevronLeft, Clock, Loader, XCircle } from 'lucide-react';
+import { CheckCircle, ChevronLeft, Clock, Loader, LockKeyhole, XCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 import { useCurrentStore } from '@/contexts/StoreContext';
-import { useDeliveryStore } from '@/stores/deliveryStore';
 import { useOrders } from '@/hooks/queries/useOrders';
 import type { OrderStatus } from '@order/shared';
 
-const statusConfig: Record<OrderStatus, { label: string; icon: any; color: string }> = {
+const statusConfig: Record<OrderStatus, { label: string; icon: typeof Clock; color: string }> = {
     PENDING: { label: '접수 대기', icon: Clock, color: 'text-gray-500' },
     PENDING_PAYMENT: { label: '결제 대기', icon: Clock, color: 'text-slate-500' },
     CONFIRMED: { label: '접수 완료', icon: CheckCircle, color: 'text-blue-500' },
@@ -22,11 +22,18 @@ const statusConfig: Record<OrderStatus, { label: string; icon: any; color: strin
 
 export default function OrdersPage() {
     const router = useRouter();
+    const { user, loading: isAuthLoading } = useAuth();
     const { storeId } = useCurrentStore();
-    const { deliveryInfo } = useDeliveryStore();
-    const phone = deliveryInfo.customerPhone || null;
-    const { data, isLoading } = useOrders({ storeId, phone });
+    const { data, isLoading, isError } = useOrders({ storeId, userId: user?.id });
     const orders = data?.orders || [];
+
+    if (isAuthLoading) {
+        return (
+            <main className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-yellow" />
+            </main>
+        );
+    }
 
     return (
         <main className="min-h-screen bg-gray-50">
@@ -45,24 +52,40 @@ export default function OrdersPage() {
             </header>
 
             <div className="max-w-[568px] mx-auto p-4 space-y-3">
-                {!phone ? (
-                    <div className="bg-white rounded-xl p-8 text-center">
-                        <h2 className="text-lg font-bold mb-2">연락처가 필요합니다</h2>
-                        <p className="text-gray-500 mb-6">비회원 주문 내역은 주문자 연락처 기준으로 조회합니다.</p>
+                {!user ? (
+                    <div className="bg-white rounded-xl p-8 text-center shadow-sm border border-gray-100">
+                        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-brand-yellow/20 text-brand-black">
+                            <LockKeyhole size={28} />
+                        </div>
+                        <h2 className="text-lg font-bold mb-2">로그인이 필요합니다</h2>
+                        <p className="text-gray-500 mb-6">
+                            배달 주문과 주문 내역 조회는 로그인 후 이용할 수 있습니다.
+                        </p>
                         <button
-                            onClick={() => router.push('/order/checkout')}
-                            className="bg-brand-black text-white px-6 py-3 rounded-xl font-bold"
+                            onClick={() => router.push('/login')}
+                            className="w-full bg-brand-black text-white px-6 py-3 rounded-xl font-bold"
                         >
-                            주문 정보 입력하기
+                            로그인하고 주문 내역 보기
+                        </button>
+                        <button
+                            onClick={() => router.push('/menu')}
+                            className="mt-3 w-full border-2 border-gray-200 px-6 py-3 rounded-xl font-bold"
+                        >
+                            메뉴 먼저 둘러보기
                         </button>
                     </div>
                 ) : isLoading ? (
-                    <div className="bg-white rounded-xl p-8 text-center">
+                    <div className="bg-white rounded-xl p-8 text-center shadow-sm border border-gray-100">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-yellow mx-auto mb-4" />
-                        <p className="text-gray-500">주문 내역을 불러오는 중...</p>
+                        <p className="text-gray-500">주문 내역을 불러오는 중입니다.</p>
+                    </div>
+                ) : isError ? (
+                    <div className="bg-white rounded-xl p-8 text-center shadow-sm border border-gray-100">
+                        <h2 className="text-lg font-bold mb-2">주문 내역을 불러오지 못했습니다</h2>
+                        <p className="text-gray-500">잠시 후 다시 시도해 주세요.</p>
                     </div>
                 ) : orders.length === 0 ? (
-                    <div className="bg-white rounded-xl p-8 text-center">
+                    <div className="bg-white rounded-xl p-8 text-center shadow-sm border border-gray-100">
                         <div className="text-6xl mb-4">-</div>
                         <h2 className="text-lg font-bold mb-2">주문 내역이 없습니다</h2>
                         <p className="text-gray-500 mb-6">첫 주문을 시작해보세요.</p>
@@ -81,7 +104,7 @@ export default function OrdersPage() {
                         return (
                             <div
                                 key={order.id}
-                                className="bg-white rounded-xl p-4 cursor-pointer hover:shadow-md transition-shadow"
+                                className="bg-white rounded-xl p-4 cursor-pointer hover:shadow-md transition-shadow border border-gray-100"
                                 onClick={() => router.push(`/order-detail?id=${order.id}`)}
                             >
                                 <div className="flex items-center justify-between mb-3">

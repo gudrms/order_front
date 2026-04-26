@@ -5,12 +5,41 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { ChevronLeft, Receipt } from 'lucide-react';
 import { OrderStatusTracker } from '@/components/order/OrderStatusTracker';
 import { useOrder } from '@/hooks/queries/useOrders';
+import { useAuth } from '@/contexts/AuthContext';
 
 function OrderDetailContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const id = searchParams.get('id');
-    const { data: order, isLoading } = useOrder(id);
+    const { user, loading: isAuthLoading } = useAuth();
+    const { data: order, isLoading } = useOrder(id, user?.id);
+
+    if (isAuthLoading) {
+        return (
+            <main className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-yellow" />
+            </main>
+        );
+    }
+
+    if (!user) {
+        return (
+            <main className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+                <div className="max-w-sm w-full rounded-xl bg-white p-6 text-center shadow-sm border border-gray-100">
+                    <h1 className="text-lg font-bold mb-2">로그인이 필요합니다</h1>
+                    <p className="text-sm text-gray-500 mb-6">
+                        주문 상세와 배달 현황은 로그인 후 확인할 수 있습니다.
+                    </p>
+                    <button
+                        onClick={() => router.push('/login')}
+                        className="w-full bg-brand-black text-white p-4 rounded-xl font-bold"
+                    >
+                        로그인하러 가기
+                    </button>
+                </div>
+            </main>
+        );
+    }
 
     if (isLoading) {
         return (
@@ -45,7 +74,7 @@ function OrderDetailContent() {
             </header>
 
             <div className="max-w-[568px] mx-auto p-4 space-y-4">
-                <OrderStatusTracker orderId={order.id} initialStatus={order.status} />
+                <OrderStatusTracker orderId={order.id} initialStatus={order.status} userId={user.id} />
 
                 <section className="bg-white rounded-xl p-4 space-y-4 shadow-sm border border-gray-100">
                     <div className="flex items-center gap-2 pb-4 border-b border-gray-100">
