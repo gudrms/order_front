@@ -23,6 +23,7 @@
 - [x] POS 전송 기준은 `Order.status === 'PAID' && tossOrderId IS NULL`
 - [x] `PENDING_PAYMENT` 주문은 POS 전송 제외
 - [x] 엽떡앱 모티브에 맞춰 배달 주문/주문내역/주문상세는 로그인 필수
+- [x] 카카오/Supabase OAuth 사용자는 로그인 후 앱 DB `User`와 자동 동기화
 - [x] `okpos*` 명칭은 개발 부산물로 보고 신규 설계에서 제외
 
 ## 공통 도메인
@@ -62,6 +63,7 @@
 - [x] 매장/인증/주문/세션/결제 단위 테스트 추가
 - [x] 결제 timeout/pending 만료 처리 추가
 - [x] 배달 주문 생성/목록/상세 Supabase JWT 인증과 사용자 소유권 검증 추가
+- [x] 인증 사용자 동기화 API `POST /auth/sync` 추가
 - [ ] 배달 상태 변경 API 추가
 - [ ] 주문 취소/환불 API 추가
 - [ ] POS pending orders API를 새 정책 기준으로 확장
@@ -78,6 +80,7 @@
 - [x] 결제 timeout/pending 만료 처리
 - [x] 주문 상태 tracker 실제 상태 연결
 - [x] 로그인 필수 주문 조회 정책 보강
+- [x] 카카오 로그인 후 Supabase user와 백엔드 User 자동 동기화
 - [ ] PWA 빌드/설치 검증
 
 ## 앱별 남은 일
@@ -92,6 +95,7 @@
 - [x] `apps/backend`: `tsc --noEmit`
 - [x] `apps/backend`: `vitest run` 8 files, 41 tests 통과
 - [x] `apps/backend`: `vitest run src/modules/orders/orders.service.spec.ts` 11 tests 통과
+- [x] `apps/backend`: `vitest run src/modules/auth/auth.service.spec.ts` 5 tests 통과
 - [ ] `apps/backend`: 최신 전체 `vitest run`은 `menus.service.spec.ts` 메뉴 상세 테스트 1건 실패. POS/catalog 작업자 영역이라 본 작업에서는 미수정.
 - [x] `apps/delivery-customer`: `tsc --noEmit`
 - [x] `packages/shared`: `tsc --noEmit`

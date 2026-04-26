@@ -39,6 +39,8 @@
 - [x] 주문 상태 tracker를 실제 주문 상세 API polling과 Supabase Realtime 병행 구조로 연결
 - [x] 엽떡앱 모티브에 맞춰 배달 주문/주문내역/주문상세 로그인 필수 정책으로 전환
 - [x] API client에 Supabase access token 자동 주입
+- [x] 카카오/Supabase OAuth 로그인 후 백엔드 `User` 자동 생성/갱신 연결
+- [x] 백엔드 `POST /auth/sync` 인증 사용자 동기화 API 추가
 
 ## 남은 일
 
@@ -61,6 +63,7 @@
 ### P2: 사용자 기능
 
 - [x] API client에 Supabase access token 주입
+- [x] Supabase 사용자와 앱 DB `User` 자동 동기화
 - [ ] 주소 조회/추가/삭제를 실제 사용자 기준으로 동작
 - [ ] 찜 조회/추가/삭제를 실제 사용자 기준으로 동작
 - [ ] `test-user-id` 제거
@@ -82,6 +85,7 @@
 - [x] 백엔드 TypeScript 타입체크 통과
 - [x] 백엔드 `vitest run`: 8 files, 41 tests 통과
 - [x] 백엔드 `vitest run src/modules/orders/orders.service.spec.ts`: 11 tests 통과
+- [x] 백엔드 `vitest run src/modules/auth/auth.service.spec.ts`: 5 tests 통과
 - [ ] 최신 백엔드 전체 `vitest run`: `menus.service.spec.ts` 메뉴 상세 테스트 1건 실패. POS/catalog 작업자 영역이라 본 작업에서는 미수정.
 - [x] 백엔드 Prisma validate/generate 통과
 - [x] 개발 DB migration 적용 완료

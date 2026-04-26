@@ -5,6 +5,26 @@ import { PrismaService } from '../prisma/prisma.service';
 export class AuthService {
     constructor(private readonly prisma: PrismaService) { }
 
+    async syncAuthenticatedUser(data: {
+        id: string;
+        email?: string | null;
+        name?: string | null;
+        phoneNumber?: string | null;
+    }) {
+        if (!data.id) {
+            throw new BadRequestException('Authenticated user id is required');
+        }
+
+        const email = data.email || `${data.id}@supabase.local`;
+
+        return this.register({
+            id: data.id,
+            email,
+            name: data.name || undefined,
+            phoneNumber: data.phoneNumber || undefined,
+        });
+    }
+
     async register(data: { id: string; email: string; name?: string; phoneNumber?: string; inviteCode?: string }) {
         return this.prisma.$transaction(async (tx) => {
             const store = data.inviteCode

@@ -1,8 +1,8 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '@order/shared';
-import type { User, Session } from '@supabase/supabase-js';
+import { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { api, supabase } from '@order/shared';
+import type { Session, User } from '@supabase/supabase-js';
 
 interface AuthContextType {
     user: User | null;
@@ -19,19 +19,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [session, setSession] = useState<Session | null>(null);
     const [loading, setLoading] = useState(true);
+    const syncedSessionKeyRef = useRef<string | null>(null);
+
+    const syncSessionUser = async (nextSession: Session | null) => {
+        if (!nextSession?.user) {
+            syncedSessionKeyRef.current = null;
+            return;
+        }
+
+        const sessionKey = `${nextSession.user.id}:${nextSession.access_token}`;
+        if (syncedSessionKeyRef.current === sessionKey) {
+            return;
+        }
+
+        const metadata = nextSession.user.user_metadata || {};
+        try {
+            await api.auth.syncCurrentUser({
+                name: metadata.name || metadata.full_name || metadata.nickname,
+                phoneNumber: metadata.phone_number || metadata.phone,
+            });
+            syncedSessionKeyRef.current = sessionKey;
+        } catch (error) {
+            console.error('사용자 동기화 실패:', error);
+        }
+    };
 
     useEffect(() => {
-        // 초기 세션 확인
-        supabase.auth.getSession().then(({ data: { session } }) => {
+        supabase.auth.getSession().then(async ({ data: { session } }) => {
+            await syncSessionUser(session);
             setSession(session);
             setUser(session?.user ?? null);
             setLoading(false);
         });
 
-        // 인증 상태 변화 감지
         const {
             data: { subscription },
         } = supabase.auth.onAuthStateChange((_event, session) => {
+            window.setTimeout(() => {
+                void syncSessionUser(session);
+            }, 0);
             setSession(session);
             setUser(session?.user ?? null);
             setLoading(false);
@@ -41,22 +67,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }, []);
 
     const getRedirectUrl = () => {
-        // 브라우저(클라이언트) 환경이면 현재 접속 중인 도메인을 그대로 사용
         if (typeof window !== 'undefined') {
             return `${window.location.origin}/auth/callback`;
         }
 
-        // Ensure development and production URLs are handled correctly
         let url =
-            process?.env?.NEXT_PUBLIC_SITE_URL ?? // Set this to your site URL in production env.
-            process?.env?.NEXT_PUBLIC_VERCEL_URL ?? // Automatically set by Vercel.
+            process?.env?.NEXT_PUBLIC_SITE_URL ??
+            process?.env?.NEXT_PUBLIC_VERCEL_URL ??
             'http://localhost:3001/';
-        // Make sure to include `https://` when not localhost.
         url = url.startsWith('http') ? url : `https://${url}`;
-        // Make sure to include a trailing `/`.
         url = url.endsWith('/') ? url : `${url}/`;
 
-        // Return exactly what we want the callback to process
         return `${url}auth/callback`;
     };
 

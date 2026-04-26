@@ -9,12 +9,14 @@ import * as tableApi from './endpoints/table';
 import * as callApi from './endpoints/call';
 import * as adminApi from './endpoints/admin';
 import * as storeApi from './endpoints/store';
+import * as authApi from './endpoints/auth';
 
 export { apiClient, ApiClientError } from './client';
 export { createOrder, getDeliveryOrders, getOrder, getOrdersByTable, updateOrderStatus } from './endpoints/order';
 export { confirmTossPayment, failTossPayment } from './endpoints/payment';
 export { getCategories, getMenus, getMenuDetail } from './endpoints/menu';
 export { getStore, getStoreByIdentifier } from './endpoints/store';
+export { syncCurrentUser } from './endpoints/auth';
 
 /**
  * 통합 API 객체
@@ -27,4 +29,5 @@ export const api = {
     call: callApi,
     admin: adminApi,
     store: storeApi,
+    auth: authApi,
 };
