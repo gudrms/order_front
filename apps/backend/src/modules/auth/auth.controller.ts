@@ -9,6 +9,50 @@ import { SupabaseGuard } from './guards/supabase.guard';
 export class AuthController {
     constructor(private readonly authService: AuthService) { }
 
+    @Post('sync')
+    @UseGuards(SupabaseGuard)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({
+        summary: '로그인 사용자 동기화',
+        description: 'Supabase OAuth 로그인 후 현재 JWT 사용자를 앱 DB User 테이블에 생성하거나 갱신합니다.',
+    })
+    @ApiBody({
+        schema: {
+            type: 'object',
+            required: [],
+            properties: {
+                name: {
+                    type: 'string',
+                    description: '사용자 이름. Supabase metadata에서 전달됩니다.',
+                    example: '홍길동',
+                },
+                phoneNumber: {
+                    type: 'string',
+                    description: '전화번호. Supabase metadata 또는 앱 입력값에서 전달됩니다.',
+                    example: '010-1234-5678',
+                },
+            },
+        },
+    })
+    @ApiResponse({ status: 201, description: '사용자 동기화 성공' })
+    @ApiResponse({ status: 401, description: '인증 실패' })
+    async syncCurrentUser(
+        @CurrentUser() user: {
+            id: string;
+            email?: string | null;
+            userMetadata?: Record<string, any>;
+        },
+        @Body() body: { name?: string; phoneNumber?: string } = {},
+    ) {
+        const metadata = user.userMetadata || {};
+        return this.authService.syncAuthenticatedUser({
+            id: user.id,
+            email: user.email,
+            name: body.name || metadata.name || metadata.full_name || metadata.nickname,
+            phoneNumber: body.phoneNumber || metadata.phone_number || metadata.phone,
+        });
+    }
+
     @Post('register')
     @ApiOperation({
         summary: '사용자 등록',

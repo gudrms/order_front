@@ -60,6 +60,44 @@ describe('AuthService', () => {
         });
     });
 
+    it('syncs an authenticated OAuth user into the app user table', async () => {
+        tx.user.findUnique.mockResolvedValue(null);
+
+        const result = await service.syncAuthenticatedUser({
+            id: 'oauth-user-1',
+            email: 'oauth@example.com',
+            name: 'OAuth User',
+            phoneNumber: '010-1111-2222',
+        });
+
+        expect(result.role).toBe('USER');
+        expect(tx.user.create).toHaveBeenCalledWith({
+            data: {
+                id: 'oauth-user-1',
+                email: 'oauth@example.com',
+                name: 'OAuth User',
+                phoneNumber: '010-1111-2222',
+                role: 'USER',
+            },
+        });
+    });
+
+    it('uses a stable local email fallback when the OAuth provider does not return email', async () => {
+        tx.user.findUnique.mockResolvedValue(null);
+
+        await service.syncAuthenticatedUser({
+            id: 'oauth-user-no-email',
+            email: null,
+        });
+
+        expect(tx.user.create).toHaveBeenCalledWith(expect.objectContaining({
+            data: expect.objectContaining({
+                id: 'oauth-user-no-email',
+                email: 'oauth-user-no-email@supabase.local',
+            }),
+        }));
+    });
+
     it('rejects an invalid owner invite code', async () => {
         tx.store.findUnique.mockResolvedValue(null);
 
