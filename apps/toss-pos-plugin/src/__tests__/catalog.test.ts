@@ -33,8 +33,11 @@ const sampleCatalogs = [
             {
                 id: 301,
                 title: '맵기 선택',
+                isRequired: true,
+                minChoices: 1,
+                maxChoices: 1,
                 choices: [
-                    { id: 201, title: '매운맛', priceValue: 500 },
+                    { id: 201, title: '매운맛', priceValue: 500, state: 'ON_SALE' },
                 ],
             },
         ],
@@ -69,7 +72,18 @@ describe('syncCatalogs', () => {
                             category: { id: 1, name: '메인 메뉴' },
                             imageUrl: null,
                             price: { priceValue: 4500 },
-                            options: [{ id: 201, title: '매운맛', price: 500 }],
+                            optionGroups: [
+                                {
+                                    id: 301,
+                                    title: '맵기 선택',
+                                    isRequired: true,
+                                    minChoices: 1,
+                                    maxChoices: 1,
+                                    choices: [
+                                        { id: 201, title: '매운맛', priceValue: 500, state: 'ON_SALE' },
+                                    ],
+                                },
+                            ],
                         },
                     ],
                 }),

@@ -276,36 +276,51 @@ export class PosController {
                     },
                 });
 
-                // 옵션 동기화
-                for (const option of catalog.options) {
-                    // 옵션 그룹은 SDK에서 flat하게 올 수 있으므로 기본 그룹 사용
-                    let group = await tx.menuOptionGroup.findFirst({
-                        where: { menuId: menu.id, name: '옵션' },
+                // 옵션 그룹 단위 동기화 (SDK PluginCatalogItemOption은 그룹).
+                // (menuId, name)을 자연키로 사용 — 그룹 rename 시 별도 그룹으로 인식됨에 유의.
+                // SDK maxChoices === -1 = 무제한 → 999로 저장 (Int 컬럼 호환).
+                const optionGroups = catalog.optionGroups ?? [];
+                for (const group of optionGroups) {
+                    const groupName = group.title || '옵션';
+                    const minSelect = Math.max(0, group.minChoices ?? (group.isRequired ? 1 : 0));
+                    const maxSelect = group.maxChoices === -1 ? 999 : Math.max(1, group.maxChoices ?? 1);
+
+                    let dbGroup = await tx.menuOptionGroup.findFirst({
+                        where: { menuId: menu.id, name: groupName },
                     });
-                    if (!group) {
-                        group = await tx.menuOptionGroup.create({
-                            data: { menuId: menu.id, name: '옵션' },
+                    if (dbGroup) {
+                        dbGroup = await tx.menuOptionGroup.update({
+                            where: { id: dbGroup.id },
+                            data: { minSelect, maxSelect },
+                        });
+                    } else {
+                        dbGroup = await tx.menuOptionGroup.create({
+                            data: { menuId: menu.id, name: groupName, minSelect, maxSelect },
                         });
                     }
 
-                    const existing = await tx.menuOption.findFirst({
-                        where: { optionGroupId: group.id, tossOptionCode: String(option.id) },
-                    });
+                    for (const choice of group.choices) {
+                        const isSoldOut = choice.state === 'SOLD_OUT';
+                        const existing = await tx.menuOption.findFirst({
+                            where: { optionGroupId: dbGroup.id, tossOptionCode: String(choice.id) },
+                        });
 
-                    if (existing) {
-                        await tx.menuOption.update({
-                            where: { id: existing.id },
-                            data: { name: option.title, price: option.price },
-                        });
-                    } else {
-                        await tx.menuOption.create({
-                            data: {
-                                optionGroupId: group.id,
-                                tossOptionCode: String(option.id),
-                                name: option.title,
-                                price: option.price,
-                            },
-                        });
+                        if (existing) {
+                            await tx.menuOption.update({
+                                where: { id: existing.id },
+                                data: { name: choice.title, price: choice.priceValue, isSoldOut },
+                            });
+                        } else {
+                            await tx.menuOption.create({
+                                data: {
+                                    optionGroupId: dbGroup.id,
+                                    tossOptionCode: String(choice.id),
+                                    name: choice.title,
+                                    price: choice.priceValue,
+                                    isSoldOut,
+                                },
+                            });
+                        }
                     }
                 }
             }
@@ -322,5 +337,21 @@ interface TossCatalogDto {
     category: { id: number; name: string };
     imageUrl: string | null;
     price: { priceValue: number };
-    options: { id: number; title: string; price: number }[];
+    optionGroups?: TossCatalogOptionGroupDto[];
+}
+
+interface TossCatalogOptionGroupDto {
+    id: number;
+    title: string;
+    isRequired: boolean;
+    minChoices: number;
+    maxChoices: number;
+    choices: TossCatalogOptionChoiceDto[];
+}
+
+interface TossCatalogOptionChoiceDto {
+    id: number;
+    title: string;
+    priceValue: number;
+    state?: 'ON_SALE' | 'SOLD_OUT';
 }
