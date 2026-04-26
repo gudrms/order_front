@@ -37,6 +37,7 @@
 - [x] **#4** `PluginOrderDto.memo`로 배달메모 매핑 + 미매핑 메뉴는 skip + `posPluginSdk.toast.open` 경고 + 미매핑 옵션은 filter
 - [x] **#5** 카탈로그 sync 800ms 디바운스 (`scheduleSync`)
 - [x] **#6** 카탈로그 state 4종 처리: `ON_SALE` / `SOLD_OUT`(soldOut) / `UNAVAILABLE`(soldOut+isHidden) / `DELETED`(isActive=false)
+- [x] **#7** 옵션 그룹 보존 sync. 플러그인 페이로드를 `optionGroups: [{ id, title, isRequired, minChoices, maxChoices, choices: [...] }]` 구조로 전송, 백엔드는 `(menuId, name)` 자연키로 `MenuOptionGroup` upsert(`minSelect`/`maxSelect` 매핑, `maxChoices === -1` → 999 무제한 변환), `MenuOption`은 `(optionGroupId, tossOptionCode)`로 upsert + `state === 'SOLD_OUT' → isSoldOut: true`.
 
 ## 정정사항 (이전 추정 → 사실)
 
@@ -44,11 +45,6 @@
 - ~~`PluginDeliveryOrderDto`로 별도 호출~~ → 공식 문서에 별도 메서드 없음. `order.add(PluginOrderDto)` + `lineItems[].diningOption: 'DELIVERY'`가 권장 패턴.
 
 ## 남은 일
-
-### #7 옵션 그룹 보존 sync
-- 현 백엔드 `pos.controller.ts` syncCatalogs (옵션 처리 부분): 모든 옵션을 단일 "옵션" 그룹에 평탄화
-- SDK `PluginCatalogItemOption`은 그룹 단위 (`isRequired`, `minChoices`, `maxChoices`, `choices[]`) → 의미 보존 필요
-- TODO: 플러그인 catalog sync payload를 그룹 구조로 보내고 백엔드 upsert를 그룹 단위로 수정
 
 ### #8 Idempotency 보강
 - 현 `processingOrders` Set은 인메모리 → 재시작 시 초기화로 중복 전송 가능
@@ -69,7 +65,6 @@
 
 ## 다음 순서
 
-1. (#7) 옵션 그룹 보존 sync
-2. (#8) idempotency 키 헤더
-3. (#10) 관리자 메뉴 매핑 정책 결정
-4. (#9) 실기기 E2E
+1. (#8) idempotency 키 헤더
+2. (#10) 관리자 메뉴 매핑 정책 결정
+3. (#9) 실기기 E2E

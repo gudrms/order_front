@@ -6,6 +6,8 @@ export async function syncCatalogs() {
         const catalogs = await posPluginSdk.catalog.getCatalogs();
         console.log(`Fetched ${catalogs.length} catalogs from Toss POS`);
 
+        // SDK는 옵션을 그룹 구조로 내려줌 (PluginCatalogItemOption: id/title/isRequired/minChoices/maxChoices/choices[]).
+        // 이전에는 choices를 평탄화해서 그룹 의미를 잃었음 → 그룹째로 백엔드에 전달.
         const payload = catalogs.map(c => ({
             id: c.id,
             title: c.title,
@@ -13,13 +15,19 @@ export async function syncCatalogs() {
             category: { id: c.category.id, name: c.category.title },
             imageUrl: c.imageUrl,
             price: { priceValue: c.price.priceValue },
-            options: c.options.flatMap(opt =>
-                opt.choices.map(choice => ({
+            optionGroups: c.options.map(group => ({
+                id: group.id,
+                title: group.title,
+                isRequired: group.isRequired,
+                minChoices: group.minChoices,
+                maxChoices: group.maxChoices,
+                choices: group.choices.map(choice => ({
                     id: choice.id,
                     title: choice.title,
-                    price: choice.priceValue,
-                }))
-            ),
+                    priceValue: choice.priceValue,
+                    state: choice.state,
+                })),
+            })),
         }));
 
         const response = await fetch(`${API_URL}/pos/catalogs/sync?storeId=${STORE_ID}`, {
