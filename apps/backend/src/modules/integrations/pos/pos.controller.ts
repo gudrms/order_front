@@ -1,10 +1,11 @@
-import { Controller, Get, Post, Patch, Param, Body, Query, NotFoundException } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody, ApiQuery } from '@nestjs/swagger';
+import { Controller, Get, Post, Patch, Param, Body, Query, Headers, ConflictException, Logger, NotFoundException } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody, ApiQuery, ApiHeader } from '@nestjs/swagger';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @ApiTags('POS Integration')
 @Controller('pos')
 export class PosController {
+    private readonly logger = new Logger(PosController.name);
     constructor(private readonly prisma: PrismaService) { }
 
     @Get('orders/pending')
@@ -161,9 +162,14 @@ export class PosController {
     @Patch('orders/:orderId/status')
     @ApiOperation({
         summary: '주문 상태 및 Toss Order ID 업데이트',
-        description: 'POS에 주문 등록 후, 상태를 CONFIRMED로 변경하고 Toss Order ID를 저장합니다.',
+        description: 'POS에 주문 등록 후, 상태를 CONFIRMED로 변경하고 Toss Order ID를 저장합니다. Idempotency-Key 헤더로 재시도 안전.',
     })
     @ApiParam({ name: 'orderId', description: '주문 ID' })
+    @ApiHeader({
+        name: 'Idempotency-Key',
+        description: '재시도/중복 요청 식별자. 동일 키로 재요청 시 idempotent 처리. 권장 형식: order-{orderId}-{status}',
+        required: false,
+    })
     @ApiBody({
         schema: {
             type: 'object',
@@ -176,10 +182,10 @@ export class PosController {
     async updateOrderStatus(
         @Param('orderId') orderId: string,
         @Body() body: { status: string; tossOrderId?: string },
+        @Headers('idempotency-key') idempotencyKey?: string,
     ) {
         const { status, tossOrderId } = body;
 
-        // 주문 존재 확인
         const order = await this.prisma.order.findUnique({
             where: { id: orderId },
         });
@@ -188,17 +194,29 @@ export class PosController {
             throw new NotFoundException(`Order not found: ${orderId}`);
         }
 
-        // 멱등성: 이미 CONFIRMED 처리된 주문은 그대로 반환
-        if (order.status === status && order.tossOrderId) {
+        if (idempotencyKey) {
+            this.logger.log(`PATCH /pos/orders/${orderId}/status idempotencyKey=${idempotencyKey} status=${status} tossOrderId=${tossOrderId ?? '(none)'}`);
+        }
+
+        // 멱등성 1: 동일 status + 동일 tossOrderId(또는 둘 다 비어있음) → 기존 결과 반환
+        const sameTossId = (order.tossOrderId ?? null) === (tossOrderId ?? null);
+        if (order.status === status && sameTossId) {
             return order;
         }
 
-        // 업데이트
+        // 충돌 가드: 이미 다른 tossOrderId로 연결돼 있으면 덮어쓰기 거부 (플러그인 재시작 시 중복 등록 방지).
+        // 단 CANCELLED 전이는 같은 tossOrderId일 때만 허용 (위 sameTossId 체크 통과 시 진입).
+        if (order.tossOrderId && tossOrderId && order.tossOrderId !== tossOrderId) {
+            throw new ConflictException(
+                `Order ${orderId} already linked to tossOrderId=${order.tossOrderId}, refused to overwrite with ${tossOrderId}`,
+            );
+        }
+
         return this.prisma.order.update({
             where: { id: orderId },
             data: {
                 status: status as any,
-                tossOrderId: tossOrderId,
+                tossOrderId: tossOrderId ?? order.tossOrderId,
             },
         });
     }

@@ -119,17 +119,31 @@ describe('processOrder', () => {
             }),
         );
 
-        // 백엔드 상태 업데이트 호출 확인
+        // 백엔드 상태 업데이트 호출 확인 — Idempotency-Key 헤더 포함
         expect(mockFetch).toHaveBeenCalledWith(
             'http://localhost:4000/api/v1/pos/orders/order-001/status',
             expect.objectContaining({
                 method: 'PATCH',
+                headers: expect.objectContaining({
+                    'Content-Type': 'application/json',
+                    'Idempotency-Key': 'order-order-001-CONFIRMED',
+                }),
                 body: JSON.stringify({
                     status: 'CONFIRMED',
                     tossOrderId: 'toss-order-001',
                 }),
             })
         );
+    });
+
+    it('백엔드가 409 Conflict 반환 시 중복 토스 주문을 취소한다', async () => {
+        (posPluginSdk.order.add as any).mockResolvedValueOnce({ id: 'toss-duplicate-002' });
+        mockFetch.mockResolvedValueOnce({ ok: false, status: 409 });
+
+        await processOrder(sampleOrder);
+
+        expect(posPluginSdk.payment.add).toHaveBeenCalled();
+        expect(posPluginSdk.order.cancel).toHaveBeenCalledWith('toss-duplicate-002');
     });
 
     it('미매핑 메뉴는 POS 전송을 skip한다', async () => {
@@ -188,11 +202,29 @@ describe('processOrder', () => {
 });
 
 describe('updateOrderStatus', () => {
-    it('성공 시 한 번만 호출한다', async () => {
+    it('성공 시 한 번만 호출하고 Idempotency-Key 헤더를 포함한다', async () => {
         mockFetch.mockResolvedValueOnce({ ok: true });
 
-        await updateOrderStatus('order-001', { status: 'CONFIRMED', tossOrderId: 'toss-001' });
+        const result = await updateOrderStatus('order-001', { status: 'CONFIRMED', tossOrderId: 'toss-001' });
 
+        expect(result).toBe('OK');
+        expect(mockFetch).toHaveBeenCalledTimes(1);
+        expect(mockFetch).toHaveBeenCalledWith(
+            'http://localhost:4000/api/v1/pos/orders/order-001/status',
+            expect.objectContaining({
+                headers: expect.objectContaining({
+                    'Idempotency-Key': 'order-order-001-CONFIRMED',
+                }),
+            })
+        );
+    });
+
+    it('409 응답 시 CONFLICT를 반환하고 재시도하지 않는다', async () => {
+        mockFetch.mockResolvedValueOnce({ ok: false, status: 409 });
+
+        const result = await updateOrderStatus('order-001', { status: 'CONFIRMED', tossOrderId: 'toss-001' });
+
+        expect(result).toBe('CONFLICT');
         expect(mockFetch).toHaveBeenCalledTimes(1);
     });
 

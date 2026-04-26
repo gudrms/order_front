@@ -38,6 +38,7 @@
 - [x] **#5** 카탈로그 sync 800ms 디바운스 (`scheduleSync`)
 - [x] **#6** 카탈로그 state 4종 처리: `ON_SALE` / `SOLD_OUT`(soldOut) / `UNAVAILABLE`(soldOut+isHidden) / `DELETED`(isActive=false)
 - [x] **#7** 옵션 그룹 보존 sync. 플러그인 페이로드를 `optionGroups: [{ id, title, isRequired, minChoices, maxChoices, choices: [...] }]` 구조로 전송, 백엔드는 `(menuId, name)` 자연키로 `MenuOptionGroup` upsert(`minSelect`/`maxSelect` 매핑, `maxChoices === -1` → 999 무제한 변환), `MenuOption`은 `(optionGroupId, tossOptionCode)`로 upsert + `state === 'SOLD_OUT' → isSoldOut: true`.
+- [x] **#8** Idempotency 보강. 플러그인이 `Idempotency-Key: order-{orderId}-{status}` 헤더 전송. 백엔드는 (a) 동일 status + 동일 tossOrderId면 기존 레코드 즉시 반환(no-op), (b) 다른 tossOrderId 덮어쓰기 시도면 `409 Conflict`. 플러그인은 409 받으면 `posPluginSdk.order.cancel`로 자기가 만든 중복 토스 주문을 취소. `pos.controller.spec.ts` 신설(5 케이스).
 
 ## 정정사항 (이전 추정 → 사실)
 
@@ -45,11 +46,6 @@
 - ~~`PluginDeliveryOrderDto`로 별도 호출~~ → 공식 문서에 별도 메서드 없음. `order.add(PluginOrderDto)` + `lineItems[].diningOption: 'DELIVERY'`가 권장 패턴.
 
 ## 남은 일
-
-### #8 Idempotency 보강
-- 현 `processingOrders` Set은 인메모리 → 재시작 시 초기화로 중복 전송 가능
-- 플러그인: `PATCH /pos/orders/:id/status`에 `Idempotency-Key: order-${id}` 헤더 전송
-- 백엔드: 동일 키 요청은 기존 결과 반환 (혹은 백엔드는 이미 `order.status === status && tossOrderId` 가드 있어 멱등성 일부 보장됨 — 강화 검토)
 
 ### #9 실기기 E2E (출시 게이트)
 - 카드 결제 1건 → POS에 주문+결제 동시 등록 확인
@@ -65,6 +61,5 @@
 
 ## 다음 순서
 
-1. (#8) idempotency 키 헤더
-2. (#10) 관리자 메뉴 매핑 정책 결정
-3. (#9) 실기기 E2E
+1. (#10) 관리자 메뉴 매핑 정책 결정
+2. (#9) 실기기 E2E

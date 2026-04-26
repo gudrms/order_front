@@ -58,10 +58,21 @@ export async function processOrder(order: BackendOrder) {
         await registerExternalPayment(result.id, order.payment);
         console.log(`Toss POS Payment registered: ${order.payment.paymentKey}`);
 
-        await updateOrderStatus(order.id, {
+        const updated = await updateOrderStatus(order.id, {
             status: 'CONFIRMED',
             tossOrderId: result.id,
         });
+
+        // 백엔드가 이미 다른 tossOrderId로 연결돼 있어 409로 거부 → 우리가 만든 중복 토스 주문은 취소.
+        if (updated === 'CONFLICT') {
+            console.warn(`Order ${order.orderNumber} already linked to a different tossOrderId — cancelling duplicate ${result.id}`);
+            try {
+                await posPluginSdk.order.cancel(result.id);
+            } catch (cancelError) {
+                console.error('Failed to cancel duplicate Toss POS order:', cancelError);
+            }
+            return;
+        }
 
         console.log(`Order ${order.orderNumber} synced successfully.`);
     } catch (error) {
@@ -90,20 +101,38 @@ async function registerExternalPayment(tossOrderId: string, payment: BackendPaym
     );
 }
 
+/**
+ * 백엔드 주문 상태/tossOrderId 업데이트.
+ * Idempotency-Key를 같이 보내 재시도/플러그인 재시작에도 안전하게 처리:
+ * - 동일 키 + 동일 결과 → 백엔드가 기존 결과 반환 (no-op)
+ * - 동일 키 + 다른 tossOrderId 덮어쓰기 → 백엔드가 409 Conflict
+ * 반환값:
+ *   - 'OK'        : 성공 (또는 멱등 no-op)
+ *   - 'CONFLICT'  : 다른 tossOrderId가 이미 연결됨 → 호출부가 중복 토스 주문 취소
+ *   - 'FAILED'    : 재시도 모두 실패
+ */
 export async function updateOrderStatus(
     orderId: string,
     body: { status: string; tossOrderId: string },
     maxRetries = 3
-) {
+): Promise<'OK' | 'CONFLICT' | 'FAILED'> {
+    const idempotencyKey = `order-${orderId}-${body.status}`;
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
             const response = await fetch(`${API_URL}/pos/orders/${orderId}/status`, {
                 method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Idempotency-Key': idempotencyKey,
+                },
                 body: JSON.stringify(body),
             });
+            if (response.status === 409) {
+                console.warn(`Status update conflict for ${orderId} (Idempotency-Key=${idempotencyKey})`);
+                return 'CONFLICT';
+            }
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            return;
+            return 'OK';
         } catch (error) {
             console.error(`Status update attempt ${attempt}/${maxRetries} failed for ${orderId}:`, error);
             if (attempt < maxRetries) {
@@ -112,6 +141,7 @@ export async function updateOrderStatus(
         }
     }
     console.error(`Failed to update status for order ${orderId} after ${maxRetries} retries.`);
+    return 'FAILED';
 }
 
 export async function pollOrders() {
