@@ -55,7 +55,20 @@ export async function processOrder(order: BackendOrder) {
         const result = await posPluginSdk.order.add(pluginOrderDto);
         console.log('Toss POS Order Created:', result.id);
 
-        await registerExternalPayment(result.id, order.payment);
+        // payment.add가 실패하면 방금 만든 토스 주문이 결제 누락 상태로 떠돌게 됨.
+        // 다음 폴링이 같은 주문을 또 처리해 tossOrderId-2를 새로 만들어 중복 등록되는 걸 막기 위해
+        // 실패 즉시 우리가 만든 toss 주문을 취소하고 빠진다 (백엔드 PATCH도 안 보냄 → 다음 폴링에서 깨끗이 재시도).
+        try {
+            await registerExternalPayment(result.id, order.payment);
+        } catch (paymentError) {
+            console.error(`Payment registration failed for ${result.id}, cancelling orphan order to avoid duplicate on retry`, paymentError);
+            try {
+                await posPluginSdk.order.cancel(result.id);
+            } catch (cancelError) {
+                console.error('Failed to cancel orphan Toss POS order after payment failure:', cancelError);
+            }
+            return;
+        }
         console.log(`Toss POS Payment registered: ${order.payment.paymentKey}`);
 
         const updated = await updateOrderStatus(order.id, {
