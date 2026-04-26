@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { TossApiService } from '../integrations/toss/toss-api.service';
-import { ConfirmTossPaymentDto, FailTossPaymentDto } from './dto/confirm-toss-payment.dto';
+import { ConfirmTossPaymentDto, ExpirePendingTossPaymentsDto, FailTossPaymentDto } from './dto/confirm-toss-payment.dto';
 
 @Injectable()
 export class PaymentsService {
@@ -35,6 +35,9 @@ export class PaymentsService {
 
         if (payment.status === 'PAID') {
             return this.getOrderResponse(payment.orderId);
+        }
+        if (payment.status !== 'READY' && payment.status !== 'PENDING') {
+            throw new BadRequestException('Payment is not confirmable');
         }
 
         const tossPayment = await this.tossApiService.confirmPayment({
@@ -130,6 +133,71 @@ export class PaymentsService {
 
     async failPendingTossPayment(orderId: string, code?: string, message?: string) {
         return this.failTossPayment({ orderId, code, message });
+    }
+
+    async expirePendingTossPayments(dto: ExpirePendingTossPaymentsDto = {}) {
+        const olderThanMinutes = dto.olderThanMinutes || 15;
+        const cutoff = new Date(Date.now() - olderThanMinutes * 60 * 1000);
+        const expiredPayments = await this.prisma.payment.findMany({
+            where: {
+                provider: 'TOSS_PAYMENTS',
+                status: 'READY',
+                requestedAt: { lt: cutoff },
+                order: {
+                    status: 'PENDING_PAYMENT',
+                },
+            },
+            include: {
+                order: {
+                    include: {
+                        delivery: true,
+                    },
+                },
+            },
+        });
+
+        const operations = expiredPayments.flatMap((payment) => {
+            const orderUpdateData: any = {
+                status: 'CANCELLED',
+                paymentStatus: 'FAILED',
+                cancelledAt: new Date(),
+                cancelReason: 'Payment timed out before approval',
+            };
+
+            if (payment.order.delivery) {
+                orderUpdateData.delivery = {
+                    update: {
+                        status: 'CANCELLED',
+                        cancelledAt: new Date(),
+                    },
+                };
+            }
+
+            return [
+                this.prisma.payment.update({
+                    where: { id: payment.id },
+                    data: {
+                        status: 'FAILED',
+                        failedAt: new Date(),
+                        failureCode: 'PAYMENT_TIMEOUT',
+                        failureMessage: `Payment was not approved within ${olderThanMinutes} minutes`,
+                    },
+                }),
+                this.prisma.order.update({
+                    where: { id: payment.orderId },
+                    data: orderUpdateData,
+                }),
+            ];
+        });
+
+        if (operations.length > 0) {
+            await this.prisma.$transaction(operations);
+        }
+
+        return {
+            expiredCount: expiredPayments.length,
+            orderIds: expiredPayments.map((payment) => payment.orderId),
+        };
     }
 
     private mapTossMethod(method?: string) {

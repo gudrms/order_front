@@ -1,6 +1,6 @@
 import { Body, Controller, Post, UsePipes, ValidationPipe } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { ConfirmTossPaymentDto, FailTossPaymentDto } from './dto/confirm-toss-payment.dto';
+import { ConfirmTossPaymentDto, ExpirePendingTossPaymentsDto, FailTossPaymentDto } from './dto/confirm-toss-payment.dto';
 import { PaymentsService } from './payments.service';
 
 @ApiTags('Payments')
@@ -33,5 +33,17 @@ export class PaymentsController {
     @ApiResponse({ status: 404, description: '대기 중인 결제 정보를 찾을 수 없음' })
     async failTossPayment(@Body() dto: FailTossPaymentDto) {
         return this.paymentsService.failTossPayment(dto);
+    }
+
+    @Post('toss/expire-pending')
+    @UsePipes(new ValidationPipe({ transform: true }))
+    @ApiOperation({
+        summary: 'Toss Payments 대기 주문 만료 처리',
+        description: 'PENDING_PAYMENT 상태로 남은 배달 주문 중 지정 시간 이상 승인되지 않은 결제를 FAILED/CANCELLED로 정리합니다. cron 또는 운영 배치에서 호출할 수 있습니다.',
+    })
+    @ApiBody({ type: ExpirePendingTossPaymentsDto, required: false })
+    @ApiResponse({ status: 201, description: '만료 주문 정리 완료' })
+    async expirePendingTossPayments(@Body() dto: ExpirePendingTossPaymentsDto = {}) {
+        return this.paymentsService.expirePendingTossPayments(dto);
     }
 }
