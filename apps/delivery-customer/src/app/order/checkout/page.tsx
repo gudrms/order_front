@@ -7,13 +7,14 @@ import { TossPaymentWidget } from '@order/ui';
 import { generateOrderId, useCartStore } from '@order/shared';
 import type { CreateOrderRequest, OrderItemInput } from '@order/shared';
 import type { PaymentWidgetInstance } from '@tosspayments/payment-widget-sdk';
+import { useAuth } from '@/contexts/AuthContext';
 import { useCurrentStore } from '@/contexts/StoreContext';
 import { useDeliveryStore } from '@/stores/deliveryStore';
 import { useCreateOrder } from '@/hooks/mutations/useCreateOrder';
 import { useFailTossPayment } from '@/hooks/mutations/useFailTossPayment';
-import { useAuth } from '@/contexts/AuthContext';
 
 const TOSS_CLIENT_KEY = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY || 'test_ck_D5GePWvyJnrK0W0k6q8gLzN97Eoq';
+const PENDING_TOSS_ORDER_ID_KEY = 'delivery.pendingTossOrderId';
 
 export default function CheckoutPage() {
     const router = useRouter();
@@ -82,6 +83,18 @@ export default function CheckoutPage() {
         };
     };
 
+    const reportPaymentAbort = async (orderId: string, error: unknown) => {
+        try {
+            await failTossPaymentMutation.mutateAsync({
+                orderId,
+                code: 'PAYMENT_WIDGET_ABORTED',
+                message: error instanceof Error ? error.message : '결제창이 완료되지 않았습니다.',
+            });
+        } catch (reportError) {
+            console.error('결제 실패 기록 중 오류:', reportError);
+        }
+    };
+
     const handlePayment = async () => {
         if (!canOrder) return;
 
@@ -91,15 +104,16 @@ export default function CheckoutPage() {
             setIsProcessing(true);
             const orderId = generateOrderId();
             const orderRequest = buildOrderRequest(orderId);
-
             const paymentWidget = paymentWidgetRef.current;
+
             if (!paymentWidget) {
-                alert('결제 위젯이 아직 준비되지 않았습니다.');
+                alert('결제 위젯이 아직 준비되지 않았습니다. 잠시 후 다시 시도해 주세요.');
                 return;
             }
 
             await createOrderMutation.mutateAsync(orderRequest);
             pendingTossOrderId = orderId;
+            sessionStorage.setItem(PENDING_TOSS_ORDER_ID_KEY, orderId);
 
             await paymentWidget.requestPayment({
                 orderId,
@@ -107,21 +121,15 @@ export default function CheckoutPage() {
                     ? `${items[0].menuName} 외 ${items.length - 1}건`
                     : items[0].menuName,
                 customerName: deliveryInfo.customerName,
+                customerEmail: user?.email || undefined,
                 successUrl: `${window.location.origin}/order/success`,
                 failUrl: `${window.location.origin}/order/fail`,
             });
         } catch (error) {
-            console.error('Payment error:', error);
+            console.error('결제 요청 오류:', error);
             if (pendingTossOrderId) {
-                try {
-                    await failTossPaymentMutation.mutateAsync({
-                        orderId: pendingTossOrderId,
-                        code: 'PAYMENT_WIDGET_ABORTED',
-                        message: error instanceof Error ? error.message : '결제창이 완료되지 않았습니다.',
-                    });
-                } catch (reportError) {
-                    console.error('Failed to report payment failure:', reportError);
-                }
+                await reportPaymentAbort(pendingTossOrderId, error);
+                sessionStorage.removeItem(PENDING_TOSS_ORDER_ID_KEY);
             }
             alert(error instanceof Error ? error.message : '결제 처리 중 오류가 발생했습니다.');
         } finally {
@@ -173,7 +181,7 @@ export default function CheckoutPage() {
                         <div>
                             <span className="text-gray-500">주소</span>
                             <p className="font-medium mt-1">
-                                {deliveryInfo.address?.address || '주소를 입력해 주세요.'}
+                                {deliveryInfo.address?.address || '주소를 입력해 주세요'}
                                 {deliveryInfo.address?.detailAddress && (
                                     <>
                                         <br />
@@ -225,11 +233,11 @@ export default function CheckoutPage() {
                     <h2 className="font-bold text-lg">결제 방법</h2>
                     <div className="w-full p-4 rounded-xl border-2 border-brand-yellow bg-brand-yellow/10 flex items-center gap-3">
                         <CreditCard size={24} />
-                        <span className="font-medium">토스페이먼츠 선결제</span>
+                        <span className="font-medium">토스페이먼츠 카드 결제</span>
                     </div>
                     <TossPaymentWidget
                         clientKey={TOSS_CLIENT_KEY}
-                        customerKey={deliveryInfo.customerPhone || 'ANONYMOUS'}
+                        customerKey={user?.id || 'ANONYMOUS'}
                         amount={totalAmount}
                         onWidgetReady={(widget) => {
                             paymentWidgetRef.current = widget;
@@ -272,8 +280,8 @@ export default function CheckoutPage() {
                         {!user
                             ? '로그인하고 주문하기'
                             : isProcessing
-                            ? '처리 중...'
-                            : `${totalAmount.toLocaleString()}원 결제하기`}
+                                ? '처리 중...'
+                                : `${totalAmount.toLocaleString()}원 결제하기`}
                     </button>
                 </div>
             </div>

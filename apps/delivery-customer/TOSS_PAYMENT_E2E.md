@@ -1,0 +1,49 @@
+# Toss 결제 E2E 점검표
+
+배달앱 Toss 카드 결제 성공/실패를 실제 브라우저에서 확인할 때 쓰는 실행 체크리스트다.
+
+## 전제 조건
+
+- `NEXT_PUBLIC_TOSS_CLIENT_KEY`는 테스트용 클라이언트 키를 사용한다.
+- 백엔드 `TOSS_SECRET_KEY`는 같은 상점의 테스트용 시크릿 키를 사용한다.
+- `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`가 배달앱 실행 환경에 잡혀 있다.
+- 카카오 로그인 또는 Supabase OAuth 로그인 후 `/auth/sync`가 성공해 앱 DB `User`가 생성되어야 한다.
+- 테스트 환경의 결제 승인은 가상 승인이라 실제 결제수단에서 출금되지 않는다.
+
+## 성공 시나리오
+
+1. 배달앱에서 로그인한다.
+2. 메뉴를 장바구니에 담고 배달 주소, 주문자명, 연락처를 입력한다.
+3. 체크아웃에서 토스페이먼츠 카드 결제 위젯이 표시되는지 확인한다.
+4. 결제하기를 누르면 백엔드에 `PENDING_PAYMENT` 주문과 `READY` 결제 시도가 생성되는지 확인한다.
+5. Toss 결제창에서 테스트 카드 결제를 완료한다.
+6. `/order/success`로 돌아온 뒤 `POST /payments/toss/confirm`이 호출되는지 확인한다.
+7. 주문 상태가 `PAID`, 결제 상태가 `PAID`로 바뀌는지 확인한다.
+8. 주문 상세 화면에서 주문번호, 주문 내역, 배달 정보, 상태 트래커가 표시되는지 확인한다.
+
+## 실패/취소 시나리오
+
+1. 체크아웃에서 결제하기를 누른다.
+2. Toss 결제창에서 결제를 취소하거나 실패 케이스를 만든다.
+3. `/order/fail`로 돌아온 뒤 `POST /payments/toss/fail`이 호출되는지 확인한다.
+4. 주문 상태가 `CANCELLED`, 결제 상태가 `FAILED`로 바뀌는지 확인한다.
+5. 실패 화면에서 `다시 결제하기` 버튼으로 체크아웃에 복귀되는지 확인한다.
+
+## 확인할 로그
+
+- 브라우저 Network: `/orders`, `/payments/toss/confirm`, `/payments/toss/fail`
+- 백엔드 로그: Toss confirm/fail 요청과 에러 응답
+- DB: `Order.status`, `Order.paymentStatus`, `Payment.status`, `Payment.paymentKey`, `Payment.approvedAt`, `Payment.failedAt`
+
+## 공식 문서 기준
+
+- Toss Payments 테스트 환경에서는 실제 결제 정보로 테스트해도 결제가 가상 승인된다.
+- `requestPayment()`에는 `orderId`, `successUrl`, `failUrl`을 설정해야 한다.
+- 승인 이후 `paymentKey`는 DB에 저장해야 한다.
+- 테스트 키와 라이브 키를 섞으면 `INVALID_API_KEY`가 날 수 있다.
+
+참고:
+
+- https://docs.tosspayments.com/guides/v2/get-started/environment
+- https://docs.tosspayments.com/guides/v2/get-started/payment-flow
+- https://docs.tosspayments.com/reference/using-api/api-keys

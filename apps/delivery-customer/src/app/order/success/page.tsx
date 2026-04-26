@@ -2,10 +2,13 @@
 
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { CheckCircle2, RotateCcw } from 'lucide-react';
 import { useCartStore } from '@order/shared';
 import { useConfirmTossPayment } from '@/hooks/mutations/useConfirmTossPayment';
 import { useCurrentStore } from '@/contexts/StoreContext';
 import { useDeliveryStore } from '@/stores/deliveryStore';
+
+const PENDING_TOSS_ORDER_ID_KEY = 'delivery.pendingTossOrderId';
 
 function SuccessContent() {
     const router = useRouter();
@@ -21,48 +24,54 @@ function SuccessContent() {
     const [confirmedOrderId, setConfirmedOrderId] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
 
+    const processPayment = async (force = false) => {
+        if (hasProcessedRef.current && !force) return;
+        hasProcessedRef.current = true;
+
+        const orderId = searchParams.get('orderId');
+        const paymentKey = searchParams.get('paymentKey');
+        const amount = searchParams.get('amount');
+        const parsedAmount = amount ? Number(amount) : NaN;
+
+        if (!orderId || !paymentKey || !amount || Number.isNaN(parsedAmount)) {
+            setError('결제 승인에 필요한 정보가 올바르지 않습니다.');
+            setIsProcessing(false);
+            return;
+        }
+
+        try {
+            setError(null);
+            setIsProcessing(true);
+            const result = await confirmTossPaymentMutation.mutateAsync({
+                orderId,
+                paymentKey,
+                amount: parsedAmount,
+            });
+
+            clearCart();
+            sessionStorage.removeItem(PENDING_TOSS_ORDER_ID_KEY);
+            setConfirmedOrderId(result.id);
+            setOrderNumber(result.orderNumber);
+        } catch (err) {
+            console.error('결제 승인 처리 오류:', err);
+            setError('결제는 완료되었지만 주문 승인 처리 중 오류가 발생했습니다. 잠시 후 다시 확인해 주세요.');
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
     useEffect(() => {
-        const processPayment = async () => {
-            if (hasProcessedRef.current) return;
-            hasProcessedRef.current = true;
-
-            const orderId = searchParams.get('orderId');
-            const paymentKey = searchParams.get('paymentKey');
-            const amount = searchParams.get('amount');
-
-            if (!orderId || !paymentKey || !amount) {
-                setError('결제 정보가 올바르지 않습니다.');
-                setIsProcessing(false);
-                return;
-            }
-
-            try {
-                const result = await confirmTossPaymentMutation.mutateAsync({
-                    orderId,
-                    paymentKey,
-                    amount: parseInt(amount, 10),
-                });
-
-                clearCart();
-                setConfirmedOrderId(result.id);
-                setOrderNumber(result.orderNumber);
-            } catch (err) {
-                console.error('Payment confirmation error:', err);
-                setError('결제 승인 또는 주문 처리 중 오류가 발생했습니다.');
-            } finally {
-                setIsProcessing(false);
-            }
-        };
-
-        processPayment();
-    }, [searchParams, confirmTossPaymentMutation, clearCart]);
+        void processPayment();
+        // searchParams is stable for this redirect screen; processPayment is intentionally one-shot.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     if (isProcessing) {
         return (
             <main className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-brand-yellow mx-auto mb-4" />
-                    <p className="text-lg font-medium">결제를 승인하고 있습니다...</p>
+                    <p className="text-lg font-medium">결제를 승인하고 있습니다.</p>
                 </div>
             </main>
         );
@@ -71,15 +80,22 @@ function SuccessContent() {
     if (error) {
         return (
             <main className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-                <div className="max-w-md w-full bg-white rounded-xl p-8 text-center">
+                <div className="max-w-md w-full bg-white rounded-xl p-8 text-center shadow-sm border border-gray-100">
                     <div className="text-5xl mb-4">!</div>
-                    <h1 className="text-2xl font-bold mb-2">결제 승인 실패</h1>
+                    <h1 className="text-2xl font-bold mb-2">결제 승인 확인 필요</h1>
                     <p className="text-gray-600 mb-6">{error}</p>
                     <button
-                        onClick={() => router.push('/menu')}
-                        className="w-full bg-brand-black text-white p-4 rounded-xl font-bold"
+                        onClick={() => void processPayment(true)}
+                        className="w-full bg-brand-black text-white p-4 rounded-xl font-bold flex items-center justify-center gap-2"
                     >
-                        메뉴로 돌아가기
+                        <RotateCcw size={18} />
+                        다시 승인 확인하기
+                    </button>
+                    <button
+                        onClick={() => router.push('/orders')}
+                        className="mt-2 w-full border-2 border-gray-200 p-4 rounded-xl font-bold"
+                    >
+                        주문 내역으로 이동
                     </button>
                 </div>
             </main>
@@ -88,11 +104,13 @@ function SuccessContent() {
 
     return (
         <main className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-            <div className="max-w-md w-full bg-white rounded-xl p-8 text-center">
-                <div className="text-5xl mb-4">OK</div>
-                <h1 className="text-2xl font-bold mb-2">주문 완료</h1>
+            <div className="max-w-md w-full bg-white rounded-xl p-8 text-center shadow-sm border border-gray-100">
+                <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-green-50 text-green-600">
+                    <CheckCircle2 size={38} />
+                </div>
+                <h1 className="text-2xl font-bold mb-2">주문이 접수되었습니다</h1>
                 <p className="text-gray-600 mb-6">
-                    결제가 승인되었고 주문이 정상 접수되었습니다.
+                    결제가 승인되었고 매장에서 주문을 확인할 예정입니다.
                 </p>
 
                 <div className="bg-gray-50 rounded-lg p-4 mb-6 text-left">
