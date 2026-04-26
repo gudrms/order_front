@@ -1,10 +1,9 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import { Info } from 'lucide-react';
 import { Menu, formatCurrency } from '@order/shared'; // 공통 모듈 사용
 
 export default function MenuListPage() {
@@ -24,12 +23,17 @@ export default function MenuListPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-gray-800">메뉴 관리</h2>
-        <Link
-          href="/menu/new"
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <Plus className="w-4 h-4" />새 메뉴 추가
-        </Link>
+      </div>
+
+      <div className="flex items-start gap-3 bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800">
+        <Info className="w-5 h-5 flex-shrink-0 mt-0.5" />
+        <div>
+          <p className="font-semibold mb-1">메뉴는 토스 POS에서 관리됩니다.</p>
+          <p>
+            메뉴 추가·수정·삭제는 토스 POS 기기에서 진행해주세요. 변경 사항은 자동으로 동기화되어 이 페이지에 반영됩니다.
+            (이 화면은 동기화 결과 확인 용도입니다.)
+          </p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -55,7 +59,7 @@ export default function MenuListPage() {
                 </div>
               )}
             </div>
-            
+
             <div className="p-4 flex-1 flex flex-col">
               <div className="flex justify-between items-start mb-2">
                 <div>
@@ -68,25 +72,18 @@ export default function MenuListPage() {
                   {formatCurrency(menu.price)}
                 </span>
               </div>
-              
+
               <p className="text-gray-500 text-sm mb-4 line-clamp-2 flex-1">
                 {menu.description}
               </p>
-
-              <div className="flex gap-2 pt-4 border-t border-gray-50">
-                <Link
-                  href={`/menu/${menu.id}/edit`}
-                  className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors text-sm font-medium"
-                >
-                  <Edit className="w-4 h-4" /> 수정
-                </Link>
-                <button className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg border border-red-100 text-red-600 hover:bg-red-50 transition-colors text-sm font-medium">
-                  <Trash2 className="w-4 h-4" /> 삭제
-                </button>
-              </div>
             </div>
           </div>
         ))}
+        {menus?.length === 0 && (
+          <div className="col-span-full text-center py-16 text-gray-500">
+            아직 동기화된 메뉴가 없습니다. 토스 POS에서 메뉴를 등록해주세요.
+          </div>
+        )}
       </div>
     </div>
   );
