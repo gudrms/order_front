@@ -59,7 +59,7 @@ describe('MenusService', () => {
         it('should return menus for a given storeId', async () => {
             const storeId = 'store-1';
             const expectedMenus = [
-                { id: 'menu-1', name: 'Menu 1', categoryId: 'cat-1' },
+                { id: 'menu-1', name: 'Menu 1', categoryId: 'cat-1', tossMenuCode: '101' },
             ];
 
             vi.spyOn(prisma.menu, 'findMany').mockResolvedValue(expectedMenus as any);
@@ -82,12 +82,20 @@ describe('MenusService', () => {
                 where: expect.objectContaining({ storeId, categoryId }),
             }));
         });
+
+        it('excludes admin-only menus that lack a tossMenuCode (POS as source of truth)', async () => {
+            await service.getMenus('store-1');
+
+            expect(prisma.menu.findMany).toHaveBeenCalledWith(expect.objectContaining({
+                where: expect.objectContaining({ tossMenuCode: { not: null } }),
+            }));
+        });
     });
 
     describe('getMenuDetail', () => {
-        it('should return menu detail for a given menuId', async () => {
+        it('should return menu detail when the menu has a tossMenuCode (POS-synced)', async () => {
             const menuId = 'menu-1';
-            const expectedMenu = { id: 'menu-1', name: 'Menu 1', optionGroups: [] };
+            const expectedMenu = { id: 'menu-1', name: 'Menu 1', tossMenuCode: '101', optionGroups: [] };
 
             vi.spyOn(prisma.menu, 'findUnique').mockResolvedValue(expectedMenu as any);
 
@@ -97,6 +105,15 @@ describe('MenusService', () => {
             expect(prisma.menu.findUnique).toHaveBeenCalledWith(expect.objectContaining({
                 where: { id: menuId },
             }));
+        });
+
+        it('returns null for admin-only menus without tossMenuCode (POS as source of truth)', async () => {
+            const adminOnlyMenu = { id: 'menu-2', name: 'Admin Only', tossMenuCode: null, optionGroups: [] };
+            vi.spyOn(prisma.menu, 'findUnique').mockResolvedValue(adminOnlyMenu as any);
+
+            const result = await service.getMenuDetail('menu-2');
+
+            expect(result).toBeNull();
         });
     });
 });

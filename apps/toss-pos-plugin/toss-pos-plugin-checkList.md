@@ -39,6 +39,7 @@
 - [x] **#6** 카탈로그 state 4종 처리: `ON_SALE` / `SOLD_OUT`(soldOut) / `UNAVAILABLE`(soldOut+isHidden) / `DELETED`(isActive=false)
 - [x] **#7** 옵션 그룹 보존 sync. 플러그인 페이로드를 `optionGroups: [{ id, title, isRequired, minChoices, maxChoices, choices: [...] }]` 구조로 전송, 백엔드는 `(menuId, name)` 자연키로 `MenuOptionGroup` upsert(`minSelect`/`maxSelect` 매핑, `maxChoices === -1` → 999 무제한 변환), `MenuOption`은 `(optionGroupId, tossOptionCode)`로 upsert + `state === 'SOLD_OUT' → isSoldOut: true`.
 - [x] **#8** Idempotency 보강. 플러그인이 `Idempotency-Key: order-{orderId}-{status}` 헤더 전송. 백엔드는 (a) 동일 status + 동일 tossOrderId면 기존 레코드 즉시 반환(no-op), (b) 다른 tossOrderId 덮어쓰기 시도면 `409 Conflict`. 플러그인은 409 받으면 `posPluginSdk.order.cancel`로 자기가 만든 중복 토스 주문을 취소. `pos.controller.spec.ts` 신설(5 케이스).
+- [x] **#10** 메뉴 데이터 ownership 정책: **토스 POS가 single source of truth**. SDK 0.0.16의 `Catalog`는 read-only(get/on)이라 양방향 매핑 불가 — 옵션(a) 단방향 채택. 백엔드 `getMenus`/`getMenuDetail`에 `tossMenuCode != null` 필터 추가 (admin이 우회 생성한 잔존 메뉴는 고객 노출 차단). admin 메뉴 페이지에서 추가/수정/삭제 버튼 제거 + "POS에서 관리됩니다" 안내 배너 + 빈 상태 안내. 깨진 `/menu/new` 페이지 삭제(백엔드 POST 엔드포인트 부재로 어차피 동작 안 함). `menus.service.spec.ts`에 필터 케이스 + admin-only 메뉴 null 반환 케이스 추가.
 
 ## 정정사항 (이전 추정 → 사실)
 
@@ -53,13 +54,9 @@
 - POS에서 결제 취소 → 백엔드 상태 CANCELLED 반영 확인 (`payment.on('cancel')` 경유)
 - 개발자센터 테스트 매장 연결 후 진행
 
-### #10 catalog sync ↔ 관리자 메뉴 정책
-- 관리자 페이지에서 직접 추가한 메뉴(`tossMenuCode` 없음) 처리 방침 미정
-- 옵션:
-  - (a) 관리자 메뉴는 POS sync 대상 외 (단방향: POS → DB만)
-  - (b) `PluginCatalogItem.code`에 우리 menuId 박아 양방향 매핑
+### 향후 검토
+- SDK가 catalog write API(`add`/`update`/`delete`)를 노출하면 옵션(b) 양방향 매핑 재검토 — `PluginCatalogItem.code`로 우리 menuId 매핑 가능성
 
 ## 다음 순서
 
-1. (#10) 관리자 메뉴 매핑 정책 결정
-2. (#9) 실기기 E2E
+1. (#9) 실기기 E2E

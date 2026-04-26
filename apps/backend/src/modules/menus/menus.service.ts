@@ -16,13 +16,18 @@ export class MenusService {
     }
 
     /**
-     * 메뉴 목록 조회
+     * 메뉴 목록 조회.
+     *
+     * 정책: 메뉴는 토스 POS가 single source of truth.
+     * tossMenuCode가 없는 레코드는 admin이 직접 만든 잔존 데이터이거나
+     * 동기화 누락 항목이므로 고객 노출에서 제외 (배달 주문 불가 메뉴).
      */
     async getMenus(storeId: string, categoryId?: string) {
         const where: any = {
             storeId,
             isActive: true,
             isHidden: false,
+            tossMenuCode: { not: null },
         };
 
         if (categoryId) {
@@ -57,10 +62,10 @@ export class MenusService {
     }
 
     /**
-     * 메뉴 상세 조회
+     * 메뉴 상세 조회. POS sync된 메뉴만 노출.
      */
     async getMenuDetail(menuId: string) {
-        return this.prisma.menu.findUnique({
+        const menu = await this.prisma.menu.findUnique({
             where: { id: menuId },
             include: {
                 category: {
@@ -84,5 +89,10 @@ export class MenusService {
                 },
             },
         });
+
+        if (!menu || !menu.tossMenuCode) {
+            return null;
+        }
+        return menu;
     }
 }
