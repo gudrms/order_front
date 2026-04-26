@@ -53,3 +53,15 @@ export class FailTossPaymentDto {
     @IsOptional()
     message?: string;
 }
+
+export class ExpirePendingTossPaymentsDto {
+    @ApiPropertyOptional({
+        description: '만료 처리할 결제 대기 시간(분). 기본값은 15분입니다.',
+        example: 15,
+        minimum: 1,
+    })
+    @IsInt()
+    @Min(1)
+    @IsOptional()
+    olderThanMinutes?: number;
+}

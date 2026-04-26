@@ -29,6 +29,7 @@ describe('PaymentsService', () => {
         prisma = {
             payment: {
                 findFirst: vi.fn(),
+                findMany: vi.fn(),
                 update: vi.fn((args) => ({ model: 'payment', args })),
             },
             order: {
@@ -200,5 +201,59 @@ describe('PaymentsService', () => {
             orderId: 'MISSING_ORDER',
             amount: 24000,
         })).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('rejects confirmation for expired or failed payments', async () => {
+        prisma.payment.findFirst.mockResolvedValue({
+            ...pendingPayment,
+            status: 'FAILED',
+        });
+
+        await expect(service.confirmTossPayment({
+            paymentKey: 'payment-key',
+            orderId: 'ORDER_1',
+            amount: 24000,
+        })).rejects.toBeInstanceOf(BadRequestException);
+
+        expect(tossApiService.confirmPayment).not.toHaveBeenCalled();
+    });
+
+    it('expires stale pending Toss payments and cancels delivery orders', async () => {
+        prisma.payment.findMany.mockResolvedValue([pendingPayment]);
+
+        const result = await service.expirePendingTossPayments({ olderThanMinutes: 15 });
+
+        expect(result).toEqual({
+            expiredCount: 1,
+            orderIds: ['order-1'],
+        });
+        expect(prisma.payment.findMany).toHaveBeenCalledWith(expect.objectContaining({
+            where: expect.objectContaining({
+                provider: 'TOSS_PAYMENTS',
+                status: 'READY',
+                order: {
+                    status: 'PENDING_PAYMENT',
+                },
+            }),
+        }));
+        expect(prisma.payment.update).toHaveBeenCalledWith(expect.objectContaining({
+            where: { id: 'payment-1' },
+            data: expect.objectContaining({
+                status: 'FAILED',
+                failureCode: 'PAYMENT_TIMEOUT',
+            }),
+        }));
+        expect(prisma.order.update).toHaveBeenCalledWith(expect.objectContaining({
+            where: { id: 'order-1' },
+            data: expect.objectContaining({
+                status: 'CANCELLED',
+                paymentStatus: 'FAILED',
+                delivery: expect.objectContaining({
+                    update: expect.objectContaining({
+                        status: 'CANCELLED',
+                    }),
+                }),
+            }),
+        }));
     });
 });

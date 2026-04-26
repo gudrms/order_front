@@ -59,7 +59,7 @@
 - [x] 배달 주문 목록 API 추가
 - [x] 주문 상세 API 추가
 - [x] 매장/인증/주문/세션/결제 단위 테스트 추가
-- [ ] 결제 timeout/pending 만료 처리 추가
+- [x] 결제 timeout/pending 만료 처리 추가
 - [ ] 배달 상태 변경 API 추가
 - [ ] 주문 취소/환불 API 추가
 - [ ] POS pending orders API를 새 정책 기준으로 확장
@@ -73,8 +73,8 @@
 - [x] 주문 생성 응답 mapper 정리
 - [x] Toss 선결제 전용 체크아웃으로 정리
 - [ ] Toss 테스트 카드결제 성공/실패 E2E
-- [ ] 결제 timeout/pending 만료 처리
-- [ ] 주문 상태 tracker 실제 상태 연결
+- [x] 결제 timeout/pending 만료 처리
+- [x] 주문 상태 tracker 실제 상태 연결
 - [ ] 비로그인 주문 조회 정책 보강
 - [ ] PWA 빌드/설치 검증
 
@@ -88,7 +88,7 @@
 ## 검증 기록
 
 - [x] `apps/backend`: `tsc --noEmit`
-- [x] `apps/backend`: `vitest run`
+- [x] `apps/backend`: `vitest run` 8 files, 41 tests 통과
 - [x] `apps/delivery-customer`: `tsc --noEmit`
 - [x] `packages/shared`: `tsc --noEmit`
 - [x] 개발 DB `prisma migrate deploy`
@@ -102,12 +102,11 @@
 ## 다음 개발 순서
 
 1. Toss 테스트 카드결제 성공/실패 E2E
-2. 결제 timeout/pending 만료 처리
-3. POS pending orders API를 `PAID && tossOrderId IS NULL` 기준으로 확장
-4. 주문 상태 tracker를 실제 상태 변경/Realtime 흐름에 연결
-5. 관리자 매장 등록/운영 설정 화면을 백엔드 API에 연결
-6. 테이블오더 실제 Store UUID/tableNumber 연결과 E2E
-7. 홈페이지 주문 CTA와 매장/메뉴 API 연결
+2. 비로그인 주문 조회 정책 보강
+3. 배달 취소 정책과 UI 정리
+4. 관리자 매장 등록/운영 설정 화면을 백엔드 API에 연결
+5. 테이블오더 실제 Store UUID/tableNumber 연결과 E2E
+6. 홈페이지 주문 CTA와 매장/메뉴 API 연결
 
 ## 체크리스트 위치
 

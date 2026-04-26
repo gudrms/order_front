@@ -5,7 +5,7 @@
 
 - 배달앱 결제 정책은 **토스페이먼츠 선결제만 허용**한다.
 - 만나서 결제/현금 결제는 MVP 범위에서 제외한다.
-- 가장 큰 남은 일은 Toss 카드결제 E2E, 결제 timeout/pending 만료 처리, 주문 상태 실시간화다.
+- 가장 큰 남은 일은 Toss 카드결제 E2E, 비로그인 주문 조회 정책 보강, 배달 취소 정책 정리다.
 
 ## 완료
 
@@ -35,6 +35,8 @@
 - [x] shared 주문 mapper 추가
 - [x] 주문내역 페이지를 실제 API로 전환
 - [x] 주문상세 페이지를 실제 API로 전환
+- [x] 결제 `PENDING_PAYMENT` timeout/만료 처리 API 추가
+- [x] 주문 상태 tracker를 실제 주문 상세 API polling과 Supabase Realtime 병행 구조로 연결
 
 ## 남은 일
 
@@ -42,14 +44,14 @@
 
 - [ ] 실제 Toss 테스트 카드결제 성공 E2E
 - [ ] 실제 Toss 테스트 카드결제 실패/취소 E2E
-- [ ] 결제 timeout/pending 만료 처리
+- [x] 결제 timeout/pending 만료 처리
 - [ ] 중복 callback/idempotency 재시도 정책 보강
 - [ ] 결제 승인 실패 시 사용자 안내 UI 정리
 
 ### P1: 주문 상태와 조회 정책
 
-- [ ] 주문 상태 tracker를 실제 주문 상태와 연결
-- [ ] Realtime 또는 polling 기반 주문 상태 갱신 연결
+- [x] 주문 상태 tracker를 실제 주문 상태와 연결
+- [x] Realtime 또는 polling 기반 주문 상태 갱신 연결
 - [ ] 비로그인 주문 조회 정책 확정
 - [ ] 주문 취소 요청 정책 확정
 - [ ] 배달 상태 변경 API 연결
@@ -76,7 +78,7 @@
 - [x] 배달앱 TypeScript 타입체크 통과
 - [x] shared TypeScript 타입체크 통과
 - [x] 백엔드 TypeScript 타입체크 통과
-- [x] 백엔드 `vitest run`: 7 files, 34 tests 통과
+- [x] 백엔드 `vitest run`: 8 files, 41 tests 통과
 - [x] 백엔드 Prisma validate/generate 통과
 - [x] 개발 DB migration 적용 완료
 - [x] 과거 검증: 현장결제 배달 주문 생성 E2E 통과
@@ -88,7 +90,7 @@
 ## 다음 순서
 
 1. Toss 테스트 카드결제 성공/실패 E2E
-2. 결제 timeout/pending 만료 처리
-3. 주문 상태 tracker 실제 상태 변경/Realtime 연결
-4. 비로그인 주문 조회 정책 보강
-5. 배달 취소 정책과 UI 정리
+2. 비로그인 주문 조회 정책 보강
+3. 배달 취소 정책과 UI 정리
+4. Sentry 이벤트 수신 E2E
+5. PWA 빌드/설치 검증

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { getOrder } from '../api/endpoints/order';
 import { supabase } from '../lib/supabase';
 import type { OrderStatus } from '../types/order';
 
@@ -6,20 +7,33 @@ interface UseOrderStatusProps {
     orderId: string;
     initialStatus?: OrderStatus;
     onStatusChange?: (status: OrderStatus) => void;
+    pollIntervalMs?: number;
 }
 
-export function useOrderStatus({ orderId, initialStatus, onStatusChange }: UseOrderStatusProps) {
+export function useOrderStatus({
+    orderId,
+    initialStatus,
+    onStatusChange,
+    pollIntervalMs = 5000,
+}: UseOrderStatusProps) {
     const [status, setStatus] = useState<OrderStatus | null>(initialStatus || null);
+
+    const applyStatus = (nextStatus: OrderStatus) => {
+        setStatus((previousStatus) => {
+            if (previousStatus !== nextStatus) {
+                onStatusChange?.(nextStatus);
+            }
+            return nextStatus;
+        });
+    };
 
     useEffect(() => {
         if (!orderId) return;
 
-        // 초기 상태 설정
         if (initialStatus) {
             setStatus(initialStatus);
         }
 
-        // Supabase Realtime 구독
         const channel = supabase
             .channel(`order-status-${orderId}`)
             .on(
@@ -31,11 +45,7 @@ export function useOrderStatus({ orderId, initialStatus, onStatusChange }: UseOr
                     filter: `id=eq.${orderId}`,
                 },
                 (payload) => {
-                    const newStatus = payload.new.status as OrderStatus;
-                    setStatus(newStatus);
-                    if (onStatusChange) {
-                        onStatusChange(newStatus);
-                    }
+                    applyStatus(payload.new.status as OrderStatus);
                 }
             )
             .subscribe();
@@ -44,6 +54,30 @@ export function useOrderStatus({ orderId, initialStatus, onStatusChange }: UseOr
             supabase.removeChannel(channel);
         };
     }, [orderId, initialStatus, onStatusChange]);
+
+    useEffect(() => {
+        if (!orderId || pollIntervalMs <= 0) return;
+
+        let isCancelled = false;
+        const poll = async () => {
+            try {
+                const order = await getOrder(orderId);
+                if (!isCancelled) {
+                    applyStatus(order.status);
+                }
+            } catch {
+                // Realtime remains the primary path; polling failures should not break the UI.
+            }
+        };
+
+        poll();
+        const intervalId = window.setInterval(poll, pollIntervalMs);
+
+        return () => {
+            isCancelled = true;
+            window.clearInterval(intervalId);
+        };
+    }, [orderId, pollIntervalMs, onStatusChange]);
 
     return status;
 }
