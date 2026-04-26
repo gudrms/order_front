@@ -146,6 +146,19 @@ describe('processOrder', () => {
         expect(posPluginSdk.order.cancel).toHaveBeenCalledWith('toss-duplicate-002');
     });
 
+    it('payment.add 실패 시 orphan 토스 주문을 취소하고 백엔드 PATCH를 보내지 않는다', async () => {
+        (posPluginSdk.order.add as any).mockResolvedValueOnce({ id: 'toss-orphan-003' });
+        (posPluginSdk.payment.add as any).mockRejectedValueOnce(new Error('Payment SDK timeout'));
+
+        await processOrder(sampleOrder);
+
+        expect(posPluginSdk.order.add).toHaveBeenCalledTimes(1);
+        expect(posPluginSdk.payment.add).toHaveBeenCalledTimes(1);
+        expect(posPluginSdk.order.cancel).toHaveBeenCalledWith('toss-orphan-003');
+        // 백엔드 PATCH는 호출되지 않음 → 다음 폴링에서 깨끗이 재시도
+        expect(mockFetch).not.toHaveBeenCalled();
+    });
+
     it('미매핑 메뉴는 POS 전송을 skip한다', async () => {
         const unmapped: BackendOrder = {
             ...sampleOrder,
