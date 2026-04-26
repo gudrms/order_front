@@ -76,6 +76,8 @@
 - [x] 주문내역/주문상세 실제 API 전환
 - [x] 주문 생성 응답 mapper 정리
 - [x] Toss 선결제 전용 체크아웃으로 정리
+- [x] Toss 결제 성공/실패/중단 화면과 사용자 안내 정리
+- [x] Toss 결제 E2E 실행 점검표 추가
 - [ ] Toss 테스트 카드결제 성공/실패 E2E
 - [x] 결제 timeout/pending 만료 처리
 - [x] 주문 상태 tracker 실제 상태 연결
@@ -96,6 +98,7 @@
 - [x] `apps/backend`: `vitest run` 8 files, 41 tests 통과
 - [x] `apps/backend`: `vitest run src/modules/orders/orders.service.spec.ts` 11 tests 통과
 - [x] `apps/backend`: `vitest run src/modules/auth/auth.service.spec.ts` 5 tests 통과
+- [x] `apps/backend`: `vitest run src/modules/payments/payments.service.spec.ts` 8 tests 통과
 - [ ] `apps/backend`: 최신 전체 `vitest run`은 `menus.service.spec.ts` 메뉴 상세 테스트 1건 실패. POS/catalog 작업자 영역이라 본 작업에서는 미수정.
 - [x] `apps/delivery-customer`: `tsc --noEmit`
 - [x] `packages/shared`: `tsc --noEmit`

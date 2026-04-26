@@ -41,6 +41,9 @@
 - [x] API client에 Supabase access token 자동 주입
 - [x] 카카오/Supabase OAuth 로그인 후 백엔드 `User` 자동 생성/갱신 연결
 - [x] 백엔드 `POST /auth/sync` 인증 사용자 동기화 API 추가
+- [x] Toss 결제 `customerKey`를 로그인 사용자 ID 기준으로 정리
+- [x] Toss 결제 성공/실패/중단 화면 문구와 재시도 안내 정리
+- [x] Toss 결제 E2E 실행 점검표 추가: `apps/delivery-customer/TOSS_PAYMENT_E2E.md`
 
 ## 남은 일
 
@@ -50,7 +53,7 @@
 - [ ] 실제 Toss 테스트 카드결제 실패/취소 E2E
 - [x] 결제 timeout/pending 만료 처리
 - [ ] 중복 callback/idempotency 재시도 정책 보강
-- [ ] 결제 승인 실패 시 사용자 안내 UI 정리
+- [x] 결제 승인 실패 시 사용자 안내 UI 정리
 
 ### P1: 주문 상태와 조회 정책
 
@@ -86,11 +89,13 @@
 - [x] 백엔드 `vitest run`: 8 files, 41 tests 통과
 - [x] 백엔드 `vitest run src/modules/orders/orders.service.spec.ts`: 11 tests 통과
 - [x] 백엔드 `vitest run src/modules/auth/auth.service.spec.ts`: 5 tests 통과
+- [x] 백엔드 `vitest run src/modules/payments/payments.service.spec.ts`: 8 tests 통과
 - [ ] 최신 백엔드 전체 `vitest run`: `menus.service.spec.ts` 메뉴 상세 테스트 1건 실패. POS/catalog 작업자 영역이라 본 작업에서는 미수정.
 - [x] 백엔드 Prisma validate/generate 통과
 - [x] 개발 DB migration 적용 완료
 - [x] 과거 검증: 현장결제 배달 주문 생성 E2E 통과
 - [ ] 공식 검증 필요: 카드결제 주문 생성/승인 E2E
+- [x] Toss 결제 성공/실패 화면 타입체크 통과
 - [ ] 주문내역/상세 실제 API E2E
 - [ ] Sentry 이벤트 수신 E2E
 - [ ] PWA 설치/빌드 검증

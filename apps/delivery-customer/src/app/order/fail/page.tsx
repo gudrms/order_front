@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { AlertTriangle } from 'lucide-react';
 import { useFailTossPayment } from '@/hooks/mutations/useFailTossPayment';
 
+const PENDING_TOSS_ORDER_ID_KEY = 'delivery.pendingTossOrderId';
+
 function FailContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -19,11 +21,18 @@ function FailContent() {
         if (!orderId || hasReportedRef.current) return;
 
         hasReportedRef.current = true;
-        failMutation.mutate({
-            orderId,
-            code,
-            message,
-        });
+        failMutation.mutate(
+            {
+                orderId,
+                code,
+                message,
+            },
+            {
+                onSettled: () => {
+                    sessionStorage.removeItem(PENDING_TOSS_ORDER_ID_KEY);
+                },
+            }
+        );
     }, [code, failMutation, message, orderId]);
 
     return (
@@ -35,7 +44,7 @@ function FailContent() {
 
                 <h1 className="text-2xl font-bold mb-2">결제가 완료되지 않았어요</h1>
                 <p className="text-gray-600 mb-3">
-                    카드 결제가 승인되지 않아 주문을 접수하지 않았습니다.
+                    카드 결제가 승인되지 않아 주문이 접수되지 않았습니다.
                 </p>
 
                 {message && (
