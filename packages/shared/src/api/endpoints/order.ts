@@ -114,21 +114,25 @@ export async function createOrder(
 
 export async function getDeliveryOrders(params: {
     storeId?: string | null;
-    phone?: string | null;
-    userId?: string | null;
     page?: number;
 }): Promise<OrderListResponse> {
     const searchParams = new URLSearchParams();
     if (params.storeId) searchParams.set('storeId', params.storeId);
-    if (params.phone) searchParams.set('phone', params.phone);
-    if (params.userId) searchParams.set('userId', params.userId);
     if (params.page) searchParams.set('page', String(params.page));
 
-    const response = await apiClient.get<BackendOrder[]>(`/orders?${searchParams.toString()}`);
+    const response = await apiClient.get<BackendOrder[] | {
+        data: BackendOrder[];
+        meta?: {
+            total?: number;
+            page?: number;
+        };
+    }>(`/orders?${searchParams.toString()}`);
+    const orders = Array.isArray(response) ? response : response.data;
+
     return {
-        orders: response.map(mapOrder),
-        total: response.length,
-        page: params.page || 1,
+        orders: orders.map(mapOrder),
+        total: Array.isArray(response) ? response.length : response.meta?.total || orders.length,
+        page: Array.isArray(response) ? params.page || 1 : response.meta?.page || params.page || 1,
         limit: 20,
     };
 }

@@ -22,6 +22,7 @@
 - [x] Toss 결제 승인 성공 시 `PAID`로 확정
 - [x] POS 전송 기준은 `Order.status === 'PAID' && tossOrderId IS NULL`
 - [x] `PENDING_PAYMENT` 주문은 POS 전송 제외
+- [x] 엽떡앱 모티브에 맞춰 배달 주문/주문내역/주문상세는 로그인 필수
 - [x] `okpos*` 명칭은 개발 부산물로 보고 신규 설계에서 제외
 
 ## 공통 도메인
@@ -60,6 +61,7 @@
 - [x] 주문 상세 API 추가
 - [x] 매장/인증/주문/세션/결제 단위 테스트 추가
 - [x] 결제 timeout/pending 만료 처리 추가
+- [x] 배달 주문 생성/목록/상세 Supabase JWT 인증과 사용자 소유권 검증 추가
 - [ ] 배달 상태 변경 API 추가
 - [ ] 주문 취소/환불 API 추가
 - [ ] POS pending orders API를 새 정책 기준으로 확장
@@ -75,7 +77,7 @@
 - [ ] Toss 테스트 카드결제 성공/실패 E2E
 - [x] 결제 timeout/pending 만료 처리
 - [x] 주문 상태 tracker 실제 상태 연결
-- [ ] 비로그인 주문 조회 정책 보강
+- [x] 로그인 필수 주문 조회 정책 보강
 - [ ] PWA 빌드/설치 검증
 
 ## 앱별 남은 일
@@ -89,6 +91,8 @@
 
 - [x] `apps/backend`: `tsc --noEmit`
 - [x] `apps/backend`: `vitest run` 8 files, 41 tests 통과
+- [x] `apps/backend`: `vitest run src/modules/orders/orders.service.spec.ts` 11 tests 통과
+- [ ] `apps/backend`: 최신 전체 `vitest run`은 `menus.service.spec.ts` 메뉴 상세 테스트 1건 실패. POS/catalog 작업자 영역이라 본 작업에서는 미수정.
 - [x] `apps/delivery-customer`: `tsc --noEmit`
 - [x] `packages/shared`: `tsc --noEmit`
 - [x] 개발 DB `prisma migrate deploy`
@@ -102,11 +106,11 @@
 ## 다음 개발 순서
 
 1. Toss 테스트 카드결제 성공/실패 E2E
-2. 비로그인 주문 조회 정책 보강
-3. 배달 취소 정책과 UI 정리
-4. 관리자 매장 등록/운영 설정 화면을 백엔드 API에 연결
-5. 테이블오더 실제 Store UUID/tableNumber 연결과 E2E
-6. 홈페이지 주문 CTA와 매장/메뉴 API 연결
+2. 배달 취소 정책과 UI 정리
+3. 관리자 매장 등록/운영 설정 화면을 백엔드 API에 연결
+4. 테이블오더 실제 Store UUID/tableNumber 연결과 E2E
+5. 홈페이지 주문 CTA와 매장/메뉴 API 연결
+6. Sentry/PWA E2E 검증
 
 ## 체크리스트 위치
 

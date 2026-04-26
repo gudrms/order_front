@@ -3,6 +3,7 @@ import { ApiTags, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiBody, ApiBea
 import { OrdersService } from './orders.service';
 import { CreateDeliveryOrderDto, CreateOrderDto } from './dto/create-order.dto';
 import { SupabaseGuard } from '../auth/guards/supabase.guard';
+import { CurrentUser } from '../../common/decorators/user.decorator';
 
 // Prisma Client 생성 전까지 임시로 enum 정의
 export enum OrderStatus {
@@ -245,39 +246,44 @@ export class RootOrdersController {
     constructor(private readonly ordersService: OrdersService) { }
 
     @Get()
+    @UseGuards(SupabaseGuard)
+    @ApiBearerAuth('JWT-auth')
     @ApiOperation({
         summary: '배달 주문 목록 조회',
-        description: '배달앱 주문내역에서 사용할 주문 목록을 조회합니다. 비회원 주문은 전화번호 기준으로 조회합니다.',
+        description: '배달앱 주문내역에서 로그인 사용자의 주문 목록을 조회합니다.',
     })
     @ApiQuery({ name: 'storeId', required: false, description: '매장 ID' })
-    @ApiQuery({ name: 'phone', required: false, description: '비회원 주문 조회용 수령자 전화번호' })
-    @ApiQuery({ name: 'userId', required: false, description: '회원 주문 조회용 사용자 ID' })
     @ApiQuery({ name: 'page', required: false, type: Number, description: '페이지 번호' })
     async getDeliveryOrders(
         @Query('storeId') storeId?: string,
-        @Query('phone') phone?: string,
-        @Query('userId') userId?: string,
         @Query('page') page: number = 1,
+        @CurrentUser() user?: { id: string },
     ) {
         return this.ordersService.getDeliveryOrders({
             storeId,
-            phone,
-            userId,
+            userId: user?.id,
             page: Number(page) || 1,
         });
     }
 
     @Get(':orderId')
+    @UseGuards(SupabaseGuard)
+    @ApiBearerAuth('JWT-auth')
     @ApiOperation({
         summary: '주문 상세 조회',
-        description: '배달앱 주문상세에서 사용할 주문 상세 정보를 조회합니다.',
+        description: '배달앱 주문상세에서 로그인 사용자의 주문 상세 정보를 조회합니다.',
     })
     @ApiParam({ name: 'orderId', description: '주문 ID' })
-    async getOrderById(@Param('orderId') orderId: string) {
-        return this.ordersService.getOrderById(orderId);
+    async getOrderById(
+        @Param('orderId') orderId: string,
+        @CurrentUser() user?: { id: string },
+    ) {
+        return this.ordersService.getOrderById(orderId, { userId: user?.id });
     }
 
     @Post()
+    @UseGuards(SupabaseGuard)
+    @ApiBearerAuth('JWT-auth')
     @UsePipes(new ValidationPipe({ transform: true }))
     @ApiOperation({
         summary: '배달/포장 주문 생성',
@@ -290,7 +296,13 @@ export class RootOrdersController {
         status: 201,
         description: '주문 생성 성공',
     })
-    async createOrder(@Body() createOrderDto: CreateDeliveryOrderDto) {
-        return this.ordersService.createDeliveryOrder(createOrderDto.storeId, createOrderDto);
+    async createOrder(
+        @Body() createOrderDto: CreateDeliveryOrderDto,
+        @CurrentUser() user?: { id: string },
+    ) {
+        return this.ordersService.createDeliveryOrder(createOrderDto.storeId, {
+            ...createOrderDto,
+            userId: user?.id,
+        });
     }
 }

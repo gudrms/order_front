@@ -7,6 +7,7 @@ import type { OrderStatus } from '@order/shared';
 interface OrderStatusTrackerProps {
     orderId: string;
     initialStatus: OrderStatus;
+    userId?: string | null;
 }
 
 const steps = [
@@ -49,8 +50,8 @@ function getStatusMessage(status: string | null) {
     }
 }
 
-export function OrderStatusTracker({ orderId, initialStatus }: OrderStatusTrackerProps) {
-    const status = useOrderStatus({ orderId, initialStatus, pollIntervalMs: 5000 });
+export function OrderStatusTracker({ orderId, initialStatus, userId }: OrderStatusTrackerProps) {
+    const status = useOrderStatus({ orderId, initialStatus, userId, pollIntervalMs: 5000 });
     const normalizedStatus = normalizeStatus(status);
     const currentStepIndex = Math.max(0, steps.findIndex((step) => step.id === normalizedStatus));
     const isCancelled = status === 'CANCELLED';

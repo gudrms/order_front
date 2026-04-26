@@ -74,6 +74,9 @@ export class OrdersService {
             if (!store.isDeliveryEnabled) {
                 throw new BadRequestException('Store is not accepting delivery orders');
             }
+            if (!dto.userId) {
+                throw new BadRequestException('Delivery orders require an authenticated user');
+            }
             const paymentMethod = dto.payment.method as string | undefined;
             if (paymentMethod === 'CASH' || dto.payment.paymentKey?.startsWith('CASH_')) {
                 throw new BadRequestException('Delivery orders only support prepaid Toss Payments');
@@ -261,7 +264,11 @@ export class OrdersService {
         };
     }
 
-    async getDeliveryOrders(params: { storeId?: string; phone?: string; userId?: string; page?: number }) {
+    async getDeliveryOrders(params: { storeId?: string; userId?: string; page?: number }) {
+        if (!params.userId) {
+            throw new BadRequestException('userId is required to lookup delivery orders');
+        }
+
         const take = 20;
         const page = params.page || 1;
         const skip = (page - 1) * take;
@@ -274,13 +281,6 @@ export class OrdersService {
         }
         if (params.userId) {
             where.userId = params.userId;
-        }
-        if (params.phone) {
-            where.delivery = {
-                is: {
-                    recipientPhone: params.phone,
-                },
-            };
         }
 
         const [orders, total] = await Promise.all([
@@ -304,13 +304,21 @@ export class OrdersService {
         };
     }
 
-    async getOrderById(orderId: string) {
+    async getOrderById(orderId: string, lookup?: { userId?: string }) {
+        if (!lookup?.userId) {
+            throw new BadRequestException('userId is required to lookup a delivery order');
+        }
+
         const order = await this.prisma.order.findUnique({
             where: { id: orderId },
             include: this.orderInclude(),
         });
 
         if (!order) {
+            throw new NotFoundException(`Order not found: ${orderId}`);
+        }
+
+        if (order.userId !== lookup.userId) {
             throw new NotFoundException(`Order not found: ${orderId}`);
         }
 

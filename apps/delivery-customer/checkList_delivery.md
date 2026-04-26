@@ -5,7 +5,7 @@
 
 - 배달앱 결제 정책은 **토스페이먼츠 선결제만 허용**한다.
 - 만나서 결제/현금 결제는 MVP 범위에서 제외한다.
-- 가장 큰 남은 일은 Toss 카드결제 E2E, 비로그인 주문 조회 정책 보강, 배달 취소 정책 정리다.
+- 가장 큰 남은 일은 Toss 카드결제 E2E, 배달 취소 정책 정리, Sentry/PWA E2E 검증이다.
 
 ## 완료
 
@@ -37,6 +37,8 @@
 - [x] 주문상세 페이지를 실제 API로 전환
 - [x] 결제 `PENDING_PAYMENT` timeout/만료 처리 API 추가
 - [x] 주문 상태 tracker를 실제 주문 상세 API polling과 Supabase Realtime 병행 구조로 연결
+- [x] 엽떡앱 모티브에 맞춰 배달 주문/주문내역/주문상세 로그인 필수 정책으로 전환
+- [x] API client에 Supabase access token 자동 주입
 
 ## 남은 일
 
@@ -52,13 +54,13 @@
 
 - [x] 주문 상태 tracker를 실제 주문 상태와 연결
 - [x] Realtime 또는 polling 기반 주문 상태 갱신 연결
-- [ ] 비로그인 주문 조회 정책 확정
+- [x] 로그인 필수 주문 조회 정책 확정
 - [ ] 주문 취소 요청 정책 확정
 - [ ] 배달 상태 변경 API 연결
 
 ### P2: 사용자 기능
 
-- [ ] API client에 Supabase access token 주입
+- [x] API client에 Supabase access token 주입
 - [ ] 주소 조회/추가/삭제를 실제 사용자 기준으로 동작
 - [ ] 찜 조회/추가/삭제를 실제 사용자 기준으로 동작
 - [ ] `test-user-id` 제거
@@ -79,6 +81,8 @@
 - [x] shared TypeScript 타입체크 통과
 - [x] 백엔드 TypeScript 타입체크 통과
 - [x] 백엔드 `vitest run`: 8 files, 41 tests 통과
+- [x] 백엔드 `vitest run src/modules/orders/orders.service.spec.ts`: 11 tests 통과
+- [ ] 최신 백엔드 전체 `vitest run`: `menus.service.spec.ts` 메뉴 상세 테스트 1건 실패. POS/catalog 작업자 영역이라 본 작업에서는 미수정.
 - [x] 백엔드 Prisma validate/generate 통과
 - [x] 개발 DB migration 적용 완료
 - [x] 과거 검증: 현장결제 배달 주문 생성 E2E 통과
@@ -90,7 +94,6 @@
 ## 다음 순서
 
 1. Toss 테스트 카드결제 성공/실패 E2E
-2. 비로그인 주문 조회 정책 보강
-3. 배달 취소 정책과 UI 정리
-4. Sentry 이벤트 수신 E2E
-5. PWA 빌드/설치 검증
+2. 배달 취소 정책과 UI 정리
+3. Sentry 이벤트 수신 E2E
+4. PWA 빌드/설치 검증
