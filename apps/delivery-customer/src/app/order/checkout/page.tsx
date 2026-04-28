@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, CreditCard } from 'lucide-react';
 import { TossPaymentWidget } from '@order/ui';
@@ -12,6 +12,7 @@ import { useCurrentStore } from '@/contexts/StoreContext';
 import { useDeliveryStore } from '@/stores/deliveryStore';
 import { useCreateOrder } from '@/hooks/mutations/useCreateOrder';
 import { useFailTossPayment } from '@/hooks/mutations/useFailTossPayment';
+import { useAddresses } from '@/hooks/queries/useAddresses';
 
 const TOSS_CLIENT_KEY = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY || 'test_ck_D5GePWvyJnrK0W0k6q8gLzN97Eoq';
 const PENDING_TOSS_ORDER_ID_KEY = 'delivery.pendingTossOrderId';
@@ -21,7 +22,8 @@ export default function CheckoutPage() {
     const { store, storeId, isLoading: isStoreLoading, orderTotal } = useCurrentStore();
     const { user, loading: isAuthLoading } = useAuth();
     const { items, totalPrice } = useCartStore();
-    const { deliveryInfo } = useDeliveryStore();
+    const { deliveryInfo, setAddress, setCustomerInfo, setDeliveryRequest } = useDeliveryStore();
+    const { data: addresses = [] } = useAddresses(user?.id);
     const createOrderMutation = useCreateOrder();
     const failTossPaymentMutation = useFailTossPayment();
 
@@ -42,6 +44,25 @@ export default function CheckoutPage() {
         && items.length > 0
         && !isProcessing;
     const isPaymentButtonDisabled = user ? !canOrder : isAuthLoading || isProcessing;
+
+    useEffect(() => {
+        if (deliveryInfo.address?.address || addresses.length === 0) return;
+
+        const defaultAddress = addresses.find((address) => address.isDefault) || addresses[0];
+        setAddress({
+            id: defaultAddress.id,
+            name: defaultAddress.name,
+            address: defaultAddress.address,
+            detailAddress: defaultAddress.detailAddress || undefined,
+            zipCode: defaultAddress.zipCode || undefined,
+        });
+        if (defaultAddress.recipientName || defaultAddress.recipientPhone) {
+            setCustomerInfo(defaultAddress.recipientName || '', defaultAddress.recipientPhone || '');
+        }
+        if (defaultAddress.deliveryMemo) {
+            setDeliveryRequest(defaultAddress.deliveryMemo);
+        }
+    }, [addresses, deliveryInfo.address?.address, setAddress, setCustomerInfo, setDeliveryRequest]);
 
     if (items.length === 0) {
         router.push('/menu');
@@ -71,6 +92,7 @@ export default function CheckoutPage() {
                 detailAddress: deliveryInfo.address?.detailAddress,
                 zipCode: deliveryInfo.address?.zipCode,
                 deliveryMemo: deliveryInfo.deliveryRequest,
+                addressId: deliveryInfo.address?.id,
             },
             items: orderItems,
             totalAmount,

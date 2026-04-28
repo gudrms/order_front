@@ -10,6 +10,7 @@ import * as callApi from './endpoints/call';
 import * as adminApi from './endpoints/admin';
 import * as storeApi from './endpoints/store';
 import * as authApi from './endpoints/auth';
+import * as addressApi from './endpoints/address';
 
 export { apiClient, ApiClientError } from './client';
 export { cancelOrder, createOrder, getDeliveryOrders, getOrder, getOrdersByTable, updateDeliveryStatus, updateOrderStatus } from './endpoints/order';
@@ -17,6 +18,7 @@ export { cancelOrderTossPayment, confirmTossPayment, failTossPayment } from './e
 export { getCategories, getMenus, getMenuDetail } from './endpoints/menu';
 export { getStore, getStoreByIdentifier } from './endpoints/store';
 export { syncCurrentUser } from './endpoints/auth';
+export { createAddress, deleteAddress, getAddresses, setDefaultAddress, updateAddress } from './endpoints/address';
 
 /**
  * 통합 API 객체
@@ -30,4 +32,5 @@ export const api = {
     admin: adminApi,
     store: storeApi,
     auth: authApi,
+    address: addressApi,
 };

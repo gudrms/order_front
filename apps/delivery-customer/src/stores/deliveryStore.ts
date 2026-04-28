@@ -1,25 +1,23 @@
-/**
- * 배달 정보 스토어
- */
-
 import { create } from 'zustand';
 
 export type OrderType = 'DELIVERY' | 'TAKEOUT' | 'DINE_IN';
 
 export interface DeliveryAddress {
-    address: string; // 기본 주소
-    detailAddress?: string; // 상세 주소 (동/호수)
-    zipCode?: string; // 우편번호
-    latitude?: number; // 위도
-    longitude?: number; // 경도
+    id?: string;
+    name?: string;
+    address: string;
+    detailAddress?: string;
+    zipCode?: string;
+    latitude?: number;
+    longitude?: number;
 }
 
 export interface DeliveryInfo {
-    orderType: OrderType; // 주문 방식
-    address?: DeliveryAddress; // 배달 주소 (배달 주문 시만)
-    customerName?: string; // 주문자 이름
-    customerPhone?: string; // 주문자 연락처
-    deliveryRequest?: string; // 배달 요청사항
+    orderType: OrderType;
+    address?: DeliveryAddress;
+    customerName?: string;
+    customerPhone?: string;
+    deliveryRequest?: string;
 }
 
 interface DeliveryState {

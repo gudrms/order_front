@@ -1,9 +1,9 @@
 'use client';
 
-import { useCartStore } from '@order/shared';
-import { CartItemCard } from '@order/ui';
-import { ChevronDown } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { ChevronDown } from 'lucide-react';
+import { CartItemCard } from '@order/ui';
+import { useCartStore } from '@order/shared';
 import { cn } from '@/lib/utils';
 import AddressInputBottomSheet from '../order/AddressInputBottomSheet';
 
@@ -41,20 +41,17 @@ export default function CartBottomSheet({ isOpen, onClose, onProceedToOrder }: C
     };
 
     const handleOrder = () => {
-        // 최소 주문 금액 확인
         if (totalPrice < MINIMUM_ORDER_AMOUNT) {
             alert(`최소 주문 금액은 ${MINIMUM_ORDER_AMOUNT.toLocaleString()}원입니다.`);
             return;
         }
 
-        // 배달 정보 입력으로 이동
         setIsAddressSheetOpen(true);
     };
 
     const handleAddressConfirm = () => {
         setIsAddressSheetOpen(false);
         handleClose();
-        // 결제 페이지로 이동
         onProceedToOrder();
     };
 
@@ -62,32 +59,28 @@ export default function CartBottomSheet({ isOpen, onClose, onProceedToOrder }: C
 
     return (
         <div className="fixed inset-0 z-50 flex items-end justify-center">
-            {/* Backdrop */}
             <div
                 className={cn(
-                    "absolute inset-0 bg-black/50 transition-opacity duration-300",
-                    isClosing ? "opacity-0" : "opacity-100"
+                    'absolute inset-0 bg-black/50 transition-opacity duration-300',
+                    isClosing ? 'opacity-0' : 'opacity-100'
                 )}
                 onClick={handleClose}
             />
 
-            {/* Sheet */}
             <div
                 className={cn(
-                    "relative w-full max-w-[568px] bg-white rounded-t-2xl shadow-xl transition-transform duration-300 transform",
-                    isClosing ? "translate-y-full" : "translate-y-0"
+                    'relative w-full max-w-[568px] bg-white rounded-t-2xl shadow-xl transition-transform duration-300 transform',
+                    isClosing ? 'translate-y-full' : 'translate-y-0'
                 )}
                 style={{ maxHeight: '80vh' }}
             >
-                {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-gray-100">
                     <h2 className="font-bold text-lg">장바구니</h2>
-                    <button onClick={handleClose} className="p-2 -mr-2 text-gray-500">
+                    <button onClick={handleClose} className="p-2 -mr-2 text-gray-500" aria-label="닫기">
                         <ChevronDown size={24} />
                     </button>
                 </div>
 
-                {/* Content */}
                 <div className="overflow-y-auto p-4 space-y-4" style={{ maxHeight: 'calc(80vh - 140px)' }}>
                     {items.length === 0 ? (
                         <div className="py-12 text-center text-gray-500">
@@ -106,8 +99,8 @@ export default function CartBottomSheet({ isOpen, onClose, onProceedToOrder }: C
                                 onDecrease={() => {
                                     if (item.quantity > 1) {
                                         updateQuantity(item.id, item.quantity - 1);
-                                    } else {
-                                        if (confirm('삭제하시겠습니까?')) removeItem(item.id);
+                                    } else if (confirm('삭제하시겠습니까?')) {
+                                        removeItem(item.id);
                                     }
                                 }}
                                 onRemove={() => {
@@ -118,11 +111,11 @@ export default function CartBottomSheet({ isOpen, onClose, onProceedToOrder }: C
                     )}
                 </div>
 
-                {/* Footer */}
                 <div className="p-4 border-t border-gray-100 bg-white pb-8">
                     {totalPrice < MINIMUM_ORDER_AMOUNT && items.length > 0 && (
                         <p className="text-sm text-red-500 mb-2 text-center">
                             최소 주문 금액 {MINIMUM_ORDER_AMOUNT.toLocaleString()}원 미만입니다.
+                            {' '}
                             ({(MINIMUM_ORDER_AMOUNT - totalPrice).toLocaleString()}원 부족)
                         </p>
                     )}
@@ -137,7 +130,6 @@ export default function CartBottomSheet({ isOpen, onClose, onProceedToOrder }: C
                 </div>
             </div>
 
-            {/* 배달 주소 입력 */}
             <AddressInputBottomSheet
                 isOpen={isAddressSheetOpen}
                 onClose={() => setIsAddressSheetOpen(false)}

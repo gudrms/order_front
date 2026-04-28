@@ -25,3 +25,6 @@ export * from './error';
 
 // Payment types
 export * from './payment';
+
+// Address types
+export * from './address';
