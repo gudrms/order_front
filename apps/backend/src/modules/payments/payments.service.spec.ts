@@ -36,11 +36,18 @@ describe('PaymentsService', () => {
                 update: vi.fn((args) => ({ model: 'order', args })),
                 findUnique: vi.fn(),
             },
+            user: {
+                findUnique: vi.fn(),
+            },
+            store: {
+                findUnique: vi.fn(),
+            },
             $transaction: vi.fn(async (operations) => operations),
         };
 
         tossApiService = {
             confirmPayment: vi.fn(),
+            cancelPayment: vi.fn(),
         };
 
         const module: TestingModule = await Test.createTestingModule({
@@ -255,5 +262,146 @@ describe('PaymentsService', () => {
                 }),
             }),
         }));
+    });
+
+    it('fully cancels a paid Toss payment and cancels the order', async () => {
+        prisma.user.findUnique.mockResolvedValue({ id: 'owner-1', role: 'OWNER' });
+        prisma.store.findUnique.mockResolvedValue({ id: 'store-1', ownerId: 'owner-1' });
+        prisma.payment.findFirst.mockResolvedValue({
+            ...pendingPayment,
+            status: 'PAID',
+            paymentKey: 'payment-key',
+            approvedAmount: 24000,
+            cancelledAmount: 0,
+            order: {
+                id: 'order-1',
+                storeId: 'store-1',
+                totalAmount: 24000,
+                store: { id: 'store-1', ownerId: 'owner-1' },
+                delivery: { id: 'delivery-1' },
+            },
+        });
+        prisma.order.findUnique.mockResolvedValue({
+            id: 'order-1',
+            status: 'CANCELLED',
+            paymentStatus: 'REFUNDED',
+            payments: [{ id: 'payment-1', status: 'REFUNDED' }],
+        });
+        tossApiService.cancelPayment.mockResolvedValue({
+            paymentKey: 'payment-key',
+            cancels: [{ cancelAmount: 24000 }],
+        });
+
+        const result = await service.cancelOrderTossPayment('owner-1', 'order-1', {
+            cancelReason: 'customer requested cancellation',
+        });
+
+        expect(result).toEqual(expect.objectContaining({
+            id: 'order-1',
+            paymentStatus: 'REFUNDED',
+        }));
+        expect(tossApiService.cancelPayment).toHaveBeenCalledWith({
+            paymentKey: 'payment-key',
+            cancelReason: 'customer requested cancellation',
+            cancelAmount: undefined,
+            idempotencyKey: 'cancel-payment-1-24000',
+        });
+        expect(prisma.payment.update).toHaveBeenCalledWith(expect.objectContaining({
+            where: { id: 'payment-1' },
+            data: expect.objectContaining({
+                status: 'REFUNDED',
+                cancelledAmount: 24000,
+                cancelledAt: expect.any(Date),
+            }),
+        }));
+        expect(prisma.order.update).toHaveBeenCalledWith(expect.objectContaining({
+            where: { id: 'order-1' },
+            data: expect.objectContaining({
+                status: 'CANCELLED',
+                paymentStatus: 'REFUNDED',
+                cancelReason: 'customer requested cancellation',
+                delivery: expect.objectContaining({
+                    update: expect.objectContaining({
+                        status: 'CANCELLED',
+                    }),
+                }),
+            }),
+        }));
+    });
+
+    it('partially refunds a paid Toss payment without cancelling the order', async () => {
+        prisma.user.findUnique.mockResolvedValue({ id: 'admin-1', role: 'ADMIN' });
+        prisma.store.findUnique.mockResolvedValue({ id: 'store-1', ownerId: 'owner-1' });
+        prisma.payment.findFirst.mockResolvedValue({
+            ...pendingPayment,
+            status: 'PAID',
+            paymentKey: 'payment-key',
+            approvedAmount: 24000,
+            cancelledAmount: 3000,
+            order: {
+                id: 'order-1',
+                storeId: 'store-1',
+                totalAmount: 24000,
+                store: { id: 'store-1', ownerId: 'owner-1' },
+                delivery: { id: 'delivery-1' },
+            },
+        });
+        prisma.order.findUnique.mockResolvedValue({
+            id: 'order-1',
+            status: 'PAID',
+            paymentStatus: 'PARTIAL_REFUNDED',
+        });
+        tossApiService.cancelPayment.mockResolvedValue({
+            paymentKey: 'payment-key',
+            cancels: [{ cancelAmount: 5000 }],
+        });
+
+        await service.cancelOrderTossPayment('admin-1', 'order-1', {
+            cancelReason: 'delivery fee adjustment',
+            cancelAmount: 5000,
+        });
+
+        expect(tossApiService.cancelPayment).toHaveBeenCalledWith(expect.objectContaining({
+            cancelAmount: 5000,
+            idempotencyKey: 'cancel-payment-1-8000',
+        }));
+        expect(prisma.payment.update).toHaveBeenCalledWith(expect.objectContaining({
+            data: expect.objectContaining({
+                status: 'PARTIAL_REFUNDED',
+                cancelledAmount: 8000,
+            }),
+        }));
+        expect(prisma.order.update).toHaveBeenCalledWith({
+            where: { id: 'order-1' },
+            data: {
+                paymentStatus: 'PARTIAL_REFUNDED',
+            },
+        });
+    });
+
+    it('rejects refund amounts greater than the remaining paid amount', async () => {
+        prisma.user.findUnique.mockResolvedValue({ id: 'owner-1', role: 'OWNER' });
+        prisma.store.findUnique.mockResolvedValue({ id: 'store-1', ownerId: 'owner-1' });
+        prisma.payment.findFirst.mockResolvedValue({
+            ...pendingPayment,
+            status: 'PAID',
+            paymentKey: 'payment-key',
+            approvedAmount: 24000,
+            cancelledAmount: 10000,
+            order: {
+                id: 'order-1',
+                storeId: 'store-1',
+                totalAmount: 24000,
+                store: { id: 'store-1', ownerId: 'owner-1' },
+                delivery: null,
+            },
+        });
+
+        await expect(service.cancelOrderTossPayment('owner-1', 'order-1', {
+            cancelReason: 'too much',
+            cancelAmount: 20000,
+        })).rejects.toBeInstanceOf(BadRequestException);
+
+        expect(tossApiService.cancelPayment).not.toHaveBeenCalled();
     });
 });

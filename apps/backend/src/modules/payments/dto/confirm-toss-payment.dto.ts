@@ -65,3 +65,23 @@ export class ExpirePendingTossPaymentsDto {
     @IsOptional()
     olderThanMinutes?: number;
 }
+
+export class CancelTossPaymentDto {
+    @ApiProperty({
+        description: '취소/환불 사유',
+        example: '고객 요청으로 주문을 취소합니다.',
+    })
+    @IsString()
+    @IsNotEmpty()
+    cancelReason: string;
+
+    @ApiPropertyOptional({
+        description: '부분 환불 금액. 생략하면 남은 결제 금액 전체를 취소합니다.',
+        example: 5000,
+        minimum: 1,
+    })
+    @IsInt()
+    @Min(1)
+    @IsOptional()
+    cancelAmount?: number;
+}

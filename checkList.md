@@ -60,6 +60,7 @@
 - [x] 배달 현금/만나서 결제 거부
 - [x] Toss 결제 승인 API `POST /payments/toss/confirm`
 - [x] Toss 결제 실패 API `POST /payments/toss/fail`
+- [x] 관리자 Toss 결제 취소/환불 API `POST /payments/orders/:orderId/toss/cancel`
 - [x] 배달 주문 목록 API 추가
 - [x] 주문 상세 API 추가
 - [x] 결제 timeout/pending 만료 처리 추가
@@ -69,7 +70,7 @@
 - [x] 배달 상태 변경 API `PATCH /stores/:storeId/orders/:orderId/delivery-status` 추가
 - [x] 주문 서비스 단위 테스트에 고객 취소 정책 추가
 - [x] 주문 서비스 단위 테스트에 배달 상태 변경 정책 추가
-- [ ] 결제 완료 후 관리자 환불/취소 API 추가
+- [x] 결제 완료 후 관리자 환불/취소 API 추가
 - [ ] POS pending orders API를 새 정책 기준으로 확장
 
 ## 배달앱 상태
@@ -100,7 +101,7 @@
 - [ ] 관리자: 매장 등록/운영 설정 화면을 백엔드 API에 연결
 - [x] 관리자: 주문 목록에서 `type`, `source`, `paymentStatus`, 배달 상태 표시
 - [x] 관리자: 배달 상태 변경 버튼/운영 화면 구현
-- [ ] 관리자: 결제 완료 주문 취소/환불 처리 패널 구현
+- [x] 관리자: 결제 완료 주문 전액 취소/부분 환불 버튼 구현
 - [ ] 테이블오더: 실제 Store UUID/tableNumber 연결과 첫 주문/추가 주문 E2E
 - [ ] 홈페이지: 주문 CTA를 배달앱 매장 URL로 연결
 - [ ] 홈페이지: 매장/메뉴 API 연결
@@ -113,7 +114,8 @@
 - [x] `apps/backend`: `tsc --noEmit`
 - [x] `apps/backend`: `vitest run src/modules/orders/orders.service.spec.ts` 17 tests 통과
 - [x] `apps/backend`: `vitest run src/modules/auth/auth.service.spec.ts` 5 tests 통과
-- [x] `apps/backend`: `vitest run src/modules/payments/payments.service.spec.ts` 8 tests 통과
+- [x] `apps/backend`: `vitest run src/modules/payments/payments.service.spec.ts` 11 tests 통과
+- [x] `apps/admin`: `tsc --noEmit`
 - [ ] `apps/backend`: 최신 전체 `vitest run`은 `menus.service.spec.ts` 메뉴 상세 테스트 1건 실패. POS/catalog 작업자 영역이라 본 작업에서는 미수정.
 - [x] `apps/delivery-customer`: `tsc --noEmit`
 - [x] `packages/shared`: `tsc --noEmit`
@@ -126,12 +128,11 @@
 
 ## 다음 개발 순서
 
-1. 결제 완료 후 관리자 환불/취소 API와 UI
-2. 매장 수정/배달 운영 설정 화면 연결
-3. 주소 CRUD를 로그인 사용자 기준 실제 API로 전환
-4. 찜/즐겨찾기를 로그인 사용자 기준 실제 API로 전환
-5. Toss 테스트 카드결제 성공/실패 E2E
-6. Sentry/PWA E2E 검증
+1. 매장 수정/배달 운영 설정 화면 연결
+2. 주소 CRUD를 로그인 사용자 기준 실제 API로 전환
+3. 찜/즐겨찾기를 로그인 사용자 기준 실제 API로 전환
+4. Toss 테스트 카드결제 성공/실패/환불 E2E
+5. Sentry/PWA E2E 검증
 
 ## 체크리스트 위치
 

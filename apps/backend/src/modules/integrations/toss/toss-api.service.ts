@@ -47,11 +47,18 @@ export interface TossPaymentConfirmRequest {
     idempotencyKey: string;
 }
 
+export interface TossPaymentCancelRequest {
+    paymentKey: string;
+    cancelReason: string;
+    cancelAmount?: number;
+    idempotencyKey: string;
+}
+
 @Injectable()
 export class TossApiService {
     constructor(private readonly configService: ConfigService) { }
 
-    async confirmPayment(request: TossPaymentConfirmRequest) {
+    private getPaymentsAuthorization() {
         const secretKey = this.configService.get<string>('TOSS_PAYMENTS_SECRET_KEY')
             || this.configService.get<string>('TOSS_SECRET_KEY')
             || this.configService.get<string>('TOSS_ACCESS_SECRET');
@@ -60,7 +67,11 @@ export class TossApiService {
             throw new InternalServerErrorException('Toss Payments secret key is not configured');
         }
 
-        const authorization = Buffer.from(`${secretKey}:`).toString('base64');
+        return Buffer.from(`${secretKey}:`).toString('base64');
+    }
+
+    async confirmPayment(request: TossPaymentConfirmRequest) {
+        const authorization = this.getPaymentsAuthorization();
 
         try {
             const response = await axios.post(
@@ -87,6 +98,43 @@ export class TossApiService {
                 const message = (error.response?.data as any)?.message || error.message;
                 throw new BadRequestException({
                     code: 'TOSS_CONFIRM_FAILED',
+                    status,
+                    message,
+                    details: error.response?.data,
+                });
+            }
+
+            throw error;
+        }
+    }
+
+    async cancelPayment(request: TossPaymentCancelRequest) {
+        const authorization = this.getPaymentsAuthorization();
+
+        try {
+            const response = await axios.post(
+                `https://api.tosspayments.com/v1/payments/${encodeURIComponent(request.paymentKey)}/cancel`,
+                {
+                    cancelReason: request.cancelReason,
+                    ...(request.cancelAmount ? { cancelAmount: request.cancelAmount } : {}),
+                },
+                {
+                    headers: {
+                        Authorization: `Basic ${authorization}`,
+                        'Content-Type': 'application/json',
+                        'Idempotency-Key': request.idempotencyKey,
+                    },
+                    timeout: 8000,
+                },
+            );
+
+            return response.data;
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                const status = error.response?.status || 502;
+                const message = (error.response?.data as any)?.message || error.message;
+                throw new BadRequestException({
+                    code: 'TOSS_CANCEL_FAILED',
                     status,
                     message,
                     details: error.response?.data,

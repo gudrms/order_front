@@ -13,7 +13,7 @@ import * as authApi from './endpoints/auth';
 
 export { apiClient, ApiClientError } from './client';
 export { cancelOrder, createOrder, getDeliveryOrders, getOrder, getOrdersByTable, updateDeliveryStatus, updateOrderStatus } from './endpoints/order';
-export { confirmTossPayment, failTossPayment } from './endpoints/payment';
+export { cancelOrderTossPayment, confirmTossPayment, failTossPayment } from './endpoints/payment';
 export { getCategories, getMenus, getMenuDetail } from './endpoints/menu';
 export { getStore, getStoreByIdentifier } from './endpoints/store';
 export { syncCurrentUser } from './endpoints/auth';

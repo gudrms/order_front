@@ -166,6 +166,27 @@ export default function OrdersPage() {
     },
   });
 
+  const cancelPaymentMutation = useMutation({
+    mutationFn: async ({
+      orderId,
+      cancelReason,
+      cancelAmount,
+    }: {
+      orderId: string;
+      cancelReason: string;
+      cancelAmount?: number;
+    }) => {
+      await axios.post(
+        `${API_URL}/payments/orders/${orderId}/toss/cancel`,
+        { cancelReason, cancelAmount },
+        { headers: authHeaders }
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-orders', storeId] });
+    },
+  });
+
   const isLoading = isStoresLoading || isOrdersLoading;
 
   if (isLoading) {
@@ -300,6 +321,7 @@ export default function OrdersPage() {
                     <div className="flex min-w-[220px] flex-wrap gap-2">
                       {renderOrderAction(order, updateStatusMutation.mutate)}
                       {renderDeliveryAction(order, updateDeliveryStatusMutation.mutate)}
+                      {renderPaymentCancelAction(order, cancelPaymentMutation.mutate)}
                       <button
                         onClick={() => setPrintOrder(order)}
                         className="inline-flex items-center gap-1 rounded-md border border-gray-200 px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-50"
@@ -521,5 +543,74 @@ function renderDeliveryAction(
       <MapPin size={14} />
       {action.label}
     </button>
+  );
+}
+
+function renderPaymentCancelAction(
+  order: Order,
+  cancelPayment: (payload: {
+    orderId: string;
+    cancelReason: string;
+    cancelAmount?: number;
+  }) => void
+) {
+  if (!['PAID', 'PARTIAL_REFUNDED'].includes(order.paymentStatus || '')) {
+    return null;
+  }
+
+  const payment = order.payments?.find((candidate) => ['PAID', 'PARTIAL_REFUNDED'].includes(candidate.status));
+  if (!payment) return null;
+
+  const paidAmount = payment.approvedAmount || payment.amount;
+  const cancelledAmount = payment.cancelledAmount || 0;
+  const remainingAmount = paidAmount - cancelledAmount;
+  if (remainingAmount <= 0) return null;
+
+  const handleFullCancel = () => {
+    const reason = window.prompt('전액 취소/환불 사유를 입력해주세요.', '고객 요청으로 주문을 취소합니다.');
+    if (!reason) return;
+
+    cancelPayment({
+      orderId: order.id,
+      cancelReason: reason,
+    });
+  };
+
+  const handlePartialCancel = () => {
+    const amountText = window.prompt(`부분 환불 금액을 입력해주세요. 남은 결제금액: ${remainingAmount.toLocaleString()}원`);
+    if (!amountText) return;
+
+    const cancelAmount = Number(amountText.replace(/[^0-9]/g, ''));
+    if (!Number.isFinite(cancelAmount) || cancelAmount <= 0 || cancelAmount > remainingAmount) {
+      window.alert('환불 금액을 다시 확인해주세요.');
+      return;
+    }
+
+    const reason = window.prompt('부분 환불 사유를 입력해주세요.', '관리자 부분 환불 처리');
+    if (!reason) return;
+
+    cancelPayment({
+      orderId: order.id,
+      cancelReason: reason,
+      cancelAmount,
+    });
+  };
+
+  return (
+    <>
+      <button
+        onClick={handleFullCancel}
+        className="inline-flex items-center gap-1 rounded-md bg-red-600 px-3 py-1.5 text-xs text-white hover:bg-red-700"
+      >
+        <XCircle size={14} />
+        전액 취소
+      </button>
+      <button
+        onClick={handlePartialCancel}
+        className="inline-flex items-center gap-1 rounded-md border border-red-200 px-3 py-1.5 text-xs text-red-600 hover:bg-red-50"
+      >
+        부분 환불
+      </button>
+    </>
   );
 }
