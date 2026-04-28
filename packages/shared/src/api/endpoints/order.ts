@@ -1,4 +1,4 @@
-import type { CancelOrderRequest, CreateOrderRequest, Order, OrderListResponse, OrderStatus, OrderDelivery, OrderPayment } from '../../types';
+import type { CancelOrderRequest, CreateOrderRequest, Order, OrderListResponse, OrderStatus, OrderDelivery, OrderPayment, UpdateDeliveryStatusRequest } from '../../types';
 import type { OrderResponse } from '../../types';
 import { apiClient } from '../client';
 
@@ -151,6 +151,18 @@ export async function cancelOrder(
     request: CancelOrderRequest = {}
 ): Promise<Order> {
     const response = await apiClient.patch<BackendOrder>(`/orders/${orderId}/cancel`, request);
+    return mapOrder(response);
+}
+
+export async function updateDeliveryStatus(
+    storeId: string,
+    orderId: string,
+    request: UpdateDeliveryStatusRequest
+): Promise<Order> {
+    const response = await apiClient.patch<BackendOrder>(
+        `/stores/${storeId}/orders/${orderId}/delivery-status`,
+        request
+    );
     return mapOrder(response);
 }
 

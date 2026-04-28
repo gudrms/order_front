@@ -301,4 +301,89 @@ describe('OrdersService', () => {
         expect(tx.payment.updateMany).not.toHaveBeenCalled();
         expect(tx.order.update).not.toHaveBeenCalled();
     });
+
+    it('updates a picked-up delivery order and moves the customer order status to delivering', async () => {
+        prisma.order = {
+            findUnique: vi.fn().mockResolvedValue({
+                id: 'order-1',
+                storeId: 'store-1',
+                type: 'DELIVERY',
+                status: 'READY',
+                delivery: { id: 'delivery-1' },
+            }),
+            update: vi.fn().mockResolvedValue({
+                id: 'order-1',
+                status: 'DELIVERING',
+                delivery: { status: 'PICKED_UP' },
+            }),
+        };
+
+        const result = await service.updateDeliveryStatus('store-1', 'order-1', 'PICKED_UP');
+
+        expect(result).toMatchObject({
+            id: 'order-1',
+            status: 'DELIVERING',
+            delivery: { status: 'PICKED_UP' },
+        });
+        expect(prisma.order.update).toHaveBeenCalledWith(expect.objectContaining({
+            where: { id: 'order-1' },
+            data: expect.objectContaining({
+                status: 'DELIVERING',
+                delivery: {
+                    update: expect.objectContaining({
+                        status: 'PICKED_UP',
+                        pickedUpAt: expect.any(Date),
+                    }),
+                },
+            }),
+        }));
+    });
+
+    it('marks a delivered order as completed with delivery timestamp', async () => {
+        prisma.order = {
+            findUnique: vi.fn().mockResolvedValue({
+                id: 'order-1',
+                storeId: 'store-1',
+                type: 'DELIVERY',
+                status: 'DELIVERING',
+                delivery: { id: 'delivery-1' },
+            }),
+            update: vi.fn().mockResolvedValue({
+                id: 'order-1',
+                status: 'COMPLETED',
+                delivery: { status: 'DELIVERED' },
+            }),
+        };
+
+        await service.updateDeliveryStatus('store-1', 'order-1', 'DELIVERED');
+
+        expect(prisma.order.update).toHaveBeenCalledWith(expect.objectContaining({
+            data: expect.objectContaining({
+                status: 'COMPLETED',
+                completedAt: expect.any(Date),
+                delivery: {
+                    update: expect.objectContaining({
+                        status: 'DELIVERED',
+                        deliveredAt: expect.any(Date),
+                    }),
+                },
+            }),
+        }));
+    });
+
+    it('rejects delivery status changes for non-delivery orders', async () => {
+        prisma.order = {
+            findUnique: vi.fn().mockResolvedValue({
+                id: 'order-1',
+                storeId: 'store-1',
+                type: 'TABLE',
+                status: 'READY',
+                delivery: null,
+            }),
+            update: vi.fn(),
+        };
+
+        await expect(service.updateDeliveryStatus('store-1', 'order-1', 'DELIVERING')).rejects.toBeInstanceOf(BadRequestException);
+        expect(prisma.order.update).not.toHaveBeenCalled();
+    });
 });

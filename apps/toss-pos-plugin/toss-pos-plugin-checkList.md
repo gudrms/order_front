@@ -12,7 +12,7 @@
   - POS 전송 조건: `Order.status === 'PAID' && tossOrderId IS NULL` 단일 룰
   - `PENDING_PAYMENT`는 자동으로 POS 제외 (결제 미완료라 어차피 안 보냄)
   - `payment.add`는 `sourceType: 'EXTERNAL'` 단일 분기로 충분 (배달앱이 토스페이먼츠로 이미 결제 완료한 상태이므로)
-- 테스트: 플러그인 vitest **29** / 백엔드 vitest **52** 모두 그린. 빌드 통과 (dist/main.js 503kB / gzip 124kB)
+- 테스트: 플러그인 vitest **30** / 백엔드 vitest **52** 모두 그린. 빌드 통과 (dist/main.js 503kB / gzip 124kB)
 - **출시 전 남은 항목 = #9 실기기 E2E 단 하나** (수동 작업)
 
 ## 완료
@@ -56,6 +56,7 @@
 
 - [x] **#1 옵션 매핑 키 충돌 — 데이터 오염 차단** (`pos.controller.ts:getPendingOrders`). 기존 `menuOptionMap`이 `name`만으로 키 매핑해서 다른 메뉴에 같은 옵션명("기본", "보통" 등)이 있으면 마지막 메뉴의 `tossOptionCode`로 덮어써져 잘못된 옵션이 POS에 전송됨 → 사장님이 손님 음식 잘못 만드는 진짜 버그. 키를 `(menuId, optionGroupName, optionName)` 3종 복합으로 변경. 회귀 테스트 신규 1.
 - [x] **#2 환경변수 silent fallback 제거 + 명시적 throw** (`config.ts`). 누락된 `PLUGIN_*` 환경변수가 빈 문자열/`'YOUR_STORE_ID'` 같은 placeholder로 fallback해서 모호한 런타임 에러로 이어지던 부분 정리. `requireEnv`/`resolveApiUrl` 헬퍼로 추출. dev에서는 localhost fallback 유지, prod에서는 (a) 누락 (b) localhost를 가리키는 URL 모두 throw. 부팅 시 즉시 실패 → plugin.zip 배포 전에 발견. `config.test.ts` 신규 (11 케이스).
+- [x] **#3 `pollOrders` 404 silent return 제거** (`order.ts:178`). 404는 "주문 없음"이 아니라 "라우트 자체가 없음" 의미인데 silent return하던 부분을 throw로 변경. 빈 목록은 `200 + []` 경로로만 처리. 404/5xx 모두 명확한 에러 로그(`API Error: <status> <statusText> for <url>`) 남기고 운영자가 즉시 인지 가능. 테스트 1개 제거 + 2개 추가 (404 에러 로그 / 5xx 에러 로그).
 
 ## 정정사항 (이전 추정 → 사실)
 
@@ -66,7 +67,6 @@
 
 ### 코드 리뷰 잔여 픽스 (실기기 E2E 전 권장)
 
-- [ ] **#3 `pollOrders`의 404 silent return 제거** (`order.ts:178`). 404는 정상이 아닌 경고 대상.
 - [ ] **#15 `updateOrderStatus` 4xx 즉시 fail** (`order.ts:158-169`). 현재 4xx도 3회 재시도해 6초 헛지연. 5xx + 네트워크 에러만 재시도.
 
 ### 코드 리뷰 잔여 픽스 (시간 되면)
@@ -93,7 +93,6 @@
 
 ## 다음 순서
 
-1. (#3) `pollOrders` 404 처리 정정
-2. (#15) `updateOrderStatus` 4xx 즉시 fail 분기
-3. (#9) 실기기 E2E — 출시 게이트, 코드로 진행 불가
-4. 시간 되면 #4~#10 리뷰 잔여 픽스
+1. (#15) `updateOrderStatus` 4xx 즉시 fail 분기
+2. (#9) 실기기 E2E — 출시 게이트, 코드로 진행 불가
+3. 시간 되면 #4~#10 리뷰 잔여 픽스

@@ -17,6 +17,7 @@ export function useOrder(orderId?: string | null, userId?: string | null) {
         queryKey: ['delivery-order', orderId, userId],
         queryFn: () => api.order.getOrder(orderId!),
         enabled: !!orderId && !!userId,
+        refetchInterval: userId ? 5000 : false,
     });
 }
 

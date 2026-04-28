@@ -3,6 +3,7 @@ import { ApiTags, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiBody, ApiBea
 import { OrdersService } from './orders.service';
 import { CreateDeliveryOrderDto, CreateOrderDto } from './dto/create-order.dto';
 import { CancelOrderDto } from './dto/cancel-order.dto';
+import { DeliveryStatusDto, UpdateDeliveryStatusDto } from './dto/update-delivery-status.dto';
 import { SupabaseGuard } from '../auth/guards/supabase.guard';
 import { CurrentUser } from '../../common/decorators/user.decorator';
 
@@ -238,6 +239,31 @@ export class OrdersController {
         @Body('status') status: OrderStatus,
     ) {
         return this.ordersService.updateOrderStatus(storeId, orderId, status);
+    }
+
+    @Patch(':orderId/delivery-status')
+    @UseGuards(SupabaseGuard)
+    @ApiBearerAuth('JWT-auth')
+    @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
+    @ApiOperation({
+        summary: '배달 상태 변경',
+        description: '매장/관리자에서 배달 주문의 배송 상태를 변경합니다. 배송 시작/완료/취소 상태는 고객앱 주문 상태에도 함께 반영됩니다.',
+    })
+    @ApiParam({ name: 'storeId', description: '매장 ID' })
+    @ApiParam({ name: 'orderId', description: '주문 ID' })
+    @ApiBody({ type: UpdateDeliveryStatusDto })
+    @ApiResponse({ status: 200, description: '배달 상태 변경 성공' })
+    @ApiResponse({ status: 400, description: '배달 주문이 아니거나 변경할 수 없는 상태' })
+    @ApiResponse({ status: 401, description: '인증 실패' })
+    @ApiResponse({ status: 404, description: '주문을 찾을 수 없습니다.' })
+    async updateDeliveryStatus(
+        @Param('storeId') storeId: string,
+        @Param('orderId') orderId: string,
+        @Body() dto: UpdateDeliveryStatusDto,
+    ) {
+        return this.ordersService.updateDeliveryStatus(storeId, orderId, dto.status as DeliveryStatusDto, {
+            riderMemo: dto.riderMemo,
+        });
     }
 }
 

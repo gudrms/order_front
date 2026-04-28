@@ -1,6 +1,7 @@
 import type { CreateDeliveryOrderRequest } from './payment';
 
 export type OrderStatus = 'PENDING' | 'PENDING_PAYMENT' | 'PAID' | 'CONFIRMED' | 'COOKING' | 'PREPARING' | 'READY' | 'DELIVERING' | 'COMPLETED' | 'CANCELLED';
+export type DeliveryStatus = 'PENDING' | 'ASSIGNED' | 'PICKED_UP' | 'DELIVERING' | 'DELIVERED' | 'FAILED' | 'CANCELLED';
 
 export interface SelectedOptionItem {
   optionItemId: string;
@@ -45,8 +46,14 @@ export interface OrderDelivery {
   zipCode?: string | null;
   deliveryMemo?: string | null;
   deliveryFee: number;
-  status: string;
+  status: DeliveryStatus;
   estimatedMinutes?: number | null;
+  requestedAt?: Date | string;
+  assignedAt?: Date | string | null;
+  pickedUpAt?: Date | string | null;
+  deliveredAt?: Date | string | null;
+  cancelledAt?: Date | string | null;
+  riderMemo?: string | null;
 }
 
 export interface OrderPayment {
@@ -105,6 +112,11 @@ export interface UpdateOrderStatusRequest {
 
 export interface CancelOrderRequest {
   reason?: string;
+}
+
+export interface UpdateDeliveryStatusRequest {
+  status: DeliveryStatus;
+  riderMemo?: string;
 }
 
 export interface OrderListResponse {

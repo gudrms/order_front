@@ -176,8 +176,10 @@ export async function pollOrders() {
     try {
         const response = await fetch(`${API_URL}/pos/orders/pending`);
         if (!response.ok) {
-            if (response.status === 404) return;
-            throw new Error(`API Error: ${response.status}`);
+            // 404를 silent return 처리하면 안 됨: "주문 없음"이 아니라 "라우트 자체가 없음"이라는
+            // 배포 실수 신호. 빈 목록은 200 + [] 로 와야 정상.
+            // 모든 비-2xx는 명확한 에러로 처리해 운영 가시성 확보.
+            throw new Error(`API Error: ${response.status} ${response.statusText} for ${API_URL}/pos/orders/pending`);
         }
 
         const orders: BackendOrder[] = await response.json();
