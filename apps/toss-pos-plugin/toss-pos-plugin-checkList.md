@@ -1,5 +1,5 @@
 # Toss SDK/POS 앱 체크리스트
-마지막 업데이트: 2026-04-28
+마지막 업데이트: 2026-04-28 (2차 보완)
 
 > SDK 시그니처/이벤트/Rate Limit/사용 금지 패턴은 **README.md 의 "SDK 참고" 섹션**에 박혀 있음.
 > 다음 세션은 거기부터 읽고 부족하면 `node_modules/@tossplace/pos-plugin-sdk/types/index.d.ts` → 공식 문서(`docs.tossplace.com`) 순으로 확인.
@@ -12,7 +12,7 @@
   - POS 전송 조건: `Order.status === 'PAID' && tossOrderId IS NULL` 단일 룰
   - `PENDING_PAYMENT`는 자동으로 POS 제외 (결제 미완료라 어차피 안 보냄)
   - `payment.add`는 `sourceType: 'EXTERNAL'` 단일 분기로 충분 (배달앱이 토스페이먼츠로 이미 결제 완료한 상태이므로)
-- 테스트: 플러그인 vitest **19** / 백엔드 vitest **48** 모두 그린. 빌드 통과 (dist/main.js 502kB / gzip 123kB)
+- 테스트: 플러그인 vitest **29** / 백엔드 vitest **52** 모두 그린. 빌드 통과 (dist/main.js 503kB / gzip 124kB)
 - **출시 전 남은 항목 = #9 실기기 E2E 단 하나** (수동 작업)
 
 ## 완료
@@ -50,12 +50,34 @@
 - [x] **Realtime 재연결 정합성 + 백오프**. 기존 코드는 `supabase.channel('pos-orders').subscribe()`만 호출해 listener 없는 빈 채널을 만들어 재연결돼도 콜백이 영원히 안 옴. `bindRealtimeChannel()`로 분리해 listener까지 매번 다시 박도록 수정. 백오프 5s → 10s → 20s → 40s → 60s(cap), `SUBSCRIBED` 시 리셋. 중복 setTimeout 가드, `CLOSED`도 재연결 트리거에 포함, `pollingTimer` 중복 시작 방지.
 - [x] **PATCH FAILED 시 orphan 정리**. `updateOrderStatus`가 3회 모두 실패하면 토스 POS에는 order+payment 등록 + DB tossOrderId 미반영 → 다음 폴링에서 백엔드 409 가드에 막혀 무한 루프. `'FAILED'` 반환 시 토스 주문을 cancel하고 `posPluginSdk.toast.open`으로 운영자 알림.
 
+### 코드 리뷰 보강 (2026-04-28 2차) — 실기기 E2E 직전 픽스
+
+코드를 줄 단위로 다시 보면서 발견한 진짜 버그 위주로 정리.
+
+- [x] **#1 옵션 매핑 키 충돌 — 데이터 오염 차단** (`pos.controller.ts:getPendingOrders`). 기존 `menuOptionMap`이 `name`만으로 키 매핑해서 다른 메뉴에 같은 옵션명("기본", "보통" 등)이 있으면 마지막 메뉴의 `tossOptionCode`로 덮어써져 잘못된 옵션이 POS에 전송됨 → 사장님이 손님 음식 잘못 만드는 진짜 버그. 키를 `(menuId, optionGroupName, optionName)` 3종 복합으로 변경. 회귀 테스트 신규 1.
+- [x] **#2 환경변수 silent fallback 제거 + 명시적 throw** (`config.ts`). 누락된 `PLUGIN_*` 환경변수가 빈 문자열/`'YOUR_STORE_ID'` 같은 placeholder로 fallback해서 모호한 런타임 에러로 이어지던 부분 정리. `requireEnv`/`resolveApiUrl` 헬퍼로 추출. dev에서는 localhost fallback 유지, prod에서는 (a) 누락 (b) localhost를 가리키는 URL 모두 throw. 부팅 시 즉시 실패 → plugin.zip 배포 전에 발견. `config.test.ts` 신규 (11 케이스).
+
 ## 정정사항 (이전 추정 → 사실)
 
 - ~~`PluginOrderDto`에 memo 필드 없음~~ → **있음**. 주문 단위(`memo`) + 라인 단위(`lineItems[].memo`) 둘 다 존재. 배달 메모는 여기 매핑.
 - ~~`PluginDeliveryOrderDto`로 별도 호출~~ → 공식 문서에 별도 메서드 없음. `order.add(PluginOrderDto)` + `lineItems[].diningOption: 'DELIVERY'`가 권장 패턴.
 
 ## 남은 일
+
+### 코드 리뷰 잔여 픽스 (실기기 E2E 전 권장)
+
+- [ ] **#3 `pollOrders`의 404 silent return 제거** (`order.ts:178`). 404는 정상이 아닌 경고 대상.
+- [ ] **#15 `updateOrderStatus` 4xx 즉시 fail** (`order.ts:158-169`). 현재 4xx도 3회 재시도해 6초 헛지연. 5xx + 네트워크 에러만 재시도.
+
+### 코드 리뷰 잔여 픽스 (시간 되면)
+
+- [ ] #4 #5 `(payment as any).orderId` / `as any` 캐스팅 제거 → 타입 안전성
+- [ ] #6 `removeChannel` 안전한 호출 위해 channel 객체 모듈 변수 보관
+- [ ] #7 polling이 fallback이 아니라 reconciliation임을 이름/주석으로 명확화
+- [ ] #8 `processOrder` 함수 분해 (buildPluginOrderDto / confirmOrCleanup 등)
+- [ ] #9 catalog sync 실패 alert + 백오프 (rate limit 에러 silent fail 방지)
+- [ ] #10 catalogId/categoryId 변환 가드 (Number 변환 NaN 방지)
+- [ ] #11~17 폴리시: magic number 모음, 로그 레벨 분리, 파일 분할 등
 
 ### #9 실기기 E2E (출시 게이트)
 - 카드 결제 1건 → POS에 주문+결제 동시 등록 확인
@@ -71,4 +93,7 @@
 
 ## 다음 순서
 
-1. (#9) 실기기 E2E — 출시 게이트, 코드로 진행 불가
+1. (#3) `pollOrders` 404 처리 정정
+2. (#15) `updateOrderStatus` 4xx 즉시 fail 분기
+3. (#9) 실기기 E2E — 출시 게이트, 코드로 진행 불가
+4. 시간 되면 #4~#10 리뷰 잔여 픽스
