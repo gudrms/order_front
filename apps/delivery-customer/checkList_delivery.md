@@ -1,11 +1,13 @@
 # 배달앱 체크리스트
-마지막 업데이트: 2026-04-26
+마지막 업데이트: 2026-04-28
 
 ## 현재 요약
 
-- 배달앱 결제 정책은 **토스페이먼츠 선결제만 허용**한다.
+- 배달앱 결제 정책은 **Toss Payments 선결제만 허용**한다.
 - 만나서 결제/현금 결제는 MVP 범위에서 제외한다.
-- 가장 큰 남은 일은 Toss 카드결제 E2E, 배달 취소 정책 정리, Sentry/PWA E2E 검증이다.
+- 로그인, 카카오/Supabase 연동, 주문 생성/조회/상세, 결제 성공/실패 화면은 기본 연결 완료.
+- 이번 작업으로 결제 승인 전 고객 주문 취소 API/UI를 연결했다.
+- 아직 남은 핵심은 실제 Toss E2E, 결제 완료 후 환불/관리자 처리, 주소/찜 실사용자 연동, PWA/Sentry 검증이다.
 
 ## 완료
 
@@ -14,7 +16,12 @@
 - [x] React Query Provider 구성
 - [x] Supabase Auth Context 구성
 - [x] 메뉴/카테고리/장바구니/주소/결제/주문내역/주문상세 UI 구성
+- [x] Store Context 추가
+- [x] `NEXT_PUBLIC_STORE_ID` 또는 `NEXT_PUBLIC_STORE_TYPE`/`NEXT_PUBLIC_BRANCH_ID` 기반 매장 조회
+- [x] 메뉴/카테고리/체크아웃에서 Store Context의 실제 `storeId` 사용
+- [x] 체크아웃에서 매장별 최소 주문금액/배달비/무료배달 기준 반영
 - [x] Toss Payment Widget UI 연결
+- [x] Toss 결제 `customerKey`를 로그인 사용자 ID 기준으로 정리
 - [x] 배달 주문 payload에 주소, 연락처, 요청사항 포함
 - [x] 옵션 payload에 `optionId` 포함
 - [x] 백엔드 `POST /orders` 배달 주문 생성 연결
@@ -26,10 +33,6 @@
 - [x] 배달 주문에서 현금/만나서 결제 경로 제거
 - [x] 백엔드에서 배달 `CASH` 주문 거부
 - [x] 백엔드가 매장 활성 상태, 배달 가능 여부, 최소 주문금액 검증
-- [x] Store Context 추가
-- [x] `NEXT_PUBLIC_STORE_ID` 또는 `NEXT_PUBLIC_STORE_TYPE`/`NEXT_PUBLIC_BRANCH_ID` 기반 매장 조회
-- [x] 메뉴/카테고리/체크아웃이 Store Context의 실제 storeId 사용
-- [x] 체크아웃에서 매장별 최소 주문금액/배달비/무료배달 기준 반영
 - [x] 백엔드 배달 주문 목록 API 추가
 - [x] 백엔드 주문 상세 API 추가
 - [x] shared 주문 mapper 추가
@@ -38,38 +41,44 @@
 - [x] 결제 `PENDING_PAYMENT` timeout/만료 처리 API 추가
 - [x] 주문 상태 tracker를 실제 주문 상세 API polling과 Supabase Realtime 병행 구조로 연결
 - [x] 엽떡앱 모티브에 맞춰 배달 주문/주문내역/주문상세 로그인 필수 정책으로 전환
-- [x] API client에 Supabase access token 자동 주입
-- [x] 카카오/Supabase OAuth 로그인 후 백엔드 `User` 자동 생성/갱신 연결
+- [x] API client가 Supabase access token 자동 주입
+- [x] Supabase 사용자와 DB `User` 자동 동기화
 - [x] 백엔드 `POST /auth/sync` 인증 사용자 동기화 API 추가
-- [x] Toss 결제 `customerKey`를 로그인 사용자 ID 기준으로 정리
 - [x] Toss 결제 성공/실패/중단 화면 문구와 재시도 안내 정리
 - [x] Toss 결제 E2E 실행 점검표 추가: `apps/delivery-customer/TOSS_PAYMENT_E2E.md`
+- [x] 결제 승인 전 주문 취소 API `PATCH /orders/:orderId/cancel` 연결
+- [x] 주문상세 화면에서 결제 승인 전 주문 취소 UI 연결
+- [x] 취소된 주문의 주문상세 상태/취소 사유 표시
 
 ## 남은 일
 
-### P0: 결제 안정화
+### P0: 결제 안정성
 
 - [ ] 실제 Toss 테스트 카드결제 성공 E2E
 - [ ] 실제 Toss 테스트 카드결제 실패/취소 E2E
 - [x] 결제 timeout/pending 만료 처리
 - [ ] 중복 callback/idempotency 재시도 정책 보강
-- [x] 결제 승인 실패 시 사용자 안내 UI 정리
+- [x] 결제 승인 실패 후 사용자 안내 UI 정리
+- [ ] 결제 완료 주문의 관리자 환불/취소 API 연결
 
-### P1: 주문 상태와 조회 정책
+### P1: 주문 상태와 취소 정책
 
 - [x] 주문 상태 tracker를 실제 주문 상태와 연결
 - [x] Realtime 또는 polling 기반 주문 상태 갱신 연결
 - [x] 로그인 필수 주문 조회 정책 확정
-- [ ] 주문 취소 요청 정책 확정
+- [x] 결제 승인 전 고객 주문 취소 정책 확정
+- [x] 결제 승인 전 고객 주문 취소 UI 연결
+- [ ] 결제 완료 후 환불 요청/관리자 승인 정책 구현
 - [ ] 배달 상태 변경 API 연결
+- [ ] 취소/환불 상태를 주문내역 카드에도 노출
 
 ### P2: 사용자 기능
 
 - [x] API client에 Supabase access token 주입
-- [x] Supabase 사용자와 앱 DB `User` 자동 동기화
+- [x] Supabase 사용자와 DB `User` 자동 동기화
 - [ ] 주소 조회/추가/삭제를 실제 사용자 기준으로 동작
 - [ ] 찜 조회/추가/삭제를 실제 사용자 기준으로 동작
-- [ ] `test-user-id` 제거
+- [ ] `test-user-id` 제거 여부 최종 확인
 - [ ] 쿠폰/포인트 데이터 정책 결정
 
 ### P2: PWA/빌드
@@ -78,31 +87,30 @@
 - [ ] manifest icon 경로와 실제 asset 정합성 확인
 - [ ] Service Worker 캐싱 전략 검증
 - [ ] Android 프로젝트 생성/동기화 검증
-- [ ] iOS 프로젝트 생성 검토
+- [ ] iOS 프로젝트 생성 검증
 - [ ] FCM/APNS/Deep Link 설정
 
 ## 검증 기록
 
-- [x] 배달앱 TypeScript 타입체크 통과
-- [x] shared TypeScript 타입체크 통과
-- [x] 백엔드 TypeScript 타입체크 통과
-- [x] 백엔드 `vitest run`: 8 files, 41 tests 통과
-- [x] 백엔드 `vitest run src/modules/orders/orders.service.spec.ts`: 11 tests 통과
-- [x] 백엔드 `vitest run src/modules/auth/auth.service.spec.ts`: 5 tests 통과
-- [x] 백엔드 `vitest run src/modules/payments/payments.service.spec.ts`: 8 tests 통과
+- [x] `apps/backend`: `tsc --noEmit`
+- [x] `packages/shared`: `tsc --noEmit`
+- [x] `apps/delivery-customer`: `tsc --noEmit`
+- [x] `apps/backend`: `vitest run src/modules/orders/orders.service.spec.ts` 14 tests 통과
+- [x] `apps/backend`: `vitest run src/modules/auth/auth.service.spec.ts` 5 tests 통과
+- [x] `apps/backend`: `vitest run src/modules/payments/payments.service.spec.ts` 8 tests 통과
 - [ ] 최신 백엔드 전체 `vitest run`: `menus.service.spec.ts` 메뉴 상세 테스트 1건 실패. POS/catalog 작업자 영역이라 본 작업에서는 미수정.
 - [x] 백엔드 Prisma validate/generate 통과
 - [x] 개발 DB migration 적용 완료
-- [x] 과거 검증: 현장결제 배달 주문 생성 E2E 통과
 - [ ] 공식 검증 필요: 카드결제 주문 생성/승인 E2E
-- [x] Toss 결제 성공/실패 화면 타입체크 통과
 - [ ] 주문내역/상세 실제 API E2E
 - [ ] Sentry 이벤트 수신 E2E
 - [ ] PWA 설치/빌드 검증
 
 ## 다음 순서
 
-1. Toss 테스트 카드결제 성공/실패 E2E
-2. 배달 취소 정책과 UI 정리
-3. Sentry 이벤트 수신 E2E
-4. PWA 빌드/설치 검증
+1. 배달 상태 변경 API와 주문상세/주문내역 표시 연결
+2. 결제 완료 후 관리자 환불/취소 API와 UI 연결
+3. 주소 CRUD를 로그인 사용자 기준 실제 API로 전환
+4. 찜/즐겨찾기를 로그인 사용자 기준 실제 API로 전환
+5. Toss 테스트 카드결제 성공/실패 E2E
+6. Sentry/PWA E2E 검증

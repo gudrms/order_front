@@ -1,4 +1,4 @@
-import type { CreateOrderRequest, Order, OrderListResponse, OrderStatus, OrderDelivery, OrderPayment } from '../../types';
+import type { CancelOrderRequest, CreateOrderRequest, Order, OrderListResponse, OrderStatus, OrderDelivery, OrderPayment } from '../../types';
 import type { OrderResponse } from '../../types';
 import { apiClient } from '../client';
 
@@ -40,6 +40,8 @@ interface BackendOrder {
     createdAt: string;
     updatedAt?: string;
     completedAt?: string | null;
+    cancelledAt?: string | null;
+    cancelReason?: string | null;
 }
 
 function mapOrder(order: BackendOrder): Order {
@@ -63,6 +65,8 @@ function mapOrder(order: BackendOrder): Order {
         createdAt: order.createdAt,
         updatedAt: order.updatedAt,
         completedAt: order.completedAt,
+        cancelledAt: order.cancelledAt,
+        cancelReason: order.cancelReason,
         items: (order.items || []).map((item) => ({
             id: item.id,
             orderId: item.orderId,
@@ -139,6 +143,14 @@ export async function getDeliveryOrders(params: {
 
 export async function getOrder(orderId: string): Promise<Order> {
     const response = await apiClient.get<BackendOrder>(`/orders/${orderId}`);
+    return mapOrder(response);
+}
+
+export async function cancelOrder(
+    orderId: string,
+    request: CancelOrderRequest = {}
+): Promise<Order> {
+    const response = await apiClient.patch<BackendOrder>(`/orders/${orderId}/cancel`, request);
     return mapOrder(response);
 }
 

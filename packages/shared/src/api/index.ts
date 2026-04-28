@@ -12,7 +12,7 @@ import * as storeApi from './endpoints/store';
 import * as authApi from './endpoints/auth';
 
 export { apiClient, ApiClientError } from './client';
-export { createOrder, getDeliveryOrders, getOrder, getOrdersByTable, updateOrderStatus } from './endpoints/order';
+export { cancelOrder, createOrder, getDeliveryOrders, getOrder, getOrdersByTable, updateOrderStatus } from './endpoints/order';
 export { confirmTossPayment, failTossPayment } from './endpoints/payment';
 export { getCategories, getMenus, getMenuDetail } from './endpoints/menu';
 export { getStore, getStoreByIdentifier } from './endpoints/store';

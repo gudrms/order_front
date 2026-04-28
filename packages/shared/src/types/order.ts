@@ -80,6 +80,8 @@ export interface Order {
   createdAt: Date | string;
   updatedAt?: Date | string;
   completedAt?: Date | string | null;
+  cancelledAt?: Date | string | null;
+  cancelReason?: string | null;
 }
 
 export interface CreateTableOrderRequest {
@@ -99,6 +101,10 @@ export type CreateOrderRequest = CreateTableOrderRequest | CreateDeliveryOrderRe
 
 export interface UpdateOrderStatusRequest {
   status: OrderStatus;
+}
+
+export interface CancelOrderRequest {
+  reason?: string;
 }
 
 export interface OrderListResponse {
