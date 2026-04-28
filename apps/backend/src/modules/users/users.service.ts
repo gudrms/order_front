@@ -1,77 +1,165 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateAddressDto } from './dto/create-address.dto';
+import { CreateAddressDto, UpdateAddressDto } from './dto/create-address.dto';
+
+export interface AuthenticatedUser {
+    id: string;
+    email?: string | null;
+    userMetadata?: {
+        full_name?: string;
+        name?: string;
+        phone?: string;
+        phone_number?: string;
+    } | null;
+}
 
 @Injectable()
 export class UsersService {
     constructor(private readonly prisma: PrismaService) { }
 
-    async getAddresses(userId: string) {
-        return this.prisma.userAddress.findMany({
-            where: { userId },
-            orderBy: { createdAt: 'desc' },
+    private async ensureUser(user: AuthenticatedUser) {
+        if (!user?.id) {
+            throw new BadRequestException('인증된 사용자 정보가 필요합니다.');
+        }
+
+        const metadata = user.userMetadata || {};
+
+        return this.prisma.user.upsert({
+            where: { id: user.id },
+            update: {
+                email: user.email || `${user.id}@supabase.local`,
+                name: metadata.full_name || metadata.name,
+                phoneNumber: metadata.phone || metadata.phone_number,
+            },
+            create: {
+                id: user.id,
+                email: user.email || `${user.id}@supabase.local`,
+                name: metadata.full_name || metadata.name,
+                phoneNumber: metadata.phone || metadata.phone_number,
+                role: 'USER',
+            },
         });
     }
 
-    async createAddress(userId: string, email: string, name: string, dto: CreateAddressDto) {
-        // 유저가 DB에 없을 수 있으므로 (Supabase 로그인만 하고 DB 동기화 안 된 경우) upsert로 보장
-        await this.prisma.user.upsert({
-            where: { id: userId },
-            update: {}, // 이미 있으면 무시
-            create: {
-                id: userId,
-                email: email,
-                name: name,
-                role: 'USER', // 기본 역할
-            },
+    async getAddresses(userId: string) {
+        return this.prisma.userAddress.findMany({
+            where: { userId },
+            orderBy: [
+                { isDefault: 'desc' },
+                { updatedAt: 'desc' },
+            ],
         });
+    }
 
-        // 만약 기본 배달지로 설정했다면, 기존 기본 배달지 해제
-        if (dto.isDefault) {
-            await this.prisma.userAddress.updateMany({
+    async createAddress(user: AuthenticatedUser, dto: CreateAddressDto) {
+        await this.ensureUser(user);
+
+        return this.prisma.$transaction(async (tx) => {
+            const addressCount = await tx.userAddress.count({
+                where: { userId: user.id },
+            });
+            const isDefault = dto.isDefault ?? addressCount === 0;
+
+            if (isDefault) {
+                await tx.userAddress.updateMany({
+                    where: { userId: user.id, isDefault: true },
+                    data: { isDefault: false },
+                });
+            }
+
+            return tx.userAddress.create({
+                data: {
+                    userId: user.id,
+                    ...dto,
+                    isDefault,
+                },
+            });
+        });
+    }
+
+    async updateAddress(userId: string, addressId: string, dto: UpdateAddressDto) {
+        await this.assertOwnsAddress(userId, addressId);
+
+        return this.prisma.$transaction(async (tx) => {
+            if (dto.isDefault) {
+                await tx.userAddress.updateMany({
+                    where: { userId, isDefault: true },
+                    data: { isDefault: false },
+                });
+            }
+
+            return tx.userAddress.update({
+                where: { id: addressId },
+                data: dto,
+            });
+        });
+    }
+
+    async setDefaultAddress(userId: string, addressId: string) {
+        await this.assertOwnsAddress(userId, addressId);
+
+        return this.prisma.$transaction(async (tx) => {
+            await tx.userAddress.updateMany({
                 where: { userId, isDefault: true },
                 data: { isDefault: false },
             });
-        }
 
-        return this.prisma.userAddress.create({
-            data: {
-                userId,
-                ...dto,
-            },
+            return tx.userAddress.update({
+                where: { id: addressId },
+                data: { isDefault: true },
+            });
         });
     }
 
     async deleteAddress(userId: string, addressId: string) {
+        const address = await this.assertOwnsAddress(userId, addressId);
+
+        return this.prisma.$transaction(async (tx) => {
+            const deleted = await tx.userAddress.delete({
+                where: { id: addressId },
+            });
+
+            if (address.isDefault) {
+                const nextDefault = await tx.userAddress.findFirst({
+                    where: { userId },
+                    orderBy: { updatedAt: 'desc' },
+                });
+
+                if (nextDefault) {
+                    await tx.userAddress.update({
+                        where: { id: nextDefault.id },
+                        data: { isDefault: true },
+                    });
+                }
+            }
+
+            return deleted;
+        });
+    }
+
+    private async assertOwnsAddress(userId: string, addressId: string) {
         const address = await this.prisma.userAddress.findUnique({
             where: { id: addressId },
         });
 
-        if (!address) {
-            throw new NotFoundException('Address not found');
+        if (!address || address.userId !== userId) {
+            throw new NotFoundException('주소를 찾을 수 없습니다.');
         }
 
-        if (address.userId !== userId) {
-            throw new NotFoundException('Address not found'); // 보안상 Not Found로 처리
-        }
-
-        return this.prisma.userAddress.delete({
-            where: { id: addressId },
-        });
+        return address;
     }
 
     async getFavorites(userId: string) {
         return this.prisma.userFavorite.findMany({
             where: { userId },
             include: {
-                menu: true, // 메뉴 정보 함께 조회
+                menu: true,
             },
             orderBy: { createdAt: 'desc' },
         });
     }
 
     async addFavorite(userId: string, menuId: string) {
-        // 이미 찜했는지 확인
         const existing = await this.prisma.userFavorite.findUnique({
             where: {
                 userId_menuId: {
@@ -82,7 +170,7 @@ export class UsersService {
         });
 
         if (existing) {
-            return existing; // 이미 있으면 그대로 반환
+            return existing;
         }
 
         return this.prisma.userFavorite.create({

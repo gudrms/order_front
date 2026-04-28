@@ -1,70 +1,110 @@
-import { Controller, Get, Post, Delete, Body, Param, UseGuards, Request, Patch } from '@nestjs/common';
-import { UsersService } from './users.service';
-import { CreateAddressDto } from './dto/create-address.dto';
-// import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'; // TODO: Auth Guard implementation needed
+import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { CurrentUser } from '../../common/decorators/user.decorator';
+import { SupabaseGuard } from '../auth/guards/supabase.guard';
+import { CreateAddressDto, UpdateAddressDto } from './dto/create-address.dto';
+import { AuthenticatedUser, UsersService } from './users.service';
 
+@ApiTags('Users')
+@ApiBearerAuth('JWT-auth')
+@UseGuards(SupabaseGuard)
 @Controller('users')
 export class UsersController {
     constructor(private readonly usersService: UsersService) { }
 
-    // TODO: Add Auth Guard to all endpoints
-
     @Get('me/addresses')
-    async getMyAddresses(@Request() req) {
-        // const userId = req.user.id;
-        const userId = 'test-user-id'; // TODO: Replace with actual user ID from JWT
-        return this.usersService.getAddresses(userId);
+    @ApiOperation({
+        summary: '내 배달 주소 목록 조회',
+        description: '로그인한 사용자의 저장 주소를 기본 주소 우선으로 조회합니다.',
+    })
+    @ApiResponse({ status: 200, description: '주소 목록 조회 성공' })
+    async getMyAddresses(@CurrentUser() user: AuthenticatedUser) {
+        return this.usersService.getAddresses(user.id);
     }
 
     @Post('me/addresses')
-    async createAddress(@Request() req, @Body() dto: CreateAddressDto) {
-        let userId = 'test-user-id';
-        let email = 'test@example.com';
-        let name = 'Test User';
+    @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
+    @ApiOperation({
+        summary: '내 배달 주소 추가',
+        description: '로그인한 사용자에게 새 배달 주소를 저장합니다. 첫 주소는 자동으로 기본 주소가 됩니다.',
+    })
+    @ApiBody({ type: CreateAddressDto })
+    @ApiResponse({ status: 201, description: '주소 추가 성공' })
+    async createAddress(
+        @CurrentUser() user: AuthenticatedUser,
+        @Body() dto: CreateAddressDto,
+    ) {
+        return this.usersService.createAddress(user, dto);
+    }
 
-        const authHeader = req.headers.authorization;
-        if (authHeader && authHeader.startsWith('Bearer ')) {
-            const token = authHeader.split(' ')[1];
-            try {
-                const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
-                if (payload.sub) {
-                    userId = payload.sub;
-                    email = payload.email || `${userId}@placeholder.com`;
-                    name = payload.user_metadata?.full_name || payload.user_metadata?.name || 'User';
-                }
-            } catch (e) {
-                console.error('Failed to parse JWT in createAddress', e);
-            }
-        }
+    @Patch('me/addresses/:id')
+    @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
+    @ApiOperation({
+        summary: '내 배달 주소 수정',
+        description: '로그인한 사용자가 소유한 주소만 수정할 수 있습니다.',
+    })
+    @ApiParam({ name: 'id', description: '주소 ID' })
+    @ApiBody({ type: UpdateAddressDto })
+    @ApiResponse({ status: 200, description: '주소 수정 성공' })
+    async updateAddress(
+        @CurrentUser() user: AuthenticatedUser,
+        @Param('id') addressId: string,
+        @Body() dto: UpdateAddressDto,
+    ) {
+        return this.usersService.updateAddress(user.id, addressId, dto);
+    }
 
-        return this.usersService.createAddress(userId, email, name, dto);
+    @Patch('me/addresses/:id/default')
+    @ApiOperation({
+        summary: '기본 배달 주소 설정',
+        description: '선택한 주소를 기본 배달 주소로 지정하고 기존 기본 주소는 해제합니다.',
+    })
+    @ApiParam({ name: 'id', description: '주소 ID' })
+    @ApiResponse({ status: 200, description: '기본 주소 설정 성공' })
+    async setDefaultAddress(
+        @CurrentUser() user: AuthenticatedUser,
+        @Param('id') addressId: string,
+    ) {
+        return this.usersService.setDefaultAddress(user.id, addressId);
     }
 
     @Delete('me/addresses/:id')
-    async deleteAddress(@Request() req, @Param('id') addressId: string) {
-        // const userId = req.user.id;
-        const userId = 'test-user-id'; // TODO: Replace with actual user ID from JWT
-        return this.usersService.deleteAddress(userId, addressId);
+    @ApiOperation({
+        summary: '내 배달 주소 삭제',
+        description: '로그인한 사용자가 소유한 주소만 삭제할 수 있습니다. 기본 주소 삭제 시 남은 최신 주소를 기본 주소로 지정합니다.',
+    })
+    @ApiParam({ name: 'id', description: '주소 ID' })
+    @ApiResponse({ status: 200, description: '주소 삭제 성공' })
+    async deleteAddress(
+        @CurrentUser() user: AuthenticatedUser,
+        @Param('id') addressId: string,
+    ) {
+        return this.usersService.deleteAddress(user.id, addressId);
     }
 
     @Get('me/favorites')
-    async getMyFavorites(@Request() req) {
-        // const userId = req.user.id;
-        const userId = 'test-user-id'; // TODO: Replace with actual user ID
-        return this.usersService.getFavorites(userId);
+    @ApiOperation({ summary: '내 찜 메뉴 목록 조회' })
+    async getMyFavorites(@CurrentUser() user: AuthenticatedUser) {
+        return this.usersService.getFavorites(user.id);
     }
 
     @Post('me/favorites/:menuId')
-    async addFavorite(@Request() req, @Param('menuId') menuId: string) {
-        // const userId = req.user.id;
-        const userId = 'test-user-id'; // TODO: Replace with actual user ID
-        return this.usersService.addFavorite(userId, menuId);
+    @ApiOperation({ summary: '찜 메뉴 추가' })
+    @ApiParam({ name: 'menuId', description: '메뉴 ID' })
+    async addFavorite(
+        @CurrentUser() user: AuthenticatedUser,
+        @Param('menuId') menuId: string,
+    ) {
+        return this.usersService.addFavorite(user.id, menuId);
     }
 
     @Delete('me/favorites/:menuId')
-    async removeFavorite(@Request() req, @Param('menuId') menuId: string) {
-        // const userId = req.user.id;
-        const userId = 'test-user-id'; // TODO: Replace with actual user ID
-        return this.usersService.removeFavorite(userId, menuId);
+    @ApiOperation({ summary: '찜 메뉴 삭제' })
+    @ApiParam({ name: 'menuId', description: '메뉴 ID' })
+    async removeFavorite(
+        @CurrentUser() user: AuthenticatedUser,
+        @Param('menuId') menuId: string,
+    ) {
+        return this.usersService.removeFavorite(user.id, menuId);
     }
 }

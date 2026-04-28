@@ -1,37 +1,28 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import {
-    ChevronRight,
-    Receipt,
-    MapPin,
-    Heart,
-    LogOut,
-    User as UserIcon,
-    Ticket,
-    Coins
-} from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { ChevronRight, Coins, Heart, LogOut, MapPin, Receipt, Ticket, User as UserIcon } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function MyPage() {
     const router = useRouter();
     const { user, signOut, loading } = useAuth();
 
+    useEffect(() => {
+        if (!loading && !user) {
+            router.push('/login');
+        }
+    }, [loading, router, user]);
+
     const handleLogout = async () => {
         try {
             await signOut();
             router.push('/login');
         } catch (error) {
-            console.error('Logout failed:', error);
+            console.error('로그아웃 실패:', error);
         }
     };
-
-    useEffect(() => {
-        if (!loading && !user) {
-            router.push('/login');
-        }
-    }, [user, loading, router]);
 
     if (loading) {
         return (
@@ -41,10 +32,7 @@ export default function MyPage() {
         );
     }
 
-    if (!user) {
-        return null;
-    }
-
+    if (!user) return null;
 
     const menuItems = [
         {
@@ -52,33 +40,31 @@ export default function MyPage() {
             icon: Receipt,
             onClick: () => router.push('/orders'),
             color: 'text-blue-500',
-            bgColor: 'bg-blue-50'
+            bgColor: 'bg-blue-50',
         },
         {
             label: '주소 관리',
             icon: MapPin,
             onClick: () => router.push('/mypage/address'),
             color: 'text-green-500',
-            bgColor: 'bg-green-50'
+            bgColor: 'bg-green-50',
         },
         {
             label: '찜한 메뉴',
             icon: Heart,
             onClick: () => router.push('/mypage/favorites'),
             color: 'text-red-500',
-            bgColor: 'bg-red-50'
-        }
+            bgColor: 'bg-red-50',
+        },
     ];
 
     return (
         <main className="min-h-screen bg-gray-50 pb-24">
-            {/* Header */}
             <header className="bg-white px-4 h-14 flex items-center border-b border-gray-100 sticky top-0 z-50">
                 <h1 className="font-bold text-lg">마이페이지</h1>
             </header>
 
             <div className="max-w-[568px] mx-auto">
-                {/* User Profile Section */}
                 <section className="bg-white p-6 mb-2">
                     <div className="flex items-center gap-4">
                         <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center">
@@ -86,18 +72,17 @@ export default function MyPage() {
                         </div>
                         <div>
                             <h2 className="font-bold text-xl">
-                                {user.user_metadata?.full_name || '고객'}님
+                                {user.user_metadata?.full_name || user.user_metadata?.name || '고객'}님
                             </h2>
                             <p className="text-gray-500 text-sm mt-1">
                                 {user.phone || user.email}
                             </p>
                         </div>
-                        <button className="ml-auto p-2 text-gray-400">
+                        <button className="ml-auto p-2 text-gray-400" aria-label="프로필 상세">
                             <ChevronRight size={24} />
                         </button>
                     </div>
 
-                    {/* Dashboard (Points/Coupons) */}
                     <div className="grid grid-cols-2 gap-3 mt-6">
                         <div className="bg-gray-50 rounded-xl p-4 flex items-center justify-between">
                             <div className="flex items-center gap-2">
@@ -115,12 +100,11 @@ export default function MyPage() {
                                 </div>
                                 <span className="text-sm font-medium text-gray-600">쿠폰</span>
                             </div>
-                            <span className="font-bold text-lg">0 장</span>
+                            <span className="font-bold text-lg">0장</span>
                         </div>
                     </div>
                 </section>
 
-                {/* Menu Grid */}
                 <section className="bg-white p-4 mb-2">
                     <h3 className="font-bold text-lg mb-4">나의 활동</h3>
                     <div className="grid grid-cols-3 gap-4">
@@ -142,7 +126,6 @@ export default function MyPage() {
                     </div>
                 </section>
 
-                {/* Footer Actions */}
                 <section className="bg-white p-4">
                     <button
                         onClick={handleLogout}
