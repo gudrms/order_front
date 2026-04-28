@@ -159,6 +159,18 @@ describe('processOrder', () => {
         expect(mockFetch).not.toHaveBeenCalled();
     });
 
+    it('PATCH가 3회 재시도 모두 실패하면 토스 주문을 취소하여 깨끗한 재시도 가능 상태로 만든다', async () => {
+        (posPluginSdk.order.add as any).mockResolvedValueOnce({ id: 'toss-failed-004' });
+        // PATCH 3번 모두 실패 (network error)
+        mockFetch.mockRejectedValue(new Error('Network error'));
+
+        await processOrder(sampleOrder);
+
+        expect(posPluginSdk.payment.add).toHaveBeenCalled();
+        expect(mockFetch).toHaveBeenCalledTimes(3);
+        expect(posPluginSdk.order.cancel).toHaveBeenCalledWith('toss-failed-004');
+    }, 10_000);
+
     it('미매핑 메뉴는 POS 전송을 skip한다', async () => {
         const unmapped: BackendOrder = {
             ...sampleOrder,

@@ -87,6 +87,21 @@ export async function processOrder(order: BackendOrder) {
             return;
         }
 
+        // PATCH가 3회 모두 실패: 토스 POS에는 order+payment 등록됐는데 DB tossOrderId 미반영.
+        // 이 상태로 두면 다음 폴링에서 같은 주문을 또 처리해 토스에 중복 등록 → 백엔드 409 가드에 막혀 무한 루프.
+        // 따라서 우리가 만든 토스 주문을 취소해 다음 폴링이 깨끗하게 재시도하도록 한다.
+        // (운영 알림용 토스트도 띄움.)
+        if (updated === 'FAILED') {
+            console.error(`Order ${order.orderNumber} PATCH failed after retries — cancelling Toss POS order ${result.id} for clean retry`);
+            try { posPluginSdk.toast.open(`주문 동기화 실패: ${order.orderNumber} 재시도 예정`); } catch { /* best-effort */ }
+            try {
+                await posPluginSdk.order.cancel(result.id);
+            } catch (cancelError) {
+                console.error('Failed to cancel Toss POS order after PATCH failure:', cancelError);
+            }
+            return;
+        }
+
         console.log(`Order ${order.orderNumber} synced successfully.`);
     } catch (error) {
         console.error(`Failed to process order ${order.orderNumber}:`, error);
