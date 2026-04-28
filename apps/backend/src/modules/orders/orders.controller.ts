@@ -2,6 +2,7 @@ import { Controller, Post, Body, Param, ValidationPipe, UsePipes, Get, Query, Pa
 import { ApiTags, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 import { OrdersService } from './orders.service';
 import { CreateDeliveryOrderDto, CreateOrderDto } from './dto/create-order.dto';
+import { CancelOrderDto } from './dto/cancel-order.dto';
 import { SupabaseGuard } from '../auth/guards/supabase.guard';
 import { CurrentUser } from '../../common/decorators/user.decorator';
 
@@ -279,6 +280,31 @@ export class RootOrdersController {
         @CurrentUser() user?: { id: string },
     ) {
         return this.ordersService.getOrderById(orderId, { userId: user?.id });
+    }
+
+    @Patch(':orderId/cancel')
+    @UseGuards(SupabaseGuard)
+    @ApiBearerAuth('JWT-auth')
+    @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
+    @ApiOperation({
+        summary: '배달 주문 고객 취소',
+        description: '로그인 사용자가 본인 배달 주문을 결제 승인 전 상태에서 직접 취소합니다. 결제 완료 주문은 관리자 환불 승인 흐름에서 처리합니다.',
+    })
+    @ApiParam({ name: 'orderId', description: '주문 ID' })
+    @ApiBody({ type: CancelOrderDto })
+    @ApiResponse({ status: 200, description: '주문 취소 성공' })
+    @ApiResponse({ status: 400, description: '이미 결제 완료되었거나 고객 취소가 불가능한 상태' })
+    @ApiResponse({ status: 401, description: '인증 실패' })
+    @ApiResponse({ status: 404, description: '주문을 찾을 수 없거나 본인 주문이 아님' })
+    async cancelDeliveryOrder(
+        @Param('orderId') orderId: string,
+        @Body() dto: CancelOrderDto,
+        @CurrentUser() user?: { id: string },
+    ) {
+        return this.ordersService.cancelDeliveryOrder(orderId, {
+            userId: user?.id,
+            reason: dto.reason,
+        });
     }
 
     @Post()

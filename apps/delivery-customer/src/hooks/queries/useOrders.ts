@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@order/shared';
 
 export function useOrders(params: {
@@ -17,5 +17,17 @@ export function useOrder(orderId?: string | null, userId?: string | null) {
         queryKey: ['delivery-order', orderId, userId],
         queryFn: () => api.order.getOrder(orderId!),
         enabled: !!orderId && !!userId,
+    });
+}
+
+export function useCancelOrder(orderId?: string | null, userId?: string | null) {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: (reason?: string) => api.order.cancelOrder(orderId!, { reason }),
+        onSuccess: (order) => {
+            queryClient.setQueryData(['delivery-order', orderId, userId], order);
+            queryClient.invalidateQueries({ queryKey: ['delivery-orders'] });
+        },
     });
 }

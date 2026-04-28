@@ -59,6 +59,10 @@ describe('OrdersService', () => {
                 create: vi.fn(),
                 findMany: vi.fn(),
                 findUnique: vi.fn(),
+                update: vi.fn(),
+            },
+            payment: {
+                updateMany: vi.fn(),
             },
         };
         prisma = {
@@ -208,5 +212,93 @@ describe('OrdersService', () => {
         };
 
         await expect(service.getOrderById('order-1', { userId: 'user-2' })).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('cancels a pending payment delivery order owned by the authenticated user', async () => {
+        const pendingOrder = {
+            id: 'order-1',
+            type: 'DELIVERY',
+            userId: 'user-1',
+            status: 'PENDING_PAYMENT',
+            paymentStatus: 'READY',
+            delivery: { id: 'delivery-1' },
+            payments: [{ id: 'payment-1', status: 'READY' }],
+        };
+        tx.order.findUnique.mockResolvedValue(pendingOrder);
+        tx.payment.updateMany.mockResolvedValue({ count: 1 });
+        tx.order.update.mockResolvedValue({
+            ...pendingOrder,
+            status: 'CANCELLED',
+            paymentStatus: 'CANCELLED',
+            cancelReason: 'wrong order',
+        });
+
+        const result = await service.cancelDeliveryOrder('order-1', {
+            userId: 'user-1',
+            reason: 'wrong order',
+        });
+
+        expect(result).toMatchObject({
+            id: 'order-1',
+            status: 'CANCELLED',
+            paymentStatus: 'CANCELLED',
+            cancelReason: 'wrong order',
+        });
+        expect(tx.payment.updateMany).toHaveBeenCalledWith(expect.objectContaining({
+            where: {
+                orderId: 'order-1',
+                status: { in: ['READY', 'PENDING'] },
+            },
+            data: expect.objectContaining({
+                status: 'CANCELLED',
+            }),
+        }));
+        expect(tx.order.update).toHaveBeenCalledWith(expect.objectContaining({
+            where: { id: 'order-1' },
+            data: expect.objectContaining({
+                status: 'CANCELLED',
+                paymentStatus: 'CANCELLED',
+                cancelReason: 'wrong order',
+            }),
+        }));
+    });
+
+    it('keeps delivery cancellation idempotent when the order is already cancelled', async () => {
+        const cancelledOrder = {
+            id: 'order-1',
+            type: 'DELIVERY',
+            userId: 'user-1',
+            status: 'CANCELLED',
+            paymentStatus: 'CANCELLED',
+            delivery: { id: 'delivery-1' },
+            payments: [],
+        };
+        tx.order.findUnique.mockResolvedValue(cancelledOrder);
+
+        await expect(service.cancelDeliveryOrder('order-1', {
+            userId: 'user-1',
+        })).resolves.toEqual(cancelledOrder);
+
+        expect(tx.payment.updateMany).not.toHaveBeenCalled();
+        expect(tx.order.update).not.toHaveBeenCalled();
+    });
+
+    it('rejects customer cancellation for paid delivery orders until refund approval is implemented', async () => {
+        tx.order.findUnique.mockResolvedValue({
+            id: 'order-1',
+            type: 'DELIVERY',
+            userId: 'user-1',
+            status: 'PAID',
+            paymentStatus: 'PAID',
+            delivery: { id: 'delivery-1' },
+            payments: [{ id: 'payment-1', status: 'PAID' }],
+        });
+
+        await expect(service.cancelDeliveryOrder('order-1', {
+            userId: 'user-1',
+        })).rejects.toBeInstanceOf(BadRequestException);
+
+        expect(tx.payment.updateMany).not.toHaveBeenCalled();
+        expect(tx.order.update).not.toHaveBeenCalled();
     });
 });

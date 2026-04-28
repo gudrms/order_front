@@ -325,6 +325,69 @@ export class OrdersService {
         return order;
     }
 
+    async cancelDeliveryOrder(orderId: string, params: { userId?: string; reason?: string }) {
+        if (!params.userId) {
+            throw new BadRequestException('userId is required to cancel a delivery order');
+        }
+
+        return this.prisma.$transaction(async (tx) => {
+            const order = await tx.order.findUnique({
+                where: { id: orderId },
+                include: this.orderInclude(),
+            });
+
+            if (!order || order.type !== 'DELIVERY' || order.userId !== params.userId) {
+                throw new NotFoundException(`Order not found: ${orderId}`);
+            }
+
+            if (order.status === 'CANCELLED') {
+                return order;
+            }
+
+            if (order.paymentStatus === 'PAID') {
+                throw new BadRequestException('Paid delivery orders require refund approval before cancellation');
+            }
+
+            const cancellableStatuses = ['PENDING_PAYMENT', 'PENDING'];
+            if (!cancellableStatuses.includes(order.status)) {
+                throw new BadRequestException('This order can no longer be cancelled by the customer');
+            }
+
+            const now = new Date();
+            const reason = params.reason?.trim() || 'Cancelled by customer before payment approval';
+
+            await tx.payment.updateMany({
+                where: {
+                    orderId,
+                    status: { in: ['READY', 'PENDING'] },
+                },
+                data: {
+                    status: 'CANCELLED',
+                    cancelledAt: now,
+                },
+            });
+
+            return tx.order.update({
+                where: { id: orderId },
+                data: {
+                    status: 'CANCELLED',
+                    paymentStatus: 'CANCELLED',
+                    cancelledAt: now,
+                    cancelReason: reason,
+                    delivery: order.delivery
+                        ? {
+                            update: {
+                                status: 'CANCELLED',
+                                cancelledAt: now,
+                            },
+                        }
+                        : undefined,
+                },
+                include: this.orderInclude(),
+            });
+        });
+    }
+
     async updateOrderStatus(storeId: string, orderId: string, status: any) {
         const order = await this.prisma.order.findUnique({
             where: { id: orderId },
