@@ -97,3 +97,68 @@ describe('PosController.updateOrderStatus', () => {
         });
     });
 });
+
+describe('PosController.getPendingOrders option mapping', () => {
+    let controller: PosController;
+    let prisma: any;
+
+    beforeEach(() => {
+        prisma = {
+            order: { findMany: vi.fn() },
+            menu: { findMany: vi.fn() },
+            menuOption: { findMany: vi.fn() },
+        };
+        controller = new PosController(prisma);
+    });
+
+    it('maps option tossOptionCode by (menuId, groupName, optionName) — same option name across different menus must not collide', async () => {
+        // 회귀 방지: 메뉴 A와 메뉴 B 둘 다 "기본" 옵션을 가진 시나리오.
+        // 이전 코드는 옵션명만으로 매핑해 마지막 메뉴의 tossOptionCode가 다른 메뉴 주문에 잘못 들어갔음.
+        prisma.order.findMany.mockResolvedValue([
+            {
+                id: 'order-1',
+                orderNumber: 'ORD-001',
+                totalAmount: 9000,
+                note: null,
+                payments: [],
+                items: [
+                    {
+                        menuId: 'menu-A',
+                        menuName: 'Taco A',
+                        menuPrice: 5000,
+                        quantity: 1,
+                        selectedOptions: [
+                            { optionGroupName: '맵기', optionName: '기본', optionPrice: 0 },
+                        ],
+                    },
+                    {
+                        menuId: 'menu-B',
+                        menuName: 'Burrito B',
+                        menuPrice: 4000,
+                        quantity: 1,
+                        selectedOptions: [
+                            { optionGroupName: '사이즈', optionName: '기본', optionPrice: 0 },
+                        ],
+                    },
+                ],
+            },
+        ]);
+        prisma.menu.findMany.mockResolvedValue([
+            { id: 'menu-A', tossMenuCode: '101', category: { id: 'cat-A', name: '메인', tossCategoryCode: '1' } },
+            { id: 'menu-B', tossMenuCode: '102', category: { id: 'cat-B', name: '메인', tossCategoryCode: '1' } },
+        ]);
+        // 두 메뉴 다 옵션명이 "기본"이지만 그룹명/메뉴는 다름. tossOptionCode도 달라야 함.
+        prisma.menuOption.findMany.mockResolvedValue([
+            { name: '기본', tossOptionCode: '201', optionGroup: { name: '맵기', menuId: 'menu-A' } },
+            { name: '기본', tossOptionCode: '202', optionGroup: { name: '사이즈', menuId: 'menu-B' } },
+        ]);
+
+        const [order] = await controller.getPendingOrders();
+
+        const itemA = order.items.find(i => i.menuName === 'Taco A')!;
+        const itemB = order.items.find(i => i.menuName === 'Burrito B')!;
+
+        expect(itemA.options[0].tossOptionCode).toBe('201'); // 메뉴 A의 "기본" → 201
+        expect(itemB.options[0].tossOptionCode).toBe('202'); // 메뉴 B의 "기본" → 202 (이전엔 201로 덮어써졌음)
+    });
+});
