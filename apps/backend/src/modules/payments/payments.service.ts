@@ -1,7 +1,7 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { TossApiService } from '../integrations/toss/toss-api.service';
-import { ConfirmTossPaymentDto, ExpirePendingTossPaymentsDto, FailTossPaymentDto } from './dto/confirm-toss-payment.dto';
+import { ConfirmTossPaymentDto, ExpirePendingTossPaymentsDto, FailTossPaymentDto, CancelTossPaymentDto } from './dto/confirm-toss-payment.dto';
 
 @Injectable()
 export class PaymentsService {
@@ -200,6 +200,97 @@ export class PaymentsService {
         };
     }
 
+    async cancelOrderTossPayment(userId: string, orderId: string, dto: CancelTossPaymentDto) {
+        const payment = await this.prisma.payment.findFirst({
+            where: {
+                orderId,
+                provider: 'TOSS_PAYMENTS',
+            },
+            include: {
+                order: {
+                    include: {
+                        store: true,
+                        delivery: true,
+                    },
+                },
+            },
+            orderBy: { createdAt: 'desc' },
+        });
+
+        if (!payment) {
+            throw new NotFoundException(`Toss payment not found for order: ${orderId}`);
+        }
+
+        await this.assertCanManageStore(userId, payment.order.storeId);
+
+        if (payment.status !== 'PAID' && payment.status !== 'PARTIAL_REFUNDED') {
+            throw new BadRequestException('Only paid Toss payments can be cancelled');
+        }
+        if (!payment.paymentKey) {
+            throw new BadRequestException('Payment key is missing');
+        }
+
+        const paidAmount = payment.approvedAmount || payment.amount;
+        const alreadyCancelledAmount = payment.cancelledAmount || 0;
+        const remainingAmount = paidAmount - alreadyCancelledAmount;
+        if (remainingAmount <= 0) {
+            return this.getOrderResponse(orderId);
+        }
+
+        const cancelAmount = dto.cancelAmount || remainingAmount;
+        if (cancelAmount > remainingAmount) {
+            throw new BadRequestException('Cancel amount exceeds remaining paid amount');
+        }
+
+        const isFullRefund = cancelAmount === remainingAmount;
+        const cancelReason = dto.cancelReason.trim();
+        const tossPayment = await this.tossApiService.cancelPayment({
+            paymentKey: payment.paymentKey,
+            cancelReason,
+            cancelAmount: isFullRefund ? undefined : cancelAmount,
+            idempotencyKey: `cancel-${payment.id}-${alreadyCancelledAmount + cancelAmount}`,
+        });
+
+        const now = new Date();
+        const nextCancelledAmount = alreadyCancelledAmount + cancelAmount;
+        const nextPaymentStatus = nextCancelledAmount >= paidAmount ? 'REFUNDED' : 'PARTIAL_REFUNDED';
+        const orderUpdateData: any = {
+            paymentStatus: nextPaymentStatus,
+        };
+
+        if (nextPaymentStatus === 'REFUNDED') {
+            orderUpdateData.status = 'CANCELLED';
+            orderUpdateData.cancelledAt = now;
+            orderUpdateData.cancelReason = cancelReason;
+            if (payment.order.delivery) {
+                orderUpdateData.delivery = {
+                    update: {
+                        status: 'CANCELLED',
+                        cancelledAt: now,
+                    },
+                };
+            }
+        }
+
+        await this.prisma.$transaction([
+            this.prisma.payment.update({
+                where: { id: payment.id },
+                data: {
+                    status: nextPaymentStatus,
+                    cancelledAmount: nextCancelledAmount,
+                    cancelledAt: nextPaymentStatus === 'REFUNDED' ? now : payment.cancelledAt,
+                    rawPayload: tossPayment,
+                },
+            }),
+            this.prisma.order.update({
+                where: { id: orderId },
+                data: orderUpdateData,
+            }),
+        ]);
+
+        return this.getOrderResponse(orderId);
+    }
+
     private mapTossMethod(method?: string) {
         if (!method) {
             return 'TOSS';
@@ -227,5 +318,20 @@ export class PaymentsService {
         }
 
         return order;
+    }
+
+    private async assertCanManageStore(userId: string, storeId: string) {
+        const [user, store] = await Promise.all([
+            this.prisma.user.findUnique({ where: { id: userId } }),
+            this.prisma.store.findUnique({ where: { id: storeId } }),
+        ]);
+
+        if (!store) {
+            throw new NotFoundException('Store not found');
+        }
+
+        if (!user || (user.role !== 'ADMIN' && store.ownerId !== userId)) {
+            throw new ForbiddenException('You do not have permission to manage this store');
+        }
     }
 }

@@ -63,6 +63,8 @@ export interface OrderPayment {
   status: string;
   amount: number;
   approvedAmount?: number | null;
+  cancelledAmount?: number;
+  cancelledAt?: Date | string | null;
   receiptUrl?: string | null;
 }
 
@@ -117,6 +119,11 @@ export interface CancelOrderRequest {
 export interface UpdateDeliveryStatusRequest {
   status: DeliveryStatus;
   riderMemo?: string;
+}
+
+export interface CancelPaymentRequest {
+  cancelReason: string;
+  cancelAmount?: number;
 }
 
 export interface OrderListResponse {

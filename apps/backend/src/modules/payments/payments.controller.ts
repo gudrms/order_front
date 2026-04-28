@@ -1,7 +1,9 @@
-import { Body, Controller, Post, UsePipes, ValidationPipe } from '@nestjs/common';
-import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { ConfirmTossPaymentDto, ExpirePendingTossPaymentsDto, FailTossPaymentDto } from './dto/confirm-toss-payment.dto';
+import { Body, Controller, Param, Post, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ConfirmTossPaymentDto, ExpirePendingTossPaymentsDto, FailTossPaymentDto, CancelTossPaymentDto } from './dto/confirm-toss-payment.dto';
 import { PaymentsService } from './payments.service';
+import { SupabaseGuard } from '../auth/guards/supabase.guard';
+import { CurrentUser } from '../../common/decorators/user.decorator';
 
 @ApiTags('Payments')
 @Controller('payments')
@@ -45,5 +47,27 @@ export class PaymentsController {
     @ApiResponse({ status: 201, description: '만료 주문 정리 완료' })
     async expirePendingTossPayments(@Body() dto: ExpirePendingTossPaymentsDto = {}) {
         return this.paymentsService.expirePendingTossPayments(dto);
+    }
+
+    @Post('orders/:orderId/toss/cancel')
+    @UseGuards(SupabaseGuard)
+    @ApiBearerAuth('JWT-auth')
+    @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
+    @ApiOperation({
+        summary: '관리자 Toss 결제 취소/환불',
+        description: '관리자 또는 매장 소유자가 결제 완료 주문의 Toss Payments 결제를 전액 또는 부분 취소합니다.',
+    })
+    @ApiParam({ name: 'orderId', description: '주문 ID' })
+    @ApiBody({ type: CancelTossPaymentDto })
+    @ApiResponse({ status: 201, description: '결제 취소/환불 성공' })
+    @ApiResponse({ status: 400, description: '환불할 수 없는 결제 상태 또는 금액' })
+    @ApiResponse({ status: 401, description: '인증 실패' })
+    @ApiResponse({ status: 404, description: '주문 또는 결제 정보를 찾을 수 없음' })
+    async cancelOrderTossPayment(
+        @CurrentUser() user: { id: string },
+        @Param('orderId') orderId: string,
+        @Body() dto: CancelTossPaymentDto,
+    ) {
+        return this.paymentsService.cancelOrderTossPayment(user.id, orderId, dto);
     }
 }

@@ -1,4 +1,4 @@
-import type { ConfirmTossPaymentRequest, FailTossPaymentRequest, OrderResponse } from '../../types';
+import type { CancelPaymentRequest, ConfirmTossPaymentRequest, FailTossPaymentRequest, OrderResponse } from '../../types';
 import { apiClient } from '../client';
 
 export async function confirmTossPayment(
@@ -11,4 +11,11 @@ export async function failTossPayment(
     request: FailTossPaymentRequest
 ): Promise<OrderResponse> {
     return apiClient.post<OrderResponse>('/payments/toss/fail', request);
+}
+
+export async function cancelOrderTossPayment(
+    orderId: string,
+    request: CancelPaymentRequest
+): Promise<OrderResponse> {
+    return apiClient.post<OrderResponse>(`/payments/orders/${orderId}/toss/cancel`, request);
 }
