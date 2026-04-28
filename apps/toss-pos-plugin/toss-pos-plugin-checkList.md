@@ -1,5 +1,5 @@
 # Toss SDK/POS 앱 체크리스트
-마지막 업데이트: 2026-04-26
+마지막 업데이트: 2026-04-28
 
 > SDK 시그니처/이벤트/Rate Limit/사용 금지 패턴은 **README.md 의 "SDK 참고" 섹션**에 박혀 있음.
 > 다음 세션은 거기부터 읽고 부족하면 `node_modules/@tossplace/pos-plugin-sdk/types/index.d.ts` → 공식 문서(`docs.tossplace.com`) 순으로 확인.
@@ -12,7 +12,8 @@
   - POS 전송 조건: `Order.status === 'PAID' && tossOrderId IS NULL` 단일 룰
   - `PENDING_PAYMENT`는 자동으로 POS 제외 (결제 미완료라 어차피 안 보냄)
   - `payment.add`는 `sourceType: 'EXTERNAL'` 단일 분기로 충분 (배달앱이 토스페이먼츠로 이미 결제 완료한 상태이므로)
-- 테스트: 플러그인 vitest 15 / 백엔드 vitest 34 모두 그린
+- 테스트: 플러그인 vitest **19** / 백엔드 vitest **48** 모두 그린. 빌드 통과 (dist/main.js 502kB / gzip 123kB)
+- **출시 전 남은 항목 = #9 실기기 E2E 단 하나** (수동 작업)
 
 ## 완료
 
@@ -41,6 +42,14 @@
 - [x] **#8** Idempotency 보강. 플러그인이 `Idempotency-Key: order-{orderId}-{status}` 헤더 전송. 백엔드는 (a) 동일 status + 동일 tossOrderId면 기존 레코드 즉시 반환(no-op), (b) 다른 tossOrderId 덮어쓰기 시도면 `409 Conflict`. 플러그인은 409 받으면 `posPluginSdk.order.cancel`로 자기가 만든 중복 토스 주문을 취소. `pos.controller.spec.ts` 신설(5 케이스).
 - [x] **#10** 메뉴 데이터 ownership 정책: **토스 POS가 single source of truth**. SDK 0.0.16의 `Catalog`는 read-only(get/on)이라 양방향 매핑 불가 — 옵션(a) 단방향 채택. 백엔드 `getMenus`/`getMenuDetail`에 `tossMenuCode != null` 필터 추가 (admin이 우회 생성한 잔존 메뉴는 고객 노출 차단). admin 메뉴 페이지에서 추가/수정/삭제 버튼 제거 + "POS에서 관리됩니다" 안내 배너 + 빈 상태 안내. 깨진 `/menu/new` 페이지 삭제(백엔드 POST 엔드포인트 부재로 어차피 동작 안 함). `menus.service.spec.ts`에 필터 케이스 + admin-only 메뉴 null 반환 케이스 추가.
 
+### 추가 신뢰성 보강 (2026-04-28)
+
+코드 리뷰 중 발견한 진짜 버그 + 운영 안정성 이슈 정리.
+
+- [x] **payment.add 실패 시 orphan 토스 주문 정리** (`src/order.ts`). `order.add` 성공 후 `payment.add`가 throw하면 토스 POS에 결제 누락 주문이 떠돌고 다음 폴링에서 같은 주문을 또 처리해 중복 등록 → 실패 즉시 `posPluginSdk.order.cancel(result.id)`로 정리하고 백엔드 PATCH 미발신 (다음 폴링이 깨끗하게 재시도). 테스트 추가.
+- [x] **Realtime 재연결 정합성 + 백오프**. 기존 코드는 `supabase.channel('pos-orders').subscribe()`만 호출해 listener 없는 빈 채널을 만들어 재연결돼도 콜백이 영원히 안 옴. `bindRealtimeChannel()`로 분리해 listener까지 매번 다시 박도록 수정. 백오프 5s → 10s → 20s → 40s → 60s(cap), `SUBSCRIBED` 시 리셋. 중복 setTimeout 가드, `CLOSED`도 재연결 트리거에 포함, `pollingTimer` 중복 시작 방지.
+- [x] **PATCH FAILED 시 orphan 정리**. `updateOrderStatus`가 3회 모두 실패하면 토스 POS에는 order+payment 등록 + DB tossOrderId 미반영 → 다음 폴링에서 백엔드 409 가드에 막혀 무한 루프. `'FAILED'` 반환 시 토스 주문을 cancel하고 `posPluginSdk.toast.open`으로 운영자 알림.
+
 ## 정정사항 (이전 추정 → 사실)
 
 - ~~`PluginOrderDto`에 memo 필드 없음~~ → **있음**. 주문 단위(`memo`) + 라인 단위(`lineItems[].memo`) 둘 다 존재. 배달 메모는 여기 매핑.
@@ -52,11 +61,14 @@
 - 카드 결제 1건 → POS에 주문+결제 동시 등록 확인
 - 배달앱에서 취소 → POS 주문도 취소되는지 확인
 - POS에서 결제 취소 → 백엔드 상태 CANCELLED 반영 확인 (`payment.on('cancel')` 경유)
+- 결제 timeout(15분) → 주문 자동 CANCELLED 후 POS 미등록 상태 확인 (GPT 작업분과의 통합 검증)
 - 개발자센터 테스트 매장 연결 후 진행
 
-### 향후 검토
-- SDK가 catalog write API(`add`/`update`/`delete`)를 노출하면 옵션(b) 양방향 매핑 재검토 — `PluginCatalogItem.code`로 우리 menuId 매핑 가능성
+### 향후 검토 (코드 변경 없음, 트리거 기다림)
+- **SDK catalog write API**: `add`/`update`/`delete`가 노출되면 옵션(b) 양방향 매핑 재검토. `PluginCatalogItem.code`에 우리 menuId 박는 패턴 사용 가능
+- **다중 옵션 그룹 자연키 한계**: 현재 `(menuId, name)`을 자연키로 쓰는데 그룹명 rename 시 별도 그룹으로 인식됨. 운영상 문제되면 `MenuOptionGroup`에 `tossOptionGroupCode` 컬럼 추가 마이그레이션 필요
+- **plugin 재시작 시 in-flight 주문 idempotency**: `processingOrders` Set은 인메모리. 백엔드 409 가드 + payment.add/PATCH 실패 시 cancel로 사실상 안전하지만, 더 강한 보장이 필요하면 SDK `posPluginSdk.storage`에 진행 중 orderId 저장 검토
 
 ## 다음 순서
 
-1. (#9) 실기기 E2E
+1. (#9) 실기기 E2E — 출시 게이트, 코드로 진행 불가
