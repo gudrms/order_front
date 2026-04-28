@@ -2,11 +2,12 @@
 
 import { CheckCircle2, ChefHat, Clock, MapPin, Package, XCircle } from 'lucide-react';
 import { useOrderStatus } from '@order/shared';
-import type { OrderStatus } from '@order/shared';
+import type { DeliveryStatus, OrderStatus } from '@order/shared';
 
 interface OrderStatusTrackerProps {
     orderId: string;
     initialStatus: OrderStatus;
+    deliveryStatus?: DeliveryStatus | null;
     userId?: string | null;
 }
 
@@ -26,7 +27,13 @@ function normalizeStatus(status: string | null) {
     return status;
 }
 
-function getStatusMessage(status: string | null) {
+function getStatusMessage(status: string | null, deliveryStatus?: DeliveryStatus | null) {
+    if (deliveryStatus === 'ASSIGNED') return '라이더가 배정되었습니다. 곧 픽업을 시작합니다.';
+    if (deliveryStatus === 'PICKED_UP') return '라이더가 음식을 픽업했습니다. 안전하게 이동 중입니다.';
+    if (deliveryStatus === 'DELIVERING') return '배달이 시작되었습니다. 조금만 기다려주세요.';
+    if (deliveryStatus === 'DELIVERED') return '배달이 완료되었습니다. 맛있게 드세요.';
+    if (deliveryStatus === 'FAILED') return '배달 처리에 문제가 생겼습니다. 매장에서 확인 중입니다.';
+
     switch (status) {
         case 'PENDING_PAYMENT':
             return '결제 승인을 기다리고 있습니다.';
@@ -50,11 +57,16 @@ function getStatusMessage(status: string | null) {
     }
 }
 
-export function OrderStatusTracker({ orderId, initialStatus, userId }: OrderStatusTrackerProps) {
+export function OrderStatusTracker({
+    orderId,
+    initialStatus,
+    deliveryStatus,
+    userId,
+}: OrderStatusTrackerProps) {
     const status = useOrderStatus({ orderId, initialStatus, userId, pollIntervalMs: 5000 });
     const normalizedStatus = normalizeStatus(status);
     const currentStepIndex = Math.max(0, steps.findIndex((step) => step.id === normalizedStatus));
-    const isCancelled = status === 'CANCELLED';
+    const isCancelled = status === 'CANCELLED' || deliveryStatus === 'CANCELLED';
 
     return (
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
@@ -63,7 +75,7 @@ export function OrderStatusTracker({ orderId, initialStatus, userId }: OrderStat
             {isCancelled ? (
                 <div className="flex flex-col items-center gap-3 rounded-xl bg-red-50 p-6 text-red-600">
                     <XCircle size={36} />
-                    <p className="font-bold">주문이 취소되었습니다.</p>
+                    <p className="font-bold">주문이 취소되었습니다</p>
                 </div>
             ) : (
                 <div className="relative">
@@ -108,11 +120,11 @@ export function OrderStatusTracker({ orderId, initialStatus, userId }: OrderStat
 
             <div className="mt-8 text-center bg-gray-50 rounded-lg p-4">
                 <p className="text-brand-black font-medium">
-                    {getStatusMessage(status)}
+                    {getStatusMessage(status, deliveryStatus)}
                 </p>
                 <div className="mt-2 inline-flex items-center gap-1 text-xs text-gray-500">
                     <CheckCircle2 size={14} />
-                    <span>주문 상태는 자동으로 갱신됩니다.</span>
+                    <span>주문 상태는 자동으로 갱신됩니다</span>
                 </div>
             </div>
         </div>

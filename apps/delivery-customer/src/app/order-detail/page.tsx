@@ -6,6 +6,30 @@ import { AlertTriangle, ChevronLeft, Receipt, XCircle } from 'lucide-react';
 import { OrderStatusTracker } from '@/components/order/OrderStatusTracker';
 import { useCancelOrder, useOrder } from '@/hooks/queries/useOrders';
 import { useAuth } from '@/contexts/AuthContext';
+import type { DeliveryStatus, OrderStatus } from '@order/shared';
+
+const orderStatusLabel: Record<OrderStatus, string> = {
+    PENDING: '접수 대기',
+    PENDING_PAYMENT: '결제 대기',
+    PAID: '결제 완료',
+    CONFIRMED: '주문 접수',
+    COOKING: '조리 중',
+    PREPARING: '준비 중',
+    READY: '배달 준비',
+    DELIVERING: '배달 중',
+    COMPLETED: '완료',
+    CANCELLED: '취소',
+};
+
+const deliveryStatusLabel: Record<DeliveryStatus, string> = {
+    PENDING: '배달 대기',
+    ASSIGNED: '라이더 배정',
+    PICKED_UP: '픽업 완료',
+    DELIVERING: '배달 중',
+    DELIVERED: '배달 완료',
+    FAILED: '배달 실패',
+    CANCELLED: '배달 취소',
+};
 
 function OrderDetailContent() {
     const router = useRouter();
@@ -55,7 +79,7 @@ function OrderDetailContent() {
         (order.status === 'PENDING_PAYMENT' || order.status === 'PENDING') &&
         order.paymentStatus !== 'PAID';
     const isPaidOrder = order.paymentStatus === 'PAID';
-    const isCancelled = order.status === 'CANCELLED';
+    const isCancelled = order.status === 'CANCELLED' || order.delivery?.status === 'CANCELLED';
 
     const handleCancel = () => {
         setCancelError(null);
@@ -88,7 +112,12 @@ function OrderDetailContent() {
             </header>
 
             <div className="max-w-[568px] mx-auto p-4 space-y-4">
-                <OrderStatusTracker orderId={order.id} initialStatus={order.status} userId={user.id} />
+                <OrderStatusTracker
+                    orderId={order.id}
+                    initialStatus={order.status}
+                    deliveryStatus={order.delivery?.status}
+                    userId={user.id}
+                />
 
                 {isCancelled && (
                     <section className="bg-red-50 rounded-xl p-4 border border-red-100 text-red-700">
@@ -146,19 +175,23 @@ function OrderDetailContent() {
                     <div className="space-y-2 text-sm">
                         <InfoRow label="주문번호" value={order.orderNumber} />
                         <InfoRow label="주문일시" value={new Date(order.createdAt).toLocaleString('ko-KR')} />
-                        <InfoRow label="주문상태" value={order.status} />
+                        <InfoRow label="주문상태" value={orderStatusLabel[order.status] || order.status} />
                         <InfoRow label="결제상태" value={order.paymentStatus || '-'} />
                         {order.cancelledAt && (
                             <InfoRow label="취소일시" value={new Date(order.cancelledAt).toLocaleString('ko-KR')} />
                         )}
                         {order.delivery && (
                             <>
+                                <InfoRow label="배달상태" value={deliveryStatusLabel[order.delivery.status] || order.delivery.status} />
                                 <InfoRow label="수령자" value={order.delivery.recipientName} />
                                 <InfoRow label="연락처" value={order.delivery.recipientPhone} />
                                 <InfoRow
                                     label="주소"
                                     value={`${order.delivery.address}${order.delivery.detailAddress ? ` ${order.delivery.detailAddress}` : ''}`}
                                 />
+                                {order.delivery.riderMemo && (
+                                    <InfoRow label="라이더 메모" value={order.delivery.riderMemo} />
+                                )}
                                 {order.delivery.deliveryMemo && (
                                     <InfoRow label="요청사항" value={order.delivery.deliveryMemo} />
                                 )}

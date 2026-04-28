@@ -302,11 +302,29 @@ describe('pollOrders', () => {
         expect(posPluginSdk.order.add).toHaveBeenCalledTimes(1);
     });
 
-    it('404 응답은 무시한다', async () => {
-        mockFetch.mockResolvedValueOnce({ ok: false, status: 404 });
+    it('404 응답은 silent return하지 않고 에러 로그를 남긴다 (배포 실수 신호)', async () => {
+        mockFetch.mockResolvedValueOnce({ ok: false, status: 404, statusText: 'Not Found' });
+        const consoleSpy = vi.spyOn(console, 'error');
 
         await pollOrders();
 
         expect(posPluginSdk.order.add).not.toHaveBeenCalled();
+        expect(consoleSpy).toHaveBeenCalledWith(
+            'Polling error:',
+            expect.objectContaining({ message: expect.stringContaining('404') }),
+        );
+    });
+
+    it('5xx 응답도 에러 로그를 남기고 주문은 처리하지 않는다', async () => {
+        mockFetch.mockResolvedValueOnce({ ok: false, status: 503, statusText: 'Service Unavailable' });
+        const consoleSpy = vi.spyOn(console, 'error');
+
+        await pollOrders();
+
+        expect(posPluginSdk.order.add).not.toHaveBeenCalled();
+        expect(consoleSpy).toHaveBeenCalledWith(
+            'Polling error:',
+            expect.objectContaining({ message: expect.stringContaining('503') }),
+        );
     });
 });

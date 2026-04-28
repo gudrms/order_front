@@ -411,6 +411,71 @@ export class OrdersService {
         });
     }
 
+    async updateDeliveryStatus(
+        storeId: string,
+        orderId: string,
+        deliveryStatus: any,
+        options: { riderMemo?: string } = {},
+    ) {
+        const order = await this.prisma.order.findUnique({
+            where: { id: orderId },
+            include: { delivery: true },
+        });
+
+        if (!order) {
+            throw new NotFoundException(`Order not found: ${orderId}`);
+        }
+        if (order.storeId !== storeId) {
+            throw new BadRequestException('Order does not belong to this store');
+        }
+        if (order.type !== 'DELIVERY' || !order.delivery) {
+            throw new BadRequestException('Order is not a delivery order');
+        }
+        if (order.status === 'CANCELLED') {
+            throw new BadRequestException('Cancelled orders cannot change delivery status');
+        }
+        if (order.status === 'COMPLETED' && deliveryStatus !== 'DELIVERED') {
+            throw new BadRequestException('Completed orders cannot change delivery status');
+        }
+
+        const now = new Date();
+        const deliveryUpdateData: any = {
+            status: deliveryStatus,
+            riderMemo: options.riderMemo?.trim() || undefined,
+        };
+        const orderUpdateData: any = {
+            delivery: { update: deliveryUpdateData },
+        };
+
+        if (deliveryStatus === 'ASSIGNED') {
+            deliveryUpdateData.assignedAt = now;
+        }
+        if (deliveryStatus === 'PICKED_UP') {
+            deliveryUpdateData.pickedUpAt = now;
+            orderUpdateData.status = 'DELIVERING';
+        }
+        if (deliveryStatus === 'DELIVERING') {
+            orderUpdateData.status = 'DELIVERING';
+        }
+        if (deliveryStatus === 'DELIVERED') {
+            deliveryUpdateData.deliveredAt = now;
+            orderUpdateData.status = 'COMPLETED';
+            orderUpdateData.completedAt = now;
+        }
+        if (deliveryStatus === 'CANCELLED') {
+            deliveryUpdateData.cancelledAt = now;
+            orderUpdateData.status = 'CANCELLED';
+            orderUpdateData.cancelledAt = now;
+            orderUpdateData.cancelReason = options.riderMemo?.trim() || 'Delivery cancelled by store';
+        }
+
+        return this.prisma.order.update({
+            where: { id: orderId },
+            data: orderUpdateData,
+            include: this.orderInclude(),
+        });
+    }
+
     private orderInclude() {
         return {
             items: {

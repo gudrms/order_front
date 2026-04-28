@@ -7,6 +7,7 @@
 - 만나서 결제/현금 결제는 MVP 범위에서 제외한다.
 - 로그인, 카카오/Supabase 연동, 주문 생성/조회/상세, 결제 성공/실패 화면은 기본 연결 완료.
 - 이번 작업으로 결제 승인 전 고객 주문 취소 API/UI를 연결했다.
+- 배달 상태 변경 API와 고객앱 주문상세의 배달 상태 표시를 연결했다.
 - 아직 남은 핵심은 실제 Toss E2E, 결제 완료 후 환불/관리자 처리, 주소/찜 실사용자 연동, PWA/Sentry 검증이다.
 
 ## 완료
@@ -49,6 +50,9 @@
 - [x] 결제 승인 전 주문 취소 API `PATCH /orders/:orderId/cancel` 연결
 - [x] 주문상세 화면에서 결제 승인 전 주문 취소 UI 연결
 - [x] 취소된 주문의 주문상세 상태/취소 사유 표시
+- [x] 배달 상태 변경 API `PATCH /stores/:storeId/orders/:orderId/delivery-status` 추가
+- [x] 주문상세 화면에 배달 상태와 라이더 메모 표시
+- [x] 주문상세 화면을 5초 간격으로 재조회해 배달 상태 갱신
 
 ## 남은 일
 
@@ -69,7 +73,7 @@
 - [x] 결제 승인 전 고객 주문 취소 정책 확정
 - [x] 결제 승인 전 고객 주문 취소 UI 연결
 - [ ] 결제 완료 후 환불 요청/관리자 승인 정책 구현
-- [ ] 배달 상태 변경 API 연결
+- [x] 배달 상태 변경 API 연결
 - [ ] 취소/환불 상태를 주문내역 카드에도 노출
 
 ### P2: 사용자 기능
@@ -95,7 +99,7 @@
 - [x] `apps/backend`: `tsc --noEmit`
 - [x] `packages/shared`: `tsc --noEmit`
 - [x] `apps/delivery-customer`: `tsc --noEmit`
-- [x] `apps/backend`: `vitest run src/modules/orders/orders.service.spec.ts` 14 tests 통과
+- [x] `apps/backend`: `vitest run src/modules/orders/orders.service.spec.ts` 17 tests 통과
 - [x] `apps/backend`: `vitest run src/modules/auth/auth.service.spec.ts` 5 tests 통과
 - [x] `apps/backend`: `vitest run src/modules/payments/payments.service.spec.ts` 8 tests 통과
 - [ ] 최신 백엔드 전체 `vitest run`: `menus.service.spec.ts` 메뉴 상세 테스트 1건 실패. POS/catalog 작업자 영역이라 본 작업에서는 미수정.
@@ -108,7 +112,7 @@
 
 ## 다음 순서
 
-1. 배달 상태 변경 API와 주문상세/주문내역 표시 연결
+1. 관리자 배달 상태 변경 버튼/운영 화면 구현
 2. 결제 완료 후 관리자 환불/취소 API와 UI 연결
 3. 주소 CRUD를 로그인 사용자 기준 실제 API로 전환
 4. 찜/즐겨찾기를 로그인 사용자 기준 실제 API로 전환

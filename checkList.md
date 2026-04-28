@@ -66,8 +66,9 @@
 - [x] 배달 주문 생성/목록/상세 Supabase JWT 인증과 사용자 소유권 검증 추가
 - [x] 인증 사용자 동기화 API `POST /auth/sync` 추가
 - [x] 결제 승인 전 고객 주문 취소 API `PATCH /orders/:orderId/cancel` 추가
+- [x] 배달 상태 변경 API `PATCH /stores/:storeId/orders/:orderId/delivery-status` 추가
 - [x] 주문 서비스 단위 테스트에 고객 취소 정책 추가
-- [ ] 배달 상태 변경 API 추가
+- [x] 주문 서비스 단위 테스트에 배달 상태 변경 정책 추가
 - [ ] 결제 완료 후 관리자 환불/취소 API 추가
 - [ ] POS pending orders API를 새 정책 기준으로 확장
 
@@ -86,6 +87,7 @@
 - [x] 로그인 필수 주문 조회 정책 보강
 - [x] 카카오 로그인과 Supabase user, 백엔드 User 자동 동기화
 - [x] 주문상세에서 결제 승인 전 고객 취소 UI 연결
+- [x] 주문상세에서 배달 상태와 라이더 메모 표시
 - [ ] Toss 테스트 카드결제 성공/실패 E2E
 - [ ] 결제 완료 후 환불 요청/관리자 처리 UI
 - [ ] 주소 조회/추가/삭제를 실제 사용자 기준으로 동작
@@ -96,6 +98,7 @@
 ## 단계별 남은 일
 
 - [ ] 관리자: 매장 등록/운영 설정 화면을 백엔드 API에 연결
+- [ ] 관리자: 배달 상태 변경 버튼/운영 화면 구현
 - [ ] 관리자: 결제 완료 주문 취소/환불 처리 패널 구현
 - [ ] 테이블오더: 실제 Store UUID/tableNumber 연결과 첫 주문/추가 주문 E2E
 - [ ] 홈페이지: 주문 CTA를 배달앱 매장 URL로 연결
@@ -107,7 +110,7 @@
 ## 검증 기록
 
 - [x] `apps/backend`: `tsc --noEmit`
-- [x] `apps/backend`: `vitest run src/modules/orders/orders.service.spec.ts` 14 tests 통과
+- [x] `apps/backend`: `vitest run src/modules/orders/orders.service.spec.ts` 17 tests 통과
 - [x] `apps/backend`: `vitest run src/modules/auth/auth.service.spec.ts` 5 tests 통과
 - [x] `apps/backend`: `vitest run src/modules/payments/payments.service.spec.ts` 8 tests 통과
 - [ ] `apps/backend`: 최신 전체 `vitest run`은 `menus.service.spec.ts` 메뉴 상세 테스트 1건 실패. POS/catalog 작업자 영역이라 본 작업에서는 미수정.
@@ -122,7 +125,7 @@
 
 ## 다음 개발 순서
 
-1. 배달 상태 변경 API와 관리자/고객 상태 표시 연결
+1. 관리자 배달 상태 변경 버튼/운영 화면 구현
 2. 결제 완료 후 관리자 환불/취소 API와 UI
 3. 주소 CRUD를 로그인 사용자 기준 실제 API로 전환
 4. 찜/즐겨찾기를 로그인 사용자 기준 실제 API로 전환
