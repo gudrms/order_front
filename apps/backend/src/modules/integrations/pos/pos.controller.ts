@@ -70,21 +70,27 @@ export class PosController {
         });
         const menuMap = new Map(menus.map(m => [m.id, m]));
 
-        const optionNames = orders.flatMap(o =>
-            o.items.flatMap(i =>
-                i.selectedOptions.map(opt => ({ groupName: opt.optionGroupName, optionName: opt.optionName }))
-            )
-        );
+        // 옵션 매핑 키는 (menuId, optionGroupName, optionName) 3종 복합.
+        // 옵션명만으로 매핑하면 다른 메뉴에 같은 옵션명("기본", "보통" 등)이 있을 때 마지막 메뉴의
+        // tossOptionCode로 덮어써져서 잘못된 옵션이 POS에 전송됨 (실데이터 오염 버그).
+        const hasAnyOptions = orders.some(o => o.items.some(i => i.selectedOptions.length > 0));
         const menuOptionMap = new Map<string, string | null>();
-        if (optionNames.length > 0) {
+        if (hasAnyOptions) {
             const options = await this.prisma.menuOption.findMany({
                 where: {
                     optionGroup: { menu: { id: { in: menuIds } } },
                 },
-                select: { name: true, tossOptionCode: true },
+                select: {
+                    name: true,
+                    tossOptionCode: true,
+                    optionGroup: {
+                        select: { name: true, menuId: true },
+                    },
+                },
             });
             for (const opt of options) {
-                menuOptionMap.set(opt.name, opt.tossOptionCode);
+                const key = `${opt.optionGroup.menuId}::${opt.optionGroup.name}::${opt.name}`;
+                menuOptionMap.set(key, opt.tossOptionCode);
             }
         }
 
@@ -107,11 +113,14 @@ export class PosController {
                         category: menu?.category
                             ? { id: menu.category.tossCategoryCode, name: menu.category.name }
                             : null,
-                        options: item.selectedOptions.map(opt => ({
-                            name: opt.optionName,
-                            price: opt.optionPrice,
-                            tossOptionCode: menuOptionMap.get(opt.optionName) ?? null,
-                        })),
+                        options: item.selectedOptions.map(opt => {
+                            const key = `${item.menuId}::${opt.optionGroupName}::${opt.optionName}`;
+                            return {
+                                name: opt.optionName,
+                                price: opt.optionPrice,
+                                tossOptionCode: menuOptionMap.get(key) ?? null,
+                            };
+                        }),
                     };
                 }),
             };
