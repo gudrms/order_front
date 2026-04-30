@@ -28,6 +28,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAdminStore } from '@/contexts/AdminStoreContext';
 import { useRealtimeOrders } from '@/hooks/useRealtimeOrders';
 import { OrderReceipt } from '@/components/OrderReceipt';
+import { getHttpErrorMessage } from '@/lib/httpError';
 
 type BadgeVariant = React.ComponentProps<typeof Badge>['variant'];
 type RefundMode = 'full' | 'partial';
@@ -35,6 +36,10 @@ type RefundDialogState = {
   order: Order;
   mode: RefundMode;
   remainingAmount: number;
+};
+type OperationMessage = {
+  type: 'success' | 'error';
+  message: string;
 };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -107,6 +112,7 @@ export default function OrdersPage() {
   const [printOrder, setPrintOrder] = useState<Order | null>(null);
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [refundDialog, setRefundDialog] = useState<RefundDialogState | null>(null);
+  const [operationMessage, setOperationMessage] = useState<OperationMessage | null>(null);
   useRealtimeOrders(storeId || '');
 
   const { data: orders = [], isLoading: isOrdersLoading } = useQuery<Order[]>({
@@ -130,7 +136,14 @@ export default function OrdersPage() {
     },
     onSuccess: () => {
       setRefundDialog(null);
+      setOperationMessage({ type: 'success', message: '주문 상태를 변경했습니다.' });
       queryClient.invalidateQueries({ queryKey: ['admin-orders', storeId] });
+    },
+    onError: (error) => {
+      setOperationMessage({
+        type: 'error',
+        message: getHttpErrorMessage(error, '주문 상태 변경에 실패했습니다.'),
+      });
     },
   });
 
@@ -151,7 +164,14 @@ export default function OrdersPage() {
       );
     },
     onSuccess: () => {
+      setOperationMessage({ type: 'success', message: '배달 상태를 변경했습니다.' });
       queryClient.invalidateQueries({ queryKey: ['admin-orders', storeId] });
+    },
+    onError: (error) => {
+      setOperationMessage({
+        type: 'error',
+        message: getHttpErrorMessage(error, '배달 상태 변경에 실패했습니다.'),
+      });
     },
   });
 
@@ -172,7 +192,15 @@ export default function OrdersPage() {
       );
     },
     onSuccess: () => {
+      setRefundDialog(null);
+      setOperationMessage({ type: 'success', message: '취소/환불 처리가 완료되었습니다.' });
       queryClient.invalidateQueries({ queryKey: ['admin-orders', storeId] });
+    },
+    onError: (error) => {
+      setOperationMessage({
+        type: 'error',
+        message: getHttpErrorMessage(error, '취소/환불 처리에 실패했습니다.'),
+      });
     },
   });
 
@@ -211,6 +239,14 @@ export default function OrdersPage() {
           <Badge variant="info">배달 {deliveryOrders.length}건</Badge>
         </div>
       </div>
+
+      {operationMessage && (
+        <OperationAlert
+          type={operationMessage.type}
+          message={operationMessage.message}
+          onClose={() => setOperationMessage(null)}
+        />
+      )}
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <SummaryCard label="접수 대기" value={orders.filter((order) => ['PENDING', 'PAID'].includes(order.status)).length} />
@@ -755,6 +791,38 @@ function RefundDialog({
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function OperationAlert({
+  type,
+  message,
+  onClose,
+}: {
+  type: 'success' | 'error';
+  message: string;
+  onClose: () => void;
+}) {
+  const isSuccess = type === 'success';
+
+  return (
+    <div
+      className={`flex items-center justify-between gap-3 rounded-xl border px-4 py-3 text-sm ${
+        isSuccess
+          ? 'border-green-200 bg-green-50 text-green-800'
+          : 'border-red-200 bg-red-50 text-red-700'
+      }`}
+      data-testid="admin-order-operation-message"
+    >
+      <span>{message}</span>
+      <button
+        type="button"
+        onClick={onClose}
+        className="rounded px-2 py-1 text-xs font-semibold opacity-70 hover:bg-white/60 hover:opacity-100"
+      >
+        닫기
+      </button>
     </div>
   );
 }
