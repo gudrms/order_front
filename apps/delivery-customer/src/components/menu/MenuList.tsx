@@ -1,6 +1,7 @@
 'use client';
 
 import { Heart, Plus } from 'lucide-react';
+import { MenuListSkeleton } from '@/components/ui/Skeleton';
 import { useMemo } from 'react';
 import { useCurrentStore } from '@/contexts/StoreContext';
 import { useMenus } from '../../hooks/queries/useMenus';
@@ -26,11 +27,7 @@ export default function MenuList() {
     };
 
     if (isLoading) {
-        return (
-            <div className="p-8 text-center text-gray-500">
-                메뉴를 불러오는 중...
-            </div>
-        );
+        return <MenuListSkeleton />;
     }
 
     if (!filteredMenus || filteredMenus.length === 0) {
