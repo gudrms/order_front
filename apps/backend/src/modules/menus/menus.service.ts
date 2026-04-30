@@ -1,5 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { MenuManagementMode } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { CreateMenuCategoryDto, CreateMenuDto, UpdateMenuDto } from './dto/menu-admin.dto';
 
 @Injectable()
 export class MenusService {
@@ -23,12 +25,24 @@ export class MenusService {
      * 동기화 누락 항목이므로 고객 노출에서 제외 (배달 주문 불가 메뉴).
      */
     async getMenus(storeId: string, categoryId?: string) {
+        const store = await this.prisma.store.findUnique({
+            where: { id: storeId },
+            select: { menuManagementMode: true },
+        });
+
+        if (!store) {
+            throw new NotFoundException('Store not found');
+        }
+
         const where: any = {
             storeId,
             isActive: true,
             isHidden: false,
-            tossMenuCode: { not: null },
         };
+
+        if (store.menuManagementMode === MenuManagementMode.TOSS_POS) {
+            where.tossMenuCode = { not: null };
+        }
 
         if (categoryId) {
             where.categoryId = categoryId;
@@ -90,9 +104,120 @@ export class MenusService {
             },
         });
 
-        if (!menu || !menu.tossMenuCode) {
+        if (!menu) {
+            return null;
+        }
+
+        const store = await this.prisma.store.findUnique({
+            where: { id: menu.storeId },
+            select: { menuManagementMode: true },
+        });
+
+        if (store?.menuManagementMode === MenuManagementMode.TOSS_POS && !menu.tossMenuCode) {
             return null;
         }
         return menu;
+    }
+
+    async createCategory(userId: string, storeId: string, dto: CreateMenuCategoryDto) {
+        await this.assertCanManageAdminDirectMenus(userId, storeId);
+
+        return this.prisma.menuCategory.create({
+            data: {
+                storeId,
+                name: dto.name,
+                displayOrder: dto.displayOrder ?? 0,
+            },
+        });
+    }
+
+    async createMenu(userId: string, storeId: string, dto: CreateMenuDto) {
+        await this.assertCanManageAdminDirectMenus(userId, storeId);
+
+        const category = await this.prisma.menuCategory.findFirst({
+            where: { id: dto.categoryId, storeId },
+            select: { id: true },
+        });
+
+        if (!category) {
+            throw new NotFoundException('Menu category not found');
+        }
+
+        return this.prisma.menu.create({
+            data: {
+                storeId,
+                categoryId: dto.categoryId,
+                name: dto.name,
+                price: dto.price,
+                description: dto.description,
+                imageUrl: dto.imageUrl,
+                displayOrder: dto.displayOrder ?? 0,
+                soldOut: dto.soldOut ?? false,
+                isHidden: dto.isHidden ?? false,
+            },
+            include: {
+                category: { select: { id: true, name: true } },
+                optionGroups: { include: { options: true } },
+                tags: { include: { tag: true } },
+            },
+        });
+    }
+
+    async updateMenu(userId: string, storeId: string, menuId: string, dto: UpdateMenuDto) {
+        await this.assertCanManageAdminDirectMenus(userId, storeId);
+
+        const menu = await this.prisma.menu.findFirst({
+            where: { id: menuId, storeId },
+            select: { id: true, tossMenuCode: true },
+        });
+
+        if (!menu) {
+            throw new NotFoundException('Menu not found');
+        }
+
+        if (menu.tossMenuCode) {
+            throw new BadRequestException('Toss POS synced menus must be edited in Toss POS');
+        }
+
+        if (dto.categoryId) {
+            const category = await this.prisma.menuCategory.findFirst({
+                where: { id: dto.categoryId, storeId },
+                select: { id: true },
+            });
+            if (!category) {
+                throw new NotFoundException('Menu category not found');
+            }
+        }
+
+        return this.prisma.menu.update({
+            where: { id: menuId },
+            data: dto,
+            include: {
+                category: { select: { id: true, name: true } },
+                optionGroups: { include: { options: true } },
+                tags: { include: { tag: true } },
+            },
+        });
+    }
+
+    private async assertCanManageAdminDirectMenus(userId: string, storeId: string) {
+        const [user, store] = await Promise.all([
+            this.prisma.user.findUnique({ where: { id: userId } }),
+            this.prisma.store.findUnique({ where: { id: storeId } }),
+        ]);
+
+        if (!store) {
+            throw new NotFoundException('Store not found');
+        }
+
+        if (!user || (user.role !== 'ADMIN' && store.ownerId !== userId)) {
+            throw new ForbiddenException('You do not have permission to manage this store');
+        }
+
+        if (store.menuManagementMode !== MenuManagementMode.ADMIN_DIRECT) {
+            throw new BadRequestException('Direct menu editing is available only in ADMIN_DIRECT mode');
+        }
+
+        return store;
     }
 }

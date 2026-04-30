@@ -24,16 +24,11 @@ import {
 import { Badge } from '@order/ui';
 
 import { useAuth } from '@/contexts/AuthContext';
+import { useAdminStore } from '@/contexts/AdminStoreContext';
 import { useRealtimeOrders } from '@/hooks/useRealtimeOrders';
 import { OrderReceipt } from '@/components/OrderReceipt';
 
 type BadgeVariant = React.ComponentProps<typeof Badge>['variant'];
-
-interface StoreSummary {
-  id: string;
-  name: string;
-  branchName?: string | null;
-}
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -82,9 +77,9 @@ const deliveryStatusAction: Partial<Record<DeliveryStatus, {
     className: 'bg-slate-800 hover:bg-slate-900',
   },
   ASSIGNED: {
-    next: 'PICKED_UP',
-    label: '픽업 완료',
-    className: 'bg-blue-600 hover:bg-blue-700',
+    next: 'DELIVERING',
+    label: '배달 시작',
+    className: 'bg-indigo-600 hover:bg-indigo-700',
   },
   PICKED_UP: {
     next: 'DELIVERING',
@@ -100,25 +95,9 @@ const deliveryStatusAction: Partial<Record<DeliveryStatus, {
 
 export default function OrdersPage() {
   const { session } = useAuth();
+  const { selectedStore, selectedStoreId: storeId, isLoading: isStoresLoading, authHeaders } = useAdminStore();
   const queryClient = useQueryClient();
   const [printOrder, setPrintOrder] = useState<Order | null>(null);
-
-  const authHeaders = session?.access_token
-    ? { Authorization: `Bearer ${session.access_token}` }
-    : undefined;
-
-  const { data: stores = [], isLoading: isStoresLoading } = useQuery<StoreSummary[]>({
-    queryKey: ['admin-stores'],
-    queryFn: async () => {
-      const response = await axios.get(`${API_URL}/stores/me`, {
-        headers: authHeaders,
-      });
-      return response.data.data || response.data;
-    },
-    enabled: !!session,
-  });
-
-  const storeId = stores[0]?.id;
   useRealtimeOrders(storeId || '');
 
   const { data: orders = [], isLoading: isOrdersLoading } = useQuery<Order[]>({
@@ -213,7 +192,7 @@ export default function OrdersPage() {
         <div>
           <h2 className="text-2xl font-bold text-gray-800">주문 관리</h2>
           <p className="text-sm text-gray-500">
-            {stores[0]?.name} {stores[0]?.branchName ? `· ${stores[0].branchName}` : ''}
+            {selectedStore?.name} {selectedStore?.branchName ? `· ${selectedStore.branchName}` : ''}
           </p>
         </div>
         <div className="flex gap-2">
