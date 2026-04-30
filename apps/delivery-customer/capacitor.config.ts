@@ -1,15 +1,18 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
+const serverUrl = process.env.CAPACITOR_SERVER_URL;
+
 const config: CapacitorConfig = {
   appId: 'com.yourbrand.delivery',
   appName: '우리브랜드 배달',
-  webDir: 'out',
+  webDir: 'public',
 
-  server: {
-    // 개발 시 localhost 사용 (선택)
-    // url: 'http://localhost:3001',
-    // cleartext: true,
-  },
+  server: serverUrl
+    ? {
+        url: serverUrl,
+        cleartext: serverUrl.startsWith('http://'),
+      }
+    : undefined,
 
   plugins: {
     PushNotifications: {
