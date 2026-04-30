@@ -46,6 +46,26 @@ type MenuWithCategory = Menu & {
   optionGroups?: OptionGroup[];
 };
 
+type TossSyncResult = {
+  success: boolean;
+  message: string;
+  syncedAt?: string;
+  source?: string;
+  summary?: Record<string, {
+    received: number;
+    created: number;
+    updated: number;
+    skipped?: number;
+  }>;
+};
+
+type TossSyncLog = {
+  status: 'success' | 'error';
+  message: string;
+  syncedAt: string;
+  summary?: TossSyncResult['summary'];
+};
+
 export default function MenuListPage() {
   const queryClient = useQueryClient();
   const { selectedStore, selectedStoreId, isLoading: isStoreLoading, authHeaders } = useAdminStore();
@@ -66,6 +86,7 @@ export default function MenuListPage() {
     imageUrl: '',
   });
   const [expandedOptionMenuId, setExpandedOptionMenuId] = useState<string | null>(null);
+  const [syncLog, setSyncLog] = useState<TossSyncLog | null>(null);
 
   const isAdminDirect = selectedStore?.menuManagementMode === 'ADMIN_DIRECT';
 
@@ -166,15 +187,29 @@ export default function MenuListPage() {
 
   const syncTossMenuMutation = useMutation({
     mutationFn: async () => {
-      await axios.post(
+      const response = await axios.post<TossSyncResult>(
         `${API_URL}/stores/${selectedStoreId}/integrations/toss/sync-menu`,
         undefined,
         { headers: authHeaders }
       );
+      return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
+      setSyncLog({
+        status: 'success',
+        message: result.message || 'Toss 메뉴 동기화가 완료되었습니다.',
+        syncedAt: result.syncedAt || new Date().toISOString(),
+        summary: result.summary,
+      });
       queryClient.invalidateQueries({ queryKey: ['admin-categories', selectedStoreId] });
       invalidateMenus();
+    },
+    onError: (error) => {
+      setSyncLog({
+        status: 'error',
+        message: getAxiosErrorMessage(error),
+        syncedAt: new Date().toISOString(),
+      });
     },
   });
 
@@ -251,6 +286,10 @@ export default function MenuListPage() {
           </p>
         </div>
       </div>
+
+      {!isAdminDirect && syncLog && (
+        <TossSyncLogPanel log={syncLog} />
+      )}
 
       {isAdminDirect && (
         <div className="grid gap-4 lg:grid-cols-[360px_1fr]">
@@ -438,6 +477,69 @@ export default function MenuListPage() {
       </div>
     </div>
   );
+}
+
+function TossSyncLogPanel({ log }: { log: TossSyncLog }) {
+  const isSuccess = log.status === 'success';
+  const summaryEntries = log.summary ? Object.entries(log.summary) : [];
+
+  return (
+    <section className={`rounded-xl border p-4 text-sm ${isSuccess ? 'border-green-200 bg-green-50 text-green-900' : 'border-red-200 bg-red-50 text-red-900'}`}>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="font-bold">
+            {isSuccess ? 'Toss 메뉴 동기화 완료' : 'Toss 메뉴 동기화 실패'}
+          </p>
+          <p className="mt-1">{log.message}</p>
+        </div>
+        <span className="text-xs opacity-70">{formatDateTime(log.syncedAt)}</span>
+      </div>
+
+      {summaryEntries.length > 0 && (
+        <div className="mt-4 grid gap-2 md:grid-cols-4">
+          {summaryEntries.map(([key, value]) => (
+            <div key={key} className="rounded-lg border border-white/70 bg-white/70 p-3">
+              <p className="text-xs font-semibold uppercase tracking-wide opacity-60">{getSyncSummaryLabel(key)}</p>
+              <div className="mt-2 grid grid-cols-2 gap-1 text-xs">
+                <span>수신 {value.received}</span>
+                <span>생성 {value.created}</span>
+                <span>수정 {value.updated}</span>
+                {typeof value.skipped === 'number' && <span>스킵 {value.skipped}</span>}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function getSyncSummaryLabel(key: string) {
+  const labels: Record<string, string> = {
+    categories: '카테고리',
+    products: '메뉴',
+    optionGroups: '옵션 그룹',
+    options: '옵션',
+  };
+  return labels[key] || key;
+}
+
+function getAxiosErrorMessage(error: unknown) {
+  if (axios.isAxiosError(error)) {
+    const data = error.response?.data as { message?: unknown; error?: unknown } | undefined;
+    if (typeof data?.message === 'string') return data.message;
+    if (Array.isArray(data?.message)) return data.message.join(', ');
+    if (typeof data?.error === 'string') return data.error;
+    return error.message || 'Toss 메뉴 동기화에 실패했습니다.';
+  }
+  return 'Toss 메뉴 동기화에 실패했습니다.';
+}
+
+function formatDateTime(value: string) {
+  return new Intl.DateTimeFormat('ko-KR', {
+    dateStyle: 'short',
+    timeStyle: 'short',
+  }).format(new Date(value));
 }
 
 function OptionGroupPanel({

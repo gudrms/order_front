@@ -63,7 +63,7 @@
 - [x] 관리자 권한별 메뉴 노출 정책 정리
 - [x] 메뉴 옵션 그룹/옵션 직접 등록 UI 추가
 - [x] Toss POS 동기화 API 인증 가드 적용
-- [ ] Toss POS 동기화 결과/실패 로그 UI 표시
+- [x] Toss POS 동기화 결과/실패 로그 UI 표시
 - [x] 테이블 QR URL을 실제 매장 `storeType/branchId` 기준으로 생성
 - [ ] Electron 후보 기능 검토: 백그라운드 주문 알림, 자동 소리 재생, 무음 영수증 출력
 
