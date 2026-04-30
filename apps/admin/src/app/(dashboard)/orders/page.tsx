@@ -393,6 +393,7 @@ export default function OrdersPage() {
 function OrderDetailPanel({ order }: { order: Order }) {
   const delivery = order.delivery;
   const payments = order.payments || [];
+  const refundHistory = getRefundHistory(order);
 
   return (
     <div className="grid gap-4 text-sm text-gray-700 lg:grid-cols-[1fr_1fr_1.2fr]">
@@ -450,10 +451,15 @@ function OrderDetailPanel({ order }: { order: Order }) {
                   </div>
                   <div className="mt-3 grid gap-2 sm:grid-cols-2">
                     <DetailItem label="수단" value={payment.method || '-'} />
+                    <DetailItem label="결제키" value={payment.paymentKey || '-'} />
+                    <DetailItem label="Toss 주문 ID" value={payment.providerOrderId || '-'} />
                     <DetailItem label="요청 금액" value={formatCurrency(payment.amount || 0)} />
                     <DetailItem label="승인 금액" value={formatCurrency(payment.approvedAmount || 0)} />
                     <DetailItem label="취소 금액" value={formatCurrency(payment.cancelledAmount || 0)} />
+                    <DetailItem label="승인 시각" value={formatOptionalDate(payment.approvedAt)} />
                     <DetailItem label="취소 시각" value={formatOptionalDate(payment.cancelledAt)} />
+                    <DetailItem label="실패 코드" value={payment.failureCode || '-'} />
+                    <DetailItem label="실패 메시지" value={payment.failureMessage || '-'} />
                     <DetailItem
                       label="영수증"
                       value={payment.receiptUrl ? (
@@ -468,6 +474,34 @@ function OrderDetailPanel({ order }: { order: Order }) {
             </div>
           ) : (
             <p className="text-gray-400">결제 정보가 없습니다.</p>
+          )}
+        </DetailSection>
+
+        <DetailSection title="취소/환불 이력">
+          {refundHistory.length > 0 ? (
+            <div className="space-y-3">
+              {refundHistory.map((history) => (
+                <div key={history.id} className="rounded-lg border border-red-100 bg-red-50/60 p-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="font-medium text-red-900">
+                      {history.kind === 'full' ? '전액 취소' : '부분 환불'}
+                    </span>
+                    <span className="text-sm font-semibold text-red-700">
+                      {formatCurrency(history.amount)}
+                    </span>
+                  </div>
+                  <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                    <DetailItem label="상태" value={history.status || '-'} />
+                    <DetailItem label="처리 시각" value={formatOptionalDate(history.cancelledAt)} />
+                    <DetailItem label="사유" value={history.reason || '-'} />
+                    <DetailItem label="거래키" value={history.transactionKey || '-'} />
+                    <DetailItem label="영수증키" value={history.receiptKey || '-'} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-400">취소/환불 이력이 없습니다.</p>
           )}
         </DetailSection>
 
@@ -523,6 +557,76 @@ function DetailItem({ label, value }: { label: string; value: React.ReactNode })
 
 function formatOptionalDate(value?: Date | string | null) {
   return value ? formatDate(value) : '-';
+}
+
+type RefundHistoryItem = {
+  id: string;
+  kind: 'full' | 'partial';
+  amount: number;
+  status?: string;
+  reason?: string;
+  cancelledAt?: Date | string | null;
+  transactionKey?: string;
+  receiptKey?: string;
+};
+
+function getRefundHistory(order: Order): RefundHistoryItem[] {
+  return (order.payments || []).flatMap((payment): RefundHistoryItem[] => {
+    const paidAmount = payment.approvedAmount || payment.amount || 0;
+    const tossCancels = getTossCancels(payment);
+
+    if (tossCancels.length > 0) {
+      return tossCancels.map((cancel, index) => {
+        const amount = toNumber(cancel.cancelAmount);
+        const status = toText(cancel.cancelStatus);
+        return {
+          id: `${payment.id}-${toText(cancel.transactionKey) || index}`,
+          kind: amount >= paidAmount ? 'full' : 'partial',
+          amount,
+          status,
+          reason: toText(cancel.cancelReason),
+          cancelledAt: toText(cancel.canceledAt) || toText(cancel.cancelledAt),
+          transactionKey: toText(cancel.transactionKey),
+          receiptKey: toText(cancel.receiptKey),
+        };
+      });
+    }
+
+    const cancelledAmount = payment.cancelledAmount || 0;
+    if (cancelledAmount <= 0) return [];
+
+    return [{
+      id: `${payment.id}-fallback`,
+      kind: cancelledAmount >= paidAmount ? 'full' : 'partial',
+      amount: cancelledAmount,
+      status: payment.status,
+      reason: order.cancelReason || undefined,
+      cancelledAt: payment.cancelledAt,
+    }];
+  });
+}
+
+function getTossCancels(payment: { rawPayload?: unknown }): Record<string, unknown>[] {
+  const rawPayload = asRecord(payment.rawPayload);
+  const cancels = rawPayload?.cancels;
+  return Array.isArray(cancels) ? cancels.flatMap((item) => {
+    const record = asRecord(item);
+    return record ? [record] : [];
+  }) : [];
+}
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : null;
+}
+
+function toText(value: unknown) {
+  return typeof value === 'string' ? value : undefined;
+}
+
+function toNumber(value: unknown) {
+  return typeof value === 'number' && Number.isFinite(value) ? value : 0;
 }
 
 function RefundDialog({
