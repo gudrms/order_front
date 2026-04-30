@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import { Bell, BellOff, Volume2 } from 'lucide-react';
 import { ADMIN_ORDER_ALERT_EVENT, type AdminOrderAlertPayload } from '@/lib/adminOrderAlerts';
+import { getAdminElectronBridge, isAdminElectronRuntime } from '@/lib/electronBridge';
 
 const ALERT_ENABLED_KEY = 'admin.orderAlerts.enabled';
 const SOUND_ENABLED_KEY = 'admin.orderAlerts.soundEnabled';
@@ -13,6 +14,7 @@ export function OrderAlertControls() {
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
   const [lastAlert, setLastAlert] = useState<AdminOrderAlertPayload | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
+  const isElectron = isAdminElectronRuntime();
 
   useEffect(() => {
     setAlertsEnabled(localStorage.getItem(ALERT_ENABLED_KEY) === 'true');
@@ -34,9 +36,19 @@ export function OrderAlertControls() {
     const handleNewOrder = (event: Event) => {
       const payload = (event as CustomEvent<AdminOrderAlertPayload>).detail;
       setLastAlert(payload);
+      const electronBridge = getAdminElectronBridge();
 
       if (soundEnabled) {
-        playNotificationTone(audioContextRef);
+        if (electronBridge?.playNewOrderSound) {
+          void electronBridge.playNewOrderSound();
+        } else {
+          playNotificationTone(audioContextRef);
+        }
+      }
+
+      if (alertsEnabled && electronBridge?.notifyNewOrder) {
+        void electronBridge.notifyNewOrder(payload);
+        return;
       }
 
       if (alertsEnabled && 'Notification' in window && Notification.permission === 'granted') {
@@ -52,6 +64,7 @@ export function OrderAlertControls() {
   }, [alertsEnabled, soundEnabled]);
 
   const notificationLabel = useMemo(() => {
+    if (isElectron && alertsEnabled) return 'PC 알림 켜짐';
     if (!alertsEnabled) return '알림 꺼짐';
     if (notificationPermission === 'granted') return '알림 켜짐';
     if (notificationPermission === 'denied') return '알림 차단됨';
@@ -63,6 +76,11 @@ export function OrderAlertControls() {
     setSoundEnabled(nextSoundEnabled);
     if (nextSoundEnabled) {
       playNotificationTone(audioContextRef);
+    }
+
+    if (isElectron) {
+      setAlertsEnabled(!alertsEnabled);
+      return;
     }
 
     if (!('Notification' in window)) {
@@ -96,7 +114,7 @@ export function OrderAlertControls() {
             ? 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100'
             : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
         }`}
-        title="브라우저 알림 권한과 알림음을 설정합니다."
+        title={isElectron ? 'PC 앱 알림과 알림음을 설정합니다.' : '브라우저 알림 권한과 알림음을 설정합니다.'}
       >
         {alertsEnabled || soundEnabled ? <Bell className="h-4 w-4" /> : <BellOff className="h-4 w-4" />}
         {notificationLabel}
