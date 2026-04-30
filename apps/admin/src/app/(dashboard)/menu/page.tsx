@@ -3,17 +3,29 @@
 import React, { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
-import { Info, Plus, RefreshCw } from 'lucide-react';
+import { Edit3, Eye, EyeOff, Info, Plus, RefreshCw, Save, X } from 'lucide-react';
 import { formatCurrency, type Menu, type MenuCategory } from '@order/shared';
 import { useAdminStore } from '@/contexts/AdminStoreContext';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
+type MenuWithCategory = Menu & {
+  category?: { id: string; name: string };
+};
+
 export default function MenuListPage() {
   const queryClient = useQueryClient();
   const { selectedStore, selectedStoreId, isLoading: isStoreLoading, authHeaders } = useAdminStore();
   const [categoryName, setCategoryName] = useState('');
+  const [editingMenuId, setEditingMenuId] = useState<string | null>(null);
   const [menuForm, setMenuForm] = useState({
+    categoryId: '',
+    name: '',
+    price: '',
+    description: '',
+    imageUrl: '',
+  });
+  const [editForm, setEditForm] = useState({
     categoryId: '',
     name: '',
     price: '',
@@ -32,13 +44,15 @@ export default function MenuListPage() {
     enabled: !!selectedStoreId,
   });
 
-  const menusQuery = useQuery<Menu[]>({
-    queryKey: ['menus', selectedStoreId],
+  const menusQuery = useQuery<MenuWithCategory[]>({
+    queryKey: ['admin-menus', selectedStoreId],
     queryFn: async () => {
-      const response = await axios.get(`${API_URL}/stores/${selectedStoreId}/menus`);
+      const response = await axios.get(`${API_URL}/stores/${selectedStoreId}/admin/menus`, {
+        headers: authHeaders,
+      });
       return response.data.data || response.data;
     },
-    enabled: !!selectedStoreId,
+    enabled: !!selectedStoreId && !!authHeaders,
   });
 
   const categories = categoriesQuery.data || [];
@@ -48,6 +62,11 @@ export default function MenuListPage() {
     () => menuForm.categoryId || categories[0]?.id || '',
     [categories, menuForm.categoryId]
   );
+
+  const invalidateMenus = () => {
+    queryClient.invalidateQueries({ queryKey: ['admin-menus', selectedStoreId] });
+    queryClient.invalidateQueries({ queryKey: ['menus', selectedStoreId] });
+  };
 
   const createCategoryMutation = useMutation({
     mutationFn: async () => {
@@ -79,7 +98,35 @@ export default function MenuListPage() {
     },
     onSuccess: () => {
       setMenuForm({ categoryId: '', name: '', price: '', description: '', imageUrl: '' });
-      queryClient.invalidateQueries({ queryKey: ['menus', selectedStoreId] });
+      invalidateMenus();
+    },
+  });
+
+  const updateMenuMutation = useMutation({
+    mutationFn: async ({
+      menuId,
+      data,
+    }: {
+      menuId: string;
+      data: Partial<{
+        categoryId: string;
+        name: string;
+        price: number;
+        description: string | null;
+        imageUrl: string | null;
+        soldOut: boolean;
+        isHidden: boolean;
+      }>;
+    }) => {
+      await axios.patch(
+        `${API_URL}/stores/${selectedStoreId}/menus/${menuId}`,
+        data,
+        { headers: authHeaders }
+      );
+    },
+    onSuccess: () => {
+      setEditingMenuId(null);
+      invalidateMenus();
     },
   });
 
@@ -93,7 +140,7 @@ export default function MenuListPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-categories', selectedStoreId] });
-      queryClient.invalidateQueries({ queryKey: ['menus', selectedStoreId] });
+      invalidateMenus();
     },
   });
 
@@ -111,6 +158,30 @@ export default function MenuListPage() {
   }
 
   const canCreateMenu = isAdminDirect && defaultCategoryId && menuForm.name.trim() && Number(menuForm.price) >= 0;
+
+  const startEdit = (menu: MenuWithCategory) => {
+    setEditingMenuId(menu.id);
+    setEditForm({
+      categoryId: menu.categoryId,
+      name: menu.name,
+      price: String(menu.price),
+      description: menu.description || '',
+      imageUrl: menu.imageUrl || '',
+    });
+  };
+
+  const submitEdit = (menuId: string) => {
+    updateMenuMutation.mutate({
+      menuId,
+      data: {
+        categoryId: editForm.categoryId,
+        name: editForm.name.trim(),
+        price: Number(editForm.price),
+        description: editForm.description.trim() || null,
+        imageUrl: editForm.imageUrl.trim() || null,
+      },
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -141,8 +212,8 @@ export default function MenuListPage() {
           </p>
           <p className="mt-1">
             {isAdminDirect
-              ? '직접 등록한 메뉴가 고객 주문 화면에 노출됩니다. Toss POS 연동 메뉴는 Toss에서 수정해야 합니다.'
-              : 'Toss POS 메뉴를 동기화해서 고객 주문 화면에 노출합니다. 직접 등록을 쓰려면 매장 관리에서 운영 모드를 변경하세요.'}
+              ? '직접 등록 메뉴는 수정, 품절, 숨김 처리가 가능합니다. Toss 연동 메뉴는 Toss POS에서 수정해야 합니다.'
+              : 'Toss POS 메뉴를 동기화해서 고객 주문 화면에 노출합니다. 직접 등록은 매장 관리에서 운영 모드를 변경하세요.'}
           </p>
         </div>
       </div>
@@ -171,35 +242,14 @@ export default function MenuListPage() {
           <section className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
             <h3 className="mb-4 font-bold text-gray-800">메뉴 추가</h3>
             <div className="grid gap-3 md:grid-cols-2">
-              <select
+              <CategorySelect
+                categories={categories}
                 value={defaultCategoryId}
-                onChange={(event) => setMenuForm((prev) => ({ ...prev, categoryId: event.target.value }))}
-                className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
-              >
-                {categories.length === 0 ? (
-                  <option value="">카테고리를 먼저 추가하세요</option>
-                ) : categories.map((category) => (
-                  <option key={category.id} value={category.id}>{category.name}</option>
-                ))}
-              </select>
-              <input
-                value={menuForm.name}
-                onChange={(event) => setMenuForm((prev) => ({ ...prev, name: event.target.value }))}
-                className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                placeholder="메뉴명"
+                onChange={(categoryId) => setMenuForm((prev) => ({ ...prev, categoryId }))}
               />
-              <input
-                value={menuForm.price}
-                onChange={(event) => setMenuForm((prev) => ({ ...prev, price: event.target.value.replace(/[^0-9]/g, '') }))}
-                className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                placeholder="가격"
-              />
-              <input
-                value={menuForm.imageUrl}
-                onChange={(event) => setMenuForm((prev) => ({ ...prev, imageUrl: event.target.value }))}
-                className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                placeholder="이미지 URL"
-              />
+              <TextInput value={menuForm.name} onChange={(name) => setMenuForm((prev) => ({ ...prev, name }))} placeholder="메뉴명" />
+              <TextInput value={menuForm.price} onChange={(price) => setMenuForm((prev) => ({ ...prev, price }))} placeholder="가격" numeric />
+              <TextInput value={menuForm.imageUrl} onChange={(imageUrl) => setMenuForm((prev) => ({ ...prev, imageUrl }))} placeholder="이미지 URL" />
               <textarea
                 value={menuForm.description}
                 onChange={(event) => setMenuForm((prev) => ({ ...prev, description: event.target.value }))}
@@ -221,9 +271,12 @@ export default function MenuListPage() {
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
         {menus.map((menu) => {
-          const categoryName = (menu as Menu & { category?: { name?: string } }).category?.name || menu.categoryName || '카테고리 없음';
+          const categoryName = menu.category?.name || menu.categoryName || '카테고리 없음';
+          const canEditThisMenu = isAdminDirect && !menu.tossMenuCode;
+          const isEditing = editingMenuId === menu.id;
+
           return (
-            <div key={menu.id} className="flex flex-col overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
+            <div key={menu.id} className={`flex flex-col overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm ${menu.isHidden ? 'opacity-70' : ''}`}>
               <div className="relative aspect-video bg-gray-100">
                 {menu.imageUrl ? (
                   <img src={menu.imageUrl} alt={menu.name} className="h-full w-full object-cover" />
@@ -235,20 +288,83 @@ export default function MenuListPage() {
                     <span className="rounded border-2 border-white px-4 py-1 text-lg font-bold text-white">SOLD OUT</span>
                   </div>
                 )}
-              </div>
-              <div className="flex flex-1 flex-col p-4">
-                <div className="mb-2 flex justify-between gap-3">
-                  <div>
-                    <span className="mb-2 inline-block rounded-full bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-600">
-                      {categoryName}
-                    </span>
-                    <h3 className="text-lg font-bold text-gray-800">{menu.name}</h3>
-                  </div>
-                  <span className="whitespace-nowrap text-lg font-semibold text-gray-900">
-                    {formatCurrency(menu.price)}
+                {menu.isHidden && (
+                  <span className="absolute left-3 top-3 rounded-full bg-gray-900 px-3 py-1 text-xs font-bold text-white">
+                    숨김
                   </span>
-                </div>
-                <p className="line-clamp-2 flex-1 text-sm text-gray-500">{menu.description}</p>
+                )}
+              </div>
+
+              <div className="flex flex-1 flex-col p-4">
+                {isEditing ? (
+                  <div className="space-y-3">
+                    <CategorySelect categories={categories} value={editForm.categoryId} onChange={(categoryId) => setEditForm((prev) => ({ ...prev, categoryId }))} />
+                    <TextInput value={editForm.name} onChange={(name) => setEditForm((prev) => ({ ...prev, name }))} placeholder="메뉴명" />
+                    <TextInput value={editForm.price} onChange={(price) => setEditForm((prev) => ({ ...prev, price }))} placeholder="가격" numeric />
+                    <TextInput value={editForm.imageUrl} onChange={(imageUrl) => setEditForm((prev) => ({ ...prev, imageUrl }))} placeholder="이미지 URL" />
+                    <textarea
+                      value={editForm.description}
+                      onChange={(event) => setEditForm((prev) => ({ ...prev, description: event.target.value }))}
+                      className="min-h-20 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                      placeholder="메뉴 설명"
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => submitEdit(menu.id)}
+                        disabled={!editForm.name.trim() || updateMenuMutation.isPending}
+                        className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                      >
+                        <Save className="h-4 w-4" />
+                        저장
+                      </button>
+                      <button
+                        onClick={() => setEditingMenuId(null)}
+                        className="inline-flex items-center justify-center rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="mb-2 flex justify-between gap-3">
+                      <div>
+                        <span className="mb-2 inline-block rounded-full bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-600">
+                          {categoryName}
+                        </span>
+                        <h3 className="text-lg font-bold text-gray-800">{menu.name}</h3>
+                      </div>
+                      <span className="whitespace-nowrap text-lg font-semibold text-gray-900">
+                        {formatCurrency(menu.price)}
+                      </span>
+                    </div>
+                    <p className="line-clamp-2 flex-1 text-sm text-gray-500">{menu.description}</p>
+                    {canEditThisMenu && (
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <button
+                          onClick={() => startEdit(menu)}
+                          className="inline-flex items-center gap-1 rounded-md border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                        >
+                          <Edit3 className="h-3.5 w-3.5" />
+                          수정
+                        </button>
+                        <button
+                          onClick={() => updateMenuMutation.mutate({ menuId: menu.id, data: { soldOut: !menu.soldOut } })}
+                          className="rounded-md border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                        >
+                          {menu.soldOut ? '품절 해제' : '품절'}
+                        </button>
+                        <button
+                          onClick={() => updateMenuMutation.mutate({ menuId: menu.id, data: { isHidden: !menu.isHidden } })}
+                          className="inline-flex items-center gap-1 rounded-md border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                        >
+                          {menu.isHidden ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+                          {menu.isHidden ? '노출' : '숨김'}
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             </div>
           );
@@ -261,5 +377,50 @@ export default function MenuListPage() {
         )}
       </div>
     </div>
+  );
+}
+
+function CategorySelect({
+  categories,
+  value,
+  onChange,
+}: {
+  categories: MenuCategory[];
+  value: string;
+  onChange: (categoryId: string) => void;
+}) {
+  return (
+    <select
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+      className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+    >
+      {categories.length === 0 ? (
+        <option value="">카테고리를 먼저 추가하세요</option>
+      ) : categories.map((category) => (
+        <option key={category.id} value={category.id}>{category.name}</option>
+      ))}
+    </select>
+  );
+}
+
+function TextInput({
+  value,
+  onChange,
+  placeholder,
+  numeric = false,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  numeric?: boolean;
+}) {
+  return (
+    <input
+      value={value}
+      onChange={(event) => onChange(numeric ? event.target.value.replace(/[^0-9]/g, '') : event.target.value)}
+      className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+      placeholder={placeholder}
+    />
   );
 }

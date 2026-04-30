@@ -40,6 +40,8 @@
 - [x] 관리자 직접 카테고리 생성 API `POST /stores/:storeId/categories`
 - [x] 관리자 직접 메뉴 생성 API `POST /stores/:storeId/menus`
 - [x] 관리자 직접 메뉴 수정 API `PATCH /stores/:storeId/menus/:menuId`
+- [x] 관리자 전용 메뉴 목록 API `GET /stores/:storeId/admin/menus`
+- [x] 권한 헬퍼 추가: 현재 `ADMIN`/`OWNER` 유지, 향후 역할 확장 지점 분리
 - [x] 관리자 앱 `QueryClientProvider` 구성
 - [x] 선택 매장 상태를 Zustand로 분리
 - [x] `GET /stores/me` 결과를 공통 Store Context로 연결
@@ -48,6 +50,7 @@
 - [x] 초대 코드 재발급 UI 연결
 - [x] Toss 메뉴 동기화 버튼 연결
 - [x] 관리자 직접 카테고리/메뉴 등록 UI 연결
+- [x] 직접 등록 메뉴 수정/품절/숨김 처리 UI 연결
 - [x] 백엔드 테이블 목록 조회 API `GET /stores/:storeId/tables`
 - [x] 테이블 일괄 생성 UI 실제 API 연결
 
@@ -58,7 +61,6 @@
 - [ ] 주문 취소/환불 이력 상세 패널 추가
 - [ ] 결제 취소/부분 환불 UI를 `window.prompt` 대신 모달로 전환
 - [ ] 관리자 권한별 메뉴 노출 정책 정리
-- [ ] 직접 등록 메뉴 수정/숨김/품절 처리 UI 보강
 - [ ] 메뉴 옵션 그룹/옵션 직접 등록 UI 추가
 - [ ] Toss POS 동기화 API 인증 가드 적용
 - [ ] Toss POS 동기화 결과/실패 로그 UI 표시
@@ -79,8 +81,8 @@
 
 ## 다음 순서
 
-1. 메뉴 수정/품절/숨김 UI를 추가한다.
-2. 주문 상세/결제/배송 확장 패널을 정리한다.
-3. 환불/취소 입력을 모달 UI로 교체한다.
-4. Toss POS 동기화 API 인증 가드를 적용한다.
+1. 주문 상세/결제/배송 확장 패널을 정리한다.
+2. 환불/취소 입력을 모달 UI로 교체한다.
+3. Toss POS 동기화 API 인증 가드를 적용한다.
+4. 메뉴 옵션 그룹/옵션 직접 등록 UI를 추가한다.
 5. Electron은 주문 알림/영수증 자동 출력 요구가 확정되면 별도 패키지로 시작한다.

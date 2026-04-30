@@ -1,5 +1,6 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
+import { assertCanCreateStore, assertCanManageStore } from '../../common/auth/permissions';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateStoreDto, CreateTablesDto, UpdateStoreDto } from './dto/store-admin.dto';
 
@@ -118,9 +119,7 @@ export class StoresService {
             where: { id: userId },
         });
 
-        if (!user || user.role !== 'ADMIN') {
-            throw new ForbiddenException('Only admins can create stores');
-        }
+        assertCanCreateStore(user);
     }
 
     private async assertCanManageStore(userId: string, storeId: string) {
@@ -133,9 +132,7 @@ export class StoresService {
             throw new NotFoundException('Store not found');
         }
 
-        if (!user || (user.role !== 'ADMIN' && store.ownerId !== userId)) {
-            throw new ForbiddenException('You do not have permission to manage this store');
-        }
+        assertCanManageStore(user, store);
 
         return store;
     }
