@@ -71,7 +71,7 @@
 - [x] 관리자에서 확인 가능한 POS/알림 실패 상태 또는 운영 로그를 추가한다.
 - [x] 운영상 필요하면 POS 전송 실패 수동 재시도 endpoint/button을 추가한다.
 - [x] Toss와 로컬 결제 상태 불일치 복구 reconciliation job을 추가한다.
-- [ ] idempotency, 중복 메시지, retry exhaustion, 성공 처리 테스트를 추가한다.
+- [x] idempotency, 중복 메시지, retry exhaustion, 성공 처리 테스트를 추가한다.
 
 ## 1차 PR 범위
 
@@ -90,6 +90,6 @@
 
 ## 3차 PR 범위
 
-- [ ] 알림 전송을 queue consumer로 이동한다.
+- [x] 알림 전송을 queue consumer로 이동한다.
 - [x] 알림 dedupe key를 추가한다: `recipientId + notificationType + orderId`.
 - [x] 내부 retry/failure 이벤트가 고객 알림을 발생시키지 않도록 보장한다.
