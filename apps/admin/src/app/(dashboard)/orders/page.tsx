@@ -218,7 +218,7 @@ export default function OrdersPage() {
         <SummaryCard label="배달 중" value={orders.filter((order) => order.delivery?.status === 'DELIVERING').length} />
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden" data-testid="admin-orders-table">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[1180px] text-left">
             <thead className="bg-gray-50 border-b border-gray-100">
@@ -237,7 +237,7 @@ export default function OrdersPage() {
             <tbody className="divide-y divide-gray-50">
               {orders.map((order) => (
                 <React.Fragment key={order.id}>
-                <tr className="hover:bg-gray-50/50 transition-colors align-top">
+                <tr className="hover:bg-gray-50/50 transition-colors align-top" data-testid={`admin-order-row-${order.id}`}>
                   <td className="px-6 py-4">
                     <p className="font-mono text-xs text-gray-500">{order.orderNumber}</p>
                     <p className="mt-1 text-xs text-gray-400">{sourceLabel[order.source || ''] || order.source || '-'}</p>
@@ -312,6 +312,7 @@ export default function OrdersPage() {
                       <button
                         onClick={() => setExpandedOrderId((current) => (current === order.id ? null : order.id))}
                         className="inline-flex items-center gap-1 rounded-md border border-gray-200 px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-50"
+                        data-testid={`admin-order-detail-toggle-${order.id}`}
                       >
                         <ChevronDown
                           size={14}
@@ -325,6 +326,7 @@ export default function OrdersPage() {
                       <button
                         onClick={() => setPrintOrder(order)}
                         className="inline-flex items-center gap-1 rounded-md border border-gray-200 px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-50"
+                        data-testid={`admin-order-print-${order.id}`}
                       >
                         <Printer size={14} />
                         출력
@@ -355,7 +357,7 @@ export default function OrdersPage() {
 
       {printOrder && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="max-h-[90vh] w-full max-w-md overflow-auto rounded-xl bg-white p-4 shadow-xl">
+          <div className="max-h-[90vh] w-full max-w-md overflow-auto rounded-xl bg-white p-4 shadow-xl" data-testid="admin-order-receipt-modal">
             <div className="mb-4 flex items-center justify-between">
               <h3 className="font-bold">주문 영수증</h3>
               <button
@@ -747,6 +749,7 @@ function RefundDialog({
             onClick={handleSubmit}
             disabled={isSubmitting}
             className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-red-300"
+            data-testid={`admin-refund-submit-${dialog.mode}`}
           >
             {isSubmitting ? '처리 중...' : isPartial ? '부분 환불' : '전액 취소'}
           </button>
@@ -862,6 +865,7 @@ function renderOrderAction(
     <button
       onClick={() => updateStatus({ orderId: order.id, status: next.status })}
       className={`inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs text-white ${next.className}`}
+      data-testid={`admin-order-status-action-${order.id}`}
     >
       {next.icon}
       {next.label}
@@ -929,6 +933,7 @@ function renderDeliveryAction(
       disabled={disabled}
       title={disabled ? '주문을 배달 준비 상태로 변경한 뒤 사용할 수 있습니다.' : undefined}
       className={`inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs text-white disabled:cursor-not-allowed disabled:bg-gray-300 ${action.className}`}
+      data-testid={`admin-delivery-status-action-${order.id}`}
     >
       <MapPin size={14} />
       {action.label}
@@ -952,6 +957,7 @@ function renderPaymentCancelAction(
       <button
         onClick={() => openRefundDialog({ order, mode: 'full', remainingAmount })}
         className="inline-flex items-center gap-1 rounded-md bg-red-600 px-3 py-1.5 text-xs text-white hover:bg-red-700"
+        data-testid={`admin-refund-full-${order.id}`}
       >
         <XCircle size={14} />
         전액 취소
@@ -959,6 +965,7 @@ function renderPaymentCancelAction(
       <button
         onClick={() => openRefundDialog({ order, mode: 'partial', remainingAmount })}
         className="inline-flex items-center gap-1 rounded-md border border-red-200 px-3 py-1.5 text-xs text-red-600 hover:bg-red-50"
+        data-testid={`admin-refund-partial-${order.id}`}
       >
         부분 환불
       </button>

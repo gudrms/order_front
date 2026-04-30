@@ -197,6 +197,7 @@ export default function StoreSettingsPage() {
           onClick={() => updateStoreMutation.mutate()}
           disabled={updateStoreMutation.isPending}
           className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-3 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-60"
+          data-testid="admin-store-save"
         >
           <Save className="h-4 w-4" />
           {updateStoreMutation.isPending ? '저장 중...' : '저장'}
@@ -288,6 +289,7 @@ function CreateStoreSection({
           <button
             onClick={() => setOpen(true)}
             className="inline-flex items-center gap-2 rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-700"
+            data-testid="admin-store-create-open"
           >
             <Plus className="h-4 w-4" />
             새 매장 만들기
@@ -351,6 +353,7 @@ function CreateStoreSection({
           onClick={() => createMutation.mutate()}
           disabled={!canSubmit || createMutation.isPending}
           className="inline-flex items-center gap-2 rounded-lg bg-gray-900 px-4 py-2 text-sm font-bold text-white hover:bg-gray-700 disabled:opacity-50"
+          data-testid="admin-store-create-submit"
         >
           <Plus className="h-4 w-4" />
           {createMutation.isPending ? '생성 중...' : '매장 생성'}
