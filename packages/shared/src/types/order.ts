@@ -65,6 +65,13 @@ export interface OrderPayment {
   approvedAmount?: number | null;
   cancelledAmount?: number;
   cancelledAt?: Date | string | null;
+  approvedAt?: Date | string | null;
+  failedAt?: Date | string | null;
+  failureCode?: string | null;
+  failureMessage?: string | null;
+  paymentKey?: string | null;
+  providerOrderId?: string | null;
+  rawPayload?: unknown;
   receiptUrl?: string | null;
 }
 
