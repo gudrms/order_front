@@ -58,7 +58,7 @@
 ## 기술 부채 및 개선 사항 (Technical Debt)
 
 - [x] **UX 개선**: `window.prompt`를 사용한 주문 취소 로직을 Bottom Sheet UI로 교체 (사유 선택 + 직접입력)
-- [ ] **UX 개선**: 데이터 로딩 시 단순 스피너 대신 Skeleton UI 적용하여 체감 대기시간(Perceived Performance) 최적화
+- [x] **UX 개선**: 데이터 로딩 시 단순 스피너 대신 Skeleton UI 적용 (메뉴/주문내역/주문상세/주소/찜/마이페이지)
 - [x] `test-user-id` 제거 — 주소/찜 API 백엔드에 SupabaseGuard 적용, 프론트 apiClient로 전환
 - [ ] **라우팅/인가 구조 개선**: 컴포넌트 내부에 산재된 Auth Check 로직을 Next.js Middleware(`middleware.ts`)로 추상화
 - [ ] **라우팅 구조 개선**: 주문 상세 페이지 URL을 쿼리 파라미터(`?id=`) 방식에서 동적 라우팅(`/[id]`)으로 변경

@@ -1,6 +1,7 @@
 'use client';
 
 import { CheckCircle, ChevronLeft, Clock, Loader, LockKeyhole, XCircle } from 'lucide-react';
+import { OrdersPageSkeleton } from '@/components/ui/Skeleton';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCurrentStore } from '@/contexts/StoreContext';
@@ -81,10 +82,7 @@ export default function OrdersPage() {
                         </button>
                     </div>
                 ) : isLoading ? (
-                    <div className="bg-white rounded-xl p-8 text-center shadow-sm border border-gray-100">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-yellow mx-auto mb-4" />
-                        <p className="text-gray-500">주문 내역을 불러오는 중입니다.</p>
-                    </div>
+                    <OrdersPageSkeleton />
                 ) : isError ? (
                     <div className="bg-white rounded-xl p-8 text-center shadow-sm border border-gray-100">
                         <h2 className="text-lg font-bold mb-2">주문 내역을 불러오지 못했습니다</h2>
