@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
+import { emitAdminOrderAlert } from '@/lib/adminOrderAlerts';
 
 /**
  * 실시간 주문 알림 훅
@@ -26,13 +27,20 @@ export function useRealtimeOrders(storeId: string) {
         (payload) => {
           console.log('Realtime Order Update:', payload);
 
-          // 1. 신규 주문(INSERT)일 때 알림음 재생 (선택 사항)
           if (payload.eventType === 'INSERT') {
-            const audio = new Audio('/sounds/notification.mp3'); // public 폴더에 파일 필요
-            audio.play().catch((e) => console.log('Audio play failed:', e));
+            const order = payload.new as {
+              id?: string;
+              order_number?: string;
+              total_amount?: number;
+            };
+            emitAdminOrderAlert({
+              storeId,
+              orderId: order.id,
+              orderNumber: order.order_number,
+              totalAmount: order.total_amount,
+            });
           }
 
-          // 2. 데이터가 변경되었으므로 React Query 캐시를 무효화하여 목록 새로고침
           queryClient.invalidateQueries({ queryKey: ['admin-orders', storeId] });
         }
       )

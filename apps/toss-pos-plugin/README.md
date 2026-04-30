@@ -137,12 +137,13 @@ catalog.on('add' | 'update' | 'delete', cb)                    // sold-out/on-sa
 
 ```
 PLUGIN_API_URL=http://localhost:4000/api/v1
+PLUGIN_POS_API_KEY=change-me
 PLUGIN_SUPABASE_URL=https://xxx.supabase.co
 PLUGIN_SUPABASE_ANON_KEY=sb_xxx
 PLUGIN_STORE_ID=store-1
 ```
 
-Vite `import.meta.env`로 로드됩니다 (`PLUGIN_` 접두사 필수).
+`PLUGIN_POS_API_KEY`는 백엔드 `POS_INTEGRATION_API_KEY`와 같은 값이어야 하며, `/pos` API 호출 시 `x-pos-api-key` 헤더로 전송됩니다. Vite `import.meta.env`로 로드됩니다 (`PLUGIN_` 접두사 필수).
 
 ## 스크립트
 

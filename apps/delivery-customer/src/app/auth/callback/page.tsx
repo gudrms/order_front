@@ -16,8 +16,9 @@ export default function AuthCallbackPage() {
                 console.error('인증 오류:', error);
                 router.push('/login?error=auth_failed');
             } else {
-                // 로그인 성공 - 메인 페이지로 리다이렉트
-                router.push('/');
+                const redirect = sessionStorage.getItem('auth_redirect');
+                sessionStorage.removeItem('auth_redirect');
+                router.push(redirect || '/');
             }
         };
 

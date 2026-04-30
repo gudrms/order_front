@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import Sidebar from '@/components/dashboard/Sidebar';
 import { usePathname } from 'next/navigation';
+import { canAccessAdmin, canAccessPath } from '@/lib/adminPermissions';
+import { OrderAlertControls } from '@/components/dashboard/OrderAlertControls';
 
 export default function DashboardLayout({
   children,
@@ -26,6 +28,16 @@ export default function DashboardLayout({
       if (pathname !== '/setup') {
         router.push('/setup');
       }
+      return;
+    }
+
+    if (!loading && user && profile && !canAccessAdmin(profile)) {
+      router.push('/login');
+      return;
+    }
+
+    if (!loading && user && profile && !canAccessPath(profile, pathname)) {
+      router.replace('/');
     }
   }, [user, profile, loading, router, pathname]);
 
@@ -38,6 +50,7 @@ export default function DashboardLayout({
   }
 
   if (!user) return null;
+  if (profile && !canAccessPath(profile, pathname)) return null;
 
   // 온보딩 중일 때는 사이드바 없이 전체 화면 사용 가능 (선택 사항)
   const isSetupPage = pathname === '/setup';
@@ -47,8 +60,9 @@ export default function DashboardLayout({
       {!isSetupPage && <Sidebar />}
       <main className={cn("flex-1 overflow-y-auto p-8", isSetupPage && "flex items-center justify-center")}>
         {!isSetupPage && (
-          <header className="mb-8">
+          <header className="mb-8 flex flex-wrap items-center justify-between gap-3">
             <h1 className="text-2xl font-bold text-gray-800">관리자 대시보드</h1>
+            <OrderAlertControls />
           </header>
         )}
         {children}

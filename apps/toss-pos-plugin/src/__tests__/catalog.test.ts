@@ -13,6 +13,11 @@ vi.mock('@tossplace/pos-plugin-sdk', () => ({
 vi.mock('../config', () => ({
     API_URL: 'http://localhost:4000/api/v1',
     STORE_ID: 'store-1',
+    POS_API_KEY: 'pos-secret',
+    posApiHeaders: (extraHeaders: Record<string, string> = {}) => ({
+        ...extraHeaders,
+        'x-pos-api-key': 'pos-secret',
+    }),
 }));
 
 import { syncCatalogs, setupCatalogListeners } from '../catalog';
@@ -63,6 +68,10 @@ describe('syncCatalogs', () => {
             'http://localhost:4000/api/v1/pos/catalogs/sync?storeId=store-1',
             expect.objectContaining({
                 method: 'POST',
+                headers: expect.objectContaining({
+                    'Content-Type': 'application/json',
+                    'x-pos-api-key': 'pos-secret',
+                }),
                 body: JSON.stringify({
                     catalogs: [
                         {

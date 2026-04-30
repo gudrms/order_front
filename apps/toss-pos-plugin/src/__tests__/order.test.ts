@@ -26,6 +26,7 @@ vi.mock('@tossplace/pos-plugin-sdk', () => ({
 // config mock
 vi.mock('../config', () => ({
     API_URL: 'http://localhost:4000/api/v1',
+    POS_API_KEY: 'pos-secret',
     SUPABASE_URL: 'https://test.supabase.co',
     SUPABASE_KEY: 'test-key',
     STORE_ID: 'store-1',
@@ -36,6 +37,10 @@ vi.mock('../config', () => ({
             subscribe: vi.fn(),
         }),
     },
+    posApiHeaders: (extraHeaders: Record<string, string> = {}) => ({
+        ...extraHeaders,
+        'x-pos-api-key': 'pos-secret',
+    }),
 }));
 
 import { processOrder, updateOrderStatus, pollOrders } from '../order';
@@ -127,6 +132,7 @@ describe('processOrder', () => {
                 headers: expect.objectContaining({
                     'Content-Type': 'application/json',
                     'Idempotency-Key': 'order-order-001-CONFIRMED',
+                    'x-pos-api-key': 'pos-secret',
                 }),
                 body: JSON.stringify({
                     status: 'CONFIRMED',
@@ -239,6 +245,7 @@ describe('updateOrderStatus', () => {
             expect.objectContaining({
                 headers: expect.objectContaining({
                     'Idempotency-Key': 'order-order-001-CONFIRMED',
+                    'x-pos-api-key': 'pos-secret',
                 }),
             })
         );
@@ -286,6 +293,12 @@ describe('pollOrders', () => {
 
         await pollOrders();
 
+        expect(mockFetch).toHaveBeenCalledWith(
+            'http://localhost:4000/api/v1/pos/orders/pending',
+            expect.objectContaining({
+                headers: expect.objectContaining({ 'x-pos-api-key': 'pos-secret' }),
+            }),
+        );
         expect(posPluginSdk.order.add).not.toHaveBeenCalled();
     });
 

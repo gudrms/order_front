@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { Order, formatCurrency, formatDate } from '@order/shared';
+import { getAdminElectronBridge, isAdminElectronRuntime } from '@/lib/electronBridge';
 
 interface OrderReceiptProps {
   order: Order;
@@ -12,7 +13,31 @@ interface OrderReceiptProps {
 }
 
 export function OrderReceipt({ order, onPrintComplete }: OrderReceiptProps) {
-  const handlePrint = () => {
+  const [printError, setPrintError] = React.useState<string | null>(null);
+  const isElectron = isAdminElectronRuntime();
+
+  const handlePrint = async () => {
+    setPrintError(null);
+    const electronBridge = getAdminElectronBridge();
+    if (electronBridge?.printReceipt) {
+      try {
+        const result = await electronBridge.printReceipt({
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          silent: true,
+        });
+        if (result && !result.success) {
+          setPrintError(result.message || '영수증 출력에 실패했습니다.');
+          return;
+        }
+        onPrintComplete?.();
+        return;
+      } catch (error) {
+        setPrintError(error instanceof Error ? error.message : '영수증 출력에 실패했습니다.');
+        return;
+      }
+    }
+
     window.print();
     onPrintComplete?.();
   };
@@ -25,8 +50,13 @@ export function OrderReceipt({ order, onPrintComplete }: OrderReceiptProps) {
           onClick={handlePrint}
           className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-medium"
         >
-          프린트하기
+          {isElectron ? '무음 출력' : '프린트하기'}
         </button>
+        {printError && (
+          <p className="mt-2 rounded bg-red-50 px-3 py-2 text-sm text-red-600">
+            {printError}
+          </p>
+        )}
       </div>
 
       {/* 주문서 내용 (프린트용) */}

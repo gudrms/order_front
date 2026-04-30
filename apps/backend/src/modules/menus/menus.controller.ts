@@ -1,5 +1,16 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiParam, ApiQuery, ApiResponse } from '@nestjs/swagger';
+import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
+import { ApiBearerAuth, ApiBody, ApiTags, ApiOperation, ApiParam, ApiQuery, ApiResponse } from '@nestjs/swagger';
+import { CurrentUser } from '../../common/decorators/user.decorator';
+import { SupabaseGuard } from '../auth/guards/supabase.guard';
+import {
+    CreateMenuCategoryDto,
+    CreateMenuDto,
+    CreateMenuOptionDto,
+    CreateOptionGroupDto,
+    UpdateMenuDto,
+    UpdateMenuOptionDto,
+    UpdateOptionGroupDto,
+} from './dto/menu-admin.dto';
 import { MenusService } from './menus.service';
 
 @ApiTags('Menus')
@@ -41,6 +52,19 @@ export class MenusController {
     @ApiResponse({ status: 404, description: '매장을 찾을 수 없습니다.' })
     async getCategories(@Param('storeId') storeId: string) {
         return this.menusService.getCategories(storeId);
+    }
+
+    @Post('categories')
+    @UseGuards(SupabaseGuard)
+    @ApiBearerAuth('JWT-auth')
+    @UsePipes(new ValidationPipe({ transform: true }))
+    @ApiBody({ type: CreateMenuCategoryDto })
+    async createCategory(
+        @CurrentUser() user: { id: string },
+        @Param('storeId') storeId: string,
+        @Body() dto: CreateMenuCategoryDto,
+    ) {
+        return this.menusService.createCategory(user.id, storeId, dto);
     }
 
     @Get('menus')
@@ -85,5 +109,126 @@ export class MenusController {
         @Query('categoryId') categoryId?: string,
     ) {
         return this.menusService.getMenus(storeId, categoryId);
+    }
+
+    @Get('admin/menus')
+    @UseGuards(SupabaseGuard)
+    @ApiBearerAuth('JWT-auth')
+    async getAdminMenus(
+        @CurrentUser() user: { id: string },
+        @Param('storeId') storeId: string,
+        @Query('categoryId') categoryId?: string,
+    ) {
+        return this.menusService.getAdminMenus(user.id, storeId, categoryId);
+    }
+
+    @Post('menus')
+    @UseGuards(SupabaseGuard)
+    @ApiBearerAuth('JWT-auth')
+    @UsePipes(new ValidationPipe({ transform: true }))
+    @ApiBody({ type: CreateMenuDto })
+    async createMenu(
+        @CurrentUser() user: { id: string },
+        @Param('storeId') storeId: string,
+        @Body() dto: CreateMenuDto,
+    ) {
+        return this.menusService.createMenu(user.id, storeId, dto);
+    }
+
+    @Patch('menus/:menuId')
+    @UseGuards(SupabaseGuard)
+    @ApiBearerAuth('JWT-auth')
+    @UsePipes(new ValidationPipe({ transform: true }))
+    @ApiBody({ type: UpdateMenuDto })
+    async updateMenu(
+        @CurrentUser() user: { id: string },
+        @Param('storeId') storeId: string,
+        @Param('menuId') menuId: string,
+        @Body() dto: UpdateMenuDto,
+    ) {
+        return this.menusService.updateMenu(user.id, storeId, menuId, dto);
+    }
+
+    @Post('menus/:menuId/option-groups')
+    @UseGuards(SupabaseGuard)
+    @ApiBearerAuth('JWT-auth')
+    @UsePipes(new ValidationPipe({ transform: true }))
+    async createOptionGroup(
+        @CurrentUser() user: { id: string },
+        @Param('storeId') storeId: string,
+        @Param('menuId') menuId: string,
+        @Body() dto: CreateOptionGroupDto,
+    ) {
+        return this.menusService.createOptionGroup(user.id, storeId, menuId, dto);
+    }
+
+    @Patch('menus/:menuId/option-groups/:groupId')
+    @UseGuards(SupabaseGuard)
+    @ApiBearerAuth('JWT-auth')
+    @UsePipes(new ValidationPipe({ transform: true }))
+    async updateOptionGroup(
+        @CurrentUser() user: { id: string },
+        @Param('storeId') storeId: string,
+        @Param('menuId') menuId: string,
+        @Param('groupId') groupId: string,
+        @Body() dto: UpdateOptionGroupDto,
+    ) {
+        return this.menusService.updateOptionGroup(user.id, storeId, menuId, groupId, dto);
+    }
+
+    @Delete('menus/:menuId/option-groups/:groupId')
+    @UseGuards(SupabaseGuard)
+    @ApiBearerAuth('JWT-auth')
+    @HttpCode(204)
+    async deleteOptionGroup(
+        @CurrentUser() user: { id: string },
+        @Param('storeId') storeId: string,
+        @Param('menuId') menuId: string,
+        @Param('groupId') groupId: string,
+    ) {
+        return this.menusService.deleteOptionGroup(user.id, storeId, menuId, groupId);
+    }
+
+    @Post('menus/:menuId/option-groups/:groupId/options')
+    @UseGuards(SupabaseGuard)
+    @ApiBearerAuth('JWT-auth')
+    @UsePipes(new ValidationPipe({ transform: true }))
+    async createOption(
+        @CurrentUser() user: { id: string },
+        @Param('storeId') storeId: string,
+        @Param('menuId') menuId: string,
+        @Param('groupId') groupId: string,
+        @Body() dto: CreateMenuOptionDto,
+    ) {
+        return this.menusService.createOption(user.id, storeId, menuId, groupId, dto);
+    }
+
+    @Patch('menus/:menuId/option-groups/:groupId/options/:optionId')
+    @UseGuards(SupabaseGuard)
+    @ApiBearerAuth('JWT-auth')
+    @UsePipes(new ValidationPipe({ transform: true }))
+    async updateOption(
+        @CurrentUser() user: { id: string },
+        @Param('storeId') storeId: string,
+        @Param('menuId') menuId: string,
+        @Param('groupId') groupId: string,
+        @Param('optionId') optionId: string,
+        @Body() dto: UpdateMenuOptionDto,
+    ) {
+        return this.menusService.updateOption(user.id, storeId, menuId, groupId, optionId, dto);
+    }
+
+    @Delete('menus/:menuId/option-groups/:groupId/options/:optionId')
+    @UseGuards(SupabaseGuard)
+    @ApiBearerAuth('JWT-auth')
+    @HttpCode(204)
+    async deleteOption(
+        @CurrentUser() user: { id: string },
+        @Param('storeId') storeId: string,
+        @Param('menuId') menuId: string,
+        @Param('groupId') groupId: string,
+        @Param('optionId') optionId: string,
+    ) {
+        return this.menusService.deleteOption(user.id, storeId, menuId, groupId, optionId);
     }
 }
