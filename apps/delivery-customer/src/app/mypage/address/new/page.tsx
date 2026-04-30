@@ -3,9 +3,9 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronLeft, Search } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 import DaumPostcodeEmbed from 'react-daum-postcode';
-import { useAuth } from '@/contexts/AuthContext';
+import { apiClient } from '@order/shared';
 
 interface CreateAddressDto {
     name: string;
@@ -17,7 +17,6 @@ interface CreateAddressDto {
 
 export default function NewAddressPage() {
     const router = useRouter();
-    const { user } = useAuth();
     const queryClient = useQueryClient();
 
     const [isOpenPostcode, setIsOpenPostcode] = useState(false);
@@ -30,21 +29,8 @@ export default function NewAddressPage() {
     });
 
     const createMutation = useMutation({
-        mutationFn: async (data: CreateAddressDto) => {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/me/addresses`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(data),
-            });
-            if (!res.ok) {
-                const errorData = await res.json().catch(() => ({}));
-                console.error('Backend validation error:', errorData);
-                throw new Error(errorData.message || 'Failed to create address');
-            }
-            return res.json();
-        },
+        mutationFn: (data: CreateAddressDto) =>
+            apiClient.post('/users/me/addresses', data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['addresses'] });
             router.back();
@@ -56,20 +42,14 @@ export default function NewAddressPage() {
         let extraAddress = '';
 
         if (data.addressType === 'R') {
-            if (data.bname !== '') {
-                extraAddress += data.bname;
-            }
+            if (data.bname !== '') extraAddress += data.bname;
             if (data.buildingName !== '') {
                 extraAddress += extraAddress !== '' ? `, ${data.buildingName}` : data.buildingName;
             }
             fullAddress += extraAddress !== '' ? ` (${extraAddress})` : '';
         }
 
-        setFormData(prev => ({
-            ...prev,
-            address: fullAddress,
-            zipCode: data.zonecode,
-        }));
+        setFormData((prev) => ({ ...prev, address: fullAddress, zipCode: data.zonecode }));
         setIsOpenPostcode(false);
     };
 
@@ -171,6 +151,12 @@ export default function NewAddressPage() {
                         </label>
                     </div>
                 </div>
+
+                {createMutation.isError && (
+                    <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
+                        주소 저장에 실패했습니다. 다시 시도해주세요.
+                    </p>
+                )}
 
                 <button
                     type="submit"

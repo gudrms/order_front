@@ -59,6 +59,7 @@
 
 - [ ] **UX 개선**: `window.prompt`를 사용한 주문 취소 로직을 커스텀 모달(Modal)이나 Bottom Sheet UI로 리팩토링
 - [ ] **UX 개선**: 데이터 로딩 시 단순 스피너 대신 Skeleton UI 적용하여 체감 대기시간(Perceived Performance) 최적화
+- [x] `test-user-id` 제거 — 주소/찜 API 백엔드에 SupabaseGuard 적용, 프론트 apiClient로 전환
 - [ ] **라우팅/인가 구조 개선**: 컴포넌트 내부에 산재된 Auth Check 로직을 Next.js Middleware(`middleware.ts`)로 추상화
 - [ ] **라우팅 구조 개선**: 주문 상세 페이지 URL을 쿼리 파라미터(`?id=`) 방식에서 동적 라우팅(`/[id]`)으로 변경
 - [ ] **네이티브 기능 연동**: Capacitor 기반 백그라운드 푸시 알림(FCM / APNs) 연동하여 앱 종료 시에도 배달 상태 알림 수신
@@ -90,9 +91,9 @@
 
 - [x] API client에 Supabase access token 주입
 - [x] Supabase 사용자와 DB `User` 자동 동기화
-- [ ] 주소 조회/추가/삭제를 실제 사용자 기준으로 동작
-- [ ] 찜 조회/추가/삭제를 실제 사용자 기준으로 동작
-- [ ] `test-user-id` 제거 여부 최종 확인
+- [x] 주소 조회/추가/삭제를 실제 사용자 기준으로 동작
+- [x] 찜 조회/추가/삭제를 실제 사용자 기준으로 동작
+- [x] `test-user-id` 제거 완료
 - [ ] 쿠폰/포인트 데이터 정책 결정
 
 ### P2: 스토어 배포 및 PWA/빌드
