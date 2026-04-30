@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { assertCanManageStore } from '../../common/auth/permissions';
 import { PrismaService } from '../prisma/prisma.service';
 import { TossApiService } from '../integrations/toss/toss-api.service';
@@ -41,6 +41,26 @@ export class PaymentsService {
             throw new BadRequestException('Payment is not confirmable');
         }
 
+        // Atomic claim: only one concurrent request proceeds when paymentKey is not yet set.
+        // paymentKey has @unique — if two requests race past the status check above,
+        // the second DB write will throw P2002 and we handle it below.
+        const claimed = await this.prisma.payment.updateMany({
+            where: {
+                id: payment.id,
+                paymentKey: null,
+                status: { in: ['READY', 'PENDING'] },
+            },
+            data: { paymentKey: dto.paymentKey },
+        });
+
+        if (claimed.count === 0) {
+            // Another concurrent request already claimed this paymentKey.
+            // If it finished, return the confirmed order; otherwise surface a conflict.
+            const current = await this.prisma.payment.findUnique({ where: { id: payment.id } });
+            if (current?.status === 'PAID') return this.getOrderResponse(payment.orderId);
+            throw new ConflictException('Payment confirmation already in progress');
+        }
+
         const tossPayment = await this.tossApiService.confirmPayment({
             paymentKey: dto.paymentKey,
             orderId: dto.orderId,
@@ -48,27 +68,34 @@ export class PaymentsService {
             idempotencyKey: payment.idempotencyKey || dto.orderId,
         });
 
-        await this.prisma.$transaction([
-            this.prisma.payment.update({
-                where: { id: payment.id },
-                data: {
-                    status: 'PAID',
-                    method: this.mapTossMethod(tossPayment?.method),
-                    paymentKey: dto.paymentKey,
-                    approvedAmount: dto.amount,
-                    approvedAt: tossPayment?.approvedAt ? new Date(tossPayment.approvedAt) : new Date(),
-                    receiptUrl: tossPayment?.receipt?.url,
-                    rawPayload: tossPayment,
-                },
-            }),
-            this.prisma.order.update({
-                where: { id: payment.orderId },
-                data: {
-                    status: 'PAID',
-                    paymentStatus: 'PAID',
-                },
-            }),
-        ]);
+        try {
+            await this.prisma.$transaction([
+                this.prisma.payment.update({
+                    where: { id: payment.id },
+                    data: {
+                        status: 'PAID',
+                        method: this.mapTossMethod(tossPayment?.method),
+                        approvedAmount: dto.amount,
+                        approvedAt: tossPayment?.approvedAt ? new Date(tossPayment.approvedAt) : new Date(),
+                        receiptUrl: tossPayment?.receipt?.url,
+                        rawPayload: tossPayment,
+                    },
+                }),
+                this.prisma.order.update({
+                    where: { id: payment.orderId },
+                    data: {
+                        status: 'PAID',
+                        paymentStatus: 'PAID',
+                    },
+                }),
+            ]);
+        } catch (err: any) {
+            if (err?.code === 'P2002') {
+                // Unique constraint race — another request already completed confirmation.
+                return this.getOrderResponse(payment.orderId);
+            }
+            throw err;
+        }
 
         return this.getOrderResponse(payment.orderId);
     }
@@ -93,6 +120,9 @@ export class PaymentsService {
         }
 
         if (payment.status === 'PAID') {
+            return this.getOrderResponse(payment.orderId);
+        }
+        if (payment.status === 'FAILED' || payment.status === 'CANCELLED') {
             return this.getOrderResponse(payment.orderId);
         }
 
