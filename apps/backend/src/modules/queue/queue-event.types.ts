@@ -47,6 +47,16 @@ export interface PaymentReconcileEventPayload extends QueueEventPayload {
     providerOrderId?: string;
 }
 
+export interface PaymentRefundedEventPayload extends QueueEventPayload {
+    paymentId: string;
+    orderId: string;
+    storeId?: string;
+    providerOrderId?: string;
+    refundedAmount: number;
+    totalCancelledAmount: number;
+    isFullRefund: boolean;
+}
+
 export type NotificationRecipientType = 'CUSTOMER' | 'STORE' | 'ADMIN';
 
 export type NotificationType =

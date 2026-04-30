@@ -352,6 +352,16 @@ export class PaymentsService {
             }),
         ]);
 
+        await this.queueService?.publishPaymentRefunded({
+            paymentId: payment.id,
+            orderId,
+            storeId: payment.order.storeId,
+            providerOrderId: payment.providerOrderId || undefined,
+            refundedAmount: cancelAmount,
+            totalCancelledAmount: nextCancelledAmount,
+            isFullRefund,
+        });
+
         return this.getOrderResponse(orderId);
     }
 

@@ -57,6 +57,7 @@ describe('PaymentsService', () => {
         queueService = {
             publishOrderPaid: vi.fn(),
             publishPaymentReconcile: vi.fn(),
+            publishPaymentRefunded: vi.fn(),
         };
 
         const module: TestingModule = await Test.createTestingModule({
@@ -192,6 +193,7 @@ describe('PaymentsService', () => {
                 }),
             }),
         }));
+        expect(queueService.publishPaymentRefunded).not.toHaveBeenCalled();
     });
 
     it('records failed Toss payment without delivery update for non-delivery orders', async () => {
@@ -381,6 +383,15 @@ describe('PaymentsService', () => {
                 }),
             }),
         }));
+        expect(queueService.publishPaymentRefunded).toHaveBeenCalledWith({
+            paymentId: 'payment-1',
+            orderId: 'order-1',
+            storeId: 'store-1',
+            providerOrderId: 'ORDER_1',
+            refundedAmount: 24000,
+            totalCancelledAmount: 24000,
+            isFullRefund: true,
+        });
     });
 
     it('partially refunds a paid Toss payment without cancelling the order', async () => {
@@ -430,6 +441,15 @@ describe('PaymentsService', () => {
             data: {
                 paymentStatus: 'PARTIAL_REFUNDED',
             },
+        });
+        expect(queueService.publishPaymentRefunded).toHaveBeenCalledWith({
+            paymentId: 'payment-1',
+            orderId: 'order-1',
+            storeId: 'store-1',
+            providerOrderId: 'ORDER_1',
+            refundedAmount: 5000,
+            totalCancelledAmount: 8000,
+            isFullRefund: false,
         });
     });
 

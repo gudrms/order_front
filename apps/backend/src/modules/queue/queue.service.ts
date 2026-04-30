@@ -6,6 +6,7 @@ import {
     NotificationSendEventPayload,
     OrderPaidEventPayload,
     PaymentReconcileEventPayload,
+    PaymentRefundedEventPayload,
     PosSendOrderEventPayload,
     QueueEventPayload,
     QueueEventType,
@@ -68,6 +69,12 @@ export class QueueService {
 
         await this.publish('payment.reconcile', payload, {
             idempotencyKey: `payment.reconcile:${idempotencyTarget}`,
+        });
+    }
+
+    async publishPaymentRefunded(payload: PaymentRefundedEventPayload): Promise<void> {
+        await this.publish('payment.refunded', payload, {
+            idempotencyKey: `payment.refunded:${payload.paymentId}:${payload.totalCancelledAmount}`,
         });
     }
 
