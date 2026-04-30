@@ -12,6 +12,7 @@ describe('QueueConsumerService', () => {
             archive: vi.fn(),
             publishPosSendOrder: vi.fn(),
             publishNotificationSend: vi.fn(),
+            retry: vi.fn(),
         };
         prisma = {
             queueEventLog: {
@@ -268,5 +269,75 @@ describe('QueueConsumerService', () => {
             }),
         }));
         expect(queueService.archive).not.toHaveBeenCalled();
+    });
+
+    it('retries failed jobs with backoff and archives the current message', async () => {
+        queueService.read.mockResolvedValue([
+            {
+                msg_id: 8,
+                read_ct: 1,
+                enqueued_at: new Date(),
+                vt: new Date(),
+                message: {
+                    eventId: 'event-8',
+                    eventType: 'pos.send_order',
+                    idempotencyKey: 'pos.send_order:order-8',
+                    occurredAt: new Date().toISOString(),
+                    payload: {},
+                },
+            },
+        ]);
+        prisma.queueEventLog.findUnique.mockResolvedValue(null);
+        prisma.queueEventLog.upsert.mockResolvedValue({ status: 'PROCESSING', attemptCount: 2 });
+        prisma.queueEventLog.update.mockResolvedValue({ attemptCount: 2 });
+
+        const result = await service.processOnce();
+
+        expect(result).toEqual({ processedCount: 0 });
+        expect(prisma.queueEventLog.update).toHaveBeenCalledWith({
+            where: { idempotencyKey: 'pos.send_order:order-8' },
+            data: {
+                status: 'FAILED',
+                lastError: 'pos.send_order payload requires orderId',
+            },
+            select: { attemptCount: true },
+        });
+        expect(queueService.retry).toHaveBeenCalledWith(
+            expect.objectContaining({
+                eventType: 'pos.send_order',
+                idempotencyKey: 'pos.send_order:order-8',
+            }),
+            {
+                queueName: 'backend_events',
+                delaySeconds: 30,
+            },
+        );
+        expect(queueService.archive).toHaveBeenCalledWith(undefined, 8);
+    });
+
+    it('archives failed jobs when retry attempts are exhausted', async () => {
+        queueService.read.mockResolvedValue([
+            {
+                msg_id: 9,
+                read_ct: 5,
+                enqueued_at: new Date(),
+                vt: new Date(),
+                message: {
+                    eventId: 'event-9',
+                    eventType: 'pos.send_order',
+                    idempotencyKey: 'pos.send_order:order-9',
+                    occurredAt: new Date().toISOString(),
+                    payload: {},
+                },
+            },
+        ]);
+        prisma.queueEventLog.findUnique.mockResolvedValue(null);
+        prisma.queueEventLog.upsert.mockResolvedValue({ status: 'PROCESSING', attemptCount: 5 });
+        prisma.queueEventLog.update.mockResolvedValue({ attemptCount: 5 });
+
+        await service.processOnce();
+
+        expect(queueService.retry).not.toHaveBeenCalled();
+        expect(queueService.archive).toHaveBeenCalledWith(undefined, 9);
     });
 });

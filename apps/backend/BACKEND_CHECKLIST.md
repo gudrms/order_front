@@ -64,7 +64,7 @@
 - [x] 결제/주문 흐름의 DB commit 이후 producer 호출을 추가한다.
 - [x] POS 전송 worker 처리를 추가한다.
 - [x] 알림 전송 worker 처리를 추가한다.
-- [ ] retry/backoff 정책과 최대 시도 횟수 정책을 추가한다.
+- [x] retry/backoff 정책과 최대 시도 횟수 정책을 추가한다.
 - [x] 실패 이벤트 로깅 또는 archive 처리를 추가한다.
 - [x] Vercel Cron 또는 운영 배치에서 호출할 수 있는 내부 큐 처리 endpoint를 추가한다.
 - [x] POS 전송 실패 상태와 시도 횟수 기록 필드를 추가한다.
