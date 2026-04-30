@@ -243,6 +243,14 @@ export class QueueConsumerService {
             }),
         ]);
 
+        await this.queueService.publishPaymentPaid({
+            orderId: payment.orderId,
+            storeId: payment.order.storeId,
+            paymentId: payment.id,
+            providerOrderId: payment.providerOrderId,
+            amount: approvedAmount,
+        });
+
         await this.queueService.publishOrderPaid({
             orderId: payment.orderId,
             storeId: payment.order.storeId,

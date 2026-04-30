@@ -5,6 +5,7 @@ import {
     BackendQueueEvent,
     NotificationSendEventPayload,
     OrderPaidEventPayload,
+    PaymentPaidEventPayload,
     PaymentReconcileEventPayload,
     PaymentRefundedEventPayload,
     PosSendOrderEventPayload,
@@ -44,6 +45,12 @@ export class QueueService {
     async publishOrderPaid(payload: OrderPaidEventPayload): Promise<void> {
         await this.publish('order.paid', payload, {
             idempotencyKey: `order.paid:${payload.orderId}`,
+        });
+    }
+
+    async publishPaymentPaid(payload: PaymentPaidEventPayload): Promise<void> {
+        await this.publish('payment.paid', payload, {
+            idempotencyKey: `payment.paid:${payload.paymentId}`,
         });
     }
 

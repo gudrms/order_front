@@ -99,6 +99,14 @@ export class PaymentsService {
             throw err;
         }
 
+        await this.queueService?.publishPaymentPaid({
+            orderId: payment.orderId,
+            storeId: payment.order.storeId,
+            paymentId: payment.id,
+            providerOrderId: payment.providerOrderId || undefined,
+            amount: dto.amount,
+        });
+
         await this.queueService?.publishOrderPaid({
             orderId: payment.orderId,
             storeId: payment.order.storeId,

@@ -15,6 +15,7 @@ describe('QueueConsumerService', () => {
             publishNotificationSend: vi.fn(),
             retry: vi.fn(),
             publishOrderPaid: vi.fn(),
+            publishPaymentPaid: vi.fn(),
         };
         prisma = {
             queueEventLog: {
@@ -295,6 +296,13 @@ describe('QueueConsumerService', () => {
             },
         });
         expect(queueService.publishOrderPaid).toHaveBeenCalledWith({
+            orderId: 'order-10',
+            storeId: 'store-10',
+            paymentId: 'payment-10',
+            providerOrderId: 'ORDER_10',
+            amount: 24000,
+        });
+        expect(queueService.publishPaymentPaid).toHaveBeenCalledWith({
             orderId: 'order-10',
             storeId: 'store-10',
             paymentId: 'payment-10',
