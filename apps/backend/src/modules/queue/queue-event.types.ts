@@ -36,3 +36,8 @@ export interface OrderPaidEventPayload extends QueueEventPayload {
     providerOrderId?: string;
     amount: number;
 }
+
+export interface PosSendOrderEventPayload extends QueueEventPayload {
+    orderId: string;
+    storeId?: string;
+}

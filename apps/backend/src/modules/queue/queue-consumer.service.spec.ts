@@ -10,12 +10,16 @@ describe('QueueConsumerService', () => {
         queueService = {
             read: vi.fn(),
             archive: vi.fn(),
+            publishPosSendOrder: vi.fn(),
         };
         prisma = {
             queueEventLog: {
                 findUnique: vi.fn(),
                 upsert: vi.fn(),
                 update: vi.fn(),
+            },
+            order: {
+                updateMany: vi.fn(),
             },
         };
         service = new QueueConsumerService(queueService, prisma);
@@ -51,6 +55,10 @@ describe('QueueConsumerService', () => {
             }),
         }));
         expect(queueService.archive).toHaveBeenCalledWith(undefined, 1);
+        expect(queueService.publishPosSendOrder).toHaveBeenCalledWith({
+            orderId: 'order-1',
+            storeId: undefined,
+        });
         expect(prisma.queueEventLog.update).toHaveBeenCalledWith({
             where: { idempotencyKey: 'order.paid:order-1' },
             data: expect.objectContaining({
@@ -58,6 +66,44 @@ describe('QueueConsumerService', () => {
                 processedAt: expect.any(Date),
             }),
         });
+    });
+
+    it('marks POS send jobs as ready for polling', async () => {
+        queueService.read.mockResolvedValue([
+            {
+                msg_id: 4,
+                read_ct: 1,
+                enqueued_at: new Date(),
+                vt: new Date(),
+                message: {
+                    eventId: 'event-4',
+                    eventType: 'pos.send_order',
+                    idempotencyKey: 'pos.send_order:order-4',
+                    occurredAt: new Date().toISOString(),
+                    payload: { orderId: 'order-4' },
+                },
+            },
+        ]);
+        prisma.queueEventLog.findUnique.mockResolvedValue(null);
+        prisma.queueEventLog.upsert.mockResolvedValue({ status: 'PROCESSING' });
+        prisma.order.updateMany.mockResolvedValue({ count: 1 });
+
+        const result = await service.processOnce();
+
+        expect(result).toEqual({ processedCount: 1 });
+        expect(prisma.order.updateMany).toHaveBeenCalledWith({
+            where: {
+                id: 'order-4',
+                status: 'PAID',
+                tossOrderId: null,
+                posSyncStatus: { in: ['PENDING', 'FAILED'] },
+            },
+            data: {
+                posSyncStatus: 'PENDING',
+                posSyncUpdatedAt: expect.any(Date),
+            },
+        });
+        expect(queueService.archive).toHaveBeenCalledWith(undefined, 4);
     });
 
     it('archives duplicate messages that already succeeded', async () => {
@@ -109,4 +155,3 @@ describe('QueueConsumerService', () => {
         expect(queueService.archive).not.toHaveBeenCalled();
     });
 });
-
