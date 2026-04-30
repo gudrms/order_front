@@ -44,6 +44,7 @@ export class PosController {
             where: {
                 status: 'PAID',
                 tossOrderId: null,
+                posSyncStatus: { in: ['PENDING', 'FAILED'] },
             },
             include: {
                 items: {
@@ -105,6 +106,9 @@ export class PosController {
                 orderNumber: order.orderNumber,
                 totalAmount: order.totalAmount,
                 note: order.note ?? null,
+                posSyncStatus: order.posSyncStatus,
+                posSyncAttemptCount: order.posSyncAttemptCount,
+                posSyncLastError: order.posSyncLastError,
                 payment: paymentDto,
                 items: order.items.map(item => {
                     const menu = menuMap.get(item.menuId);
@@ -224,11 +228,60 @@ export class PosController {
             );
         }
 
+        const data: any = {
+            status: status as any,
+            tossOrderId: tossOrderId ?? order.tossOrderId,
+        };
+
+        if (status === 'CONFIRMED' && (tossOrderId || order.tossOrderId)) {
+            data.posSyncStatus = 'SENT';
+            data.posSyncLastError = null;
+            data.posSyncUpdatedAt = new Date();
+        }
+
+        return this.prisma.order.update({
+            where: { id: orderId },
+            data,
+        });
+    }
+
+    @Patch('orders/:orderId/sync-failed')
+    @ApiOperation({
+        summary: 'POS 주문 등록 실패 기록',
+        description: 'POS 플러그인이 주문 등록 실패를 백엔드에 기록합니다. 실패 주문은 pending polling 대상에 남아 재시도됩니다.',
+    })
+    @ApiParam({ name: 'orderId', description: '주문 ID' })
+    @ApiBody({
+        schema: {
+            type: 'object',
+            properties: {
+                message: { type: 'string', example: 'POS network timeout' },
+            },
+        },
+    })
+    async markOrderSyncFailed(
+        @Param('orderId') orderId: string,
+        @Body() body: { message?: string },
+    ) {
+        const order = await this.prisma.order.findUnique({
+            where: { id: orderId },
+        });
+
+        if (!order) {
+            throw new NotFoundException(`Order not found: ${orderId}`);
+        }
+
+        if (order.tossOrderId || order.posSyncStatus === 'SENT') {
+            return order;
+        }
+
         return this.prisma.order.update({
             where: { id: orderId },
             data: {
-                status: status as any,
-                tossOrderId: tossOrderId ?? order.tossOrderId,
+                posSyncStatus: 'FAILED',
+                posSyncAttemptCount: { increment: 1 },
+                posSyncLastError: body.message?.trim() || 'POS sync failed',
+                posSyncUpdatedAt: new Date(),
             },
         });
     }

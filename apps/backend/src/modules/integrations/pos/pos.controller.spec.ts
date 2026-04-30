@@ -72,7 +72,13 @@ describe('PosController.updateOrderStatus', () => {
 
         expect(prisma.order.update).toHaveBeenCalledWith({
             where: { id: 'order-1' },
-            data: { status: 'CONFIRMED', tossOrderId: 'toss-1' },
+            data: {
+                status: 'CONFIRMED',
+                tossOrderId: 'toss-1',
+                posSyncStatus: 'SENT',
+                posSyncLastError: null,
+                posSyncUpdatedAt: expect.any(Date),
+            },
         });
         expect(result.status).toBe('CONFIRMED');
     });
@@ -160,5 +166,71 @@ describe('PosController.getPendingOrders option mapping', () => {
 
         expect(itemA.options[0].tossOptionCode).toBe('201'); // 메뉴 A의 "기본" → 201
         expect(itemB.options[0].tossOptionCode).toBe('202'); // 메뉴 B의 "기본" → 202 (이전엔 201로 덮어써졌음)
+        expect(prisma.order.findMany).toHaveBeenCalledWith(expect.objectContaining({
+            where: expect.objectContaining({
+                status: 'PAID',
+                tossOrderId: null,
+                posSyncStatus: { in: ['PENDING', 'FAILED'] },
+            }),
+        }));
+    });
+});
+
+describe('PosController.markOrderSyncFailed', () => {
+    let controller: PosController;
+    let prisma: any;
+
+    beforeEach(() => {
+        prisma = {
+            order: {
+                findUnique: vi.fn(),
+                update: vi.fn(),
+            },
+        };
+        controller = new PosController(prisma);
+    });
+
+    it('records POS sync failure and increments attempt count', async () => {
+        prisma.order.findUnique.mockResolvedValue({
+            id: 'order-1',
+            tossOrderId: null,
+            posSyncStatus: 'PENDING',
+        });
+        prisma.order.update.mockResolvedValue({
+            id: 'order-1',
+            posSyncStatus: 'FAILED',
+            posSyncAttemptCount: 1,
+        });
+
+        const result = await controller.markOrderSyncFailed('order-1', {
+            message: 'POS timeout',
+        });
+
+        expect(result.posSyncStatus).toBe('FAILED');
+        expect(prisma.order.update).toHaveBeenCalledWith({
+            where: { id: 'order-1' },
+            data: {
+                posSyncStatus: 'FAILED',
+                posSyncAttemptCount: { increment: 1 },
+                posSyncLastError: 'POS timeout',
+                posSyncUpdatedAt: expect.any(Date),
+            },
+        });
+    });
+
+    it('does not mark already-sent POS orders as failed', async () => {
+        const sent = {
+            id: 'order-1',
+            tossOrderId: 'toss-1',
+            posSyncStatus: 'SENT',
+        };
+        prisma.order.findUnique.mockResolvedValue(sent);
+
+        const result = await controller.markOrderSyncFailed('order-1', {
+            message: 'late failure',
+        });
+
+        expect(result).toBe(sent);
+        expect(prisma.order.update).not.toHaveBeenCalled();
     });
 });

@@ -95,6 +95,13 @@ enum DeliveryStatus {
   CANCELLED
 }
 
+enum PosSyncStatus {
+  PENDING
+  SENT
+  FAILED
+  SKIPPED
+}
+
 /// 세션 상태
 enum SessionStatus {
   ACTIVE       // 활성 (손님 있음)
@@ -482,6 +489,10 @@ model Order {
 
   /// Toss Place 주문 ID (SDK 연동)
   tossOrderId   String?
+  posSyncStatus PosSyncStatus @default(PENDING)
+  posSyncAttemptCount Int @default(0)
+  posSyncLastError String? @db.Text
+  posSyncUpdatedAt DateTime?
 
   items         OrderItem[]
   payments      Payment[]
@@ -498,6 +509,7 @@ model Order {
   @@index([storeId, status])
   @@index([storeId, type, status])
   @@index([storeId, paymentStatus])
+  @@index([storeId, posSyncStatus])
   @@index([storeId, tableNumber])
   @@index([orderNumber])
   @@unique([storeId, orderNumber])
