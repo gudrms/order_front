@@ -1,4 +1,5 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { assertCanManageStore } from '../../common/auth/permissions';
 import { PrismaService } from '../prisma/prisma.service';
 import { TossApiService } from '../integrations/toss/toss-api.service';
 import { ConfirmTossPaymentDto, ExpirePendingTossPaymentsDto, FailTossPaymentDto, CancelTossPaymentDto } from './dto/confirm-toss-payment.dto';
@@ -330,8 +331,6 @@ export class PaymentsService {
             throw new NotFoundException('Store not found');
         }
 
-        if (!user || (user.role !== 'ADMIN' && store.ownerId !== userId)) {
-            throw new ForbiddenException('You do not have permission to manage this store');
-        }
+        assertCanManageStore(user, store);
     }
 }

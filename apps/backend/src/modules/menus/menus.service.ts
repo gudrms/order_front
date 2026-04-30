@@ -1,5 +1,6 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { MenuManagementMode } from '@prisma/client';
+import { assertCanManageStore } from '../../common/auth/permissions';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateMenuCategoryDto, CreateMenuDto, UpdateMenuDto } from './dto/menu-admin.dto';
 
@@ -131,6 +132,45 @@ export class MenusService {
         });
     }
 
+    async getAdminMenus(userId: string, storeId: string, categoryId?: string) {
+        await this.assertCanManageStore(userId, storeId);
+
+        const where: any = {
+            storeId,
+            isActive: true,
+        };
+
+        if (categoryId) {
+            where.categoryId = categoryId;
+        }
+
+        return this.prisma.menu.findMany({
+            where,
+            orderBy: { displayOrder: 'asc' },
+            include: {
+                category: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+                optionGroups: {
+                    orderBy: { displayOrder: 'asc' },
+                    include: {
+                        options: {
+                            orderBy: { displayOrder: 'asc' },
+                        },
+                    },
+                },
+                tags: {
+                    include: {
+                        tag: true,
+                    },
+                },
+            },
+        });
+    }
+
     async createMenu(userId: string, storeId: string, dto: CreateMenuDto) {
         await this.assertCanManageAdminDirectMenus(userId, storeId);
 
@@ -200,7 +240,7 @@ export class MenusService {
         });
     }
 
-    private async assertCanManageAdminDirectMenus(userId: string, storeId: string) {
+    private async assertCanManageStore(userId: string, storeId: string) {
         const [user, store] = await Promise.all([
             this.prisma.user.findUnique({ where: { id: userId } }),
             this.prisma.store.findUnique({ where: { id: storeId } }),
@@ -210,9 +250,13 @@ export class MenusService {
             throw new NotFoundException('Store not found');
         }
 
-        if (!user || (user.role !== 'ADMIN' && store.ownerId !== userId)) {
-            throw new ForbiddenException('You do not have permission to manage this store');
-        }
+        assertCanManageStore(user, store);
+
+        return store;
+    }
+
+    private async assertCanManageAdminDirectMenus(userId: string, storeId: string) {
+        const store = await this.assertCanManageStore(userId, storeId);
 
         if (store.menuManagementMode !== MenuManagementMode.ADMIN_DIRECT) {
             throw new BadRequestException('Direct menu editing is available only in ADMIN_DIRECT mode');
