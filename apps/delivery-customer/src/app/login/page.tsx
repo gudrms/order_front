@@ -1,22 +1,29 @@
 'use client';
 
 import { useAuth } from '@/contexts/AuthContext';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useEffect } from 'react';
 
-export default function LoginPage() {
+function LoginContent() {
     const { user, loading, signInWithKakao, signInWithApple } = useAuth();
     const router = useRouter();
+    const searchParams = useSearchParams();
 
     useEffect(() => {
-        // 이미 로그인된 경우 메인으로
         if (user && !loading) {
-            router.push('/');
+            const redirect = searchParams.get('redirect');
+            router.push(redirect || '/');
         }
-    }, [user, loading, router]);
+    }, [user, loading, router, searchParams]);
+
+    const storeRedirect = () => {
+        const redirect = searchParams.get('redirect');
+        if (redirect) sessionStorage.setItem('auth_redirect', redirect);
+    };
 
     const handleKakaoLogin = async () => {
         try {
+            storeRedirect();
             await signInWithKakao();
         } catch (error) {
             console.error('카카오 로그인 실패:', error);
@@ -26,6 +33,7 @@ export default function LoginPage() {
 
     const handleAppleLogin = async () => {
         try {
+            storeRedirect();
             await signInWithApple();
         } catch (error) {
             console.error('Apple 로그인 실패:', error);
@@ -96,5 +104,17 @@ export default function LoginPage() {
                 </div>
             </div>
         </main>
+    );
+}
+
+export default function LoginPage() {
+    return (
+        <Suspense fallback={
+            <main className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-brand-yellow" />
+            </main>
+        }>
+            <LoginContent />
+        </Suspense>
     );
 }

@@ -133,7 +133,7 @@ function SuccessContent() {
                 <div className="space-y-2">
                     <button
                         onClick={() => {
-                            if (confirmedOrderId) router.push(`/order-detail?id=${confirmedOrderId}`);
+                            if (confirmedOrderId) router.push(`/orders/${confirmedOrderId}`);
                         }}
                         className="w-full bg-brand-black text-white p-4 rounded-xl font-bold"
                     >
