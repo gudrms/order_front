@@ -73,6 +73,11 @@
 - [x] 주문 서비스 단위 테스트에 배달 상태 변경 정책 추가
 - [x] 결제 완료 후 관리자 환불/취소 API 추가
 - [ ] POS pending orders API를 새 정책 기준으로 확장
+- [x] 백엔드 기술 스펙 문서 분리: `apps/backend/BACKEND_TECH_SPEC.md`
+- [x] MQ 기술 스펙 문서 분리: `apps/backend/MQ_TECH_SPEC.md`
+- [ ] MQ 도입 설계 확정: Supabase Queues/`pgmq` 우선, backend worker에서 POS 전송/알림/재시도 처리
+- [ ] MQ 1차 적용: `order.paid`, `payment.refunded`, `pos.send_order`, `notification.send` 이벤트 정의
+- [ ] MQ 안전장치: idempotency key, retry/backoff, 실패 상태 기록, 관리자 재처리 흐름 정의
 
 ## 배달앱 상태
 
@@ -145,6 +150,7 @@
 ## 체크리스트 위치
 
 - [배달앱](apps/delivery-customer/checkList_delivery.md)
+- [백엔드](apps/backend/BACKEND_CHECKLIST.md)
 - [테이블오더 Front](apps/table-order/FRONT_CHECKLIST.md)
 - [테이블오더 PWA](apps/table-order/PWA_CHECKLIST.md)
 - [관리자](apps/admin/CHECKLIST.md)

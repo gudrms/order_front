@@ -270,6 +270,9 @@ FRONTEND_URL=https://order-front-frontend.vercel.app
 - [NestJS 문서](https://docs.nestjs.com/)
 - [Prisma 문서](https://www.prisma.io/docs)
 - [Root README](../../README.md)
+- [백엔드 체크리스트](./BACKEND_CHECKLIST.md)
+- [백엔드 기술 스펙](./BACKEND_TECH_SPEC.md)
+- [MQ 기술 스펙](./MQ_TECH_SPEC.md)
 
 ---
 
