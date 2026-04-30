@@ -7,13 +7,14 @@ import { Plus, Save, Ticket } from 'lucide-react';
 import type { MenuManagementMode } from '@order/shared';
 import { useAdminStore } from '@/contexts/AdminStoreContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { canCreateStore } from '@/lib/adminPermissions';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function StoreSettingsPage() {
   const { stores, selectedStore, selectedStoreId, setSelectedStoreId, isLoading, authHeaders, refetchStores } = useAdminStore();
   const { profile } = useAuth();
-  const isAdmin = profile?.role === 'ADMIN';
+  const isAdmin = canCreateStore(profile);
   const [form, setForm] = useState({
     name: '',
     branchName: '',

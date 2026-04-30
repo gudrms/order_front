@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import Sidebar from '@/components/dashboard/Sidebar';
 import { usePathname } from 'next/navigation';
+import { canAccessAdmin, canAccessPath } from '@/lib/adminPermissions';
 
 export default function DashboardLayout({
   children,
@@ -26,6 +27,16 @@ export default function DashboardLayout({
       if (pathname !== '/setup') {
         router.push('/setup');
       }
+      return;
+    }
+
+    if (!loading && user && profile && !canAccessAdmin(profile)) {
+      router.push('/login');
+      return;
+    }
+
+    if (!loading && user && profile && !canAccessPath(profile, pathname)) {
+      router.replace('/');
     }
   }, [user, profile, loading, router, pathname]);
 
@@ -38,6 +49,7 @@ export default function DashboardLayout({
   }
 
   if (!user) return null;
+  if (profile && !canAccessPath(profile, pathname)) return null;
 
   // 온보딩 중일 때는 사이드바 없이 전체 화면 사용 가능 (선택 사항)
   const isSetupPage = pathname === '/setup';
