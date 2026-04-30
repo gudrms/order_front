@@ -1,5 +1,8 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiParam, ApiQuery, ApiResponse } from '@nestjs/swagger';
+import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
+import { ApiBearerAuth, ApiBody, ApiTags, ApiOperation, ApiParam, ApiQuery, ApiResponse } from '@nestjs/swagger';
+import { CurrentUser } from '../../common/decorators/user.decorator';
+import { SupabaseGuard } from '../auth/guards/supabase.guard';
+import { CreateMenuCategoryDto, CreateMenuDto, UpdateMenuDto } from './dto/menu-admin.dto';
 import { MenusService } from './menus.service';
 
 @ApiTags('Menus')
@@ -41,6 +44,19 @@ export class MenusController {
     @ApiResponse({ status: 404, description: '매장을 찾을 수 없습니다.' })
     async getCategories(@Param('storeId') storeId: string) {
         return this.menusService.getCategories(storeId);
+    }
+
+    @Post('categories')
+    @UseGuards(SupabaseGuard)
+    @ApiBearerAuth('JWT-auth')
+    @UsePipes(new ValidationPipe({ transform: true }))
+    @ApiBody({ type: CreateMenuCategoryDto })
+    async createCategory(
+        @CurrentUser() user: { id: string },
+        @Param('storeId') storeId: string,
+        @Body() dto: CreateMenuCategoryDto,
+    ) {
+        return this.menusService.createCategory(user.id, storeId, dto);
     }
 
     @Get('menus')
@@ -85,5 +101,32 @@ export class MenusController {
         @Query('categoryId') categoryId?: string,
     ) {
         return this.menusService.getMenus(storeId, categoryId);
+    }
+
+    @Post('menus')
+    @UseGuards(SupabaseGuard)
+    @ApiBearerAuth('JWT-auth')
+    @UsePipes(new ValidationPipe({ transform: true }))
+    @ApiBody({ type: CreateMenuDto })
+    async createMenu(
+        @CurrentUser() user: { id: string },
+        @Param('storeId') storeId: string,
+        @Body() dto: CreateMenuDto,
+    ) {
+        return this.menusService.createMenu(user.id, storeId, dto);
+    }
+
+    @Patch('menus/:menuId')
+    @UseGuards(SupabaseGuard)
+    @ApiBearerAuth('JWT-auth')
+    @UsePipes(new ValidationPipe({ transform: true }))
+    @ApiBody({ type: UpdateMenuDto })
+    async updateMenu(
+        @CurrentUser() user: { id: string },
+        @Param('storeId') storeId: string,
+        @Param('menuId') menuId: string,
+        @Body() dto: UpdateMenuDto,
+    ) {
+        return this.menusService.updateMenu(user.id, storeId, menuId, dto);
     }
 }

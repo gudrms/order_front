@@ -1,87 +1,262 @@
 'use client';
 
-import React from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { useMemo, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
-import { Info } from 'lucide-react';
-import { Menu, formatCurrency } from '@order/shared'; // 공통 모듈 사용
+import { Info, Plus, RefreshCw } from 'lucide-react';
+import { formatCurrency, type Menu, type MenuCategory } from '@order/shared';
+import { useAdminStore } from '@/contexts/AdminStoreContext';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function MenuListPage() {
-  const storeId = 'store-1'; // 임시
-  const { data: menus, isLoading, error } = useQuery<Menu[]>({
-    queryKey: ['menus', storeId],
+  const queryClient = useQueryClient();
+  const { selectedStore, selectedStoreId, isLoading: isStoreLoading, authHeaders } = useAdminStore();
+  const [categoryName, setCategoryName] = useState('');
+  const [menuForm, setMenuForm] = useState({
+    categoryId: '',
+    name: '',
+    price: '',
+    description: '',
+    imageUrl: '',
+  });
+
+  const isAdminDirect = selectedStore?.menuManagementMode === 'ADMIN_DIRECT';
+
+  const categoriesQuery = useQuery<MenuCategory[]>({
+    queryKey: ['admin-categories', selectedStoreId],
     queryFn: async () => {
-      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/stores/${storeId}/menus`);
+      const response = await axios.get(`${API_URL}/stores/${selectedStoreId}/categories`);
       return response.data.data || response.data;
+    },
+    enabled: !!selectedStoreId,
+  });
+
+  const menusQuery = useQuery<Menu[]>({
+    queryKey: ['menus', selectedStoreId],
+    queryFn: async () => {
+      const response = await axios.get(`${API_URL}/stores/${selectedStoreId}/menus`);
+      return response.data.data || response.data;
+    },
+    enabled: !!selectedStoreId,
+  });
+
+  const categories = categoriesQuery.data || [];
+  const menus = menusQuery.data || [];
+
+  const defaultCategoryId = useMemo(
+    () => menuForm.categoryId || categories[0]?.id || '',
+    [categories, menuForm.categoryId]
+  );
+
+  const createCategoryMutation = useMutation({
+    mutationFn: async () => {
+      await axios.post(
+        `${API_URL}/stores/${selectedStoreId}/categories`,
+        { name: categoryName.trim() },
+        { headers: authHeaders }
+      );
+    },
+    onSuccess: () => {
+      setCategoryName('');
+      queryClient.invalidateQueries({ queryKey: ['admin-categories', selectedStoreId] });
     },
   });
 
-  if (isLoading) return <div>로딩 중...</div>;
-  if (error) return <div>에러가 발생했습니다.</div>;
+  const createMenuMutation = useMutation({
+    mutationFn: async () => {
+      await axios.post(
+        `${API_URL}/stores/${selectedStoreId}/menus`,
+        {
+          categoryId: defaultCategoryId,
+          name: menuForm.name.trim(),
+          price: Number(menuForm.price),
+          description: menuForm.description.trim() || undefined,
+          imageUrl: menuForm.imageUrl.trim() || undefined,
+        },
+        { headers: authHeaders }
+      );
+    },
+    onSuccess: () => {
+      setMenuForm({ categoryId: '', name: '', price: '', description: '', imageUrl: '' });
+      queryClient.invalidateQueries({ queryKey: ['menus', selectedStoreId] });
+    },
+  });
+
+  const syncTossMenuMutation = useMutation({
+    mutationFn: async () => {
+      await axios.post(
+        `${API_URL}/stores/${selectedStoreId}/integrations/toss/sync-menu`,
+        undefined,
+        { headers: authHeaders }
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-categories', selectedStoreId] });
+      queryClient.invalidateQueries({ queryKey: ['menus', selectedStoreId] });
+    },
+  });
+
+  if (isStoreLoading || menusQuery.isLoading) {
+    return <div className="py-12 text-center text-gray-500">메뉴를 불러오는 중입니다.</div>;
+  }
+
+  if (!selectedStoreId || !selectedStore) {
+    return (
+      <div className="rounded-xl border border-dashed border-gray-300 bg-white p-10 text-center">
+        <h2 className="text-xl font-bold text-gray-800">연결된 매장이 없습니다</h2>
+        <p className="mt-2 text-sm text-gray-500">먼저 매장 등록 또는 초대코드 가입을 완료해 주세요.</p>
+      </div>
+    );
+  }
+
+  const canCreateMenu = isAdminDirect && defaultCategoryId && menuForm.name.trim() && Number(menuForm.price) >= 0;
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-800">메뉴 관리</h2>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-800">메뉴 관리</h2>
+          <p className="mt-1 text-sm text-gray-500">
+            {selectedStore.name} · {isAdminDirect ? '관리자 직접 등록 모드' : 'Toss POS 연동 모드'}
+          </p>
+        </div>
+        {!isAdminDirect && (
+          <button
+            onClick={() => syncTossMenuMutation.mutate()}
+            disabled={syncTossMenuMutation.isPending}
+            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
+          >
+            <RefreshCw className={`h-4 w-4 ${syncTossMenuMutation.isPending ? 'animate-spin' : ''}`} />
+            Toss 메뉴 동기화
+          </button>
+        )}
       </div>
 
-      <div className="flex items-start gap-3 bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800">
-        <Info className="w-5 h-5 flex-shrink-0 mt-0.5" />
+      <div className="flex items-start gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">
+        <Info className="mt-0.5 h-5 w-5 flex-shrink-0" />
         <div>
-          <p className="font-semibold mb-1">메뉴는 토스 POS에서 관리됩니다.</p>
-          <p>
-            메뉴 추가·수정·삭제는 토스 POS 기기에서 진행해주세요. 변경 사항은 자동으로 동기화되어 이 페이지에 반영됩니다.
-            (이 화면은 동기화 결과 확인 용도입니다.)
+          <p className="font-semibold">
+            {isAdminDirect ? '관리자 화면에서 메뉴를 직접 등록합니다.' : '메뉴는 Toss POS에서 관리됩니다.'}
+          </p>
+          <p className="mt-1">
+            {isAdminDirect
+              ? '직접 등록한 메뉴가 고객 주문 화면에 노출됩니다. Toss POS 연동 메뉴는 Toss에서 수정해야 합니다.'
+              : 'Toss POS 메뉴를 동기화해서 고객 주문 화면에 노출합니다. 직접 등록을 쓰려면 매장 관리에서 운영 모드를 변경하세요.'}
           </p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {menus?.map((menu) => (
-          <div key={menu.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
-            <div className="aspect-video bg-gray-100 relative">
-              {menu.imageUrl ? (
-                <img
-                  src={menu.imageUrl}
-                  alt={menu.name}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="flex items-center justify-center h-full text-gray-400">
-                  이미지 없음
-                </div>
-              )}
-              {menu.soldOut && (
-                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                  <span className="text-white font-bold text-lg border-2 border-white px-4 py-1 rounded">
-                    SOLD OUT
-                  </span>
-                </div>
-              )}
+      {isAdminDirect && (
+        <div className="grid gap-4 lg:grid-cols-[360px_1fr]">
+          <section className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+            <h3 className="mb-4 font-bold text-gray-800">카테고리 추가</h3>
+            <div className="flex gap-2">
+              <input
+                value={categoryName}
+                onChange={(event) => setCategoryName(event.target.value)}
+                className="min-w-0 flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                placeholder="예: 메인 메뉴"
+              />
+              <button
+                onClick={() => createCategoryMutation.mutate()}
+                disabled={!categoryName.trim() || createCategoryMutation.isPending}
+                className="rounded-lg bg-gray-900 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
+              >
+                추가
+              </button>
             </div>
+          </section>
 
-            <div className="p-4 flex-1 flex flex-col">
-              <div className="flex justify-between items-start mb-2">
-                <div>
-                  <span className="text-xs text-blue-600 font-semibold bg-blue-50 px-2 py-1 rounded-full mb-2 inline-block">
-                    {menu.categoryName || '카테고리 없음'}
-                  </span>
-                  <h3 className="text-lg font-bold text-gray-800">{menu.name}</h3>
-                </div>
-                <span className="text-lg font-semibold text-gray-900">
-                  {formatCurrency(menu.price)}
-                </span>
+          <section className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+            <h3 className="mb-4 font-bold text-gray-800">메뉴 추가</h3>
+            <div className="grid gap-3 md:grid-cols-2">
+              <select
+                value={defaultCategoryId}
+                onChange={(event) => setMenuForm((prev) => ({ ...prev, categoryId: event.target.value }))}
+                className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              >
+                {categories.length === 0 ? (
+                  <option value="">카테고리를 먼저 추가하세요</option>
+                ) : categories.map((category) => (
+                  <option key={category.id} value={category.id}>{category.name}</option>
+                ))}
+              </select>
+              <input
+                value={menuForm.name}
+                onChange={(event) => setMenuForm((prev) => ({ ...prev, name: event.target.value }))}
+                className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                placeholder="메뉴명"
+              />
+              <input
+                value={menuForm.price}
+                onChange={(event) => setMenuForm((prev) => ({ ...prev, price: event.target.value.replace(/[^0-9]/g, '') }))}
+                className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                placeholder="가격"
+              />
+              <input
+                value={menuForm.imageUrl}
+                onChange={(event) => setMenuForm((prev) => ({ ...prev, imageUrl: event.target.value }))}
+                className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                placeholder="이미지 URL"
+              />
+              <textarea
+                value={menuForm.description}
+                onChange={(event) => setMenuForm((prev) => ({ ...prev, description: event.target.value }))}
+                className="min-h-20 rounded-lg border border-gray-300 px-3 py-2 text-sm md:col-span-2"
+                placeholder="메뉴 설명"
+              />
+              <button
+                onClick={() => createMenuMutation.mutate()}
+                disabled={!canCreateMenu || createMenuMutation.isPending}
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50 md:col-span-2"
+              >
+                <Plus className="h-4 w-4" />
+                메뉴 추가
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {menus.map((menu) => {
+          const categoryName = (menu as Menu & { category?: { name?: string } }).category?.name || menu.categoryName || '카테고리 없음';
+          return (
+            <div key={menu.id} className="flex flex-col overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
+              <div className="relative aspect-video bg-gray-100">
+                {menu.imageUrl ? (
+                  <img src={menu.imageUrl} alt={menu.name} className="h-full w-full object-cover" />
+                ) : (
+                  <div className="flex h-full items-center justify-center text-gray-400">이미지 없음</div>
+                )}
+                {menu.soldOut && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                    <span className="rounded border-2 border-white px-4 py-1 text-lg font-bold text-white">SOLD OUT</span>
+                  </div>
+                )}
               </div>
-
-              <p className="text-gray-500 text-sm mb-4 line-clamp-2 flex-1">
-                {menu.description}
-              </p>
+              <div className="flex flex-1 flex-col p-4">
+                <div className="mb-2 flex justify-between gap-3">
+                  <div>
+                    <span className="mb-2 inline-block rounded-full bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-600">
+                      {categoryName}
+                    </span>
+                    <h3 className="text-lg font-bold text-gray-800">{menu.name}</h3>
+                  </div>
+                  <span className="whitespace-nowrap text-lg font-semibold text-gray-900">
+                    {formatCurrency(menu.price)}
+                  </span>
+                </div>
+                <p className="line-clamp-2 flex-1 text-sm text-gray-500">{menu.description}</p>
+              </div>
             </div>
-          </div>
-        ))}
-        {menus?.length === 0 && (
-          <div className="col-span-full text-center py-16 text-gray-500">
-            아직 동기화된 메뉴가 없습니다. 토스 POS에서 메뉴를 등록해주세요.
+          );
+        })}
+
+        {menus.length === 0 && (
+          <div className="col-span-full rounded-xl border border-dashed border-gray-300 bg-white py-16 text-center text-gray-500">
+            {isAdminDirect ? '등록된 메뉴가 없습니다. 카테고리와 메뉴를 추가하세요.' : '아직 동기화된 메뉴가 없습니다. Toss POS 메뉴 동기화를 실행하세요.'}
           </div>
         )}
       </div>

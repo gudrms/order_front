@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
-import { StoreType } from '@prisma/client';
+import { MenuManagementMode, StoreType } from '@prisma/client';
 import {
     IsBoolean,
     IsEnum,
@@ -56,6 +56,11 @@ export class CreateStoreDto {
     @IsString()
     @IsOptional()
     tossBranchCode?: string;
+
+    @ApiPropertyOptional({ enum: MenuManagementMode, description: 'Menu management mode', default: MenuManagementMode.TOSS_POS })
+    @IsEnum(MenuManagementMode)
+    @IsOptional()
+    menuManagementMode?: MenuManagementMode;
 
     @ApiPropertyOptional({ description: '사장님 가입용 초대코드. 생략하면 서버가 자동 생성합니다.' })
     @IsString()

@@ -89,8 +89,9 @@ export interface CreateMenuRequest {
   categoryId: string; // UUID
   imageUrl?: string | null;
   soldOut?: boolean;
+  isHidden?: boolean;
   displayOrder?: number;
-  storeId: string; // UUID
+  storeId?: string; // UUID
 }
 
 export interface UpdateMenuRequest extends Partial<CreateMenuRequest> {
