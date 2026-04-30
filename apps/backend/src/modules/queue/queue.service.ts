@@ -126,8 +126,41 @@ export class QueueService {
                 delaySeconds,
             );
         } catch (error) {
+            const err = error as Error;
             this.logger.warn(
-                `Queue publish failed for ${event.eventType} (${event.idempotencyKey}): ${error.message}`,
+                `Queue publish failed for ${event.eventType} (${event.idempotencyKey}): ${err.message}`,
+            );
+            await this.recordPublishFailure(queueName, event, err);
+        }
+    }
+
+    private async recordPublishFailure(queueName: string, event: BackendQueueEvent, error: Error): Promise<void> {
+        try {
+            await this.prisma.queueEventLog.upsert({
+                where: { idempotencyKey: event.idempotencyKey },
+                create: {
+                    queueName,
+                    eventId: event.eventId,
+                    eventType: event.eventType,
+                    idempotencyKey: event.idempotencyKey,
+                    status: 'FAILED',
+                    attemptCount: 0,
+                    payload: event.payload as any,
+                    lastError: `publish failed: ${error.message}`,
+                },
+                update: {
+                    queueName,
+                    eventId: event.eventId,
+                    eventType: event.eventType,
+                    status: 'FAILED',
+                    payload: event.payload as any,
+                    lastError: `publish failed: ${error.message}`,
+                },
+            });
+        } catch (logError) {
+            const err = logError as Error;
+            this.logger.error(
+                `Failed to record queue publish failure for ${event.idempotencyKey}: ${err.message}`,
             );
         }
     }

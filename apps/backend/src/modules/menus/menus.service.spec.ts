@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { MenusService } from './menus.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { MenuManagementMode } from '@prisma/client';
 
 describe('MenusService', () => {
     let service: MenusService;
@@ -15,9 +16,17 @@ describe('MenusService', () => {
             findMany: vi.fn(),
             findUnique: vi.fn(),
         },
+        store: {
+            findUnique: vi.fn(),
+        },
     };
 
     beforeEach(async () => {
+        vi.clearAllMocks();
+        mockPrismaService.store.findUnique.mockResolvedValue({
+            menuManagementMode: MenuManagementMode.TOSS_POS,
+        });
+
         const module: TestingModule = await Test.createTestingModule({
             providers: [
                 MenusService,

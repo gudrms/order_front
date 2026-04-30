@@ -1,5 +1,5 @@
 # Taco Mono 루트 체크리스트
-마지막 업데이트: 2026-04-30
+마지막 업데이트: 2026-05-01
 
 ## 큰 그림
 
@@ -49,7 +49,7 @@
 - [x] Prisma schema validate 통과
 - [x] Prisma client generate 통과
 - [x] 백엔드 TypeScript 타입체크 통과
-- [x] 개발 DB migration 적용 완료
+- [ ] 최신 queue/POS migration 개발 DB 적용 필요
 - [x] `Payment`, `OrderDelivery`, delivery/payment enum 추가
 - [x] Store 배달 운영 필드 추가
 - [x] `User.role` 기본값을 `USER`로 변경
@@ -75,9 +75,16 @@
 - [ ] POS pending orders API를 새 정책 기준으로 확장
 - [x] 백엔드 기술 스펙 문서 분리: `apps/backend/BACKEND_TECH_SPEC.md`
 - [x] MQ 기술 스펙 문서 분리: `apps/backend/MQ_TECH_SPEC.md`
-- [ ] MQ 도입 설계 확정: Supabase Queues/`pgmq` 우선, backend worker에서 POS 전송/알림/재시도 처리
-- [ ] MQ 1차 적용: `order.paid`, `payment.refunded`, `pos.send_order`, `notification.send` 이벤트 정의
-- [ ] MQ 안전장치: idempotency key, retry/backoff, 실패 상태 기록, 관리자 재처리 흐름 정의
+- [x] MQ 도입 설계 확정: Supabase Queues/`pgmq` 우선, backend worker에서 POS 전송/알림/재시도 처리
+- [x] MQ 1차 적용: `order.paid`, `payment.refunded`, `pos.send_order`, `notification.send` 이벤트 정의
+- [x] MQ 안전장치: idempotency key, retry/backoff, 실패 상태 기록, 관리자 재처리 흐름 정의
+- [x] POS 전송 worker가 queue consumer에서 실제 `ResilientPosService.sendOrder()` 호출
+- [x] Queue/POS 운영 상태 migration 추가: `pgmq`, `backend_events`, `QueueEventLog`, `NotificationLog`, `posSync*`
+- [x] 결제 만료/불일치 복구 운영 endpoint에 내부 secret 검증 추가
+- [ ] 실제 운영 DB에 최신 queue/POS migration 적용
+- [ ] 알림 provider 연결로 `notification.send` 실제 발송 처리
+- [ ] Toss 승인 성공 후 로컬 DB 저장 실패 시 즉시 보상 취소/환불 처리
+- [ ] `delivery.status_changed` 이벤트 발행/consumer 처리
 
 ## 배달앱 상태
 
@@ -124,16 +131,16 @@
 ## 검증 기록
 
 - [x] `apps/backend`: `tsc --noEmit`
-- [x] `apps/backend`: `vitest run src/modules/orders/orders.service.spec.ts` 17 tests 통과
+- [x] `apps/backend`: 최신 전체 `vitest run` 12 files / 85 tests 통과
+- [x] `apps/backend`: `vitest run src/modules/orders/orders.service.spec.ts` 20 tests 통과
 - [x] `apps/backend`: `vitest run src/modules/auth/auth.service.spec.ts` 5 tests 통과
-- [x] `apps/backend`: `vitest run src/modules/payments/payments.service.spec.ts` 11 tests 통과
+- [x] `apps/backend`: `vitest run src/modules/payments/payments.service.spec.ts` 12 tests 통과
 - [x] `apps/admin`: `tsc --noEmit`
-- [ ] `apps/backend`: 최신 전체 `vitest run`은 `menus.service.spec.ts` 메뉴 상세 테스트 1건 실패. POS/catalog 작업자 영역이라 본 작업에서는 미수정.
 - [x] `apps/delivery-customer`: `tsc --noEmit`
 - [x] `apps/delivery-customer`: `next build` 통과 및 `/orders/[id]` 동적 라우트 확인
 - [x] `packages/shared`: `tsc --noEmit`
-- [x] 개발 DB `prisma migrate deploy`
-- [x] 개발 DB `prisma migrate status`: up to date
+- [ ] 개발 DB `prisma migrate deploy`: 최신 queue/POS migration 적용 필요
+- [ ] 개발 DB `prisma migrate status`: 최신 queue/POS migration 추가 후 재확인 필요
 - [ ] 공식 검증 필요: 배달 카드결제 주문 생성/승인 E2E
 - [ ] Toss 결제 성공/실패/timeout E2E
 - [ ] Sentry 이벤트 수신 E2E
