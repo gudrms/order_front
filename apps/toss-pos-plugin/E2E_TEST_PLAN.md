@@ -6,12 +6,13 @@
 
 ### 환경변수 (`apps/toss-pos-plugin/.env`)
 - [ ] `PLUGIN_API_URL` — 백엔드 API base URL. **토스 POS에서 접근 가능한 HTTPS** (localhost 불가)
+- [ ] `PLUGIN_POS_API_KEY` — 백엔드 `POS_INTEGRATION_API_KEY`와 동일한 값
 - [ ] `PLUGIN_SUPABASE_URL` — `https://xxx.supabase.co`
 - [ ] `PLUGIN_SUPABASE_ANON_KEY` — `sb_...`
 - [ ] `PLUGIN_STORE_ID` — 테스트할 매장 ID (Supabase `Store` 테이블 id 확인)
 
 ### 백엔드 도달성
-- [ ] `PLUGIN_API_URL`/health (또는 `/pos/orders/pending`)에 외부에서 GET 200 OK 받는지 확인
+- [ ] `PLUGIN_API_URL`/health, `x-pos-api-key` 헤더를 포함한 `/pos/orders/pending`에 외부에서 GET 200 OK 받는지 확인
 - [ ] CORS/방화벽 차단 없음
 
 ### Supabase Realtime
