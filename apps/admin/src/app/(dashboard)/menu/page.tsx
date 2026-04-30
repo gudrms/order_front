@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { formatCurrency, type Menu, type MenuCategory } from '@order/shared';
 import { useAdminStore } from '@/contexts/AdminStoreContext';
+import { getHttpErrorMessage } from '@/lib/httpError';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -66,6 +67,11 @@ type TossSyncLog = {
   summary?: TossSyncResult['summary'];
 };
 
+type MenuFeedback = {
+  type: 'success' | 'error';
+  message: string;
+};
+
 export default function MenuListPage() {
   const queryClient = useQueryClient();
   const { selectedStore, selectedStoreId, isLoading: isStoreLoading, authHeaders } = useAdminStore();
@@ -87,6 +93,7 @@ export default function MenuListPage() {
   });
   const [expandedOptionMenuId, setExpandedOptionMenuId] = useState<string | null>(null);
   const [syncLog, setSyncLog] = useState<TossSyncLog | null>(null);
+  const [feedback, setFeedback] = useState<MenuFeedback | null>(null);
 
   const isAdminDirect = selectedStore?.menuManagementMode === 'ADMIN_DIRECT';
 
@@ -134,6 +141,13 @@ export default function MenuListPage() {
     onSuccess: () => {
       setCategoryName('');
       queryClient.invalidateQueries({ queryKey: ['admin-categories', selectedStoreId] });
+      setFeedback({ type: 'success', message: '카테고리를 추가했습니다.' });
+    },
+    onError: (error) => {
+      setFeedback({
+        type: 'error',
+        message: getHttpErrorMessage(error, '카테고리 추가에 실패했습니다.'),
+      });
     },
   });
 
@@ -154,6 +168,13 @@ export default function MenuListPage() {
     onSuccess: () => {
       setMenuForm({ categoryId: '', name: '', price: '', description: '', imageUrl: '' });
       invalidateMenus();
+      setFeedback({ type: 'success', message: '메뉴를 추가했습니다.' });
+    },
+    onError: (error) => {
+      setFeedback({
+        type: 'error',
+        message: getHttpErrorMessage(error, '메뉴 추가에 실패했습니다.'),
+      });
     },
   });
 
@@ -182,6 +203,13 @@ export default function MenuListPage() {
     onSuccess: () => {
       setEditingMenuId(null);
       invalidateMenus();
+      setFeedback({ type: 'success', message: '메뉴를 저장했습니다.' });
+    },
+    onError: (error) => {
+      setFeedback({
+        type: 'error',
+        message: getHttpErrorMessage(error, '메뉴 저장에 실패했습니다.'),
+      });
     },
   });
 
@@ -273,6 +301,13 @@ export default function MenuListPage() {
           </button>
         )}
       </div>
+
+      {feedback && (
+        <MenuFeedbackAlert
+          feedback={feedback}
+          onClose={() => setFeedback(null)}
+        />
+      )}
 
       <div className="flex items-start gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">
         <Info className="mt-0.5 h-5 w-5 flex-shrink-0" />
@@ -464,6 +499,7 @@ export default function MenuListPage() {
                   optionGroups={menu.optionGroups || []}
                   authHeaders={authHeaders}
                   onMutated={invalidateMenus}
+                  onFeedback={setFeedback}
                 />
               )}
             </div>
@@ -518,6 +554,36 @@ function TossSyncLogPanel({ log }: { log: TossSyncLog }) {
   );
 }
 
+function MenuFeedbackAlert({
+  feedback,
+  onClose,
+}: {
+  feedback: MenuFeedback;
+  onClose: () => void;
+}) {
+  const isSuccess = feedback.type === 'success';
+
+  return (
+    <div
+      className={`flex items-center justify-between gap-3 rounded-xl border px-4 py-3 text-sm ${
+        isSuccess
+          ? 'border-green-200 bg-green-50 text-green-800'
+          : 'border-red-200 bg-red-50 text-red-700'
+      }`}
+      data-testid="admin-menu-feedback"
+    >
+      <span>{feedback.message}</span>
+      <button
+        type="button"
+        onClick={onClose}
+        className="rounded px-2 py-1 text-xs font-semibold opacity-70 hover:bg-white/60 hover:opacity-100"
+      >
+        닫기
+      </button>
+    </div>
+  );
+}
+
 function getSyncSummaryLabel(key: string) {
   const labels: Record<string, string> = {
     categories: '카테고리',
@@ -529,14 +595,7 @@ function getSyncSummaryLabel(key: string) {
 }
 
 function getAxiosErrorMessage(error: unknown) {
-  if (axios.isAxiosError(error)) {
-    const data = error.response?.data as { message?: unknown; error?: unknown } | undefined;
-    if (typeof data?.message === 'string') return data.message;
-    if (Array.isArray(data?.message)) return data.message.join(', ');
-    if (typeof data?.error === 'string') return data.error;
-    return error.message || 'Toss 메뉴 동기화에 실패했습니다.';
-  }
-  return 'Toss 메뉴 동기화에 실패했습니다.';
+  return getHttpErrorMessage(error, 'Toss 메뉴 동기화에 실패했습니다.');
 }
 
 function formatDateTime(value: string) {
@@ -552,12 +611,14 @@ function OptionGroupPanel({
   optionGroups,
   authHeaders,
   onMutated,
+  onFeedback,
 }: {
   storeId: string;
   menuId: string;
   optionGroups: OptionGroup[];
   authHeaders: { Authorization: string } | undefined;
   onMutated: () => void;
+  onFeedback: (feedback: MenuFeedback) => void;
 }) {
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupMin, setNewGroupMin] = useState('0');
@@ -577,6 +638,13 @@ function OptionGroupPanel({
       setNewGroupMin('0');
       setNewGroupMax('1');
       onMutated();
+      onFeedback({ type: 'success', message: '옵션 그룹을 추가했습니다.' });
+    },
+    onError: (error) => {
+      onFeedback({
+        type: 'error',
+        message: getHttpErrorMessage(error, '옵션 그룹 추가에 실패했습니다.'),
+      });
     },
   });
 
@@ -590,6 +658,13 @@ function OptionGroupPanel({
     onSuccess: () => {
       setEditingGroupId(null);
       onMutated();
+      onFeedback({ type: 'success', message: '옵션 그룹을 저장했습니다.' });
+    },
+    onError: (error) => {
+      onFeedback({
+        type: 'error',
+        message: getHttpErrorMessage(error, '옵션 그룹 저장에 실패했습니다.'),
+      });
     },
   });
 
@@ -599,7 +674,16 @@ function OptionGroupPanel({
         `${API_URL}/stores/${storeId}/menus/${menuId}/option-groups/${groupId}`,
         { headers: authHeaders }
       ),
-    onSuccess: onMutated,
+    onSuccess: () => {
+      onMutated();
+      onFeedback({ type: 'success', message: '옵션 그룹을 삭제했습니다.' });
+    },
+    onError: (error) => {
+      onFeedback({
+        type: 'error',
+        message: getHttpErrorMessage(error, '옵션 그룹 삭제에 실패했습니다.'),
+      });
+    },
   });
 
   const createOptionMutation = useMutation({
@@ -609,7 +693,16 @@ function OptionGroupPanel({
         { name, price },
         { headers: authHeaders }
       ),
-    onSuccess: onMutated,
+    onSuccess: () => {
+      onMutated();
+      onFeedback({ type: 'success', message: '옵션을 추가했습니다.' });
+    },
+    onError: (error) => {
+      onFeedback({
+        type: 'error',
+        message: getHttpErrorMessage(error, '옵션 추가에 실패했습니다.'),
+      });
+    },
   });
 
   const updateOptionMutation = useMutation({
@@ -619,7 +712,16 @@ function OptionGroupPanel({
         data,
         { headers: authHeaders }
       ),
-    onSuccess: onMutated,
+    onSuccess: () => {
+      onMutated();
+      onFeedback({ type: 'success', message: '옵션을 저장했습니다.' });
+    },
+    onError: (error) => {
+      onFeedback({
+        type: 'error',
+        message: getHttpErrorMessage(error, '옵션 저장에 실패했습니다.'),
+      });
+    },
   });
 
   const deleteOptionMutation = useMutation({
@@ -628,7 +730,16 @@ function OptionGroupPanel({
         `${API_URL}/stores/${storeId}/menus/${menuId}/option-groups/${groupId}/options/${optionId}`,
         { headers: authHeaders }
       ),
-    onSuccess: onMutated,
+    onSuccess: () => {
+      onMutated();
+      onFeedback({ type: 'success', message: '옵션을 삭제했습니다.' });
+    },
+    onError: (error) => {
+      onFeedback({
+        type: 'error',
+        message: getHttpErrorMessage(error, '옵션 삭제에 실패했습니다.'),
+      });
+    },
   });
 
   const startEditGroup = (group: OptionGroup) => {
