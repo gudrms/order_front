@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import Sidebar from '@/components/dashboard/Sidebar';
 import { usePathname } from 'next/navigation';
 import { canAccessAdmin, canAccessPath } from '@/lib/adminPermissions';
+import { OrderAlertControls } from '@/components/dashboard/OrderAlertControls';
 
 export default function DashboardLayout({
   children,
@@ -59,8 +60,9 @@ export default function DashboardLayout({
       {!isSetupPage && <Sidebar />}
       <main className={cn("flex-1 overflow-y-auto p-8", isSetupPage && "flex items-center justify-center")}>
         {!isSetupPage && (
-          <header className="mb-8">
+          <header className="mb-8 flex flex-wrap items-center justify-between gap-3">
             <h1 className="text-2xl font-bold text-gray-800">관리자 대시보드</h1>
+            <OrderAlertControls />
           </header>
         )}
         {children}
