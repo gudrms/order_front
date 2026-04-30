@@ -1,11 +1,11 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronLeft, Plus, MapPin, Trash2, Check } from 'lucide-react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ChevronLeft, Plus, MapPin, Trash2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { apiClient } from '@order/shared';
 
-// TODO: Move to shared types
 interface Address {
     id: string;
     name: string;
@@ -20,29 +20,14 @@ export default function AddressListPage() {
     const { user } = useAuth();
     const queryClient = useQueryClient();
 
-    // TODO: Replace with actual API call
-    const fetchAddresses = async (): Promise<Address[]> => {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/me/addresses`);
-        if (!res.ok) throw new Error('Failed to fetch addresses');
-
-        const json = await res.json();
-        // 백엔드가 { data: [...] } 나 { items: [...] } 형태로 감싸서 보낼 경우를 대비해 배열 직접 추출
-        return Array.isArray(json) ? json : (json.data || json.items || []);
-    };
-
-    const { data: addresses, isLoading } = useQuery({
+    const { data: addresses, isLoading } = useQuery<Address[]>({
         queryKey: ['addresses'],
-        queryFn: fetchAddresses,
+        queryFn: () => apiClient.get<Address[]>('/users/me/addresses'),
         enabled: !!user,
     });
 
     const deleteMutation = useMutation({
-        mutationFn: async (id: string) => {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/me/addresses/${id}`, {
-                method: 'DELETE',
-            });
-            if (!res.ok) throw new Error('Failed to delete address');
-        },
+        mutationFn: (id: string) => apiClient.delete(`/users/me/addresses/${id}`),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['addresses'] });
         },
@@ -72,7 +57,7 @@ export default function AddressListPage() {
             </header>
 
             <div className="max-w-[568px] mx-auto p-4 space-y-3">
-                {addresses?.length === 0 ? (
+                {!addresses?.length ? (
                     <div className="text-center py-20 text-gray-400">
                         <MapPin size={48} className="mx-auto mb-4 opacity-50" />
                         <p>등록된 주소가 없습니다.</p>
@@ -84,7 +69,7 @@ export default function AddressListPage() {
                         </button>
                     </div>
                 ) : (
-                    addresses?.map((addr) => (
+                    addresses.map((addr) => (
                         <div key={addr.id} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
                             <div className="flex items-start justify-between mb-2">
                                 <div className="flex items-center gap-2">
