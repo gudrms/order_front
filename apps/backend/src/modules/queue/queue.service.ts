@@ -59,6 +59,17 @@ export class QueueService {
         });
     }
 
+    async retry(event: BackendQueueEvent, options: {
+        queueName?: string;
+        delaySeconds: number;
+    }): Promise<void> {
+        await this.send(
+            options.queueName || this.defaultQueueName,
+            event,
+            options.delaySeconds,
+        );
+    }
+
     async read(
         queueName = this.defaultQueueName,
         visibilityTimeoutSeconds = 60,

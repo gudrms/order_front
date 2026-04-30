@@ -12,6 +12,8 @@ import { QueueService } from './queue.service';
 @Injectable()
 export class QueueConsumerService {
     private readonly logger = new Logger(QueueConsumerService.name);
+    private readonly maxAttempts = Number(process.env.BACKEND_QUEUE_MAX_ATTEMPTS || 5);
+    private readonly backoffSeconds = [10, 30, 60, 180, 300];
 
     constructor(
         private readonly queueService: QueueService,
@@ -33,9 +35,10 @@ export class QueueConsumerService {
 
         for (const record of messages) {
             const queueName = options.queueName || 'backend_events';
+            let event: BackendQueueEvent<QueueEventPayload> | undefined;
 
             try {
-                const event = this.parseEvent(record);
+                event = this.parseEvent(record);
                 const log = await this.startProcessing(queueName, record, event);
 
                 if (log.status === 'SUCCEEDED') {
@@ -49,7 +52,7 @@ export class QueueConsumerService {
                 await this.markSucceeded(event.idempotencyKey);
                 processedCount += 1;
             } catch (error) {
-                await this.markFailed(queueName, record, error);
+                await this.handleFailure(queueName, options.queueName, record, error, event);
                 this.logger.error(`Queue event processing failed: ${error.message}`);
             }
         }
@@ -220,10 +223,55 @@ export class QueueConsumerService {
         });
     }
 
-    private async markFailed(queueName: string, record: QueueMessageRecord, error: Error) {
+    private async handleFailure(
+        queueName: string,
+        archiveQueueName: string | undefined,
+        record: QueueMessageRecord,
+        error: Error,
+        event?: BackendQueueEvent<QueueEventPayload>,
+    ) {
+        const failedLog = await this.markFailed(queueName, record, error, event);
+        const attemptCount = failedLog?.attemptCount || Number(record.read_ct) || 1;
+
+        if (!event) {
+            if (attemptCount >= this.maxAttempts) {
+                await this.queueService.archive(archiveQueueName, Number(record.msg_id));
+            }
+            return;
+        }
+
+        if (attemptCount >= this.maxAttempts) {
+            await this.queueService.archive(archiveQueueName, Number(record.msg_id));
+            return;
+        }
+
+        await this.queueService.retry(event, {
+            queueName,
+            delaySeconds: this.getBackoffSeconds(attemptCount),
+        });
+        await this.queueService.archive(archiveQueueName, Number(record.msg_id));
+    }
+
+    private async markFailed(
+        queueName: string,
+        record: QueueMessageRecord,
+        error: Error,
+        event?: BackendQueueEvent<QueueEventPayload>,
+    ): Promise<{ attemptCount: number }> {
+        if (event) {
+            return this.prisma.queueEventLog.update({
+                where: { idempotencyKey: event.idempotencyKey },
+                data: {
+                    status: 'FAILED',
+                    lastError: error.message,
+                },
+                select: { attemptCount: true },
+            });
+        }
+
         const fallbackKey = `invalid-message:${queueName}:${record.msg_id}`;
 
-        await this.prisma.queueEventLog.upsert({
+        return this.prisma.queueEventLog.upsert({
             where: { idempotencyKey: fallbackKey },
             create: {
                 queueName,
@@ -241,6 +289,7 @@ export class QueueConsumerService {
                 payload: this.toJsonPayload(record.message),
                 lastError: error.message,
             },
+            select: { attemptCount: true },
         });
     }
 
@@ -261,5 +310,9 @@ export class QueueConsumerService {
         const subjectId = payload.orderId || payload.storeId || 'global';
 
         return `${recipientId}:${payload.notificationType}:${subjectId}`;
+    }
+
+    private getBackoffSeconds(attemptCount: number): number {
+        return this.backoffSeconds[Math.min(attemptCount - 1, this.backoffSeconds.length - 1)];
     }
 }
