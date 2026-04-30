@@ -13,6 +13,7 @@ import {
     Coins
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { MypageSkeleton } from '@/components/ui/Skeleton';
 
 export default function MyPage() {
     const router = useRouter();
@@ -35,8 +36,8 @@ export default function MyPage() {
 
     if (loading) {
         return (
-            <main className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-yellow" />
+            <main className="min-h-screen bg-gray-50 pt-6">
+                <MypageSkeleton />
             </main>
         );
     }

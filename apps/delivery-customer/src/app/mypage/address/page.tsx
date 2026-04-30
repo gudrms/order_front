@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ChevronLeft, Plus, MapPin, Trash2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiClient } from '@order/shared';
+import { AddressListSkeleton } from '@/components/ui/Skeleton';
 
 interface Address {
     id: string;
@@ -35,9 +36,13 @@ export default function AddressListPage() {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-yellow" />
-            </div>
+            <main className="min-h-screen bg-gray-50 pb-24">
+                <header className="bg-white px-4 h-14 flex items-center border-b border-gray-100 sticky top-0 z-50">
+                    <ChevronLeft size={24} className="text-gray-300" />
+                    <div className="ml-2 h-5 w-20 rounded bg-gray-200 animate-pulse" />
+                </header>
+                <AddressListSkeleton />
+            </main>
         );
     }
 
