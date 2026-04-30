@@ -1,7 +1,8 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { assertCanManageStore } from '../../common/auth/permissions';
 import { PrismaService } from '../prisma/prisma.service';
 import { TossApiService } from '../integrations/toss/toss-api.service';
+import { QueueService } from '../queue';
 import { ConfirmTossPaymentDto, ExpirePendingTossPaymentsDto, FailTossPaymentDto, CancelTossPaymentDto } from './dto/confirm-toss-payment.dto';
 
 @Injectable()
@@ -9,6 +10,7 @@ export class PaymentsService {
     constructor(
         private readonly prisma: PrismaService,
         private readonly tossApiService: TossApiService,
+        @Optional() private readonly queueService?: QueueService,
     ) { }
 
     async confirmTossPayment(dto: ConfirmTossPaymentDto) {
@@ -96,6 +98,14 @@ export class PaymentsService {
             }
             throw err;
         }
+
+        await this.queueService?.publishOrderPaid({
+            orderId: payment.orderId,
+            storeId: payment.order.storeId,
+            paymentId: payment.id,
+            providerOrderId: payment.providerOrderId || undefined,
+            amount: dto.amount,
+        });
 
         return this.getOrderResponse(payment.orderId);
     }

@@ -3,12 +3,14 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { PrismaService } from '../prisma/prisma.service';
 import { TossApiService } from '../integrations/toss/toss-api.service';
+import { QueueService } from '../queue';
 import { PaymentsService } from './payments.service';
 
 describe('PaymentsService', () => {
     let service: PaymentsService;
     let prisma: any;
     let tossApiService: any;
+    let queueService: any;
 
     const pendingPayment = {
         id: 'payment-1',
@@ -29,8 +31,10 @@ describe('PaymentsService', () => {
         prisma = {
             payment: {
                 findFirst: vi.fn(),
+                findUnique: vi.fn(),
                 findMany: vi.fn(),
                 update: vi.fn((args) => ({ model: 'payment', args })),
+                updateMany: vi.fn(),
             },
             order: {
                 update: vi.fn((args) => ({ model: 'order', args })),
@@ -50,11 +54,16 @@ describe('PaymentsService', () => {
             cancelPayment: vi.fn(),
         };
 
+        queueService = {
+            publishOrderPaid: vi.fn(),
+        };
+
         const module: TestingModule = await Test.createTestingModule({
             providers: [
                 PaymentsService,
                 { provide: PrismaService, useValue: prisma },
                 { provide: TossApiService, useValue: tossApiService },
+                { provide: QueueService, useValue: queueService },
             ],
         }).compile();
 
@@ -63,6 +72,7 @@ describe('PaymentsService', () => {
 
     it('confirms a pending Toss payment and marks the order as paid', async () => {
         prisma.payment.findFirst.mockResolvedValue(pendingPayment);
+        prisma.payment.updateMany.mockResolvedValue({ count: 1 });
         prisma.order.findUnique.mockResolvedValue({
             id: 'order-1',
             status: 'PAID',
@@ -92,7 +102,6 @@ describe('PaymentsService', () => {
             data: expect.objectContaining({
                 status: 'PAID',
                 method: 'CARD',
-                paymentKey: 'payment-key',
                 approvedAmount: 24000,
                 receiptUrl: 'https://receipt.example',
             }),
@@ -103,6 +112,13 @@ describe('PaymentsService', () => {
                 status: 'PAID',
                 paymentStatus: 'PAID',
             },
+        });
+        expect(queueService.publishOrderPaid).toHaveBeenCalledWith({
+            orderId: 'order-1',
+            storeId: undefined,
+            paymentId: 'payment-1',
+            providerOrderId: 'ORDER_1',
+            amount: 24000,
         });
     });
 
