@@ -6,6 +6,7 @@ import axios from 'axios';
 import {
   CheckCircle2,
   ChefHat,
+  ChevronDown,
   Clock,
   MapPin,
   PackageCheck,
@@ -98,6 +99,7 @@ export default function OrdersPage() {
   const { selectedStore, selectedStoreId: storeId, isLoading: isStoresLoading, authHeaders } = useAdminStore();
   const queryClient = useQueryClient();
   const [printOrder, setPrintOrder] = useState<Order | null>(null);
+  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   useRealtimeOrders(storeId || '');
 
   const { data: orders = [], isLoading: isOrdersLoading } = useQuery<Order[]>({
@@ -226,7 +228,8 @@ export default function OrdersPage() {
             </thead>
             <tbody className="divide-y divide-gray-50">
               {orders.map((order) => (
-                <tr key={order.id} className="hover:bg-gray-50/50 transition-colors align-top">
+                <React.Fragment key={order.id}>
+                <tr className="hover:bg-gray-50/50 transition-colors align-top">
                   <td className="px-6 py-4">
                     <p className="font-mono text-xs text-gray-500">{order.orderNumber}</p>
                     <p className="mt-1 text-xs text-gray-400">{sourceLabel[order.source || ''] || order.source || '-'}</p>
@@ -298,6 +301,16 @@ export default function OrdersPage() {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex min-w-[220px] flex-wrap gap-2">
+                      <button
+                        onClick={() => setExpandedOrderId((current) => (current === order.id ? null : order.id))}
+                        className="inline-flex items-center gap-1 rounded-md border border-gray-200 px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-50"
+                      >
+                        <ChevronDown
+                          size={14}
+                          className={`transition-transform ${expandedOrderId === order.id ? 'rotate-180' : ''}`}
+                        />
+                        상세
+                      </button>
                       {renderOrderAction(order, updateStatusMutation.mutate)}
                       {renderDeliveryAction(order, updateDeliveryStatusMutation.mutate)}
                       {renderPaymentCancelAction(order, cancelPaymentMutation.mutate)}
@@ -311,6 +324,14 @@ export default function OrdersPage() {
                     </div>
                   </td>
                 </tr>
+                {expandedOrderId === order.id && (
+                  <tr className="bg-slate-50/80">
+                    <td colSpan={9} className="px-6 py-5">
+                      <OrderDetailPanel order={order} />
+                    </td>
+                  </tr>
+                )}
+                </React.Fragment>
               ))}
               {orders.length === 0 && (
                 <tr>
@@ -343,6 +364,141 @@ export default function OrdersPage() {
       )}
     </div>
   );
+}
+
+function OrderDetailPanel({ order }: { order: Order }) {
+  const delivery = order.delivery;
+  const payments = order.payments || [];
+
+  return (
+    <div className="grid gap-4 text-sm text-gray-700 lg:grid-cols-[1fr_1fr_1.2fr]">
+      <DetailSection title="주문 정보">
+        <DetailItem label="주문 번호" value={order.orderNumber} />
+        <DetailItem label="주문 경로" value={sourceLabel[order.source || ''] || order.source || '-'} />
+        <DetailItem label="주문 유형" value={orderTypeLabel[order.type || ''] || order.type || '-'} />
+        <DetailItem label="테이블" value={order.tableNumber ? `${order.tableNumber}번` : '-'} />
+        <DetailItem label="Toss 주문 ID" value={order.tossOrderId || '-'} />
+        <DetailItem label="요청 사항" value={order.note || '-'} />
+        <DetailItem label="주문 생성" value={formatOptionalDate(order.createdAt)} />
+        <DetailItem label="최근 변경" value={formatOptionalDate(order.updatedAt)} />
+        <DetailItem label="완료 시각" value={formatOptionalDate(order.completedAt)} />
+        <DetailItem label="취소 시각" value={formatOptionalDate(order.cancelledAt)} />
+        <DetailItem label="취소 사유" value={order.cancelReason || '-'} />
+      </DetailSection>
+
+      <DetailSection title="배달 정보">
+        {delivery ? (
+          <>
+            <DetailItem label="수령인" value={delivery.recipientName} />
+            <DetailItem label="연락처" value={delivery.recipientPhone} />
+            <DetailItem
+              label="주소"
+              value={`${delivery.address}${delivery.detailAddress ? ` ${delivery.detailAddress}` : ''}`}
+            />
+            <DetailItem label="우편번호" value={delivery.zipCode || '-'} />
+            <DetailItem label="배달비" value={formatCurrency(delivery.deliveryFee || 0)} />
+            <DetailItem label="배달 상태" value={deliveryStatusLabel[delivery.status] || delivery.status} />
+            <DetailItem label="예상 시간" value={delivery.estimatedMinutes ? `${delivery.estimatedMinutes}분` : '-'} />
+            <DetailItem label="배달 메모" value={delivery.deliveryMemo || '-'} />
+            <DetailItem label="라이더 메모" value={delivery.riderMemo || '-'} />
+            <DetailItem label="요청 시각" value={formatOptionalDate(delivery.requestedAt)} />
+            <DetailItem label="배정 시각" value={formatOptionalDate(delivery.assignedAt)} />
+            <DetailItem label="픽업 시각" value={formatOptionalDate(delivery.pickedUpAt)} />
+            <DetailItem label="완료 시각" value={formatOptionalDate(delivery.deliveredAt)} />
+            <DetailItem label="취소 시각" value={formatOptionalDate(delivery.cancelledAt)} />
+          </>
+        ) : (
+          <p className="text-gray-400">배달 정보가 없는 주문입니다.</p>
+        )}
+      </DetailSection>
+
+      <div className="space-y-4">
+        <DetailSection title="결제 정보">
+          {payments.length > 0 ? (
+            <div className="space-y-3">
+              {payments.map((payment) => (
+                <div key={payment.id} className="rounded-lg border border-gray-200 bg-white p-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="font-medium text-gray-900">{payment.provider || '-'}</span>
+                    <Badge variant={getPaymentBadgeVariant(payment.status)}>
+                      {paymentStatusLabel[payment.status || ''] || payment.status || '-'}
+                    </Badge>
+                  </div>
+                  <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                    <DetailItem label="수단" value={payment.method || '-'} />
+                    <DetailItem label="요청 금액" value={formatCurrency(payment.amount || 0)} />
+                    <DetailItem label="승인 금액" value={formatCurrency(payment.approvedAmount || 0)} />
+                    <DetailItem label="취소 금액" value={formatCurrency(payment.cancelledAmount || 0)} />
+                    <DetailItem label="취소 시각" value={formatOptionalDate(payment.cancelledAt)} />
+                    <DetailItem
+                      label="영수증"
+                      value={payment.receiptUrl ? (
+                        <a href={payment.receiptUrl} target="_blank" rel="noreferrer" className="text-blue-600 underline">
+                          보기
+                        </a>
+                      ) : '-'}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-400">결제 정보가 없습니다.</p>
+          )}
+        </DetailSection>
+
+        <DetailSection title="주문 항목">
+          <div className="space-y-3">
+            {order.items.map((item) => (
+              <div key={item.id} className="rounded-lg border border-gray-200 bg-white p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-medium text-gray-900">{item.menuName}</p>
+                    <p className="mt-1 text-xs text-gray-500">
+                      {formatCurrency(item.unitPrice)} x {item.quantity}
+                    </p>
+                  </div>
+                  <p className="font-semibold text-gray-900">{formatCurrency(item.totalPrice)}</p>
+                </div>
+                {item.options && item.options.length > 0 && (
+                  <div className="mt-3 space-y-1 border-t border-gray-100 pt-3 text-xs text-gray-500">
+                    {item.options.map((option) => (
+                      <div key={option.optionGroupId}>
+                        <span className="font-medium text-gray-600">{option.optionGroupName}: </span>
+                        {option.items.map((optionItem) => `${optionItem.name} (+${optionItem.price.toLocaleString()}원)`).join(', ')}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </DetailSection>
+      </div>
+    </div>
+  );
+}
+
+function DetailSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="rounded-lg border border-gray-200 bg-white p-4">
+      <h3 className="mb-3 text-sm font-semibold text-gray-900">{title}</h3>
+      <div className="space-y-2">{children}</div>
+    </section>
+  );
+}
+
+function DetailItem({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="grid grid-cols-[92px_1fr] gap-3">
+      <span className="text-xs font-medium text-gray-400">{label}</span>
+      <span className="min-w-0 break-words text-sm text-gray-700">{value || '-'}</span>
+    </div>
+  );
+}
+
+function formatOptionalDate(value?: Date | string | null) {
+  return value ? formatDate(value) : '-';
 }
 
 function SummaryCard({ label, value }: { label: string; value: number }) {
