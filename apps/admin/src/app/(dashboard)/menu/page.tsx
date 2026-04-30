@@ -266,6 +266,7 @@ export default function MenuListPage() {
             onClick={() => syncTossMenuMutation.mutate()}
             disabled={syncTossMenuMutation.isPending}
             className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
+            data-testid="admin-toss-menu-sync"
           >
             <RefreshCw className={`h-4 w-4 ${syncTossMenuMutation.isPending ? 'animate-spin' : ''}`} />
             Toss 메뉴 동기화
@@ -484,7 +485,10 @@ function TossSyncLogPanel({ log }: { log: TossSyncLog }) {
   const summaryEntries = log.summary ? Object.entries(log.summary) : [];
 
   return (
-    <section className={`rounded-xl border p-4 text-sm ${isSuccess ? 'border-green-200 bg-green-50 text-green-900' : 'border-red-200 bg-red-50 text-red-900'}`}>
+    <section
+      className={`rounded-xl border p-4 text-sm ${isSuccess ? 'border-green-200 bg-green-50 text-green-900' : 'border-red-200 bg-red-50 text-red-900'}`}
+      data-testid="admin-toss-menu-sync-log"
+    >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="font-bold">
