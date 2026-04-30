@@ -6,6 +6,7 @@ describe('OrdersService', () => {
     let service: OrdersService;
     let prisma: any;
     let tx: any;
+    let queueService: any;
 
     const store = {
         id: 'store-1',
@@ -69,7 +70,11 @@ describe('OrdersService', () => {
             $transaction: vi.fn((callback) => callback(tx)),
         };
 
-        service = new OrdersService(prisma, {} as any, {} as any);
+        queueService = {
+            publishPosSendOrder: vi.fn(),
+        };
+
+        service = new OrdersService(prisma, {} as any, {} as any, queueService);
     });
 
     it('rejects delivery orders for an inactive store', async () => {
@@ -184,6 +189,82 @@ describe('OrdersService', () => {
 
     it('requires a user id to list delivery orders', async () => {
         await expect(service.getDeliveryOrders({ storeId: 'store-1' })).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('lists failed POS sync orders for admin visibility', async () => {
+        prisma.order = {
+            findMany: vi.fn().mockResolvedValue([{ id: 'order-1', posSyncStatus: 'FAILED' }]),
+            count: vi.fn().mockResolvedValue(1),
+        };
+
+        const result = await service.getPosSyncFailures('store-1', 1);
+
+        expect(result).toEqual({
+            data: [{ id: 'order-1', posSyncStatus: 'FAILED' }],
+            meta: {
+                total: 1,
+                page: 1,
+                lastPage: 1,
+            },
+        });
+        expect(prisma.order.findMany).toHaveBeenCalledWith(expect.objectContaining({
+            where: {
+                storeId: 'store-1',
+                posSyncStatus: 'FAILED',
+            },
+        }));
+    });
+
+    it('retries POS sync by resetting status and publishing a queue job', async () => {
+        prisma.order = {
+            findUnique: vi.fn().mockResolvedValue({
+                id: 'order-1',
+                storeId: 'store-1',
+                status: 'PAID',
+                tossOrderId: null,
+                posSyncStatus: 'FAILED',
+            }),
+            update: vi.fn().mockResolvedValue({
+                id: 'order-1',
+                posSyncStatus: 'PENDING',
+            }),
+        };
+
+        const result = await service.retryPosSync('store-1', 'order-1');
+
+        expect(result).toEqual({
+            id: 'order-1',
+            posSyncStatus: 'PENDING',
+        });
+        expect(prisma.order.update).toHaveBeenCalledWith({
+            where: { id: 'order-1' },
+            data: {
+                posSyncStatus: 'PENDING',
+                posSyncLastError: null,
+                posSyncUpdatedAt: expect.any(Date),
+            },
+        });
+        expect(queueService.publishPosSendOrder).toHaveBeenCalledWith({
+            orderId: 'order-1',
+            storeId: 'store-1',
+        });
+    });
+
+    it('rejects POS sync retry for unpaid orders', async () => {
+        prisma.order = {
+            findUnique: vi.fn().mockResolvedValue({
+                id: 'order-1',
+                storeId: 'store-1',
+                status: 'PENDING_PAYMENT',
+                tossOrderId: null,
+                posSyncStatus: 'FAILED',
+            }),
+            update: vi.fn(),
+        };
+
+        await expect(service.retryPosSync('store-1', 'order-1')).rejects.toBeInstanceOf(BadRequestException);
+        expect(prisma.order.update).not.toHaveBeenCalled();
+        expect(queueService.publishPosSendOrder).not.toHaveBeenCalled();
     });
 
     it('returns a delivery order detail when the authenticated user matches', async () => {

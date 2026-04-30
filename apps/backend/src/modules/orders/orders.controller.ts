@@ -187,6 +187,41 @@ export class OrdersController {
         return this.ordersService.getOrders(storeId, status, page);
     }
 
+    @Get('pos-sync/failed')
+    @UseGuards(SupabaseGuard)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({
+        summary: 'POS 전송 실패 주문 목록',
+        description: '관리자 화면에서 POS 전송 실패 주문과 마지막 오류를 확인하기 위한 목록입니다.',
+    })
+    @ApiParam({ name: 'storeId', description: '매장 ID' })
+    @ApiQuery({ name: 'page', required: false, type: Number, description: '페이지 번호' })
+    async getPosSyncFailures(
+        @Param('storeId') storeId: string,
+        @Query('page') page: number = 1,
+    ) {
+        return this.ordersService.getPosSyncFailures(storeId, Number(page) || 1);
+    }
+
+    @Patch(':orderId/pos-sync/retry')
+    @UseGuards(SupabaseGuard)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({
+        summary: 'POS 전송 수동 재시도',
+        description: '관리자가 실패한 POS 전송을 다시 대기 상태로 전환하고 pos.send_order 큐 작업을 재발행합니다.',
+    })
+    @ApiParam({ name: 'storeId', description: '매장 ID' })
+    @ApiParam({ name: 'orderId', description: '주문 ID' })
+    @ApiResponse({ status: 200, description: 'POS 전송 재시도 등록 성공' })
+    @ApiResponse({ status: 400, description: '재시도할 수 없는 주문 상태' })
+    @ApiResponse({ status: 404, description: '주문을 찾을 수 없음' })
+    async retryPosSync(
+        @Param('storeId') storeId: string,
+        @Param('orderId') orderId: string,
+    ) {
+        return this.ordersService.retryPosSync(storeId, orderId);
+    }
+
     @Patch(':orderId/status')
     @UseGuards(SupabaseGuard)
     @ApiBearerAuth('JWT-auth')
