@@ -56,6 +56,7 @@ describe('PaymentsService', () => {
 
         queueService = {
             publishOrderPaid: vi.fn(),
+            publishPaymentPaid: vi.fn(),
             publishPaymentReconcile: vi.fn(),
             publishPaymentRefunded: vi.fn(),
         };
@@ -116,6 +117,13 @@ describe('PaymentsService', () => {
             },
         });
         expect(queueService.publishOrderPaid).toHaveBeenCalledWith({
+            orderId: 'order-1',
+            storeId: undefined,
+            paymentId: 'payment-1',
+            providerOrderId: 'ORDER_1',
+            amount: 24000,
+        });
+        expect(queueService.publishPaymentPaid).toHaveBeenCalledWith({
             orderId: 'order-1',
             storeId: undefined,
             paymentId: 'payment-1',

@@ -47,6 +47,14 @@ export interface PaymentReconcileEventPayload extends QueueEventPayload {
     providerOrderId?: string;
 }
 
+export interface PaymentPaidEventPayload extends QueueEventPayload {
+    paymentId: string;
+    orderId: string;
+    storeId?: string;
+    providerOrderId?: string;
+    amount: number;
+}
+
 export interface PaymentRefundedEventPayload extends QueueEventPayload {
     paymentId: string;
     orderId: string;

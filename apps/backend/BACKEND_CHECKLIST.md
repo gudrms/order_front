@@ -28,7 +28,7 @@
 
 ## MQ 1차 적용 후보
 
-- [ ] `payment.paid`: Toss 승인과 로컬 DB 상태 저장이 모두 성공한 뒤에만 발행한다.
+- [x] `payment.paid`: Toss 승인과 로컬 DB 상태 저장이 모두 성공한 뒤에만 발행한다.
 - [x] `payment.refunded`: 환불/취소 상태가 DB에 반영된 뒤 발행한다.
 - [ ] `order.paid`: 결제 완료 이후 POS 전송, 관리자/고객 알림, 영수증, 분석 후처리에 사용한다.
 - [ ] `pos.send_order`: POS 전송 시도를 주문/결제 응답 경로에서 분리한다.
