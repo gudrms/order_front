@@ -1,8 +1,11 @@
-import { Controller, Get, Post, Patch, Param, Body, Query, Headers, ConflictException, Logger, NotFoundException } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Param, Body, Query, Headers, ConflictException, Logger, NotFoundException, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody, ApiQuery, ApiHeader } from '@nestjs/swagger';
 import { PrismaService } from '../../prisma/prisma.service';
+import { PosIntegrationGuard } from './pos-integration.guard';
 
 @ApiTags('POS Integration')
+@ApiHeader({ name: 'x-pos-api-key', description: 'POS 플러그인 연동 API 키' })
+@UseGuards(PosIntegrationGuard)
 @Controller('pos')
 export class PosController {
     private readonly logger = new Logger(PosController.name);

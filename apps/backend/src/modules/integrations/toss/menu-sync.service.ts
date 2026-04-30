@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TossApiService } from './toss-api.service';
+import { assertCanManageStore } from '../../../common/auth/permissions';
 
 @Injectable()
 export class MenuSyncService {
@@ -9,18 +10,16 @@ export class MenuSyncService {
         private readonly tossApiService: TossApiService,
     ) { }
 
-    async testConnection() {
+    async testConnection(userId: string, storeId: string) {
+        await this.assertCanManageStore(userId, storeId);
         // 간단한 연결 테스트 로직 (예: 첫 번째 매장 조회 시도)
         // 실제로는 Toss API의 Health Check나 간단한 조회를 수행해야 함
         return { success: true, message: 'Connection test not implemented yet but service is reachable' };
     }
 
-    async syncMenu(storeId: string) {
+    async syncMenu(userId: string, storeId: string) {
         // 1. 매장 확인
-        const store = await this.prisma.store.findUnique({ where: { id: storeId } });
-        if (!store) {
-            throw new NotFoundException(`Store not found: ${storeId}`);
-        }
+        await this.assertCanManageStore(userId, storeId);
 
         // 2. Toss API에서 메뉴 데이터 조회
         const tossData = await this.tossApiService.fetchMenuData(storeId);
@@ -157,5 +156,20 @@ export class MenuSyncService {
         });
 
         return { success: true, message: 'Menu synced successfully' };
+    }
+
+    private async assertCanManageStore(userId: string, storeId: string) {
+        const [user, store] = await Promise.all([
+            this.prisma.user.findUnique({ where: { id: userId } }),
+            this.prisma.store.findUnique({ where: { id: storeId } }),
+        ]);
+
+        if (!store) {
+            throw new NotFoundException(`Store not found: ${storeId}`);
+        }
+
+        assertCanManageStore(user, store);
+
+        return store;
     }
 }

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { beforeAll, describe, it, expect, vi } from 'vitest';
 
 // config.ts 모듈을 import하면 부팅 시점에 env 검증이 실행되므로
 // 검증 함수만 직접 import해서 단위 테스트한다 (모듈 부팅 부작용 회피).
@@ -6,7 +6,18 @@ vi.mock('@supabase/supabase-js', () => ({
     createClient: vi.fn(() => ({})),
 }));
 
-import { requireEnv, resolveApiUrl } from '../config';
+let requireEnv: typeof import('../config').requireEnv;
+let resolveApiUrl: typeof import('../config').resolveApiUrl;
+
+beforeAll(async () => {
+    vi.stubEnv('PLUGIN_POS_API_KEY', 'pos-secret');
+    vi.stubEnv('PLUGIN_SUPABASE_URL', 'https://test.supabase.co');
+    vi.stubEnv('PLUGIN_SUPABASE_ANON_KEY', 'test-key');
+    vi.stubEnv('PLUGIN_STORE_ID', 'store-1');
+    const config = await import('../config');
+    requireEnv = config.requireEnv;
+    resolveApiUrl = config.resolveApiUrl;
+});
 
 describe('requireEnv', () => {
     it('값이 있으면 그대로 반환한다', () => {

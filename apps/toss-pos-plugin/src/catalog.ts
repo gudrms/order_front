@@ -1,5 +1,5 @@
 import { posPluginSdk } from '@tossplace/pos-plugin-sdk';
-import { API_URL, STORE_ID } from './config';
+import { API_URL, STORE_ID, posApiHeaders } from './config';
 
 export async function syncCatalogs() {
     try {
@@ -32,7 +32,7 @@ export async function syncCatalogs() {
 
         const response = await fetch(`${API_URL}/pos/catalogs/sync?storeId=${STORE_ID}`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: posApiHeaders({ 'Content-Type': 'application/json' }),
             body: JSON.stringify({ catalogs: payload }),
         });
 
