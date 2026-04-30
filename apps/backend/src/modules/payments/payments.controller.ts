@@ -1,4 +1,4 @@
-import { Body, Controller, Param, Post, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Body, Controller, Headers, Param, Post, UnauthorizedException, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ConfirmTossPaymentDto, ExpirePendingTossPaymentsDto, FailTossPaymentDto, CancelTossPaymentDto, ReconcileTossPaymentsDto } from './dto/confirm-toss-payment.dto';
 import { PaymentsService } from './payments.service';
@@ -45,7 +45,11 @@ export class PaymentsController {
     })
     @ApiBody({ type: ExpirePendingTossPaymentsDto, required: false })
     @ApiResponse({ status: 201, description: '만료 주문 정리 완료' })
-    async expirePendingTossPayments(@Body() dto: ExpirePendingTossPaymentsDto = {}) {
+    async expirePendingTossPayments(
+        @Headers('x-internal-job-secret') secret: string | undefined,
+        @Body() dto: ExpirePendingTossPaymentsDto = {},
+    ) {
+        this.assertInternalSecret(secret);
         return this.paymentsService.expirePendingTossPayments(dto);
     }
 
@@ -57,7 +61,11 @@ export class PaymentsController {
     })
     @ApiBody({ type: ReconcileTossPaymentsDto, required: false })
     @ApiResponse({ status: 201, description: '복구 큐 등록 완료' })
-    async reconcileTossPayments(@Body() dto: ReconcileTossPaymentsDto = {}) {
+    async reconcileTossPayments(
+        @Headers('x-internal-job-secret') secret: string | undefined,
+        @Body() dto: ReconcileTossPaymentsDto = {},
+    ) {
+        this.assertInternalSecret(secret);
         return this.paymentsService.reconcileTossPayments(dto);
     }
 
@@ -81,5 +89,12 @@ export class PaymentsController {
         @Body() dto: CancelTossPaymentDto,
     ) {
         return this.paymentsService.cancelOrderTossPayment(user.id, orderId, dto);
+    }
+
+    private assertInternalSecret(secret: string | undefined) {
+        const expected = process.env.INTERNAL_JOB_SECRET;
+        if (!expected || secret !== expected) {
+            throw new UnauthorizedException('Invalid internal job secret');
+        }
     }
 }

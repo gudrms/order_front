@@ -22,13 +22,7 @@ export class UsersController {
         @CurrentUser() user: { id: string; email?: string; userMetadata?: Record<string, unknown> },
         @Body() dto: CreateAddressDto,
     ) {
-        const name = (user.userMetadata?.full_name ?? user.userMetadata?.name ?? 'User') as string;
-        return this.usersService.createAddress(
-            user.id,
-            user.email ?? `${user.id}@placeholder.com`,
-            name,
-            dto,
-        );
+        return this.usersService.createAddress(user, dto);
     }
 
     @Delete('me/addresses/:id')

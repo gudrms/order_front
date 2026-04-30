@@ -2,6 +2,7 @@ import { Injectable, Logger, Optional } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { TossApiService } from '../integrations/toss/toss-api.service';
+import { ResilientPosService } from '../integrations/pos/pos.resilience';
 import {
     BackendQueueEvent,
     NotificationSendEventPayload,
@@ -21,6 +22,7 @@ export class QueueConsumerService {
         private readonly queueService: QueueService,
         private readonly prisma: PrismaService,
         @Optional() private readonly tossApiService?: TossApiService,
+        @Optional() private readonly posService?: ResilientPosService,
     ) { }
 
     async processOnce(options: {
@@ -125,15 +127,61 @@ export class QueueConsumerService {
             throw new Error('pos.send_order payload requires orderId');
         }
 
-        await this.prisma.order.updateMany({
+        const order = await this.prisma.order.findFirst({
             where: {
                 id: orderId,
                 status: 'PAID',
                 tossOrderId: null,
                 posSyncStatus: { in: ['PENDING', 'FAILED'] },
             },
+            include: {
+                store: true,
+                items: {
+                    include: {
+                        selectedOptions: true,
+                    },
+                },
+                delivery: true,
+                payments: true,
+            },
+        });
+
+        if (!order) {
+            return;
+        }
+
+        await this.prisma.order.update({
+            where: { id: orderId },
             data: {
                 posSyncStatus: 'PENDING',
+                posSyncAttemptCount: { increment: 1 },
+                posSyncLastError: null,
+                posSyncUpdatedAt: new Date(),
+            },
+        });
+
+        if (!this.posService) {
+            throw new Error('POS service is not configured');
+        }
+
+        const sent = await this.posService.sendOrder(order);
+        if (!sent) {
+            await this.prisma.order.update({
+                where: { id: orderId },
+                data: {
+                    posSyncStatus: 'FAILED',
+                    posSyncLastError: 'POS provider returned failure',
+                    posSyncUpdatedAt: new Date(),
+                },
+            });
+            throw new Error('POS provider returned failure');
+        }
+
+        await this.prisma.order.update({
+            where: { id: orderId },
+            data: {
+                posSyncStatus: 'SENT',
+                posSyncLastError: null,
                 posSyncUpdatedAt: new Date(),
             },
         });

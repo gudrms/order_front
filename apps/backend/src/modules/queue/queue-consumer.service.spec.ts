@@ -6,6 +6,7 @@ describe('QueueConsumerService', () => {
     let queueService: any;
     let prisma: any;
     let tossApiService: any;
+    let posService: any;
 
     beforeEach(() => {
         queueService = {
@@ -28,7 +29,7 @@ describe('QueueConsumerService', () => {
                 upsert: vi.fn(),
             },
             order: {
-                updateMany: vi.fn(),
+                findFirst: vi.fn(),
                 update: vi.fn((args) => ({ model: 'order', args })),
             },
             payment: {
@@ -40,7 +41,10 @@ describe('QueueConsumerService', () => {
         tossApiService = {
             fetchPaymentByOrderId: vi.fn(),
         };
-        service = new QueueConsumerService(queueService, prisma, tossApiService);
+        posService = {
+            sendOrder: vi.fn(),
+        };
+        service = new QueueConsumerService(queueService, prisma, tossApiService, posService);
     });
 
     it('records queue processing and archives a valid message', async () => {
@@ -118,7 +122,7 @@ describe('QueueConsumerService', () => {
         });
     });
 
-    it('marks POS send jobs as ready for polling', async () => {
+    it('sends POS jobs and marks successful sync', async () => {
         queueService.read.mockResolvedValue([
             {
                 msg_id: 4,
@@ -136,24 +140,108 @@ describe('QueueConsumerService', () => {
         ]);
         prisma.queueEventLog.findUnique.mockResolvedValue(null);
         prisma.queueEventLog.upsert.mockResolvedValue({ status: 'PROCESSING' });
-        prisma.order.updateMany.mockResolvedValue({ count: 1 });
+        prisma.order.findFirst.mockResolvedValue({
+            id: 'order-4',
+            status: 'PAID',
+            tossOrderId: null,
+            posSyncStatus: 'PENDING',
+            items: [],
+            payments: [],
+        });
+        posService.sendOrder.mockResolvedValue(true);
 
         const result = await service.processOnce();
 
         expect(result).toEqual({ processedCount: 1 });
-        expect(prisma.order.updateMany).toHaveBeenCalledWith({
+        expect(prisma.order.findFirst).toHaveBeenCalledWith({
             where: {
                 id: 'order-4',
                 status: 'PAID',
                 tossOrderId: null,
                 posSyncStatus: { in: ['PENDING', 'FAILED'] },
             },
-            data: {
-                posSyncStatus: 'PENDING',
-                posSyncUpdatedAt: expect.any(Date),
+            include: {
+                store: true,
+                items: {
+                    include: {
+                        selectedOptions: true,
+                    },
+                },
+                delivery: true,
+                payments: true,
             },
         });
+        expect(posService.sendOrder).toHaveBeenCalledWith(expect.objectContaining({ id: 'order-4' }));
+        expect(prisma.order.update).toHaveBeenCalledWith({
+            where: { id: 'order-4' },
+            data: expect.objectContaining({
+                posSyncStatus: 'PENDING',
+                posSyncAttemptCount: { increment: 1 },
+                posSyncLastError: null,
+                posSyncUpdatedAt: expect.any(Date),
+            }),
+        });
+        expect(prisma.order.update).toHaveBeenCalledWith({
+            where: { id: 'order-4' },
+            data: expect.objectContaining({
+                posSyncStatus: 'SENT',
+                posSyncLastError: null,
+                posSyncUpdatedAt: expect.any(Date),
+            }),
+        });
         expect(queueService.archive).toHaveBeenCalledWith(undefined, 4);
+    });
+
+    it('marks POS jobs failed when the provider returns failure', async () => {
+        queueService.read.mockResolvedValue([
+            {
+                msg_id: 11,
+                read_ct: 1,
+                enqueued_at: new Date(),
+                vt: new Date(),
+                message: {
+                    eventId: 'event-11',
+                    eventType: 'pos.send_order',
+                    idempotencyKey: 'pos.send_order:order-11',
+                    occurredAt: new Date().toISOString(),
+                    payload: { orderId: 'order-11' },
+                },
+            },
+        ]);
+        prisma.queueEventLog.findUnique.mockResolvedValue(null);
+        prisma.queueEventLog.upsert.mockResolvedValue({ status: 'PROCESSING', attemptCount: 1 });
+        prisma.queueEventLog.update.mockResolvedValue({ attemptCount: 1 });
+        prisma.order.findFirst.mockResolvedValue({
+            id: 'order-11',
+            status: 'PAID',
+            tossOrderId: null,
+            posSyncStatus: 'PENDING',
+            items: [],
+            payments: [],
+        });
+        posService.sendOrder.mockResolvedValue(false);
+
+        const result = await service.processOnce();
+
+        expect(result).toEqual({ processedCount: 0 });
+        expect(prisma.order.update).toHaveBeenCalledWith({
+            where: { id: 'order-11' },
+            data: expect.objectContaining({
+                posSyncStatus: 'FAILED',
+                posSyncLastError: 'POS provider returned failure',
+                posSyncUpdatedAt: expect.any(Date),
+            }),
+        });
+        expect(queueService.retry).toHaveBeenCalledWith(
+            expect.objectContaining({
+                eventType: 'pos.send_order',
+                idempotencyKey: 'pos.send_order:order-11',
+            }),
+            {
+                queueName: 'backend_events',
+                delaySeconds: 10,
+            },
+        );
     });
 
     it('records notification send jobs with a dedupe key', async () => {
