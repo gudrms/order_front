@@ -1,7 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
-import { BackendQueueEvent, OrderPaidEventPayload, QueueEventPayload, QueueEventType } from './queue-event.types';
+import {
+    BackendQueueEvent,
+    OrderPaidEventPayload,
+    QueueEventPayload,
+    QueueEventType,
+    QueueMessageRecord,
+} from './queue-event.types';
 
 @Injectable()
 export class QueueService {
@@ -37,13 +43,17 @@ export class QueueService {
         });
     }
 
-    async read(queueName = this.defaultQueueName, visibilityTimeoutSeconds = 60, quantity = 10) {
+    async read(
+        queueName = this.defaultQueueName,
+        visibilityTimeoutSeconds = 60,
+        quantity = 10,
+    ): Promise<QueueMessageRecord[]> {
         return this.prisma.$queryRawUnsafe(
             'select * from pgmq.read($1, $2, $3)',
             queueName,
             visibilityTimeoutSeconds,
             quantity,
-        );
+        ) as Promise<QueueMessageRecord[]>;
     }
 
     async archive(queueName = this.defaultQueueName, messageId: number): Promise<void> {
@@ -69,4 +79,3 @@ export class QueueService {
         }
     }
 }
-

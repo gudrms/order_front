@@ -21,6 +21,14 @@ export interface BackendQueueEvent<TPayload extends QueueEventPayload = QueueEve
     payload: TPayload;
 }
 
+export interface QueueMessageRecord<TPayload extends QueueEventPayload = QueueEventPayload> {
+    msg_id: number;
+    read_ct: number;
+    enqueued_at: Date;
+    vt: Date;
+    message: BackendQueueEvent<TPayload> | string;
+}
+
 export interface OrderPaidEventPayload extends QueueEventPayload {
     orderId: string;
     storeId?: string;
@@ -28,4 +36,3 @@ export interface OrderPaidEventPayload extends QueueEventPayload {
     providerOrderId?: string;
     amount: number;
 }
-

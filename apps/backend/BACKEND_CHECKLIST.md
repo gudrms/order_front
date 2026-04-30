@@ -76,7 +76,7 @@
 - [x] 큐 설계와 migration만 추가한다.
 - [x] 기존 동작을 바꾸지 않는 `QueueModule` producer를 추가한다.
 - [x] 결제 DB commit 이후 `order.paid`를 발행한다.
-- [ ] 처리 로그만 기록하는 최소 consumer를 추가한다.
+- [x] 처리 로그만 기록하는 최소 consumer를 추가한다.
 - [x] 큐 경로가 검증될 때까지 기존 POS/알림 동작은 유지한다.
 
 ## 2차 PR 범위
