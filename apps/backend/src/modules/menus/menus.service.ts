@@ -2,7 +2,15 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { MenuManagementMode } from '@prisma/client';
 import { assertCanManageStore } from '../../common/auth/permissions';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateMenuCategoryDto, CreateMenuDto, UpdateMenuDto } from './dto/menu-admin.dto';
+import {
+    CreateMenuCategoryDto,
+    CreateMenuDto,
+    CreateMenuOptionDto,
+    CreateOptionGroupDto,
+    UpdateMenuDto,
+    UpdateMenuOptionDto,
+    UpdateOptionGroupDto,
+} from './dto/menu-admin.dto';
 
 @Injectable()
 export class MenusService {
@@ -238,6 +246,91 @@ export class MenusService {
                 tags: { include: { tag: true } },
             },
         });
+    }
+
+    async createOptionGroup(userId: string, storeId: string, menuId: string, dto: CreateOptionGroupDto) {
+        await this.assertCanManageAdminDirectMenus(userId, storeId);
+        const menu = await this.prisma.menu.findFirst({
+            where: { id: menuId, storeId },
+            select: { id: true, tossMenuCode: true },
+        });
+        if (!menu) throw new NotFoundException('Menu not found');
+        if (menu.tossMenuCode) throw new BadRequestException('Toss POS synced menus must be edited in Toss POS');
+
+        return this.prisma.menuOptionGroup.create({
+            data: {
+                menuId,
+                name: dto.name,
+                minSelect: dto.minSelect ?? 0,
+                maxSelect: dto.maxSelect ?? 1,
+                displayOrder: dto.displayOrder ?? 0,
+            },
+            include: { options: { orderBy: { displayOrder: 'asc' } } },
+        });
+    }
+
+    async updateOptionGroup(userId: string, storeId: string, menuId: string, groupId: string, dto: UpdateOptionGroupDto) {
+        await this.assertCanManageAdminDirectMenus(userId, storeId);
+        const group = await this.prisma.menuOptionGroup.findFirst({
+            where: { id: groupId, menuId, menu: { storeId } },
+        });
+        if (!group) throw new NotFoundException('Option group not found');
+
+        return this.prisma.menuOptionGroup.update({
+            where: { id: groupId },
+            data: dto,
+            include: { options: { orderBy: { displayOrder: 'asc' } } },
+        });
+    }
+
+    async deleteOptionGroup(userId: string, storeId: string, menuId: string, groupId: string) {
+        await this.assertCanManageAdminDirectMenus(userId, storeId);
+        const group = await this.prisma.menuOptionGroup.findFirst({
+            where: { id: groupId, menuId, menu: { storeId } },
+        });
+        if (!group) throw new NotFoundException('Option group not found');
+
+        await this.prisma.menuOptionGroup.delete({ where: { id: groupId } });
+    }
+
+    async createOption(userId: string, storeId: string, menuId: string, groupId: string, dto: CreateMenuOptionDto) {
+        await this.assertCanManageAdminDirectMenus(userId, storeId);
+        const group = await this.prisma.menuOptionGroup.findFirst({
+            where: { id: groupId, menuId, menu: { storeId } },
+        });
+        if (!group) throw new NotFoundException('Option group not found');
+
+        return this.prisma.menuOption.create({
+            data: {
+                optionGroupId: groupId,
+                name: dto.name,
+                price: dto.price,
+                displayOrder: dto.displayOrder ?? 0,
+                isSoldOut: dto.isSoldOut ?? false,
+            },
+        });
+    }
+
+    async updateOption(userId: string, storeId: string, menuId: string, groupId: string, optionId: string, dto: UpdateMenuOptionDto) {
+        await this.assertCanManageAdminDirectMenus(userId, storeId);
+        const option = await this.prisma.menuOption.findFirst({
+            where: { id: optionId, optionGroupId: groupId, optionGroup: { menuId, menu: { storeId } } },
+        });
+        if (!option) throw new NotFoundException('Option not found');
+        if (option.tossOptionCode) throw new BadRequestException('Toss POS synced options must be edited in Toss POS');
+
+        return this.prisma.menuOption.update({ where: { id: optionId }, data: dto });
+    }
+
+    async deleteOption(userId: string, storeId: string, menuId: string, groupId: string, optionId: string) {
+        await this.assertCanManageAdminDirectMenus(userId, storeId);
+        const option = await this.prisma.menuOption.findFirst({
+            where: { id: optionId, optionGroupId: groupId, optionGroup: { menuId, menu: { storeId } } },
+        });
+        if (!option) throw new NotFoundException('Option not found');
+        if (option.tossOptionCode) throw new BadRequestException('Toss POS synced options must be edited in Toss POS');
+
+        await this.prisma.menuOption.delete({ where: { id: optionId } });
     }
 
     private async assertCanManageStore(userId: string, storeId: string) {
