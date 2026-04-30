@@ -36,6 +36,11 @@ enum OrderChannel {
   POS
 }
 
+enum MenuManagementMode {
+  TOSS_POS
+  ADMIN_DIRECT
+}
+
 /// 주문 상태
 enum OrderStatus {
   PENDING      // 접수 대기
@@ -135,6 +140,7 @@ model Store {
 
   /// Toss Place 지점 코드 (연동용)
   tossBranchCode String?   @unique
+  menuManagementMode MenuManagementMode @default(TOSS_POS)
   
   /// 매장 설명
   description     String?

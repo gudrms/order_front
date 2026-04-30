@@ -2,7 +2,8 @@
 
 import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { AlertTriangle, ChevronLeft, Receipt, XCircle } from 'lucide-react';
+import { AlertTriangle, ChevronLeft, Receipt, X, XCircle } from 'lucide-react';
+import { OrderDetailSkeleton } from '@/components/ui/Skeleton';
 import { OrderStatusTracker } from '@/components/order/OrderStatusTracker';
 import { useCancelOrder, useOrder } from '@/hooks/queries/useOrders';
 import { useAuth } from '@/contexts/AuthContext';
@@ -31,6 +32,81 @@ const deliveryStatusLabel: Record<DeliveryStatus, string> = {
     CANCELLED: '배달 취소',
 };
 
+const CANCEL_REASONS = [
+    '주문을 잘못 선택했습니다.',
+    '배달 주소를 변경하고 싶습니다.',
+    '단순 변심입니다.',
+    '직접 입력',
+];
+
+function CancelModal({
+    isPending,
+    onConfirm,
+    onClose,
+}: {
+    isPending: boolean;
+    onConfirm: (reason: string) => void;
+    onClose: () => void;
+}) {
+    const [selected, setSelected] = useState(CANCEL_REASONS[0]);
+    const [custom, setCustom] = useState('');
+    const isCustom = selected === '직접 입력';
+    const finalReason = isCustom ? custom.trim() : selected;
+
+    return (
+        <>
+            <div
+                className="fixed inset-0 z-40 bg-black/40"
+                onClick={onClose}
+            />
+            <div className="fixed bottom-0 left-0 right-0 z-50 rounded-t-2xl bg-white px-5 pb-8 pt-5 shadow-xl max-w-[568px] mx-auto">
+                <div className="flex items-center justify-between mb-4">
+                    <h2 className="font-bold text-lg">주문 취소</h2>
+                    <button onClick={onClose} className="p-1 text-gray-400">
+                        <X size={22} />
+                    </button>
+                </div>
+
+                <p className="text-sm text-gray-500 mb-4">취소 사유를 선택해주세요.</p>
+
+                <div className="space-y-2 mb-4">
+                    {CANCEL_REASONS.map((reason) => (
+                        <button
+                            key={reason}
+                            onClick={() => setSelected(reason)}
+                            className={`w-full rounded-xl border px-4 py-3 text-left text-sm font-medium transition-colors ${
+                                selected === reason
+                                    ? 'border-red-400 bg-red-50 text-red-700'
+                                    : 'border-gray-200 text-gray-700 hover:bg-gray-50'
+                            }`}
+                        >
+                            {reason}
+                        </button>
+                    ))}
+                </div>
+
+                {isCustom && (
+                    <textarea
+                        value={custom}
+                        onChange={(e) => setCustom(e.target.value)}
+                        placeholder="취소 사유를 직접 입력하세요."
+                        className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm resize-none h-24 mb-4 focus:outline-none focus:border-red-400"
+                        autoFocus
+                    />
+                )}
+
+                <button
+                    onClick={() => onConfirm(finalReason)}
+                    disabled={isPending || (isCustom && !custom.trim())}
+                    className="w-full rounded-xl bg-red-500 py-4 font-bold text-white disabled:opacity-60"
+                >
+                    {isPending ? '취소 처리 중...' : '주문 취소하기'}
+                </button>
+            </div>
+        </>
+    );
+}
+
 function OrderDetailContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -38,10 +114,22 @@ function OrderDetailContent() {
     const { user, loading: isAuthLoading } = useAuth();
     const { data: order, isLoading } = useOrder(id, user?.id);
     const cancelOrder = useCancelOrder(id, user?.id);
+    const [showCancelModal, setShowCancelModal] = useState(false);
     const [cancelError, setCancelError] = useState<string | null>(null);
 
-    if (isAuthLoading) {
-        return <LoadingScreen />;
+    if (isAuthLoading || isLoading) {
+        return (
+            <main className="min-h-screen bg-gray-50 pb-20">
+                <header className="sticky top-0 z-50 bg-white border-b border-gray-100">
+                    <div className="flex items-center justify-between px-4 h-14">
+                        <ChevronLeft size={24} className="text-gray-300" />
+                        <div className="w-20 h-5 rounded bg-gray-200 animate-pulse" />
+                        <div className="w-10" />
+                    </div>
+                </header>
+                <OrderDetailSkeleton />
+            </main>
+        );
     }
 
     if (!user) {
@@ -63,10 +151,6 @@ function OrderDetailContent() {
         );
     }
 
-    if (isLoading) {
-        return <LoadingScreen />;
-    }
-
     if (!order) {
         return (
             <main className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -81,15 +165,12 @@ function OrderDetailContent() {
     const isPaidOrder = order.paymentStatus === 'PAID';
     const isCancelled = order.status === 'CANCELLED' || order.delivery?.status === 'CANCELLED';
 
-    const handleCancel = () => {
+    const handleConfirmCancel = (reason: string) => {
         setCancelError(null);
-        const reason = window.prompt('취소 사유를 입력해주세요.', '주문을 잘못 선택했습니다.');
-        if (reason === null) {
-            return;
-        }
-
-        cancelOrder.mutate(reason.trim() || undefined, {
+        cancelOrder.mutate(reason || undefined, {
+            onSuccess: () => setShowCancelModal(false),
             onError: (error) => {
+                setShowCancelModal(false);
                 setCancelError(error instanceof Error ? error.message : '주문 취소에 실패했습니다.');
             },
         });
@@ -214,11 +295,10 @@ function OrderDetailContent() {
                                     </p>
                                 )}
                                 <button
-                                    onClick={handleCancel}
-                                    disabled={cancelOrder.isPending}
-                                    className="w-full rounded-xl border border-red-200 bg-red-50 p-4 font-bold text-red-600 disabled:opacity-60"
+                                    onClick={() => setShowCancelModal(true)}
+                                    className="w-full rounded-xl border border-red-200 bg-red-50 p-4 font-bold text-red-600"
                                 >
-                                    {cancelOrder.isPending ? '취소 처리 중...' : '주문 취소하기'}
+                                    주문 취소하기
                                 </button>
                             </>
                         ) : (
@@ -236,6 +316,14 @@ function OrderDetailContent() {
                     </section>
                 )}
             </div>
+
+            {showCancelModal && (
+                <CancelModal
+                    isPending={cancelOrder.isPending}
+                    onConfirm={handleConfirmCancel}
+                    onClose={() => setShowCancelModal(false)}
+                />
+            )}
         </main>
     );
 }

@@ -1,6 +1,6 @@
 import { posPluginSdk } from '@tossplace/pos-plugin-sdk';
 import type { PluginOrderDto } from '@tossplace/pos-plugin-sdk';
-import { API_URL } from './config';
+import { API_URL, posApiHeaders } from './config';
 import type { BackendOrder, BackendPayment } from './types';
 
 const processingOrders = new Set<string>();
@@ -149,10 +149,10 @@ export async function updateOrderStatus(
         try {
             const response = await fetch(`${API_URL}/pos/orders/${orderId}/status`, {
                 method: 'PATCH',
-                headers: {
+                headers: posApiHeaders({
                     'Content-Type': 'application/json',
                     'Idempotency-Key': idempotencyKey,
-                },
+                }),
                 body: JSON.stringify(body),
             });
             if (response.status === 409) {
@@ -174,7 +174,9 @@ export async function updateOrderStatus(
 
 export async function pollOrders() {
     try {
-        const response = await fetch(`${API_URL}/pos/orders/pending`);
+        const response = await fetch(`${API_URL}/pos/orders/pending`, {
+            headers: posApiHeaders(),
+        });
         if (!response.ok) {
             // 404를 silent return 처리하면 안 됨: "주문 없음"이 아니라 "라우트 자체가 없음"이라는
             // 배포 실수 신호. 빈 목록은 200 + [] 로 와야 정상.
@@ -222,7 +224,9 @@ export function setupOrderCancelListener() {
 
 async function resolveBackendOrderId(tossOrderId: string): Promise<string | null> {
     try {
-        const response = await fetch(`${API_URL}/pos/orders/by-toss-id/${encodeURIComponent(tossOrderId)}`);
+        const response = await fetch(`${API_URL}/pos/orders/by-toss-id/${encodeURIComponent(tossOrderId)}`, {
+            headers: posApiHeaders(),
+        });
         if (!response.ok) return null;
         const data = await response.json();
         return data?.id ?? null;

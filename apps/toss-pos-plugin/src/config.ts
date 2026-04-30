@@ -44,9 +44,17 @@ export function resolveApiUrl(value: string | undefined, isDev: boolean): string
 const isDev = import.meta.env.DEV;
 
 export const API_URL = resolveApiUrl(import.meta.env.PLUGIN_API_URL as string | undefined, isDev);
+export const POS_API_KEY = requireEnv('PLUGIN_POS_API_KEY', import.meta.env.PLUGIN_POS_API_KEY as string | undefined);
 export const SUPABASE_URL = requireEnv('PLUGIN_SUPABASE_URL', import.meta.env.PLUGIN_SUPABASE_URL as string | undefined);
 export const SUPABASE_KEY = requireEnv('PLUGIN_SUPABASE_ANON_KEY', import.meta.env.PLUGIN_SUPABASE_ANON_KEY as string | undefined);
 export const STORE_ID = requireEnv('PLUGIN_STORE_ID', import.meta.env.PLUGIN_STORE_ID as string | undefined);
 export const POLLING_INTERVAL = 30_000;
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+export function posApiHeaders(extraHeaders: Record<string, string> = {}) {
+    return {
+        ...extraHeaders,
+        'x-pos-api-key': POS_API_KEY,
+    };
+}

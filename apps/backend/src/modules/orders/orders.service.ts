@@ -455,6 +455,7 @@ export class OrdersService {
             orderUpdateData.status = 'DELIVERING';
         }
         if (deliveryStatus === 'DELIVERING') {
+            deliveryUpdateData.pickedUpAt = order.delivery.pickedUpAt || now;
             orderUpdateData.status = 'DELIVERING';
         }
         if (deliveryStatus === 'DELIVERED') {

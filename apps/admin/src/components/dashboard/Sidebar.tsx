@@ -3,15 +3,9 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { 
-  LayoutDashboard, 
-  ShoppingBag, 
-  Menu as MenuIcon, 
-  Store, 
-  Settings, 
-  LogOut 
-} from 'lucide-react';
+import { Store, LogOut } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { getAdminRole, getVisibleAdminNavItems } from '@/lib/adminPermissions';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -19,17 +13,11 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-const menuItems = [
-  { name: '홈', href: '/', icon: LayoutDashboard },
-  { name: '주문 관리', href: '/orders', icon: ShoppingBag },
-  { name: '메뉴 관리', href: '/menu', icon: MenuIcon },
-  { name: '매장 관리', href: '/store', icon: Store },
-  { name: '설정', href: '/settings', icon: Settings },
-];
-
 export default function Sidebar() {
   const pathname = usePathname();
-  const { signOut, user } = useAuth();
+  const { signOut, user, profile } = useAuth();
+  const menuItems = getVisibleAdminNavItems(profile);
+  const role = getAdminRole(profile);
 
   return (
     <aside className="w-64 bg-white border-r border-gray-200 flex flex-col">
@@ -67,6 +55,11 @@ export default function Sidebar() {
           <p className="text-sm font-medium text-gray-700 truncate mt-1">
             {user?.email}
           </p>
+          {role && (
+            <p className="mt-1 text-xs font-medium text-gray-400">
+              {role === 'ADMIN' ? '전체관리자' : '매장관리자'}
+            </p>
+          )}
         </div>
         <button
           onClick={() => signOut()}

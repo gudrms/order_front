@@ -164,4 +164,18 @@ export class StoresController {
     ) {
         return this.storesService.createTables(user.id, storeId, dto);
     }
+
+    @Get(':storeId/tables')
+    @UseGuards(SupabaseGuard)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({
+        summary: '테이블 목록 조회',
+        description: '관리자가 매장 테이블과 QR 생성에 필요한 정보를 조회합니다.',
+    })
+    async getTables(
+        @CurrentUser() user: { id: string },
+        @Param('storeId') storeId: string,
+    ) {
+        return this.storesService.getTables(user.id, storeId);
+    }
 }
