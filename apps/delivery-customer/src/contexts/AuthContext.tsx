@@ -44,9 +44,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
+    const setAuthCookie = (authenticated: boolean) => {
+        if (authenticated) {
+            document.cookie = '_auth=1; path=/; SameSite=Lax; max-age=604800';
+        } else {
+            document.cookie = '_auth=; path=/; SameSite=Lax; max-age=0';
+        }
+    };
+
     useEffect(() => {
         supabase.auth.getSession().then(async ({ data: { session } }) => {
             await syncSessionUser(session);
+            setAuthCookie(!!session);
             setSession(session);
             setUser(session?.user ?? null);
             setLoading(false);
@@ -58,6 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             window.setTimeout(() => {
                 void syncSessionUser(session);
             }, 0);
+            setAuthCookie(!!session);
             setSession(session);
             setUser(session?.user ?? null);
             setLoading(false);
