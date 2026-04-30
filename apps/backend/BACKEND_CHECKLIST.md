@@ -63,7 +63,7 @@
 - [x] 주문, 결제, POS, 알림, 배달 이벤트 payload 타입을 정의한다.
 - [x] 결제/주문 흐름의 DB commit 이후 producer 호출을 추가한다.
 - [x] POS 전송 worker 처리를 추가한다.
-- [ ] 알림 전송 worker 처리를 추가한다.
+- [x] 알림 전송 worker 처리를 추가한다.
 - [ ] retry/backoff 정책과 최대 시도 횟수 정책을 추가한다.
 - [x] 실패 이벤트 로깅 또는 archive 처리를 추가한다.
 - [x] Vercel Cron 또는 운영 배치에서 호출할 수 있는 내부 큐 처리 endpoint를 추가한다.
@@ -91,5 +91,5 @@
 ## 3차 PR 범위
 
 - [ ] 알림 전송을 queue consumer로 이동한다.
-- [ ] 알림 dedupe key를 추가한다: `recipientId + notificationType + orderId`.
-- [ ] 내부 retry/failure 이벤트가 고객 알림을 발생시키지 않도록 보장한다.
+- [x] 알림 dedupe key를 추가한다: `recipientId + notificationType + orderId`.
+- [x] 내부 retry/failure 이벤트가 고객 알림을 발생시키지 않도록 보장한다.

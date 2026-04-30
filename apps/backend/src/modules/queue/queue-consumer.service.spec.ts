@@ -11,12 +11,17 @@ describe('QueueConsumerService', () => {
             read: vi.fn(),
             archive: vi.fn(),
             publishPosSendOrder: vi.fn(),
+            publishNotificationSend: vi.fn(),
         };
         prisma = {
             queueEventLog: {
                 findUnique: vi.fn(),
                 upsert: vi.fn(),
                 update: vi.fn(),
+            },
+            notificationLog: {
+                findUnique: vi.fn(),
+                upsert: vi.fn(),
             },
             order: {
                 updateMany: vi.fn(),
@@ -59,12 +64,44 @@ describe('QueueConsumerService', () => {
             orderId: 'order-1',
             storeId: undefined,
         });
+        expect(queueService.publishNotificationSend).not.toHaveBeenCalled();
         expect(prisma.queueEventLog.update).toHaveBeenCalledWith({
             where: { idempotencyKey: 'order.paid:order-1' },
             data: expect.objectContaining({
                 status: 'SUCCEEDED',
                 processedAt: expect.any(Date),
             }),
+        });
+    });
+
+    it('publishes a store notification when a paid order has a store id', async () => {
+        queueService.read.mockResolvedValue([
+            {
+                msg_id: 5,
+                read_ct: 1,
+                enqueued_at: new Date(),
+                vt: new Date(),
+                message: {
+                    eventId: 'event-5',
+                    eventType: 'order.paid',
+                    idempotencyKey: 'order.paid:order-5',
+                    occurredAt: new Date().toISOString(),
+                    payload: { orderId: 'order-5', storeId: 'store-1' },
+                },
+            },
+        ]);
+        prisma.queueEventLog.findUnique.mockResolvedValue(null);
+        prisma.queueEventLog.upsert.mockResolvedValue({ status: 'PROCESSING' });
+
+        await service.processOnce();
+
+        expect(queueService.publishNotificationSend).toHaveBeenCalledWith({
+            recipientType: 'STORE',
+            recipientId: 'store-1',
+            notificationType: 'ORDER_PAID',
+            orderId: 'order-5',
+            storeId: 'store-1',
+            channel: 'IN_APP',
         });
     });
 
@@ -104,6 +141,84 @@ describe('QueueConsumerService', () => {
             },
         });
         expect(queueService.archive).toHaveBeenCalledWith(undefined, 4);
+    });
+
+    it('records notification send jobs with a dedupe key', async () => {
+        queueService.read.mockResolvedValue([
+            {
+                msg_id: 6,
+                read_ct: 1,
+                enqueued_at: new Date(),
+                vt: new Date(),
+                message: {
+                    eventId: 'event-6',
+                    eventType: 'notification.send',
+                    idempotencyKey: 'notification.send:store-1:ORDER_PAID:order-6',
+                    occurredAt: new Date().toISOString(),
+                    payload: {
+                        recipientType: 'STORE',
+                        recipientId: 'store-1',
+                        notificationType: 'ORDER_PAID',
+                        orderId: 'order-6',
+                        storeId: 'store-1',
+                    },
+                },
+            },
+        ]);
+        prisma.queueEventLog.findUnique.mockResolvedValue(null);
+        prisma.queueEventLog.upsert.mockResolvedValue({ status: 'PROCESSING' });
+        prisma.notificationLog.findUnique.mockResolvedValue(null);
+
+        const result = await service.processOnce();
+
+        expect(result).toEqual({ processedCount: 1 });
+        expect(prisma.notificationLog.upsert).toHaveBeenCalledWith({
+            where: { dedupeKey: 'store-1:ORDER_PAID:order-6' },
+            create: expect.objectContaining({
+                recipientType: 'STORE',
+                recipientId: 'store-1',
+                notificationType: 'ORDER_PAID',
+                orderId: 'order-6',
+                storeId: 'store-1',
+                channel: 'IN_APP',
+                status: 'SKIPPED',
+            }),
+            update: expect.objectContaining({
+                status: 'SKIPPED',
+            }),
+        });
+        expect(queueService.archive).toHaveBeenCalledWith(undefined, 6);
+    });
+
+    it('skips notification jobs that were already sent', async () => {
+        queueService.read.mockResolvedValue([
+            {
+                msg_id: 7,
+                read_ct: 2,
+                enqueued_at: new Date(),
+                vt: new Date(),
+                message: {
+                    eventId: 'event-7',
+                    eventType: 'notification.send',
+                    idempotencyKey: 'notification.send:store-1:ORDER_PAID:order-7',
+                    occurredAt: new Date().toISOString(),
+                    payload: {
+                        recipientType: 'STORE',
+                        recipientId: 'store-1',
+                        notificationType: 'ORDER_PAID',
+                        orderId: 'order-7',
+                    },
+                },
+            },
+        ]);
+        prisma.queueEventLog.findUnique.mockResolvedValue(null);
+        prisma.queueEventLog.upsert.mockResolvedValue({ status: 'PROCESSING' });
+        prisma.notificationLog.findUnique.mockResolvedValue({ status: 'SENT' });
+
+        await service.processOnce();
+
+        expect(prisma.notificationLog.upsert).not.toHaveBeenCalled();
+        expect(queueService.archive).toHaveBeenCalledWith(undefined, 7);
     });
 
     it('archives duplicate messages that already succeeded', async () => {

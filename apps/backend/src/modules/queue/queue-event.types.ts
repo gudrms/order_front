@@ -41,3 +41,24 @@ export interface PosSendOrderEventPayload extends QueueEventPayload {
     orderId: string;
     storeId?: string;
 }
+
+export type NotificationRecipientType = 'CUSTOMER' | 'STORE' | 'ADMIN';
+
+export type NotificationType =
+    | 'ORDER_PAID'
+    | 'ORDER_CONFIRMED'
+    | 'ORDER_CANCELLED'
+    | 'DELIVERY_STATUS_CHANGED'
+    | 'POS_SYNC_FAILED';
+
+export interface NotificationSendEventPayload extends QueueEventPayload {
+    recipientType: NotificationRecipientType;
+    recipientId?: string;
+    notificationType: NotificationType;
+    orderId?: string;
+    storeId?: string;
+    channel?: 'IN_APP' | 'EMAIL' | 'PUSH' | 'SMS';
+    title?: string;
+    body?: string;
+    data?: QueueEventPayload;
+}
