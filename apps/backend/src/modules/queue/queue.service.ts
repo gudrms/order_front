@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import {
     BackendQueueEvent,
     OrderPaidEventPayload,
+    PosSendOrderEventPayload,
     QueueEventPayload,
     QueueEventType,
     QueueMessageRecord,
@@ -40,6 +41,12 @@ export class QueueService {
     async publishOrderPaid(payload: OrderPaidEventPayload): Promise<void> {
         await this.publish('order.paid', payload, {
             idempotencyKey: `order.paid:${payload.orderId}`,
+        });
+    }
+
+    async publishPosSendOrder(payload: PosSendOrderEventPayload): Promise<void> {
+        await this.publish('pos.send_order', payload, {
+            idempotencyKey: `pos.send_order:${payload.orderId}`,
         });
     }
 

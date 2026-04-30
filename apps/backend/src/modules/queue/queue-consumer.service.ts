@@ -38,9 +38,7 @@ export class QueueConsumerService {
                     continue;
                 }
 
-                this.logger.log(
-                    `Queue event received: ${event.eventType} (${event.idempotencyKey}) msg_id=${record.msg_id} read_ct=${record.read_ct}`,
-                );
+                await this.dispatch(event);
 
                 await this.queueService.archive(options.queueName, Number(record.msg_id));
                 await this.markSucceeded(event.idempotencyKey);
@@ -62,6 +60,51 @@ export class QueueConsumerService {
         }
 
         return record.message;
+    }
+
+    private async dispatch(event: BackendQueueEvent<QueueEventPayload>) {
+        this.logger.log(`Queue event received: ${event.eventType} (${event.idempotencyKey})`);
+
+        if (event.eventType === 'order.paid') {
+            await this.handleOrderPaid(event);
+            return;
+        }
+
+        if (event.eventType === 'pos.send_order') {
+            await this.handlePosSendOrder(event);
+        }
+    }
+
+    private async handleOrderPaid(event: BackendQueueEvent<QueueEventPayload>) {
+        const orderId = String(event.payload.orderId || '');
+        if (!orderId) {
+            throw new Error('order.paid payload requires orderId');
+        }
+
+        await this.queueService.publishPosSendOrder({
+            orderId,
+            storeId: typeof event.payload.storeId === 'string' ? event.payload.storeId : undefined,
+        });
+    }
+
+    private async handlePosSendOrder(event: BackendQueueEvent<QueueEventPayload>) {
+        const orderId = String(event.payload.orderId || '');
+        if (!orderId) {
+            throw new Error('pos.send_order payload requires orderId');
+        }
+
+        await this.prisma.order.updateMany({
+            where: {
+                id: orderId,
+                status: 'PAID',
+                tossOrderId: null,
+                posSyncStatus: { in: ['PENDING', 'FAILED'] },
+            },
+            data: {
+                posSyncStatus: 'PENDING',
+                posSyncUpdatedAt: new Date(),
+            },
+        });
     }
 
     private async startProcessing(

@@ -62,7 +62,7 @@
 - [x] producer/consumer interface를 가진 백엔드 `QueueModule`을 추가한다.
 - [x] 주문, 결제, POS, 알림, 배달 이벤트 payload 타입을 정의한다.
 - [x] 결제/주문 흐름의 DB commit 이후 producer 호출을 추가한다.
-- [ ] POS 전송 worker 처리를 추가한다.
+- [x] POS 전송 worker 처리를 추가한다.
 - [ ] 알림 전송 worker 처리를 추가한다.
 - [ ] retry/backoff 정책과 최대 시도 횟수 정책을 추가한다.
 - [x] 실패 이벤트 로깅 또는 archive 처리를 추가한다.
@@ -83,7 +83,7 @@
 
 ## 2차 PR 범위
 
-- [ ] POS 전송 side effect를 queue consumer로 이동한다.
+- [x] POS 전송 side effect를 queue consumer로 이동한다.
 - [x] retry와 실패 상태를 추가한다.
 - [ ] 관리자에서 POS 전송 실패를 볼 수 있게 한다.
 - [ ] 필요하면 수동 재시도 경로를 추가한다.
