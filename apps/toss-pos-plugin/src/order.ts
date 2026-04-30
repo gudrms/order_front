@@ -1,5 +1,5 @@
 import { posPluginSdk } from '@tossplace/pos-plugin-sdk';
-import type { PluginOrderDto } from '@tossplace/pos-plugin-sdk';
+import type { PluginOrderDto, PluginPaymentDto } from '@tossplace/pos-plugin-sdk';
 import { API_URL, posApiHeaders } from './config';
 import type { BackendOrder, BackendPayment } from './types';
 
@@ -111,22 +111,21 @@ export async function processOrder(order: BackendOrder) {
 }
 
 async function registerExternalPayment(tossOrderId: string, payment: BackendPayment) {
-    // PluginPaymentDto<EXTERNAL>: 배달앱이 토스페이먼츠로 이미 결제 완료 → POS에 EXTERNAL 원장 생성
-    await posPluginSdk.payment.add(
-        { id: tossOrderId },
-        {
-            sourceType: 'EXTERNAL',
-            orderId: tossOrderId,
-            amountMoney: payment.amountMoney,
-            taxMoney: payment.taxMoney,
-            supplyMoney: payment.supplyMoney,
-            tipMoney: payment.tipMoney,
-            taxExemptMoney: payment.taxExemptMoney,
-            approvedNo: payment.approvedNo,
-            approvedAt: payment.approvedAt,
-            paymentKey: payment.paymentKey,
-        } as any,
-    );
+    // PluginPaymentDto<EXTERNAL>: 배달앱이 토스페이먼츠로 이미 결제 완료 → POS에 EXTERNAL 원장 생성.
+    // 명시적 타입을 박아 SDK 시그니처 변경 시 컴파일 타임에 잡히도록 한다.
+    const dto: PluginPaymentDto<'EXTERNAL'> = {
+        sourceType: 'EXTERNAL',
+        orderId: tossOrderId,
+        amountMoney: payment.amountMoney,
+        taxMoney: payment.taxMoney,
+        supplyMoney: payment.supplyMoney,
+        tipMoney: payment.tipMoney,
+        taxExemptMoney: payment.taxExemptMoney,
+        approvedNo: payment.approvedNo,
+        approvedAt: payment.approvedAt,
+        paymentKey: payment.paymentKey,
+    };
+    await posPluginSdk.payment.add({ id: tossOrderId }, dto);
 }
 
 /**
@@ -199,8 +198,9 @@ export async function pollOrders() {
 export function setupOrderCancelListener() {
     // SDK 0.0.16+: order.on('cancel')는 deprecated. payment.on('cancel')로 대체.
     // 분할 결제 시 cancel이 결제마다 발생하므로, 완납 취소 여부는 백엔드가 판정.
+    // PluginPayment는 PluginPaymentBase를 공유 → orderId는 항상 안전하게 접근 가능.
     posPluginSdk.payment.on('cancel', async (payment) => {
-        const tossOrderId = (payment as any).orderId;
+        const tossOrderId = payment.orderId;
         if (!tossOrderId) {
             console.warn('payment.on(cancel) without orderId, skipping', payment);
             return;
