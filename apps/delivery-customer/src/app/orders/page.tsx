@@ -113,7 +113,7 @@ export default function OrdersPage() {
                             <div
                                 key={order.id}
                                 className={`bg-white rounded-xl p-4 cursor-pointer hover:shadow-md transition-shadow border border-gray-100 ${isCancelled ? 'opacity-75' : ''}`}
-                                onClick={() => router.push(`/order-detail?id=${order.id}`)}
+                                onClick={() => router.push(`/orders/${order.id}`)}
                             >
                                 <div className="flex items-start justify-between mb-3">
                                     <div>
