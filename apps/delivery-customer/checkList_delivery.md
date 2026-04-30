@@ -57,7 +57,7 @@
 
 ## 기술 부채 및 개선 사항 (Technical Debt)
 
-- [ ] **UX 개선**: `window.prompt`를 사용한 주문 취소 로직을 커스텀 모달(Modal)이나 Bottom Sheet UI로 리팩토링
+- [x] **UX 개선**: `window.prompt`를 사용한 주문 취소 로직을 Bottom Sheet UI로 교체 (사유 선택 + 직접입력)
 - [ ] **UX 개선**: 데이터 로딩 시 단순 스피너 대신 Skeleton UI 적용하여 체감 대기시간(Perceived Performance) 최적화
 - [x] `test-user-id` 제거 — 주소/찜 API 백엔드에 SupabaseGuard 적용, 프론트 apiClient로 전환
 - [ ] **라우팅/인가 구조 개선**: 컴포넌트 내부에 산재된 Auth Check 로직을 Next.js Middleware(`middleware.ts`)로 추상화
@@ -85,7 +85,7 @@
 - [x] 결제 승인 전 고객 주문 취소 UI 연결
 - [x] 결제 완료 후 관리자 전액 취소/부분 환불 정책 구현
 - [x] 배달 상태 변경 API 연결
-- [ ] 취소/환불 상태를 주문내역 카드에도 노출
+- [x] 취소/환불 상태를 주문내역 카드에도 노출 (REFUNDED/PARTIAL_REFUNDED/CANCELLED 배지)
 
 ### P2: 사용자 기능
 
