@@ -3,6 +3,7 @@
 import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AlertTriangle, ChevronLeft, Receipt, X, XCircle } from 'lucide-react';
+import { OrderDetailSkeleton } from '@/components/ui/Skeleton';
 import { OrderStatusTracker } from '@/components/order/OrderStatusTracker';
 import { useCancelOrder, useOrder } from '@/hooks/queries/useOrders';
 import { useAuth } from '@/contexts/AuthContext';
@@ -116,7 +117,20 @@ function OrderDetailContent() {
     const [showCancelModal, setShowCancelModal] = useState(false);
     const [cancelError, setCancelError] = useState<string | null>(null);
 
-    if (isAuthLoading) return <LoadingScreen />;
+    if (isAuthLoading || isLoading) {
+        return (
+            <main className="min-h-screen bg-gray-50 pb-20">
+                <header className="sticky top-0 z-50 bg-white border-b border-gray-100">
+                    <div className="flex items-center justify-between px-4 h-14">
+                        <ChevronLeft size={24} className="text-gray-300" />
+                        <div className="w-20 h-5 rounded bg-gray-200 animate-pulse" />
+                        <div className="w-10" />
+                    </div>
+                </header>
+                <OrderDetailSkeleton />
+            </main>
+        );
+    }
 
     if (!user) {
         return (
@@ -136,8 +150,6 @@ function OrderDetailContent() {
             </main>
         );
     }
-
-    if (isLoading) return <LoadingScreen />;
 
     if (!order) {
         return (
