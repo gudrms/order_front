@@ -62,6 +62,8 @@
 - [x] `test-user-id` 제거 — 주소/찜 API 백엔드에 SupabaseGuard 적용, 프론트 apiClient로 전환
 - [x] **라우팅/인가 구조 개선**: 컴포넌트 내부에 산재된 Auth Check 로직을 Next.js Middleware(`middleware.ts`)로 추상화
 - [x] **라우팅 구조 개선**: 주문 상세 페이지 URL을 쿼리 파라미터(`?id=`) 방식에서 동적 라우팅(`/orders/[id]`)으로 변경
+- [x] **배포 구조 개선**: `output: 'export'` 제거 후 `/orders/[id]` 동적 라우트를 Next 서버/원격 WebView 기준으로 유지
+- [x] **Capacitor 기준선 정리**: `CAPACITOR_SERVER_URL` 기반 원격 WebView 설정과 `cap:sync` 스크립트 정리
 - [ ] **네이티브 기능 연동**: Capacitor 기반 백그라운드 푸시 알림(FCM / APNs) 연동하여 앱 종료 시에도 배달 상태 알림 수신
 
 ## 남은 일
@@ -101,6 +103,8 @@
 - [ ] Capacitor 기반 Android `.aab` 빌드 및 구글 플레이스토어 심사 등록 (스토어 검색 최적화)
 - [ ] Capacitor 기반 iOS `.ipa` 빌드 및 애플 앱스토어 심사 등록
 - [ ] Vercel 배포를 통한 핫 푸시(Hot Push) 무심사 업데이트 파이프라인 검증
+- [x] Next.js `output: 'export'` 제거 및 주문상세 동적 라우트 빌드 확인
+- [x] Capacitor 원격 WebView URL 설정값 `CAPACITOR_SERVER_URL` 추가
 - [ ] `ReferenceError: location is not defined` 빌드 로그 원인 제거
 - [ ] manifest icon 경로와 실제 asset 정합성 확인
 - [ ] Service Worker 캐싱 전략 검증
@@ -111,6 +115,7 @@
 - [x] `apps/backend`: `tsc --noEmit`
 - [x] `packages/shared`: `tsc --noEmit`
 - [x] `apps/delivery-customer`: `tsc --noEmit`
+- [x] `apps/delivery-customer`: `next build` 통과 및 `/orders/[id]` 동적 라우트 확인
 - [x] `apps/backend`: `vitest run src/modules/orders/orders.service.spec.ts` 17 tests 통과
 - [x] `apps/backend`: `vitest run src/modules/auth/auth.service.spec.ts` 5 tests 통과
 - [x] `apps/backend`: `vitest run src/modules/payments/payments.service.spec.ts` 8 tests 통과
@@ -124,7 +129,7 @@
 
 ## 다음 순서
 
-1. 주소 CRUD를 로그인 사용자 기준 실제 API로 전환
-2. 찜/즐겨찾기를 로그인 사용자 기준 실제 API로 전환
-3. Toss 테스트 카드결제 성공/실패/환불 E2E
+1. Toss 테스트 카드결제 성공/실패/환불 E2E
+2. Capacitor 원격 WebView 실기기 실행과 `/orders/[id]` 딥링크 진입 검증
+3. `ReferenceError: location is not defined` 빌드 로그 원인 제거
 4. Sentry/PWA E2E 검증
