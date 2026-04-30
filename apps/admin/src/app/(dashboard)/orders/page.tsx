@@ -30,6 +30,12 @@ import { useRealtimeOrders } from '@/hooks/useRealtimeOrders';
 import { OrderReceipt } from '@/components/OrderReceipt';
 
 type BadgeVariant = React.ComponentProps<typeof Badge>['variant'];
+type RefundMode = 'full' | 'partial';
+type RefundDialogState = {
+  order: Order;
+  mode: RefundMode;
+  remainingAmount: number;
+};
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -100,6 +106,7 @@ export default function OrdersPage() {
   const queryClient = useQueryClient();
   const [printOrder, setPrintOrder] = useState<Order | null>(null);
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
+  const [refundDialog, setRefundDialog] = useState<RefundDialogState | null>(null);
   useRealtimeOrders(storeId || '');
 
   const { data: orders = [], isLoading: isOrdersLoading } = useQuery<Order[]>({
@@ -122,6 +129,7 @@ export default function OrdersPage() {
       );
     },
     onSuccess: () => {
+      setRefundDialog(null);
       queryClient.invalidateQueries({ queryKey: ['admin-orders', storeId] });
     },
   });
@@ -313,7 +321,7 @@ export default function OrdersPage() {
                       </button>
                       {renderOrderAction(order, updateStatusMutation.mutate)}
                       {renderDeliveryAction(order, updateDeliveryStatusMutation.mutate)}
-                      {renderPaymentCancelAction(order, cancelPaymentMutation.mutate)}
+                      {renderPaymentCancelAction(order, setRefundDialog)}
                       <button
                         onClick={() => setPrintOrder(order)}
                         className="inline-flex items-center gap-1 rounded-md border border-gray-200 px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-50"
@@ -361,6 +369,22 @@ export default function OrdersPage() {
             <OrderReceipt order={printOrder} />
           </div>
         </div>
+      )}
+
+      {refundDialog && (
+        <RefundDialog
+          key={`${refundDialog.order.id}-${refundDialog.mode}`}
+          dialog={refundDialog}
+          isSubmitting={cancelPaymentMutation.isPending}
+          onClose={() => setRefundDialog(null)}
+          onSubmit={({ cancelReason, cancelAmount }) => {
+            cancelPaymentMutation.mutate({
+              orderId: refundDialog.order.id,
+              cancelReason,
+              cancelAmount,
+            });
+          }}
+        />
       )}
     </div>
   );
@@ -499,6 +523,133 @@ function DetailItem({ label, value }: { label: string; value: React.ReactNode })
 
 function formatOptionalDate(value?: Date | string | null) {
   return value ? formatDate(value) : '-';
+}
+
+function RefundDialog({
+  dialog,
+  isSubmitting,
+  onClose,
+  onSubmit,
+}: {
+  dialog: RefundDialogState;
+  isSubmitting: boolean;
+  onClose: () => void;
+  onSubmit: (payload: { cancelReason: string; cancelAmount?: number }) => void;
+}) {
+  const isPartial = dialog.mode === 'partial';
+  const [amountText, setAmountText] = useState(isPartial ? '' : String(dialog.remainingAmount));
+  const [reason, setReason] = useState(isPartial ? '관리자 부분 환불 처리' : '고객 요청으로 주문을 취소합니다.');
+  const [error, setError] = useState<string | null>(null);
+
+  const parsedAmount = Number(amountText.replace(/[^0-9]/g, ''));
+
+  const handleSubmit = () => {
+    const trimmedReason = reason.trim();
+    if (!trimmedReason) {
+      setError('취소/환불 사유를 입력해주세요.');
+      return;
+    }
+
+    if (isPartial) {
+      if (!Number.isFinite(parsedAmount) || parsedAmount <= 0 || parsedAmount > dialog.remainingAmount) {
+        setError('환불 금액은 남은 결제금액 이하로 입력해주세요.');
+        return;
+      }
+
+      onSubmit({ cancelReason: trimmedReason, cancelAmount: parsedAmount });
+      return;
+    }
+
+    onSubmit({ cancelReason: trimmedReason });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="w-full max-w-lg rounded-xl bg-white shadow-xl">
+        <div className="border-b border-gray-100 px-5 py-4">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h3 className="text-lg font-bold text-gray-900">
+                {isPartial ? '부분 환불' : '전액 취소'}
+              </h3>
+              <p className="mt-1 text-sm text-gray-500">
+                {dialog.order.orderNumber} · 환불 가능 {formatCurrency(dialog.remainingAmount)}
+              </p>
+            </div>
+            <button
+              onClick={onClose}
+              disabled={isSubmitting}
+              className="rounded-md px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+              aria-label="닫기"
+            >
+              닫기
+            </button>
+          </div>
+        </div>
+
+        <div className="space-y-4 px-5 py-5">
+          {isPartial && (
+            <label className="block">
+              <span className="text-sm font-medium text-gray-700">환불 금액</span>
+              <div className="mt-2 flex items-center rounded-lg border border-gray-200 px-3 focus-within:border-gray-900">
+                <input
+                  value={amountText}
+                  onChange={(event) => {
+                    setAmountText(event.target.value);
+                    setError(null);
+                  }}
+                  inputMode="numeric"
+                  placeholder="환불할 금액"
+                  className="h-11 min-w-0 flex-1 border-0 text-sm outline-none"
+                />
+                <span className="text-sm text-gray-400">원</span>
+              </div>
+              <p className="mt-1 text-xs text-gray-400">
+                최대 {formatCurrency(dialog.remainingAmount)}까지 환불할 수 있습니다.
+              </p>
+            </label>
+          )}
+
+          <label className="block">
+            <span className="text-sm font-medium text-gray-700">사유</span>
+            <textarea
+              value={reason}
+              onChange={(event) => {
+                setReason(event.target.value);
+                setError(null);
+              }}
+              rows={4}
+              className="mt-2 w-full resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-gray-900"
+              placeholder="취소/환불 사유"
+            />
+          </label>
+
+          {error && (
+            <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
+              {error}
+            </div>
+          )}
+        </div>
+
+        <div className="flex justify-end gap-2 border-t border-gray-100 px-5 py-4">
+          <button
+            onClick={onClose}
+            disabled={isSubmitting}
+            className="rounded-md border border-gray-200 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            취소
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+            className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-red-300"
+          >
+            {isSubmitting ? '처리 중...' : isPartial ? '부분 환불' : '전액 취소'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function SummaryCard({ label, value }: { label: string; value: number }) {
@@ -683,69 +834,39 @@ function renderDeliveryAction(
 
 function renderPaymentCancelAction(
   order: Order,
-  cancelPayment: (payload: {
-    orderId: string;
-    cancelReason: string;
-    cancelAmount?: number;
-  }) => void
+  openRefundDialog: (dialog: RefundDialogState) => void
 ) {
   if (!['PAID', 'PARTIAL_REFUNDED'].includes(order.paymentStatus || '')) {
     return null;
   }
 
-  const payment = order.payments?.find((candidate) => ['PAID', 'PARTIAL_REFUNDED'].includes(candidate.status));
-  if (!payment) return null;
-
-  const paidAmount = payment.approvedAmount || payment.amount;
-  const cancelledAmount = payment.cancelledAmount || 0;
-  const remainingAmount = paidAmount - cancelledAmount;
+  const remainingAmount = getRefundableAmount(order);
   if (remainingAmount <= 0) return null;
-
-  const handleFullCancel = () => {
-    const reason = window.prompt('전액 취소/환불 사유를 입력해주세요.', '고객 요청으로 주문을 취소합니다.');
-    if (!reason) return;
-
-    cancelPayment({
-      orderId: order.id,
-      cancelReason: reason,
-    });
-  };
-
-  const handlePartialCancel = () => {
-    const amountText = window.prompt(`부분 환불 금액을 입력해주세요. 남은 결제금액: ${remainingAmount.toLocaleString()}원`);
-    if (!amountText) return;
-
-    const cancelAmount = Number(amountText.replace(/[^0-9]/g, ''));
-    if (!Number.isFinite(cancelAmount) || cancelAmount <= 0 || cancelAmount > remainingAmount) {
-      window.alert('환불 금액을 다시 확인해주세요.');
-      return;
-    }
-
-    const reason = window.prompt('부분 환불 사유를 입력해주세요.', '관리자 부분 환불 처리');
-    if (!reason) return;
-
-    cancelPayment({
-      orderId: order.id,
-      cancelReason: reason,
-      cancelAmount,
-    });
-  };
 
   return (
     <>
       <button
-        onClick={handleFullCancel}
+        onClick={() => openRefundDialog({ order, mode: 'full', remainingAmount })}
         className="inline-flex items-center gap-1 rounded-md bg-red-600 px-3 py-1.5 text-xs text-white hover:bg-red-700"
       >
         <XCircle size={14} />
         전액 취소
       </button>
       <button
-        onClick={handlePartialCancel}
+        onClick={() => openRefundDialog({ order, mode: 'partial', remainingAmount })}
         className="inline-flex items-center gap-1 rounded-md border border-red-200 px-3 py-1.5 text-xs text-red-600 hover:bg-red-50"
       >
         부분 환불
       </button>
     </>
   );
+}
+
+function getRefundableAmount(order: Order) {
+  const payment = order.payments?.find((candidate) => ['PAID', 'PARTIAL_REFUNDED'].includes(candidate.status));
+  if (!payment) return 0;
+
+  const paidAmount = payment.approvedAmount || payment.amount;
+  const cancelledAmount = payment.cancelledAmount || 0;
+  return paidAmount - cancelledAmount;
 }
