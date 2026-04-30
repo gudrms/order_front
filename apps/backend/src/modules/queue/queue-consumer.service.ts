@@ -1,7 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { BackendQueueEvent, QueueEventPayload, QueueMessageRecord } from './queue-event.types';
+import {
+    BackendQueueEvent,
+    NotificationSendEventPayload,
+    QueueEventPayload,
+    QueueMessageRecord,
+} from './queue-event.types';
 import { QueueService } from './queue.service';
 
 @Injectable()
@@ -72,6 +77,11 @@ export class QueueConsumerService {
 
         if (event.eventType === 'pos.send_order') {
             await this.handlePosSendOrder(event);
+            return;
+        }
+
+        if (event.eventType === 'notification.send') {
+            await this.handleNotificationSend(event as BackendQueueEvent<NotificationSendEventPayload>);
         }
     }
 
@@ -85,6 +95,17 @@ export class QueueConsumerService {
             orderId,
             storeId: typeof event.payload.storeId === 'string' ? event.payload.storeId : undefined,
         });
+
+        if (typeof event.payload.storeId === 'string') {
+            await this.queueService.publishNotificationSend({
+                recipientType: 'STORE',
+                recipientId: event.payload.storeId,
+                notificationType: 'ORDER_PAID',
+                orderId,
+                storeId: event.payload.storeId,
+                channel: 'IN_APP',
+            });
+        }
     }
 
     private async handlePosSendOrder(event: BackendQueueEvent<QueueEventPayload>) {
@@ -103,6 +124,50 @@ export class QueueConsumerService {
             data: {
                 posSyncStatus: 'PENDING',
                 posSyncUpdatedAt: new Date(),
+            },
+        });
+    }
+
+    private async handleNotificationSend(event: BackendQueueEvent<NotificationSendEventPayload>) {
+        const payload = event.payload;
+        const dedupeKey = this.buildNotificationDedupeKey(payload);
+
+        if (!payload.recipientType || !payload.notificationType) {
+            throw new Error('notification.send payload requires recipientType and notificationType');
+        }
+
+        const existing = await this.prisma.notificationLog.findUnique({
+            where: { dedupeKey },
+        });
+
+        if (existing?.status === 'SENT' || existing?.status === 'SKIPPED') {
+            return;
+        }
+
+        await this.prisma.notificationLog.upsert({
+            where: { dedupeKey },
+            create: {
+                recipientType: payload.recipientType,
+                recipientId: payload.recipientId,
+                notificationType: payload.notificationType,
+                orderId: payload.orderId,
+                storeId: payload.storeId,
+                channel: payload.channel || 'IN_APP',
+                dedupeKey,
+                status: 'SKIPPED',
+                payload: this.toJsonPayload(payload),
+                lastError: 'Notification provider is not configured yet',
+            },
+            update: {
+                recipientType: payload.recipientType,
+                recipientId: payload.recipientId,
+                notificationType: payload.notificationType,
+                orderId: payload.orderId,
+                storeId: payload.storeId,
+                channel: payload.channel || 'IN_APP',
+                status: 'SKIPPED',
+                payload: this.toJsonPayload(payload),
+                lastError: 'Notification provider is not configured yet',
             },
         });
     }
@@ -189,5 +254,12 @@ export class QueueConsumerService {
         }
 
         return message as Prisma.InputJsonValue;
+    }
+
+    private buildNotificationDedupeKey(payload: NotificationSendEventPayload): string {
+        const recipientId = payload.recipientId || payload.storeId || payload.recipientType;
+        const subjectId = payload.orderId || payload.storeId || 'global';
+
+        return `${recipientId}:${payload.notificationType}:${subjectId}`;
     }
 }

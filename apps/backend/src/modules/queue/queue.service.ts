@@ -3,6 +3,7 @@ import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import {
     BackendQueueEvent,
+    NotificationSendEventPayload,
     OrderPaidEventPayload,
     PosSendOrderEventPayload,
     QueueEventPayload,
@@ -50,6 +51,14 @@ export class QueueService {
         });
     }
 
+    async publishNotificationSend(payload: NotificationSendEventPayload): Promise<void> {
+        const dedupeKey = this.buildNotificationDedupeKey(payload);
+
+        await this.publish('notification.send', payload, {
+            idempotencyKey: `notification.send:${dedupeKey}`,
+        });
+    }
+
     async read(
         queueName = this.defaultQueueName,
         visibilityTimeoutSeconds = 60,
@@ -84,5 +93,12 @@ export class QueueService {
                 `Queue publish failed for ${event.eventType} (${event.idempotencyKey}): ${error.message}`,
             );
         }
+    }
+
+    private buildNotificationDedupeKey(payload: NotificationSendEventPayload): string {
+        const recipientId = payload.recipientId || payload.storeId || payload.recipientType;
+        const subjectId = payload.orderId || payload.storeId || 'global';
+
+        return `${recipientId}:${payload.notificationType}:${subjectId}`;
     }
 }

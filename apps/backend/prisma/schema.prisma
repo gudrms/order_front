@@ -102,6 +102,27 @@ enum PosSyncStatus {
   SKIPPED
 }
 
+enum NotificationRecipientType {
+  CUSTOMER
+  STORE
+  ADMIN
+}
+
+enum NotificationType {
+  ORDER_PAID
+  ORDER_CONFIRMED
+  ORDER_CANCELLED
+  DELIVERY_STATUS_CHANGED
+  POS_SYNC_FAILED
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+  SKIPPED
+}
+
 /// 세션 상태
 enum SessionStatus {
   ACTIVE       // 활성 (손님 있음)
@@ -742,6 +763,29 @@ model QueueEventLog {
   @@index([queueName])
   @@index([messageId])
   @@index([eventType, status])
+  @@index([status, updatedAt])
+}
+
+model NotificationLog {
+  id               String                    @id @default(uuid())
+  recipientType    NotificationRecipientType
+  recipientId      String?
+  notificationType NotificationType
+  orderId          String?
+  storeId          String?
+  channel          String                    @default("IN_APP")
+  dedupeKey        String                    @unique
+  status           NotificationStatus        @default(PENDING)
+  payload          Json?
+  lastError        String?                   @db.Text
+  sentAt           DateTime?
+  createdAt        DateTime                  @default(now())
+  updatedAt        DateTime                  @updatedAt
+
+  @@index([recipientType, recipientId])
+  @@index([notificationType, status])
+  @@index([orderId])
+  @@index([storeId])
   @@index([status, updatedAt])
 }
 
