@@ -8,6 +8,7 @@ import type { MenuManagementMode } from '@order/shared';
 import { useAdminStore } from '@/contexts/AdminStoreContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { canCreateStore } from '@/lib/adminPermissions';
+import { getHttpErrorMessage } from '@/lib/httpError';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -15,6 +16,7 @@ export default function StoreSettingsPage() {
   const { stores, selectedStore, selectedStoreId, setSelectedStoreId, isLoading, authHeaders, refetchStores } = useAdminStore();
   const { profile } = useAuth();
   const isAdmin = canCreateStore(profile);
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [form, setForm] = useState({
     name: '',
     branchName: '',
@@ -65,6 +67,13 @@ export default function StoreSettingsPage() {
     },
     onSuccess: async () => {
       await refetchStores();
+      setFeedback({ type: 'success', message: '매장 설정을 저장했습니다.' });
+    },
+    onError: (error) => {
+      setFeedback({
+        type: 'error',
+        message: getHttpErrorMessage(error, '매장 설정 저장에 실패했습니다.'),
+      });
     },
   });
 
@@ -78,6 +87,13 @@ export default function StoreSettingsPage() {
     },
     onSuccess: async () => {
       await refetchStores();
+      setFeedback({ type: 'success', message: '초대 코드를 재발급했습니다.' });
+    },
+    onError: (error) => {
+      setFeedback({
+        type: 'error',
+        message: getHttpErrorMessage(error, '초대 코드 재발급에 실패했습니다.'),
+      });
     },
   });
 
@@ -102,6 +118,14 @@ export default function StoreSettingsPage() {
         <h2 className="text-2xl font-bold text-gray-800">매장 관리</h2>
         <p className="mt-1 text-sm text-gray-500">매장 기본 정보, 배달 운영, 메뉴 관리 방식을 설정합니다.</p>
       </div>
+
+      {feedback && (
+        <FeedbackAlert
+          type={feedback.type}
+          message={feedback.message}
+          onClose={() => setFeedback(null)}
+        />
+      )}
 
       {stores.length > 1 && (
         <section className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
@@ -207,6 +231,38 @@ export default function StoreSettingsPage() {
       {isAdmin && (
         <CreateStoreSection authHeaders={authHeaders} onCreated={refetchStores} />
       )}
+    </div>
+  );
+}
+
+function FeedbackAlert({
+  type,
+  message,
+  onClose,
+}: {
+  type: 'success' | 'error';
+  message: string;
+  onClose: () => void;
+}) {
+  const isSuccess = type === 'success';
+
+  return (
+    <div
+      className={`flex items-center justify-between gap-3 rounded-xl border px-4 py-3 text-sm ${
+        isSuccess
+          ? 'border-green-200 bg-green-50 text-green-800'
+          : 'border-red-200 bg-red-50 text-red-700'
+      }`}
+      data-testid="admin-store-feedback"
+    >
+      <span>{message}</span>
+      <button
+        type="button"
+        onClick={onClose}
+        className="rounded px-2 py-1 text-xs font-semibold opacity-70 hover:bg-white/60 hover:opacity-100"
+      >
+        닫기
+      </button>
     </div>
   );
 }
