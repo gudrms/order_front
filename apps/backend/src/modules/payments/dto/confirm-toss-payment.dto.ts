@@ -66,6 +66,18 @@ export class ExpirePendingTossPaymentsDto {
     olderThanMinutes?: number;
 }
 
+export class ReconcileTossPaymentsDto {
+    @ApiPropertyOptional({
+        description: '한 번에 큐에 등록할 최대 결제 수. 기본값은 50입니다.',
+        example: 50,
+        minimum: 1,
+    })
+    @IsInt()
+    @Min(1)
+    @IsOptional()
+    limit?: number;
+}
+
 export class CancelTossPaymentDto {
     @ApiProperty({
         description: '취소/환불 사유',

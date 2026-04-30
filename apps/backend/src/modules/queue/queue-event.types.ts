@@ -42,6 +42,11 @@ export interface PosSendOrderEventPayload extends QueueEventPayload {
     storeId?: string;
 }
 
+export interface PaymentReconcileEventPayload extends QueueEventPayload {
+    paymentId?: string;
+    providerOrderId?: string;
+}
+
 export type NotificationRecipientType = 'CUSTOMER' | 'STORE' | 'ADMIN';
 
 export type NotificationType =

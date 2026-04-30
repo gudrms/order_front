@@ -3,7 +3,7 @@ import { assertCanManageStore } from '../../common/auth/permissions';
 import { PrismaService } from '../prisma/prisma.service';
 import { TossApiService } from '../integrations/toss/toss-api.service';
 import { QueueService } from '../queue';
-import { ConfirmTossPaymentDto, ExpirePendingTossPaymentsDto, FailTossPaymentDto, CancelTossPaymentDto } from './dto/confirm-toss-payment.dto';
+import { ConfirmTossPaymentDto, ExpirePendingTossPaymentsDto, FailTossPaymentDto, CancelTossPaymentDto, ReconcileTossPaymentsDto } from './dto/confirm-toss-payment.dto';
 
 @Injectable()
 export class PaymentsService {
@@ -238,6 +238,29 @@ export class PaymentsService {
         return {
             expiredCount: expiredPayments.length,
             orderIds: expiredPayments.map((payment) => payment.orderId),
+        };
+    }
+
+    async reconcileTossPayments(dto: ReconcileTossPaymentsDto = {}) {
+        const limit = dto.limit || 50;
+        const payments = await this.prisma.payment.findMany({
+            where: {
+                provider: 'TOSS_PAYMENTS',
+                providerOrderId: { not: null },
+                status: { in: ['READY', 'PENDING'] },
+            },
+            orderBy: { requestedAt: 'asc' },
+            take: limit,
+        });
+
+        await Promise.all(payments.map((payment) => this.queueService?.publishPaymentReconcile({
+            paymentId: payment.id,
+            providerOrderId: payment.providerOrderId || undefined,
+        })));
+
+        return {
+            queuedCount: payments.length,
+            paymentIds: payments.map((payment) => payment.id),
         };
     }
 

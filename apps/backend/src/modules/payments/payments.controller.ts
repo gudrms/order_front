@@ -1,6 +1,6 @@
 import { Body, Controller, Param, Post, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { ConfirmTossPaymentDto, ExpirePendingTossPaymentsDto, FailTossPaymentDto, CancelTossPaymentDto } from './dto/confirm-toss-payment.dto';
+import { ConfirmTossPaymentDto, ExpirePendingTossPaymentsDto, FailTossPaymentDto, CancelTossPaymentDto, ReconcileTossPaymentsDto } from './dto/confirm-toss-payment.dto';
 import { PaymentsService } from './payments.service';
 import { SupabaseGuard } from '../auth/guards/supabase.guard';
 import { CurrentUser } from '../../common/decorators/user.decorator';
@@ -47,6 +47,18 @@ export class PaymentsController {
     @ApiResponse({ status: 201, description: '만료 주문 정리 완료' })
     async expirePendingTossPayments(@Body() dto: ExpirePendingTossPaymentsDto = {}) {
         return this.paymentsService.expirePendingTossPayments(dto);
+    }
+
+    @Post('toss/reconcile')
+    @UsePipes(new ValidationPipe({ transform: true }))
+    @ApiOperation({
+        summary: 'Toss Payments 상태 불일치 복구 큐 등록',
+        description: 'Toss 승인 이후 로컬 DB 확정이 실패했을 수 있는 결제를 찾아 payment.reconcile 큐 작업으로 등록합니다.',
+    })
+    @ApiBody({ type: ReconcileTossPaymentsDto, required: false })
+    @ApiResponse({ status: 201, description: '복구 큐 등록 완료' })
+    async reconcileTossPayments(@Body() dto: ReconcileTossPaymentsDto = {}) {
+        return this.paymentsService.reconcileTossPayments(dto);
     }
 
     @Post('orders/:orderId/toss/cancel')

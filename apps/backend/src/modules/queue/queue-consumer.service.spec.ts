@@ -5,6 +5,7 @@ describe('QueueConsumerService', () => {
     let service: QueueConsumerService;
     let queueService: any;
     let prisma: any;
+    let tossApiService: any;
 
     beforeEach(() => {
         queueService = {
@@ -13,6 +14,7 @@ describe('QueueConsumerService', () => {
             publishPosSendOrder: vi.fn(),
             publishNotificationSend: vi.fn(),
             retry: vi.fn(),
+            publishOrderPaid: vi.fn(),
         };
         prisma = {
             queueEventLog: {
@@ -26,9 +28,18 @@ describe('QueueConsumerService', () => {
             },
             order: {
                 updateMany: vi.fn(),
+                update: vi.fn((args) => ({ model: 'order', args })),
             },
+            payment: {
+                findFirst: vi.fn(),
+                update: vi.fn((args) => ({ model: 'payment', args })),
+            },
+            $transaction: vi.fn(async (operations) => operations),
         };
-        service = new QueueConsumerService(queueService, prisma);
+        tossApiService = {
+            fetchPaymentByOrderId: vi.fn(),
+        };
+        service = new QueueConsumerService(queueService, prisma, tossApiService);
     });
 
     it('records queue processing and archives a valid message', async () => {
@@ -220,6 +231,77 @@ describe('QueueConsumerService', () => {
 
         expect(prisma.notificationLog.upsert).not.toHaveBeenCalled();
         expect(queueService.archive).toHaveBeenCalledWith(undefined, 7);
+    });
+
+    it('reconciles a Toss payment that is paid remotely but not locally', async () => {
+        queueService.read.mockResolvedValue([
+            {
+                msg_id: 10,
+                read_ct: 1,
+                enqueued_at: new Date(),
+                vt: new Date(),
+                message: {
+                    eventId: 'event-10',
+                    eventType: 'payment.reconcile',
+                    idempotencyKey: 'payment.reconcile:payment-10',
+                    occurredAt: new Date().toISOString(),
+                    payload: { paymentId: 'payment-10', providerOrderId: 'ORDER_10' },
+                },
+            },
+        ]);
+        prisma.queueEventLog.findUnique.mockResolvedValue(null);
+        prisma.queueEventLog.upsert.mockResolvedValue({ status: 'PROCESSING' });
+        prisma.payment.findFirst.mockResolvedValue({
+            id: 'payment-10',
+            orderId: 'order-10',
+            provider: 'TOSS_PAYMENTS',
+            providerOrderId: 'ORDER_10',
+            paymentKey: null,
+            status: 'READY',
+            amount: 24000,
+            order: {
+                id: 'order-10',
+                storeId: 'store-10',
+                paymentStatus: 'PENDING',
+            },
+        });
+        tossApiService.fetchPaymentByOrderId.mockResolvedValue({
+            status: 'DONE',
+            paymentKey: 'payment-key-10',
+            method: '카드',
+            totalAmount: 24000,
+            approvedAt: '2026-05-01T06:00:00+09:00',
+            receipt: { url: 'https://receipt.example/10' },
+        });
+
+        await service.processOnce();
+
+        expect(tossApiService.fetchPaymentByOrderId).toHaveBeenCalledWith('ORDER_10');
+        expect(prisma.payment.update).toHaveBeenCalledWith(expect.objectContaining({
+            where: { id: 'payment-10' },
+            data: expect.objectContaining({
+                status: 'PAID',
+                paymentKey: 'payment-key-10',
+                method: 'CARD',
+                approvedAmount: 24000,
+                receiptUrl: 'https://receipt.example/10',
+            }),
+        }));
+        expect(prisma.order.update).toHaveBeenCalledWith({
+            where: { id: 'order-10' },
+            data: {
+                status: 'PAID',
+                paymentStatus: 'PAID',
+            },
+        });
+        expect(queueService.publishOrderPaid).toHaveBeenCalledWith({
+            orderId: 'order-10',
+            storeId: 'store-10',
+            paymentId: 'payment-10',
+            providerOrderId: 'ORDER_10',
+            amount: 24000,
+        });
+        expect(queueService.archive).toHaveBeenCalledWith(undefined, 10);
     });
 
     it('archives duplicate messages that already succeeded', async () => {

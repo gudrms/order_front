@@ -1,9 +1,11 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { TossApiService } from '../integrations/toss/toss-api.service';
 import {
     BackendQueueEvent,
     NotificationSendEventPayload,
+    PaymentReconcileEventPayload,
     QueueEventPayload,
     QueueMessageRecord,
 } from './queue-event.types';
@@ -18,6 +20,7 @@ export class QueueConsumerService {
     constructor(
         private readonly queueService: QueueService,
         private readonly prisma: PrismaService,
+        @Optional() private readonly tossApiService?: TossApiService,
     ) { }
 
     async processOnce(options: {
@@ -85,6 +88,11 @@ export class QueueConsumerService {
 
         if (event.eventType === 'notification.send') {
             await this.handleNotificationSend(event as BackendQueueEvent<NotificationSendEventPayload>);
+            return;
+        }
+
+        if (event.eventType === 'payment.reconcile') {
+            await this.handlePaymentReconcile(event as BackendQueueEvent<PaymentReconcileEventPayload>);
         }
     }
 
@@ -172,6 +180,75 @@ export class QueueConsumerService {
                 payload: this.toJsonPayload(payload),
                 lastError: 'Notification provider is not configured yet',
             },
+        });
+    }
+
+    private async handlePaymentReconcile(event: BackendQueueEvent<PaymentReconcileEventPayload>) {
+        if (!this.tossApiService) {
+            throw new Error('Toss API service is not configured');
+        }
+        if (!event.payload.paymentId && !event.payload.providerOrderId) {
+            throw new Error('payment.reconcile requires paymentId or providerOrderId');
+        }
+
+        const payment = await this.prisma.payment.findFirst({
+            where: {
+                provider: 'TOSS_PAYMENTS',
+                OR: [
+                    ...(event.payload.paymentId ? [{ id: event.payload.paymentId }] : []),
+                    ...(event.payload.providerOrderId ? [{ providerOrderId: event.payload.providerOrderId }] : []),
+                ],
+            },
+            include: {
+                order: true,
+            },
+        });
+
+        if (!payment) {
+            throw new Error('payment.reconcile target payment not found');
+        }
+        if (!payment.providerOrderId) {
+            throw new Error('payment.reconcile requires providerOrderId');
+        }
+        if (payment.status === 'PAID' && payment.order.paymentStatus === 'PAID') {
+            return;
+        }
+
+        const tossPayment = await this.tossApiService.fetchPaymentByOrderId(payment.providerOrderId);
+        if (tossPayment?.status !== 'DONE') {
+            return;
+        }
+
+        const approvedAmount = tossPayment?.totalAmount || tossPayment?.balanceAmount || payment.amount;
+
+        await this.prisma.$transaction([
+            this.prisma.payment.update({
+                where: { id: payment.id },
+                data: {
+                    status: 'PAID',
+                    paymentKey: tossPayment?.paymentKey || payment.paymentKey,
+                    method: this.mapTossMethod(tossPayment?.method),
+                    approvedAmount,
+                    approvedAt: tossPayment?.approvedAt ? new Date(tossPayment.approvedAt) : new Date(),
+                    receiptUrl: tossPayment?.receipt?.url,
+                    rawPayload: tossPayment,
+                },
+            }),
+            this.prisma.order.update({
+                where: { id: payment.orderId },
+                data: {
+                    status: 'PAID',
+                    paymentStatus: 'PAID',
+                },
+            }),
+        ]);
+
+        await this.queueService.publishOrderPaid({
+            orderId: payment.orderId,
+            storeId: payment.order.storeId,
+            paymentId: payment.id,
+            providerOrderId: payment.providerOrderId,
+            amount: approvedAmount,
         });
     }
 
@@ -314,5 +391,13 @@ export class QueueConsumerService {
 
     private getBackoffSeconds(attemptCount: number): number {
         return this.backoffSeconds[Math.min(attemptCount - 1, this.backoffSeconds.length - 1)];
+    }
+
+    private mapTossMethod(method?: string) {
+        if (!method) {
+            return 'TOSS';
+        }
+
+        return method === '카드' || method.toLowerCase().includes('card') ? 'CARD' : 'TOSS';
     }
 }
