@@ -67,6 +67,7 @@
 - [ ] retry/backoff 정책과 최대 시도 횟수 정책을 추가한다.
 - [x] 실패 이벤트 로깅 또는 archive 처리를 추가한다.
 - [x] Vercel Cron 또는 운영 배치에서 호출할 수 있는 내부 큐 처리 endpoint를 추가한다.
+- [x] POS 전송 실패 상태와 시도 횟수 기록 필드를 추가한다.
 - [ ] 관리자에서 확인 가능한 POS/알림 실패 상태 또는 운영 로그를 추가한다.
 - [ ] 운영상 필요하면 POS 전송 실패 수동 재시도 endpoint/button을 추가한다.
 - [ ] Toss와 로컬 결제 상태 불일치 복구 reconciliation job을 추가한다.
@@ -83,7 +84,7 @@
 ## 2차 PR 범위
 
 - [ ] POS 전송 side effect를 queue consumer로 이동한다.
-- [ ] retry와 실패 상태를 추가한다.
+- [x] retry와 실패 상태를 추가한다.
 - [ ] 관리자에서 POS 전송 실패를 볼 수 있게 한다.
 - [ ] 필요하면 수동 재시도 경로를 추가한다.
 
