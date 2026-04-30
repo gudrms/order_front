@@ -20,6 +20,12 @@ const statusConfig: Record<OrderStatus, { label: string; icon: typeof Clock; col
     CANCELLED: { label: '취소됨', icon: XCircle, color: 'text-red-500' },
 };
 
+const paymentStatusBadge: Record<string, { label: string; className: string }> = {
+    REFUNDED: { label: '환불 완료', className: 'bg-gray-100 text-gray-600' },
+    PARTIAL_REFUNDED: { label: '부분 환불', className: 'bg-orange-100 text-orange-700' },
+    CANCELLED: { label: '결제 취소', className: 'bg-red-100 text-red-600' },
+};
+
 export default function OrdersPage() {
     const router = useRouter();
     const { user, loading: isAuthLoading } = useAuth();
@@ -100,14 +106,18 @@ export default function OrdersPage() {
                     orders.map((order) => {
                         const status = statusConfig[order.status];
                         const StatusIcon = status.icon;
+                        const paymentBadge = order.paymentStatus
+                            ? paymentStatusBadge[order.paymentStatus]
+                            : null;
+                        const isCancelled = order.status === 'CANCELLED';
 
                         return (
                             <div
                                 key={order.id}
-                                className="bg-white rounded-xl p-4 cursor-pointer hover:shadow-md transition-shadow border border-gray-100"
+                                className={`bg-white rounded-xl p-4 cursor-pointer hover:shadow-md transition-shadow border border-gray-100 ${isCancelled ? 'opacity-75' : ''}`}
                                 onClick={() => router.push(`/order-detail?id=${order.id}`)}
                             >
-                                <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-start justify-between mb-3">
                                     <div>
                                         <p className="text-xs text-gray-500">
                                             {new Date(order.createdAt).toLocaleDateString('ko-KR', {
@@ -122,9 +132,16 @@ export default function OrdersPage() {
                                             주문번호: {order.orderNumber}
                                         </p>
                                     </div>
-                                    <div className={`flex items-center gap-1 ${status.color}`}>
-                                        <StatusIcon size={18} />
-                                        <span className="font-bold text-sm">{status.label}</span>
+                                    <div className="flex flex-col items-end gap-1">
+                                        <div className={`flex items-center gap-1 ${status.color}`}>
+                                            <StatusIcon size={18} />
+                                            <span className="font-bold text-sm">{status.label}</span>
+                                        </div>
+                                        {paymentBadge && (
+                                            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${paymentBadge.className}`}>
+                                                {paymentBadge.label}
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
 
@@ -148,7 +165,7 @@ export default function OrdersPage() {
 
                                 <div className="border-t border-gray-100 mt-3 pt-3 flex justify-between items-center">
                                     <span className="font-bold">총 결제 금액</span>
-                                    <span className="font-bold text-lg text-brand-yellow">
+                                    <span className={`font-bold text-lg ${isCancelled ? 'text-gray-400 line-through' : 'text-brand-yellow'}`}>
                                         {order.totalAmount.toLocaleString()}원
                                     </span>
                                 </div>
