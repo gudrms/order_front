@@ -5,6 +5,7 @@ import {
     BackendQueueEvent,
     NotificationSendEventPayload,
     OrderPaidEventPayload,
+    PaymentReconcileEventPayload,
     PosSendOrderEventPayload,
     QueueEventPayload,
     QueueEventType,
@@ -56,6 +57,17 @@ export class QueueService {
 
         await this.publish('notification.send', payload, {
             idempotencyKey: `notification.send:${dedupeKey}`,
+        });
+    }
+
+    async publishPaymentReconcile(payload: PaymentReconcileEventPayload): Promise<void> {
+        const idempotencyTarget = payload.paymentId || payload.providerOrderId;
+        if (!idempotencyTarget) {
+            throw new Error('payment.reconcile requires paymentId or providerOrderId');
+        }
+
+        await this.publish('payment.reconcile', payload, {
+            idempotencyKey: `payment.reconcile:${idempotencyTarget}`,
         });
     }
 

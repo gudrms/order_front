@@ -1,11 +1,12 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../prisma/prisma.module';
+import { TossModule } from '../integrations/toss/toss.module';
 import { QueueController } from './queue.controller';
 import { QueueConsumerService } from './queue-consumer.service';
 import { QueueService } from './queue.service';
 
 @Module({
-    imports: [PrismaModule],
+    imports: [PrismaModule, TossModule],
     controllers: [QueueController],
     providers: [QueueService, QueueConsumerService],
     exports: [QueueService, QueueConsumerService],

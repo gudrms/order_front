@@ -56,6 +56,7 @@ describe('PaymentsService', () => {
 
         queueService = {
             publishOrderPaid: vi.fn(),
+            publishPaymentReconcile: vi.fn(),
         };
 
         const module: TestingModule = await Test.createTestingModule({
@@ -278,6 +279,43 @@ describe('PaymentsService', () => {
                 }),
             }),
         }));
+    });
+
+    it('queues stale Toss payments for reconciliation', async () => {
+        prisma.payment.findMany.mockResolvedValue([
+            {
+                id: 'payment-1',
+                providerOrderId: 'ORDER_1',
+            },
+            {
+                id: 'payment-2',
+                providerOrderId: 'ORDER_2',
+            },
+        ]);
+
+        const result = await service.reconcileTossPayments({ limit: 2 });
+
+        expect(result).toEqual({
+            queuedCount: 2,
+            paymentIds: ['payment-1', 'payment-2'],
+        });
+        expect(prisma.payment.findMany).toHaveBeenCalledWith(expect.objectContaining({
+            where: {
+                provider: 'TOSS_PAYMENTS',
+                providerOrderId: { not: null },
+                status: { in: ['READY', 'PENDING'] },
+            },
+            orderBy: { requestedAt: 'asc' },
+            take: 2,
+        }));
+        expect(queueService.publishPaymentReconcile).toHaveBeenCalledWith({
+            paymentId: 'payment-1',
+            providerOrderId: 'ORDER_1',
+        });
+        expect(queueService.publishPaymentReconcile).toHaveBeenCalledWith({
+            paymentId: 'payment-2',
+            providerOrderId: 'ORDER_2',
+        });
     });
 
     it('fully cancels a paid Toss payment and cancels the order', async () => {
