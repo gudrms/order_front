@@ -22,7 +22,7 @@ export interface BackendQueueEvent<TPayload extends QueueEventPayload = QueueEve
 }
 
 export interface QueueMessageRecord<TPayload extends QueueEventPayload = QueueEventPayload> {
-    msg_id: number;
+    msg_id: number | bigint;
     read_ct: number;
     enqueued_at: Date;
     vt: Date;
