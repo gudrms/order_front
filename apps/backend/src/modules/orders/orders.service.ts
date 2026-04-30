@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateDeliveryOrderDto, CreateOrderDto } from './dto/create-order.dto';
 import { ResilientPosService } from '../integrations/pos/pos.resilience';
 import { SessionsService } from '../sessions/sessions.service';
+import { QueueService } from '../queue';
 
 @Injectable()
 export class OrdersService {
@@ -10,6 +11,7 @@ export class OrdersService {
         private readonly prisma: PrismaService,
         private readonly posService: ResilientPosService,
         private readonly sessionsService: SessionsService,
+        private readonly queueService?: QueueService,
     ) { }
 
     async createFirstOrder(storeId: string, tableNumber: number, dto: CreateOrderDto) {
@@ -262,6 +264,70 @@ export class OrdersService {
                 lastPage: Math.ceil(total / take),
             },
         };
+    }
+
+    async getPosSyncFailures(storeId: string, page: number = 1) {
+        const take = 20;
+        const skip = (page - 1) * take;
+        const where: any = {
+            storeId,
+            posSyncStatus: 'FAILED',
+        };
+
+        const [orders, total] = await Promise.all([
+            this.prisma.order.findMany({
+                where,
+                include: this.orderInclude(),
+                orderBy: { posSyncUpdatedAt: 'desc' },
+                take,
+                skip,
+            }),
+            this.prisma.order.count({ where }),
+        ]);
+
+        return {
+            data: orders,
+            meta: {
+                total,
+                page,
+                lastPage: Math.ceil(total / take),
+            },
+        };
+    }
+
+    async retryPosSync(storeId: string, orderId: string) {
+        const order = await this.prisma.order.findUnique({
+            where: { id: orderId },
+        });
+
+        if (!order) {
+            throw new NotFoundException(`Order not found: ${orderId}`);
+        }
+        if (order.storeId !== storeId) {
+            throw new BadRequestException('Order does not belong to this store');
+        }
+        if (order.tossOrderId || order.posSyncStatus === 'SENT') {
+            return order;
+        }
+        if (order.status !== 'PAID') {
+            throw new BadRequestException('Only paid orders can be retried for POS sync');
+        }
+
+        const updated = await this.prisma.order.update({
+            where: { id: orderId },
+            data: {
+                posSyncStatus: 'PENDING',
+                posSyncLastError: null,
+                posSyncUpdatedAt: new Date(),
+            },
+        });
+
+        await this.queueService?.publishPosSendOrder({
+            orderId,
+            storeId,
+        });
+
+        return updated;
     }
 
     async getDeliveryOrders(params: { storeId?: string; userId?: string; page?: number }) {
