@@ -711,6 +711,28 @@ model ErrorLog {
   @@index([storeId])
 }
 
+/// 백엔드 MQ 이벤트 처리 로그
+model QueueEventLog {
+  id             String   @id @default(uuid())
+  queueName      String   @default("backend_events")
+  messageId      BigInt?
+  eventId        String?
+  eventType      String
+  idempotencyKey String   @unique
+  status         String   @default("PENDING")
+  attemptCount   Int      @default(0)
+  payload        Json?
+  lastError      String?  @db.Text
+  processedAt    DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([queueName])
+  @@index([messageId])
+  @@index([eventType, status])
+  @@index([status, updatedAt])
+}
+
 /// 찜한 메뉴 (즐겨찾기)
 model UserFavorite {
   id        String   @id @default(uuid())

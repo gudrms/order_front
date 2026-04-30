@@ -65,7 +65,7 @@
 - [ ] POS 전송 worker 처리를 추가한다.
 - [ ] 알림 전송 worker 처리를 추가한다.
 - [ ] retry/backoff 정책과 최대 시도 횟수 정책을 추가한다.
-- [ ] 실패 이벤트 로깅 또는 archive 처리를 추가한다.
+- [x] 실패 이벤트 로깅 또는 archive 처리를 추가한다.
 - [ ] 관리자에서 확인 가능한 POS/알림 실패 상태 또는 운영 로그를 추가한다.
 - [ ] 운영상 필요하면 POS 전송 실패 수동 재시도 endpoint/button을 추가한다.
 - [ ] Toss와 로컬 결제 상태 불일치 복구 reconciliation job을 추가한다.
