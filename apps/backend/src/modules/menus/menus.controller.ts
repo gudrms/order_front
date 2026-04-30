@@ -103,6 +103,17 @@ export class MenusController {
         return this.menusService.getMenus(storeId, categoryId);
     }
 
+    @Get('admin/menus')
+    @UseGuards(SupabaseGuard)
+    @ApiBearerAuth('JWT-auth')
+    async getAdminMenus(
+        @CurrentUser() user: { id: string },
+        @Param('storeId') storeId: string,
+        @Query('categoryId') categoryId?: string,
+    ) {
+        return this.menusService.getAdminMenus(user.id, storeId, categoryId);
+    }
+
     @Post('menus')
     @UseGuards(SupabaseGuard)
     @ApiBearerAuth('JWT-auth')
