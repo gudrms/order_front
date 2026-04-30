@@ -55,6 +55,14 @@
 - [x] 주문상세 화면에 배달 상태와 라이더 메모 표시
 - [x] 주문상세 화면을 5초 간격으로 재조회해 배달 상태 갱신
 
+## 기술 부채 및 개선 사항 (Technical Debt)
+
+- [ ] **UX 개선**: `window.prompt`를 사용한 주문 취소 로직을 커스텀 모달(Modal)이나 Bottom Sheet UI로 리팩토링
+- [ ] **UX 개선**: 데이터 로딩 시 단순 스피너 대신 Skeleton UI 적용하여 체감 대기시간(Perceived Performance) 최적화
+- [ ] **라우팅/인가 구조 개선**: 컴포넌트 내부에 산재된 Auth Check 로직을 Next.js Middleware(`middleware.ts`)로 추상화
+- [ ] **라우팅 구조 개선**: 주문 상세 페이지 URL을 쿼리 파라미터(`?id=`) 방식에서 동적 라우팅(`/[id]`)으로 변경
+- [ ] **네이티브 기능 연동**: Capacitor 기반 백그라운드 푸시 알림(FCM / APNs) 연동하여 앱 종료 시에도 배달 상태 알림 수신
+
 ## 남은 일
 
 ### P0: 결제 안정성
@@ -87,13 +95,14 @@
 - [ ] `test-user-id` 제거 여부 최종 확인
 - [ ] 쿠폰/포인트 데이터 정책 결정
 
-### P2: PWA/빌드
+### P2: 스토어 배포 및 PWA/빌드
 
+- [ ] Capacitor 기반 Android `.aab` 빌드 및 구글 플레이스토어 심사 등록 (스토어 검색 최적화)
+- [ ] Capacitor 기반 iOS `.ipa` 빌드 및 애플 앱스토어 심사 등록
+- [ ] Vercel 배포를 통한 핫 푸시(Hot Push) 무심사 업데이트 파이프라인 검증
 - [ ] `ReferenceError: location is not defined` 빌드 로그 원인 제거
 - [ ] manifest icon 경로와 실제 asset 정합성 확인
 - [ ] Service Worker 캐싱 전략 검증
-- [ ] Android 프로젝트 생성/동기화 검증
-- [ ] iOS 프로젝트 생성 검증
 - [ ] FCM/APNS/Deep Link 설정
 
 ## 검증 기록
