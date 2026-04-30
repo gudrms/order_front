@@ -90,6 +90,8 @@
 - [x] 카카오 로그인과 Supabase user, 백엔드 User 자동 동기화
 - [x] 주문상세에서 결제 승인 전 고객 취소 UI 연결
 - [x] 주문상세에서 배달 상태와 라이더 메모 표시
+- [x] 주문상세를 `/orders/[id]` 동적 라우트로 전환
+- [x] `output: 'export'` 제거 후 Next 서버/Capacitor 원격 WebView 기준으로 빌드 구조 정리
 - [ ] Toss 테스트 카드결제 성공/실패 E2E
 - [x] 주문내역 카드에 취소/환불 상태 배지 표시
 - [x] 주소 조회/추가/삭제를 실제 사용자 기준으로 동작
@@ -102,6 +104,7 @@
 - [ ] **[MVP 론칭 전략]** 초기 오픈은 '배달앱(고객) ➡️ 관리자웹(점주) ➡️ 영수증 출력' 구조로 한정 (Toss POS 및 테이블오더 연동은 Phase 2로 연기)
 - [ ] **[관리자 아키텍처]** 웹 브라우저의 한계(백그라운드 스로틀링, 자동재생 차단, 인쇄 팝업) 극복을 위해 Admin 웹을 Electron으로 랩핑하여 PC 전용 수신 프로그램으로 구축
 - [ ] **[배달앱 배포 전략]** 스토어 최적화 및 핫 푸시 업데이트를 위해 Capacitor를 활용하여 구글 플레이스토어 및 애플 앱스토어 배포 파이프라인 구축
+- [x] 배달앱: Capacitor 원격 WebView 기준선 설정 (`CAPACITOR_SERVER_URL`, `webDir: 'public'`)
 - [ ] 관리자: 매장 등록/운영 설정 화면을 백엔드 API에 연결
 - [x] 관리자: 주문 목록에서 `type`, `source`, `paymentStatus`, 배달 상태 표시
 - [x] 관리자: 배달 상태 변경 버튼/운영 화면 구현
@@ -122,6 +125,7 @@
 - [x] `apps/admin`: `tsc --noEmit`
 - [ ] `apps/backend`: 최신 전체 `vitest run`은 `menus.service.spec.ts` 메뉴 상세 테스트 1건 실패. POS/catalog 작업자 영역이라 본 작업에서는 미수정.
 - [x] `apps/delivery-customer`: `tsc --noEmit`
+- [x] `apps/delivery-customer`: `next build` 통과 및 `/orders/[id]` 동적 라우트 확인
 - [x] `packages/shared`: `tsc --noEmit`
 - [x] 개발 DB `prisma migrate deploy`
 - [x] 개발 DB `prisma migrate status`: up to date
@@ -133,9 +137,9 @@
 ## 다음 개발 순서
 
 1. 매장 수정/배달 운영 설정 화면 연결
-2. 주소 CRUD를 로그인 사용자 기준 실제 API로 전환
-3. 찜/즐겨찾기를 로그인 사용자 기준 실제 API로 전환
-4. Toss 테스트 카드결제 성공/실패/환불 E2E
+2. Toss 테스트 카드결제 성공/실패/환불 E2E
+3. Capacitor 원격 WebView 실기기 실행과 주문상세 딥링크 검증
+4. `ReferenceError: location is not defined` 빌드 로그 원인 제거
 5. Sentry/PWA E2E 검증
 
 ## 체크리스트 위치
