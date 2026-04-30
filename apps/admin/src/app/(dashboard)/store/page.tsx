@@ -3,14 +3,17 @@
 import { useEffect, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import axios from 'axios';
-import { Save, Ticket } from 'lucide-react';
+import { Plus, Save, Ticket } from 'lucide-react';
 import type { MenuManagementMode } from '@order/shared';
 import { useAdminStore } from '@/contexts/AdminStoreContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function StoreSettingsPage() {
   const { stores, selectedStore, selectedStoreId, setSelectedStoreId, isLoading, authHeaders, refetchStores } = useAdminStore();
+  const { profile } = useAuth();
+  const isAdmin = profile?.role === 'ADMIN';
   const [form, setForm] = useState({
     name: '',
     branchName: '',
@@ -82,7 +85,9 @@ export default function StoreSettingsPage() {
   }
 
   if (!selectedStore) {
-    return (
+    return isAdmin ? (
+      <CreateStoreSection authHeaders={authHeaders} onCreated={refetchStores} />
+    ) : (
       <div className="rounded-xl border border-dashed border-gray-300 bg-white p-10 text-center">
         <h2 className="text-xl font-bold text-gray-800">연결된 매장이 없습니다</h2>
         <p className="mt-2 text-sm text-gray-500">관리자에게 매장 생성을 요청하거나 초대코드로 가입해 주세요.</p>
@@ -196,6 +201,10 @@ export default function StoreSettingsPage() {
           {updateStoreMutation.isPending ? '저장 중...' : '저장'}
         </button>
       </div>
+
+      {isAdmin && (
+        <CreateStoreSection authHeaders={authHeaders} onCreated={refetchStores} />
+      )}
     </div>
   );
 }
@@ -220,6 +229,133 @@ function Field({
         className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
       />
     </label>
+  );
+}
+
+function CreateStoreSection({
+  authHeaders,
+  onCreated,
+}: {
+  authHeaders?: { Authorization: string };
+  onCreated: () => Promise<unknown>;
+}) {
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({
+    storeType: '',
+    branchId: '',
+    name: '',
+    branchName: '',
+    phoneNumber: '',
+    address: '',
+  });
+  const [error, setError] = useState<string | null>(null);
+
+  const createMutation = useMutation({
+    mutationFn: async () => {
+      await axios.post(
+        `${API_URL}/stores`,
+        {
+          storeType: form.storeType.trim(),
+          branchId: form.branchId.trim(),
+          name: form.name.trim(),
+          branchName: form.branchName.trim(),
+          phoneNumber: form.phoneNumber.trim() || undefined,
+          address: form.address.trim() || undefined,
+        },
+        { headers: authHeaders }
+      );
+    },
+    onSuccess: async () => {
+      await onCreated();
+      setOpen(false);
+      setForm({ storeType: '', branchId: '', name: '', branchName: '', phoneNumber: '', address: '' });
+      setError(null);
+    },
+    onError: (err: any) => {
+      setError(err.response?.data?.message || '매장 생성에 실패했습니다.');
+    },
+  });
+
+  if (!open) {
+    return (
+      <section className="rounded-xl border border-dashed border-gray-300 bg-white p-5 shadow-sm">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="font-bold text-gray-800">새 매장 등록</h3>
+            <p className="mt-1 text-sm text-gray-500">ADMIN 전용 — 새 매장을 생성하고 초대코드를 발급합니다.</p>
+          </div>
+          <button
+            onClick={() => setOpen(true)}
+            className="inline-flex items-center gap-2 rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-700"
+          >
+            <Plus className="h-4 w-4" />
+            새 매장 만들기
+          </button>
+        </div>
+      </section>
+    );
+  }
+
+  const canSubmit =
+    form.storeType.trim() && form.branchId.trim() && form.name.trim() && form.branchName.trim();
+
+  return (
+    <section className="rounded-xl border border-gray-900 bg-white p-5 shadow-sm">
+      <h3 className="mb-4 font-bold text-gray-800">새 매장 등록</h3>
+      <div className="grid gap-4 md:grid-cols-2">
+        <Field
+          label="매장 타입 (URL용) *"
+          value={form.storeType}
+          onChange={(v) => setForm((p) => ({ ...p, storeType: v }))}
+        />
+        <Field
+          label="지점 ID (URL용) *"
+          value={form.branchId}
+          onChange={(v) => setForm((p) => ({ ...p, branchId: v }))}
+        />
+        <Field
+          label="매장명 *"
+          value={form.name}
+          onChange={(v) => setForm((p) => ({ ...p, name: v }))}
+        />
+        <Field
+          label="지점명 *"
+          value={form.branchName}
+          onChange={(v) => setForm((p) => ({ ...p, branchName: v }))}
+        />
+        <Field
+          label="전화번호"
+          value={form.phoneNumber}
+          onChange={(v) => setForm((p) => ({ ...p, phoneNumber: v }))}
+        />
+        <Field
+          label="주소"
+          value={form.address}
+          onChange={(v) => setForm((p) => ({ ...p, address: v }))}
+        />
+      </div>
+
+      {error && (
+        <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>
+      )}
+
+      <div className="mt-4 flex gap-3 justify-end">
+        <button
+          onClick={() => { setOpen(false); setError(null); }}
+          className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+        >
+          취소
+        </button>
+        <button
+          onClick={() => createMutation.mutate()}
+          disabled={!canSubmit || createMutation.isPending}
+          className="inline-flex items-center gap-2 rounded-lg bg-gray-900 px-4 py-2 text-sm font-bold text-white hover:bg-gray-700 disabled:opacity-50"
+        >
+          <Plus className="h-4 w-4" />
+          {createMutation.isPending ? '생성 중...' : '매장 생성'}
+        </button>
+      </div>
+    </section>
   );
 }
 
