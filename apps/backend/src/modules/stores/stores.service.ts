@@ -104,6 +104,15 @@ export class StoresService {
         });
     }
 
+    async getTables(userId: string, storeId: string) {
+        await this.assertCanManageStore(userId, storeId);
+
+        return this.prisma.table.findMany({
+            where: { storeId },
+            orderBy: { tableNumber: 'asc' },
+        });
+    }
+
     private async assertAdmin(userId: string) {
         const user = await this.prisma.user.findUnique({
             where: { id: userId },

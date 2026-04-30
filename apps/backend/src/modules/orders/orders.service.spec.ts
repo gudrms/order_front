@@ -302,28 +302,28 @@ describe('OrdersService', () => {
         expect(tx.order.update).not.toHaveBeenCalled();
     });
 
-    it('updates a picked-up delivery order and moves the customer order status to delivering', async () => {
+    it('starts delivery and moves the customer order status to delivering', async () => {
         prisma.order = {
             findUnique: vi.fn().mockResolvedValue({
                 id: 'order-1',
                 storeId: 'store-1',
                 type: 'DELIVERY',
                 status: 'READY',
-                delivery: { id: 'delivery-1' },
+                delivery: { id: 'delivery-1', pickedUpAt: null },
             }),
             update: vi.fn().mockResolvedValue({
                 id: 'order-1',
                 status: 'DELIVERING',
-                delivery: { status: 'PICKED_UP' },
+                delivery: { status: 'DELIVERING' },
             }),
         };
 
-        const result = await service.updateDeliveryStatus('store-1', 'order-1', 'PICKED_UP');
+        const result = await service.updateDeliveryStatus('store-1', 'order-1', 'DELIVERING');
 
         expect(result).toMatchObject({
             id: 'order-1',
             status: 'DELIVERING',
-            delivery: { status: 'PICKED_UP' },
+            delivery: { status: 'DELIVERING' },
         });
         expect(prisma.order.update).toHaveBeenCalledWith(expect.objectContaining({
             where: { id: 'order-1' },
@@ -331,7 +331,7 @@ describe('OrdersService', () => {
                 status: 'DELIVERING',
                 delivery: {
                     update: expect.objectContaining({
-                        status: 'PICKED_UP',
+                        status: 'DELIVERING',
                         pickedUpAt: expect.any(Date),
                     }),
                 },
