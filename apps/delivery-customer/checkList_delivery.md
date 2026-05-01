@@ -1,5 +1,5 @@
 # 배달앱 체크리스트
-마지막 업데이트: 2026-05-01
+마지막 업데이트: 2026-05-01 (쿠폰 정책 확정, 백엔드 연동 완료, 배달앱 UI 구현 예정)
 
 ## 현재 요약
 
@@ -11,6 +11,7 @@
 - 관리자 전액 취소/부분 환불 API와 버튼이 연결됐다.
 - MQ 도입 후에도 배달앱의 핵심은 주문/결제/상태/알림 UX다. 큐는 백엔드 후처리 계층이며, 고객앱은 REST API와 주문 상세 polling/Realtime으로 확정된 주문/배달 상태를 표시한다.
 - 아직 남은 핵심은 실제 Toss E2E, 결제 후 POS/알림 후처리 중복 노출 점검, PWA/Sentry 검증이다.
+- 쿠폰 정책 확정: PERCENTAGE·FIXED_AMOUNT, 1장/주문, 30일 기본 만료, 정률 5000원 상한. 백엔드 Coupon/UserCoupon 모델 + API 구현 완료. 배달앱 체크아웃 쿠폰 선택 UI + 마이페이지 쿠폰 목록 UI 구현 예정.
 
 ## 완료
 
@@ -99,7 +100,10 @@
 - [x] 주소 조회/추가/삭제를 실제 사용자 기준으로 동작
 - [x] 찜 조회/추가/삭제를 실제 사용자 기준으로 동작
 - [x] `test-user-id` 제거 완료
-- [ ] 쿠폰/포인트 데이터 정책 결정
+- [x] 쿠폰 데이터 정책 결정 (PERCENTAGE·FIXED_AMOUNT, 1장/주문, 30일 기본, 5000원 정률 상한)
+- [x] 백엔드 쿠폰 시스템 구현 완료 (Coupon/UserCoupon 모델, CouponsService/Controller, OrdersService 연동)
+- [ ] 배달앱 체크아웃 쿠폰 선택 UI (사용 가능 쿠폰 목록 → 1장 선택 → 할인 금액 표시)
+- [ ] 배달앱 마이페이지 쿠폰 목록 UI (전체 쿠폰 상태 조회, 프로모코드 등록)
 
 ### P2: 스토어 배포 및 PWA/빌드
 
@@ -122,7 +126,7 @@
 - [x] `apps/backend`: `vitest run src/modules/orders/orders.service.spec.ts` 17 tests 통과
 - [x] `apps/backend`: `vitest run src/modules/auth/auth.service.spec.ts` 5 tests 통과
 - [x] `apps/backend`: `vitest run src/modules/payments/payments.service.spec.ts` 8 tests 통과
-- [ ] 최신 백엔드 전체 `vitest run`: `menus.service.spec.ts` 메뉴 상세 테스트 1건 실패. POS/catalog 작업자 영역이라 본 작업에서는 미수정.
+- [x] 최신 백엔드 전체 `vitest run`: **18 files / 142 tests** 전체 통과 (2026-05-01, 쿠폰 테스트 15건 포함)
 - [x] 백엔드 Prisma validate/generate 통과
 - [x] 개발 DB migration 적용 완료
 - [x] 운영 DB queue/POS migration 적용 완료
@@ -133,8 +137,9 @@
 
 ## 다음 순서
 
-1. Toss 테스트 카드결제 성공/실패/환불 E2E
-2. 결제 성공 주문의 POS/알림 후처리 중 고객 중복 노출 여부 E2E 확인
-3. Capacitor 원격 WebView 실기기 실행과 `/orders/[id]` 딥링크 진입 검증
-4. `ReferenceError: location is not defined` 빌드 로그 원인 제거
-5. Sentry/PWA E2E 검증
+1. **[진행중]** 배달앱 체크아웃 쿠폰 선택 UI + 마이페이지 쿠폰 목록 UI
+2. Toss 테스트 카드결제 성공/실패/환불 E2E
+3. 결제 성공 주문의 POS/알림 후처리 중 고객 중복 노출 여부 E2E 확인
+4. Capacitor 원격 WebView 실기기 실행과 `/orders/[id]` 딥링크 진입 검증
+5. `ReferenceError: location is not defined` 빌드 로그 원인 제거
+6. Sentry/PWA E2E 검증
