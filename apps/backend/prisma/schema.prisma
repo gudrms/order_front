@@ -241,6 +241,7 @@ model User {
   favorites       UserFavorite[]
   addresses       UserAddress[]
   orders          Order[]
+  coupons         UserCoupon[]
 }
 
 enum UserRole {
@@ -518,6 +519,12 @@ model Order {
   items         OrderItem[]
   payments      Payment[]
   delivery      OrderDelivery?
+
+  /// 적용된 쿠폰 (UserCoupon)
+  userCouponId  String?     @unique
+  userCoupon    UserCoupon? @relation(fields: [userCouponId], references: [id], onDelete: SetNull)
+  /// 쿠폰 할인 금액 (0이면 미적용)
+  discountAmount Int        @default(0)
 
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
@@ -802,6 +809,68 @@ model UserFavorite {
   @@unique([userId, menuId]) // 중복 찜 방지
   @@index([userId])
   @@index([menuId])
+}
+
+/// 쿠폰 타입
+enum CouponType {
+  PERCENTAGE   // 정률 할인 (discountValue = %)
+  FIXED_AMOUNT // 정액 할인 (discountValue = 원)
+}
+
+/// 쿠폰 템플릿 (관리자가 생성)
+model Coupon {
+  id                String     @id @default(uuid())
+
+  /// 프로모 코드 (null이면 자동 지급 전용)
+  code              String?    @unique
+  name              String
+  description       String?
+
+  type              CouponType
+  /// PERCENTAGE이면 % 값 (예: 10 = 10%), FIXED_AMOUNT이면 원 (예: 3000)
+  discountValue     Int
+  /// 정률 할인 상한 (원, null = 무제한). 기본값 5000
+  maxDiscountAmount Int?       @default(5000)
+  /// 최소 주문금액 (null = 제한 없음)
+  minOrderAmount    Int?
+
+  isActive          Boolean    @default(true)
+  /// 총 발급 한도 (null = 무제한)
+  maxUses           Int?
+  usedCount         Int        @default(0)
+
+  /// 발급 시 만료일 계산 기준 (일 수). 기본 30일
+  defaultExpiryDays Int        @default(30)
+
+  createdBy         String?
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  userCoupons       UserCoupon[]
+
+  @@index([code])
+  @@index([isActive])
+}
+
+/// 사용자에게 발급된 쿠폰 (인스턴스)
+model UserCoupon {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  couponId  String
+  coupon    Coupon   @relation(fields: [couponId], references: [id], onDelete: Cascade)
+
+  isUsed    Boolean  @default(false)
+  usedAt    DateTime?
+  /// 사용된 주문 (역참조)
+  usedOrder Order?
+
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@unique([userId, couponId]) // 동일 쿠폰 중복 발급 방지 (프로모 코드는 coupon당 1회)
+  @@index([userId, isUsed])
+  @@index([expiresAt])
 }
 
 /// 배달 주소

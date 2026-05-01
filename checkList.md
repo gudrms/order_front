@@ -1,5 +1,5 @@
 # Taco Mono 루트 체크리스트
-마지막 업데이트: 2026-05-01 (Swagger 명세 보강 완료, 운영 모드/홈페이지 후처리 정책 확정)
+마지막 업데이트: 2026-05-01 (쿠폰 시스템 구현 완료: Prisma schema, 백엔드 모듈, OrdersService 연동)
 
 ## 큰 그림
 
@@ -88,6 +88,10 @@
 - [x] `delivery.status_changed` 이벤트 발행/consumer 처리
 - [x] `QueueModule`을 `AppModule`에 등록 (MQ 전체 프로덕션 동작 보장)
 - [x] Toss 카드결제 E2E 통합 테스트 추가: 성공/실패/보상취소/전액환불/부분환불/타임아웃 6개 시나리오
+- [x] 쿠폰 시스템 구현: `Coupon` / `UserCoupon` Prisma 모델 + migration
+- [x] 쿠폰 모듈: `CouponsService` / `CouponsController` / `UserCouponsController` (PERCENTAGE·FIXED_AMOUNT, 프로모코드 등록, 관리자 발급)
+- [x] 쿠폰 적용 연동: `CreateDeliveryOrderDto.userCouponId`, `OrdersService.createDeliveryOrder` 내 할인 계산 + `markAsUsed` 호출
+- [x] 쿠폰 단위 테스트 추가: 15 tests (할인 계산, 만료/사용/한도 검증, 정률cap, 정액min 등)
 
 ## 배달앱 상태
 
@@ -111,7 +115,7 @@
 - [x] 주문내역 카드에 취소/환불 상태 배지 표시
 - [x] 주소 조회/추가/삭제를 실제 사용자 기준으로 동작
 - [x] 찜 조회/추가/삭제를 실제 사용자 기준으로 동작
-- [ ] 쿠폰/포인트 데이터 정책 결정
+- [x] 쿠폰 데이터 정책 결정 및 구현 (PERCENTAGE·FIXED_AMOUNT, 1장/주문, 30일 기본 만료, 5000원 정률 상한)
 - [ ] PWA 빌드/설치 검증
 
 ## 단계별 남은 일
@@ -138,7 +142,7 @@
 ## 검증 기록
 
 - [x] `apps/backend`: `tsc --noEmit`
-- [x] `apps/backend`: 최신 전체 `vitest run` **17 files / 127 tests** 통과 (2026-05-01)
+- [x] `apps/backend`: 최신 전체 `vitest run` **18 files / 142 tests** 통과 (2026-05-01)
 - [x] `apps/backend`: `vitest run src/modules/orders/orders.service.spec.ts` 21 tests 통과 (`HOMEPAGE` 주문 출처 지원 포함)
 - [x] `apps/backend`: `vitest run src/modules/payments/payments.service.spec.ts` 12 tests 통과
 - [x] `apps/backend`: `vitest run src/modules/payments/payments-e2e.spec.ts` 7 tests 통과 (Toss E2E 통합)
