@@ -122,7 +122,7 @@
 - [x] 관리자: 주문 목록에서 `type`, `source`, `paymentStatus`, 배달 상태 표시
 - [x] 관리자: 배달 상태 변경 버튼/운영 화면 구현
 - [x] 관리자: 결제 완료 주문 전액 취소/부분 환불 버튼 구현
-- [ ] 관리자: MQ 운영 화면에서 POS/알림 실패 조회와 수동 재시도 연결
+- [x] 관리자: MQ 운영 화면에서 POS/알림 실패 조회와 수동 재시도 연결
 - [ ] 테이블오더: 실제 Store UUID/tableNumber 연결과 첫 주문/추가 주문 E2E
 - [ ] 홈페이지: 주문 CTA를 배달앱 매장 URL로 연결
 - [ ] 홈페이지: 매장/메뉴 API 연결
@@ -138,6 +138,7 @@
 - [x] `apps/backend`: `vitest run src/modules/orders/orders.service.spec.ts` 20 tests 통과
 - [x] `apps/backend`: `vitest run src/modules/auth/auth.service.spec.ts` 5 tests 통과
 - [x] `apps/backend`: `vitest run src/modules/payments/payments.service.spec.ts` 12 tests 통과
+- [x] `apps/backend`: `vitest run src/modules/orders/orders.service.spec.ts src/modules/queue/queue-operations.service.spec.ts` 25 tests 통과
 - [x] `apps/admin`: `tsc --noEmit`
 - [x] `apps/delivery-customer`: `tsc --noEmit`
 - [x] `apps/delivery-customer`: `next build` 통과 및 `/orders/[id]` 동적 라우트 확인
@@ -151,11 +152,11 @@
 
 ## 다음 개발 순서
 
-1. 관리자 MQ 운영 화면에서 POS/알림 실패 조회와 수동 재시도 연결
-2. Toss 테스트 카드결제 성공/실패/환불 E2E
-3. Capacitor 원격 WebView 실기기 실행과 주문상세 딥링크 검증
-4. `ReferenceError: location is not defined` 빌드 로그 원인 제거
-5. Sentry/PWA E2E 검증
+1. 관리자 MQ 운영 화면 브라우저 E2E 검증
+2. 홈페이지 직접 주문 MVP 포함 여부 결정
+3. Toss 테스트 카드결제 성공/실패/환불 E2E
+4. Capacitor 원격 WebView 실기기 실행과 주문상세 딥링크 검증
+5. `ReferenceError: location is not defined` 빌드 로그 원인 제거
 
 ## 체크리스트 위치
 

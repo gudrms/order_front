@@ -197,10 +197,11 @@ export class OrdersController {
     @ApiParam({ name: 'storeId', description: '매장 ID' })
     @ApiQuery({ name: 'page', required: false, type: Number, description: '페이지 번호' })
     async getPosSyncFailures(
+        @CurrentUser() user: { id: string },
         @Param('storeId') storeId: string,
         @Query('page') page: number = 1,
     ) {
-        return this.ordersService.getPosSyncFailures(storeId, Number(page) || 1);
+        return this.ordersService.getPosSyncFailures(storeId, Number(page) || 1, user.id);
     }
 
     @Patch(':orderId/pos-sync/retry')
@@ -216,10 +217,11 @@ export class OrdersController {
     @ApiResponse({ status: 400, description: '재시도할 수 없는 주문 상태' })
     @ApiResponse({ status: 404, description: '주문을 찾을 수 없음' })
     async retryPosSync(
+        @CurrentUser() user: { id: string },
         @Param('storeId') storeId: string,
         @Param('orderId') orderId: string,
     ) {
-        return this.ordersService.retryPosSync(storeId, orderId);
+        return this.ordersService.retryPosSync(storeId, orderId, user.id);
     }
 
     @Patch(':orderId/status')
