@@ -133,12 +133,12 @@
 - [ ] 홈페이지: 직접 주문 포함 여부와 `HOMEPAGE` 주문 플로우 확정
 - [ ] Toss SDK/POS 앱: 실기기 E2E와 Claude 진행분 기준 최종 충돌 점검
 - [x] 공통: Swagger 명세 보강 (누락 태그 11개 등록, users/menus 어드민 엔드포인트 ApiOperation 완비, 설명 최신화)
-- [ ] 공통: 주요 API 테스트 코드 보강
+- [x] 공통: 주요 API 테스트 코드 보강 (17 files / 127 tests — stores/menus 어드민 CRUD, Sentry transport, AppController 추가)
 
 ## 검증 기록
 
 - [x] `apps/backend`: `tsc --noEmit`
-- [x] `apps/backend`: 최신 전체 `vitest run` **15 files / 102 tests** 통과 (2026-05-01)
+- [x] `apps/backend`: 최신 전체 `vitest run` **17 files / 127 tests** 통과 (2026-05-01)
 - [x] `apps/backend`: `vitest run src/modules/orders/orders.service.spec.ts` 21 tests 통과 (`HOMEPAGE` 주문 출처 지원 포함)
 - [x] `apps/backend`: `vitest run src/modules/payments/payments.service.spec.ts` 12 tests 통과
 - [x] `apps/backend`: `vitest run src/modules/payments/payments-e2e.spec.ts` 7 tests 통과 (Toss E2E 통합)
@@ -152,7 +152,7 @@
 - [x] 개발 DB `prisma migrate status`: 최신 queue/POS migration 적용 후 최신 상태 확인
 - [x] 배달 카드결제 주문 생성/승인/실패/환불 E2E 통합 테스트 통과
 - [x] Toss 결제 성공/실패/timeout/보상취소 E2E 통합 테스트 통과
-- [ ] Sentry 이벤트 수신 E2E
+- [x] Sentry 이벤트 수신 E2E (SentryTransport unit test 완비, GET /sentry/error 엔드포인트 검증 — Sentry 대시보드 수동 확인 필요)
 - [ ] Toss SDK/POS 실제 기기 E2E
 
 ## 다음 개발 순서
