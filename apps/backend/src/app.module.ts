@@ -15,6 +15,7 @@ import { ErrorLogsModule } from './modules/error-logs/error-logs.module';
 import { TossModule } from './modules/integrations/toss/toss.module';
 import { UsersModule } from './modules/users/users.module';
 import { PaymentsModule } from './modules/payments/payments.module';
+import { QueueModule } from './modules/queue';
 
 @Module({
     imports: [
@@ -50,6 +51,7 @@ import { PaymentsModule } from './modules/payments/payments.module';
         TossModule,
         UsersModule,
         PaymentsModule,
+        QueueModule,
     ],
     controllers: [AppController, HealthController],
     providers: [

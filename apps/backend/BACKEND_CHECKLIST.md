@@ -1,5 +1,5 @@
 # 백엔드 체크리스트
-마지막 업데이트: 2026-05-01
+마지막 업데이트: 2026-05-01 (QueueModule 등록 + Toss E2E 테스트 추가)
 
 ## 현재 백엔드 범위
 
@@ -82,6 +82,8 @@
 - [x] CORS `allowedHeaders`에 POS/Idempotency/Internal-Secret 헤더를 추가한다.
 - [x] `fetchMenuData` Mock 데이터에 프로덕션 환경 guard를 추가한다.
 - [x] `mapTossMethod` 중복 코드를 `common/utils/toss.utils.ts`로 추출한다.
+- [x] `QueueModule`을 `AppModule`에 등록하여 MQ 전체가 프로덕션에서 동작하도록 보장한다.
+- [x] Toss 카드결제 E2E 통합 테스트: 성공/실패/보상취소/전액환불/부분환불/타임아웃 6개 시나리오 (payments-e2e.spec.ts)
 
 ## 1차 PR 범위
 
@@ -109,7 +111,8 @@
 
 - [x] `npx.cmd tsc --noEmit`
 - [x] `npx.cmd prisma validate`
-- [x] `npx.cmd vitest run`: 12 files / 85 tests 통과
+- [x] `npx.cmd vitest run`: **15 files / 102 tests** 통과 (2026-05-01)
+- [x] `payments-e2e.spec.ts`: Toss E2E 통합 테스트 7 tests 통과
 
 ## 다음 순서
 
