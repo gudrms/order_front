@@ -4,6 +4,7 @@ import { CreateDeliveryOrderDto, CreateOrderDto } from './dto/create-order.dto';
 import { ResilientPosService } from '../integrations/pos/pos.resilience';
 import { SessionsService } from '../sessions/sessions.service';
 import { QueueService } from '../queue';
+import { assertCanManageStore } from '../../common/auth/permissions';
 
 @Injectable()
 export class OrdersService {
@@ -266,7 +267,11 @@ export class OrdersService {
         };
     }
 
-    async getPosSyncFailures(storeId: string, page: number = 1) {
+    async getPosSyncFailures(storeId: string, page: number = 1, userId?: string) {
+        if (userId) {
+            await this.assertCanManageStore(userId, storeId);
+        }
+
         const take = 20;
         const skip = (page - 1) * take;
         const where: any = {
@@ -295,7 +300,11 @@ export class OrdersService {
         };
     }
 
-    async retryPosSync(storeId: string, orderId: string) {
+    async retryPosSync(storeId: string, orderId: string, userId?: string) {
+        if (userId) {
+            await this.assertCanManageStore(userId, storeId);
+        }
+
         const order = await this.prisma.order.findUnique({
             where: { id: orderId },
         });
@@ -566,5 +575,18 @@ export class OrdersService {
             delivery: true,
             payments: true,
         };
+    }
+
+    private async assertCanManageStore(userId: string, storeId: string) {
+        const [user, store] = await Promise.all([
+            this.prisma.user.findUnique({ where: { id: userId } }),
+            this.prisma.store.findUnique({ where: { id: storeId } }),
+        ]);
+
+        if (!store) {
+            throw new NotFoundException('Store not found');
+        }
+
+        assertCanManageStore(user, store);
     }
 }

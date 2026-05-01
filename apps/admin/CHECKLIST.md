@@ -72,9 +72,9 @@
 - [x] 관리자 브라우저 E2E 점검표 추가: `apps/admin/ADMIN_E2E.md`
 - [x] 관리자 주문/매장 주요 API 오류 피드백 보강
 - [x] 관리자 메뉴/옵션 CRUD API 오류 피드백 보강
-- [ ] MQ 운영 화면 추가: POS 전송 실패와 알림 발송 실패 상태 표시
-- [ ] MQ 운영 화면에서 POS 전송 실패 수동 재시도 버튼 연결
-- [ ] MQ 운영 화면에서 알림 발송 실패 수동 재시도 버튼 연결
+- [x] MQ 운영 화면 추가: POS 전송 실패와 알림 발송 실패 상태 표시
+- [x] MQ 운영 화면에서 POS 전송 실패 수동 재시도 버튼 연결
+- [x] MQ 운영 화면에서 알림 발송 실패 수동 재시도 버튼 연결
 - [ ] MQ 운영 화면 브라우저 E2E 검증
 - [ ] Playwright 자동화 설정 및 테스트 러너 도입 검토
 
@@ -83,6 +83,7 @@
 - [x] `apps/backend`: `tsc --noEmit`
 - [x] `packages/shared`: `tsc --noEmit`
 - [x] `apps/admin`: `tsc --noEmit`
+- [x] `apps/backend`: `vitest run src/modules/orders/orders.service.spec.ts src/modules/queue/queue-operations.service.spec.ts` 25 tests 통과
 - [x] `apps/backend`: `vitest run src/modules/orders/orders.service.spec.ts` 17 tests 통과
 - [ ] 관리자 주문 상태 변경/배달 상태 변경 브라우저 E2E
 - [ ] 관리자 Toss 전액/부분 환불 브라우저 E2E
@@ -93,8 +94,8 @@
 
 ## 다음 순서
 
-1. MQ 운영 화면 추가: POS 전송 실패/알림 발송 실패 조회와 수동 재시도 연결
-2. MQ 운영 화면 브라우저 E2E 검증
-3. 관리자 주문 상태 변경/배달 상태 변경 브라우저 E2E 검증
-4. 관리자 Toss 전액/부분 환불 브라우저 E2E 검증
-5. 관리자 매장 설정/직접 메뉴/Toss 메뉴 동기화 브라우저 E2E 검증
+1. MQ 운영 화면 브라우저 E2E 검증
+2. 관리자 주문 상태 변경/배달 상태 변경 브라우저 E2E 검증
+3. 관리자 Toss 전액/부분 환불 브라우저 E2E 검증
+4. 관리자 매장 설정/직접 메뉴/Toss 메뉴 동기화 브라우저 E2E 검증
+5. 홈페이지 직접 주문 MVP 포함 여부 결정
