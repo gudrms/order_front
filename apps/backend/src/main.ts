@@ -76,19 +76,19 @@ async function bootstrap() {
 
     // Swagger Setup
     const config = new DocumentBuilder()
-        .setTitle('🍽️ Table Order System API')
+        .setTitle('🌮 Taco Mono API')
         .setDescription(`
-## 태블릿 기반 무인 주문 시스템 API
+## 배달앱 · 테이블오더 · 홈페이지 통합 주문 API
 
-### 주요 기능
-- 📱 매장 및 메뉴 조회
-- 🛒 주문 생성 및 관리
-- 🔔 에러 로깅
-- 🔐 JWT 인증
+### 채널별 주문 흐름
+- **배달앱 (DELIVERY_APP)**: 로그인 필수 → Toss 선결제 → PAID 확정 → MQ 처리
+- **테이블오더 (TABLE_ORDER)**: QR 세션 기반 → 테이블별 첫 주문/추가 주문
+- **홈페이지 (HOMEPAGE)**: 직접 주문 → Toss 결제 → MQ worker 후처리
+- **POS 연동**: PAID 주문을 POS 플러그인이 polling 수신
 
-### 인증 방법
-Bearer Token을 사용하여 인증합니다.
-\`Authorization: Bearer <token>\`
+### 인증
+Supabase JWT를 Bearer Token으로 전달합니다.
+\`Authorization: Bearer <supabase_jwt>\`
 
 ### Base URL
 - Development: http://localhost:4000/api/v1
@@ -115,9 +115,16 @@ Bearer Token을 사용하여 인증합니다.
             'JWT-auth',
         )
         .addTag('Stores', '매장 관리 API')
-        .addTag('Menus', '메뉴 조회 API')
+        .addTag('Menus', '메뉴 조회/관리 API')
         .addTag('Orders', '주문 관리 API')
-        .addTag('Auth', '인증 API')
+        .addTag('Payments', 'Toss 결제 승인/취소/환불 API')
+        .addTag('Auth', '인증 및 사용자 동기화 API')
+        .addTag('Users', '사용자 주소/찜 관리 API')
+        .addTag('Sessions', '테이블 세션 API')
+        .addTag('Queue', '내부 큐 처리 API')
+        .addTag('Queue Operations', 'MQ 운영 관리 API')
+        .addTag('Integrations', 'Toss POS 메뉴 동기화 API')
+        .addTag('POS Integration', 'POS 플러그인 연동 API')
         .addTag('Error Logs', '에러 로깅 API')
         .build();
 
