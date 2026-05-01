@@ -34,7 +34,7 @@
 - [x] `pos.send_order`: POS 전송 시도를 주문/결제 응답 경로에서 분리한다.
 - [x] `notification.send`: 비즈니스 최종 이벤트에서만 알림 작업을 만들고 dedupe key로 중복을 막는다.
 - [x] `payment.expire_pending`: pending 결제 만료 처리는 내부 secret 보호 endpoint를 scheduled worker에서 호출하는 방향으로 정한다.
-- [ ] `delivery.status_changed`: 배달 상태 변경 후 알림과 downstream tracking에 사용한다.
+- [x] `delivery.status_changed`: 배달 상태 변경 후 알림과 downstream tracking에 사용한다.
 
 ## REST/동기 처리로 유지할 것
 
@@ -48,8 +48,8 @@
 ## 안전 규칙
 
 - [x] `Order.status` / `Payment.status`가 DB에 확정되기 전에는 고객에게 "주문 접수/확정" 알림을 보내지 않는다.
-- [ ] 카드사/Toss 앱의 결제 승인 알림은 외부 알림이라 막을 수 없으므로, 로컬 확정 실패 시 빠르게 보상 처리한다.
-- [ ] Toss 승인 성공 후 로컬 DB 저장이 실패하면 MQ에만 맡기지 말고 같은 요청 경로에서 즉시 결제 취소/환불을 시도한다.
+- [x] 카드사/Toss 앱의 결제 승인 알림은 외부 알림이라 막을 수 없으므로, 로컬 확정 실패 시 빠르게 보상 처리한다.
+- [x] Toss 승인 성공 후 로컬 DB 저장이 실패하면 MQ에만 맡기지 말고 같은 요청 경로에서 즉시 결제 취소/환불을 시도한다.
 - [x] consumer는 `eventType + orderId + paymentId` 같은 키로 idempotent하게 만든다.
 - [x] `posSyncStatus`, 재시도 횟수, 마지막 오류처럼 처리 상태는 비즈니스 상태와 분리해 저장한다.
 - [x] 큐 인증 정보나 consumer 처리 로직은 프론트 앱에 노출하지 않는다.
@@ -76,7 +76,7 @@
 - [x] 큐 발행 실패를 `QueueEventLog`에 남겨 후속 운영 복구가 가능하게 한다.
 - [x] `expire-pending`, `reconcile`, `queue/process-once` 운영 endpoint를 내부 secret으로 보호한다.
 - [ ] 실제 운영 DB에 최신 queue/POS migration을 적용한다.
-- [ ] 알림 provider(Push/SMS/Email 등)를 연결해 `notification.send`가 실제 발송까지 수행하게 한다.
+- [x] 알림 provider(Push/SMS/Email 등)를 연결해 `notification.send`가 실제 발송까지 수행하게 한다.
 - [x] Toss 승인 성공 후 로컬 DB 저장 실패 시 즉시 보상 취소/환불을 수행한다.
 - [x] `delivery.status_changed` 이벤트 발행/consumer 처리를 추가한다.
 - [x] CORS `allowedHeaders`에 POS/Idempotency/Internal-Secret 헤더를 추가한다.
@@ -103,7 +103,7 @@
 - [x] 알림 작업 생성과 dedupe 기록을 queue consumer로 이동한다.
 - [x] 알림 dedupe key를 추가한다: `recipientId + notificationType + orderId`.
 - [x] 내부 retry/failure 이벤트가 고객 알림을 발생시키지 않도록 보장한다.
-- [ ] 실제 알림 provider 발송과 성공/실패 상태 갱신을 추가한다.
+- [x] 실제 알림 provider 발송과 성공/실패 상태 갱신을 추가한다.
 
 ## 검증 기록
 

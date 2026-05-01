@@ -7,6 +7,7 @@ describe('QueueConsumerService', () => {
     let prisma: any;
     let tossApiService: any;
     let posService: any;
+    let notificationProvider: any;
 
     beforeEach(() => {
         queueService = {
@@ -27,6 +28,7 @@ describe('QueueConsumerService', () => {
             notificationLog: {
                 findUnique: vi.fn(),
                 upsert: vi.fn(),
+                update: vi.fn(),
             },
             order: {
                 findFirst: vi.fn(),
@@ -44,7 +46,16 @@ describe('QueueConsumerService', () => {
         posService = {
             sendOrder: vi.fn(),
         };
-        service = new QueueConsumerService(queueService, prisma, tossApiService, posService);
+        notificationProvider = {
+            send: vi.fn(),
+        };
+        service = new QueueConsumerService(
+            queueService,
+            prisma,
+            tossApiService,
+            posService,
+            notificationProvider,
+        );
     });
 
     it('records queue processing and archives a valid message', async () => {
@@ -244,7 +255,7 @@ describe('QueueConsumerService', () => {
         );
     });
 
-    it('records notification send jobs with a dedupe key', async () => {
+    it('sends notification jobs and records success with a dedupe key', async () => {
         queueService.read.mockResolvedValue([
             {
                 msg_id: 6,
@@ -269,6 +280,7 @@ describe('QueueConsumerService', () => {
         prisma.queueEventLog.findUnique.mockResolvedValue(null);
         prisma.queueEventLog.upsert.mockResolvedValue({ status: 'PROCESSING' });
         prisma.notificationLog.findUnique.mockResolvedValue(null);
+        notificationProvider.send.mockResolvedValue({ provider: 'in_app' });
 
         const result = await service.processOnce();
 
@@ -282,11 +294,26 @@ describe('QueueConsumerService', () => {
                 orderId: 'order-6',
                 storeId: 'store-1',
                 channel: 'IN_APP',
-                status: 'SKIPPED',
+                status: 'PENDING',
+                lastError: null,
             }),
             update: expect.objectContaining({
-                status: 'SKIPPED',
+                status: 'PENDING',
+                lastError: null,
             }),
+        });
+        expect(notificationProvider.send).toHaveBeenCalledWith(expect.objectContaining({
+            recipientType: 'STORE',
+            notificationType: 'ORDER_PAID',
+            orderId: 'order-6',
+        }));
+        expect(prisma.notificationLog.update).toHaveBeenCalledWith({
+            where: { dedupeKey: 'store-1:ORDER_PAID:order-6' },
+            data: {
+                status: 'SENT',
+                sentAt: expect.any(Date),
+                lastError: 'in_app',
+            },
         });
         expect(queueService.archive).toHaveBeenCalledWith(undefined, 6);
     });
@@ -320,6 +347,55 @@ describe('QueueConsumerService', () => {
 
         expect(prisma.notificationLog.upsert).not.toHaveBeenCalled();
         expect(queueService.archive).toHaveBeenCalledWith(undefined, 7);
+    });
+
+    it('records notification provider failures and retries the message', async () => {
+        queueService.read.mockResolvedValue([
+            {
+                msg_id: 12,
+                read_ct: 1,
+                enqueued_at: new Date(),
+                vt: new Date(),
+                message: {
+                    eventId: 'event-12',
+                    eventType: 'notification.send',
+                    idempotencyKey: 'notification.send:store-1:ORDER_PAID:order-12',
+                    occurredAt: new Date().toISOString(),
+                    payload: {
+                        recipientType: 'STORE',
+                        recipientId: 'store-1',
+                        notificationType: 'ORDER_PAID',
+                        orderId: 'order-12',
+                    },
+                },
+            },
+        ]);
+        prisma.queueEventLog.findUnique.mockResolvedValue(null);
+        prisma.queueEventLog.upsert.mockResolvedValue({ status: 'PROCESSING', attemptCount: 1 });
+        prisma.queueEventLog.update.mockResolvedValue({ attemptCount: 1 });
+        prisma.notificationLog.findUnique.mockResolvedValue(null);
+        notificationProvider.send.mockRejectedValue(new Error('provider timeout'));
+
+        const result = await service.processOnce();
+
+        expect(result).toEqual({ processedCount: 0 });
+        expect(prisma.notificationLog.update).toHaveBeenCalledWith({
+            where: { dedupeKey: 'store-1:ORDER_PAID:order-12' },
+            data: {
+                status: 'FAILED',
+                lastError: 'provider timeout',
+            },
+        });
+        expect(queueService.retry).toHaveBeenCalledWith(
+            expect.objectContaining({
+                eventType: 'notification.send',
+                idempotencyKey: 'notification.send:store-1:ORDER_PAID:order-12',
+            }),
+            {
+                queueName: 'backend_events',
+                delaySeconds: 10,
+            },
+        );
     });
 
     it('reconciles a Toss payment that is paid remotely but not locally', async () => {
