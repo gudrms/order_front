@@ -132,4 +132,92 @@ describe('StoresService', () => {
 
         expect(prisma.table.createMany).not.toHaveBeenCalled();
     });
+
+    it('returns store by id', async () => {
+        prisma.store.findUnique.mockResolvedValue(store);
+
+        const result = await service.getStore('store-1');
+
+        expect(result).toEqual(store);
+        expect(prisma.store.findUnique).toHaveBeenCalledWith({ where: { id: 'store-1' } });
+    });
+
+    it('returns null when store id is not found', async () => {
+        prisma.store.findUnique.mockResolvedValue(null);
+
+        const result = await service.getStore('nonexistent');
+
+        expect(result).toBeNull();
+    });
+
+    it('returns store by storeType and branchId path', async () => {
+        prisma.store.findUnique.mockResolvedValue(store);
+
+        const result = await service.getStoreByPath('tacomolly', 'gimpo');
+
+        expect(result).toEqual(store);
+        expect(prisma.store.findUnique).toHaveBeenCalledWith({
+            where: { storeType_branchId: { storeType: 'tacomolly', branchId: 'gimpo' } },
+        });
+    });
+
+    it('lists stores owned by the authenticated user', async () => {
+        prisma.store.findMany.mockResolvedValue([store]);
+
+        const result = await service.getMyStores('owner-1');
+
+        expect(result).toEqual([store]);
+        expect(prisma.store.findMany).toHaveBeenCalledWith({
+            where: { ownerId: 'owner-1' },
+            orderBy: { createdAt: 'desc' },
+        });
+    });
+
+    it('refreshes the invite code for an owner of the store', async () => {
+        prisma.user.findUnique.mockResolvedValue(owner);
+        prisma.store.findUnique.mockResolvedValue(store);
+        prisma.store.update.mockResolvedValue({ id: 'store-1', inviteCode: 'NEWCODE-XYZ' });
+
+        const result = await service.refreshInviteCode('owner-1', 'store-1');
+
+        expect(prisma.store.update).toHaveBeenCalledWith(expect.objectContaining({
+            where: { id: 'store-1' },
+            data: expect.objectContaining({ inviteCode: expect.any(String) }),
+        }));
+        expect(result.inviteCode).toBeDefined();
+    });
+
+    it('blocks non-owner from refreshing another store invite code', async () => {
+        const otherOwner = { id: 'other-owner', role: 'OWNER' };
+        prisma.user.findUnique.mockResolvedValue(otherOwner);
+        prisma.store.findUnique.mockResolvedValue(store);
+
+        await expect(service.refreshInviteCode('other-owner', 'store-1')).rejects.toBeInstanceOf(ForbiddenException);
+    });
+
+    it('returns tables for an authorized owner', async () => {
+        const tables = [
+            { storeId: 'store-1', tableNumber: 1, capacity: 4 },
+            { storeId: 'store-1', tableNumber: 2, capacity: 4 },
+        ];
+        prisma.user.findUnique.mockResolvedValue(owner);
+        prisma.store.findUnique.mockResolvedValue(store);
+        prisma.table.findMany.mockResolvedValue(tables);
+
+        const result = await service.getTables('owner-1', 'store-1');
+
+        expect(result).toEqual(tables);
+        expect(prisma.table.findMany).toHaveBeenCalledWith({
+            where: { storeId: 'store-1' },
+            orderBy: { tableNumber: 'asc' },
+        });
+    });
+
+    it('blocks non-owner from accessing tables of another store', async () => {
+        const otherOwner = { id: 'other-owner', role: 'OWNER' };
+        prisma.user.findUnique.mockResolvedValue(otherOwner);
+        prisma.store.findUnique.mockResolvedValue(store);
+
+        await expect(service.getTables('other-owner', 'store-1')).rejects.toBeInstanceOf(ForbiddenException);
+    });
 });
