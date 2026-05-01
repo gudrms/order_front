@@ -110,3 +110,11 @@
 - [x] `npx.cmd tsc --noEmit`
 - [x] `npx.cmd prisma validate`
 - [x] `npx.cmd vitest run`: 12 files / 85 tests 통과
+
+## 다음 순서
+
+1. Swagger 명세 보강: 주문/결제/MQ 운영 endpoint 응답 예시와 인증 헤더 정리
+2. 주요 API 테스트 코드 보강: 주문 생성, 결제 승인/실패, MQ 운영 endpoint 권한 경계 재확인
+3. 최신 전체 `vitest run` 재실행 후 오래된 실패 기록 정리
+4. Vercel Cron 또는 운영 배치에서 `queue/process-once`, `expire-pending`, `reconcile` 호출 방식 문서화
+5. Vercel Queues 전환 검토는 consumer를 별도 Vercel native queue function으로 분리할 때 재평가
