@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { TossApiService } from '../integrations/toss/toss-api.service';
 import { ResilientPosService } from '../integrations/pos/pos.resilience';
+import { NotificationProviderService } from './notification-provider.service';
 import {
     BackendQueueEvent,
     DeliveryStatusChangedEventPayload,
@@ -25,6 +26,7 @@ export class QueueConsumerService {
         private readonly prisma: PrismaService,
         @Optional() private readonly tossApiService?: TossApiService,
         @Optional() private readonly posService?: ResilientPosService,
+        @Optional() private readonly notificationProvider?: NotificationProviderService,
     ) { }
 
     async processOnce(options: {
@@ -206,7 +208,7 @@ export class QueueConsumerService {
             where: { dedupeKey },
         });
 
-        if (existing?.status === 'SENT' || existing?.status === 'SKIPPED') {
+        if (existing?.status === 'SENT') {
             return;
         }
 
@@ -220,9 +222,9 @@ export class QueueConsumerService {
                 storeId: payload.storeId,
                 channel: payload.channel || 'IN_APP',
                 dedupeKey,
-                status: 'SKIPPED',
+                status: 'PENDING',
                 payload: this.toJsonPayload(payload),
-                lastError: 'Notification provider is not configured yet',
+                lastError: null,
             },
             update: {
                 recipientType: payload.recipientType,
@@ -231,11 +233,38 @@ export class QueueConsumerService {
                 orderId: payload.orderId,
                 storeId: payload.storeId,
                 channel: payload.channel || 'IN_APP',
-                status: 'SKIPPED',
+                status: 'PENDING',
                 payload: this.toJsonPayload(payload),
-                lastError: 'Notification provider is not configured yet',
+                lastError: null,
             },
         });
+
+        if (!this.notificationProvider) {
+            throw new Error('Notification provider is not configured');
+        }
+
+        try {
+            const result = await this.notificationProvider.send(payload);
+            await this.prisma.notificationLog.update({
+                where: { dedupeKey },
+                data: {
+                    status: 'SENT',
+                    sentAt: new Date(),
+                    lastError: result.messageId
+                        ? `${result.provider}:${result.messageId}`
+                        : result.provider,
+                },
+            });
+        } catch (error) {
+            await this.prisma.notificationLog.update({
+                where: { dedupeKey },
+                data: {
+                    status: 'FAILED',
+                    lastError: (error as Error).message,
+                },
+            });
+            throw error;
+        }
     }
 
     private async handlePaymentReconcile(event: BackendQueueEvent<PaymentReconcileEventPayload>) {
