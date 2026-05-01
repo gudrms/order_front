@@ -1,4 +1,5 @@
 export type PaymentMethod = 'CARD' | 'TOSS' | 'KAKAO' | 'NAVER' | 'SAMSUNG' | 'PAYCO' | 'CASH';
+export type OrderChannel = 'TABLE_ORDER' | 'DELIVERY_APP' | 'HOMEPAGE' | 'ADMIN' | 'TOSS_SDK' | 'POS';
 
 export interface PaymentRequest {
     orderId: string;
@@ -52,6 +53,7 @@ export interface CreateDeliveryOrderRequest {
     storeId: string;
     tableId?: string; // 선택적 (배달은 없음)
     userId?: string;
+    source?: Extract<OrderChannel, 'DELIVERY_APP' | 'HOMEPAGE'>;
     delivery: DeliveryOrderAddressInput;
     items: PaymentOrderItemInput[];
     totalAmount: number;

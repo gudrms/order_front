@@ -148,7 +148,28 @@ describe('OrdersService', () => {
                 orderNumber: '0009',
                 status: 'PENDING_PAYMENT',
                 paymentStatus: 'READY',
+                source: 'DELIVERY_APP',
                 totalAmount: 15000,
+            }),
+        }));
+    });
+
+    it('creates a homepage delivery order with HOMEPAGE source', async () => {
+        tx.store.findUnique.mockResolvedValue(store);
+        tx.menu.findMany.mockResolvedValue([menu]);
+        tx.order.count.mockResolvedValue(9);
+        tx.order.create.mockResolvedValue({ id: 'order-2', source: 'HOMEPAGE' });
+
+        const result = await service.createDeliveryOrder('store-1', {
+            ...dto,
+            source: 'HOMEPAGE',
+        });
+
+        expect(result).toEqual({ id: 'order-2', source: 'HOMEPAGE' });
+        expect(tx.order.create).toHaveBeenCalledWith(expect.objectContaining({
+            data: expect.objectContaining({
+                orderNumber: '0010',
+                source: 'HOMEPAGE',
             }),
         }));
     });

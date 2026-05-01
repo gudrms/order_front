@@ -1,4 +1,4 @@
-import type { CancelOrderRequest, CreateOrderRequest, Order, OrderListResponse, OrderStatus, OrderDelivery, OrderPayment, UpdateDeliveryStatusRequest } from '../../types';
+import type { CancelOrderRequest, CreateOrderRequest, Order, OrderChannel, OrderListResponse, OrderStatus, OrderDelivery, OrderPayment, UpdateDeliveryStatusRequest } from '../../types';
 import type { OrderResponse } from '../../types';
 import { apiClient } from '../client';
 
@@ -28,7 +28,7 @@ interface BackendOrder {
     storeId: string;
     userId?: string | null;
     type?: string;
-    source?: string;
+    source?: OrderChannel;
     status: OrderStatus;
     paymentStatus?: string;
     totalAmount: number;
