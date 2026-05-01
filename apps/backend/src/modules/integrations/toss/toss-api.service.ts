@@ -177,7 +177,14 @@ export class TossApiService {
     }
 
     async fetchMenuData(storeId: string): Promise<TossMenuData> {
-        // 실제 Toss API 연동 대신 Mock Data 반환
+        // 프로덕션에서는 Mock 데이터 반환을 차단. 실제 Toss API 연동이 필요.
+        if (process.env.NODE_ENV === 'production') {
+            throw new InternalServerErrorException(
+                'fetchMenuData is not implemented for production. Menu data should come from POS catalog sync.',
+            );
+        }
+
+        // 개발 환경에서만 Mock Data 반환
         return {
             categories: [
                 { categoryCode: 'CAT-001', categoryName: '메인 메뉴', displayOrder: 1 },

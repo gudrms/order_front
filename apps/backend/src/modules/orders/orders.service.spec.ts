@@ -72,6 +72,7 @@ describe('OrdersService', () => {
 
         queueService = {
             publishPosSendOrder: vi.fn(),
+            publishDeliveryStatusChanged: vi.fn(),
         };
 
         service = new OrdersService(prisma, {} as any, {} as any, queueService);

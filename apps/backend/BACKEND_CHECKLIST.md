@@ -77,8 +77,11 @@
 - [x] `expire-pending`, `reconcile`, `queue/process-once` 운영 endpoint를 내부 secret으로 보호한다.
 - [ ] 실제 운영 DB에 최신 queue/POS migration을 적용한다.
 - [ ] 알림 provider(Push/SMS/Email 등)를 연결해 `notification.send`가 실제 발송까지 수행하게 한다.
-- [ ] Toss 승인 성공 후 로컬 DB 저장 실패 시 즉시 보상 취소/환불을 수행한다.
-- [ ] `delivery.status_changed` 이벤트 발행/consumer 처리를 추가한다.
+- [x] Toss 승인 성공 후 로컬 DB 저장 실패 시 즉시 보상 취소/환불을 수행한다.
+- [x] `delivery.status_changed` 이벤트 발행/consumer 처리를 추가한다.
+- [x] CORS `allowedHeaders`에 POS/Idempotency/Internal-Secret 헤더를 추가한다.
+- [x] `fetchMenuData` Mock 데이터에 프로덕션 환경 guard를 추가한다.
+- [x] `mapTossMethod` 중복 코드를 `common/utils/toss.utils.ts`로 추출한다.
 
 ## 1차 PR 범위
 

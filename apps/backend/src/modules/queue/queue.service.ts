@@ -3,6 +3,7 @@ import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import {
     BackendQueueEvent,
+    DeliveryStatusChangedEventPayload,
     NotificationSendEventPayload,
     OrderPaidEventPayload,
     PaymentPaidEventPayload,
@@ -82,6 +83,12 @@ export class QueueService {
     async publishPaymentRefunded(payload: PaymentRefundedEventPayload): Promise<void> {
         await this.publish('payment.refunded', payload, {
             idempotencyKey: `payment.refunded:${payload.paymentId}:${payload.totalCancelledAmount}`,
+        });
+    }
+
+    async publishDeliveryStatusChanged(payload: DeliveryStatusChangedEventPayload): Promise<void> {
+        await this.publish('delivery.status_changed', payload, {
+            idempotencyKey: `delivery.status_changed:${payload.orderId}:${payload.newStatus}`,
         });
     }
 

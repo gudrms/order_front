@@ -536,11 +536,24 @@ export class OrdersService {
             orderUpdateData.cancelReason = options.riderMemo?.trim() || 'Delivery cancelled by store';
         }
 
-        return this.prisma.order.update({
+        const previousDeliveryStatus = order.delivery.status;
+
+        const updatedOrder = await this.prisma.order.update({
             where: { id: orderId },
             data: orderUpdateData,
             include: this.orderInclude(),
         });
+
+        // DB commit 후 delivery.status_changed 이벤트 발행
+        await this.queueService?.publishDeliveryStatusChanged({
+            orderId,
+            storeId,
+            userId: order.userId || undefined,
+            previousStatus: previousDeliveryStatus,
+            newStatus: deliveryStatus,
+        });
+
+        return updatedOrder;
     }
 
     private orderInclude() {

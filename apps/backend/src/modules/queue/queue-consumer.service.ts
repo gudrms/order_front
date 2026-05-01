@@ -1,10 +1,12 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
+import { mapTossMethod } from '../../common/utils/toss.utils';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { TossApiService } from '../integrations/toss/toss-api.service';
 import { ResilientPosService } from '../integrations/pos/pos.resilience';
 import {
     BackendQueueEvent,
+    DeliveryStatusChangedEventPayload,
     NotificationSendEventPayload,
     PaymentReconcileEventPayload,
     QueueEventPayload,
@@ -95,6 +97,11 @@ export class QueueConsumerService {
 
         if (event.eventType === 'payment.reconcile') {
             await this.handlePaymentReconcile(event as BackendQueueEvent<PaymentReconcileEventPayload>);
+            return;
+        }
+
+        if (event.eventType === 'delivery.status_changed') {
+            await this.handleDeliveryStatusChanged(event as BackendQueueEvent<DeliveryStatusChangedEventPayload>);
         }
     }
 
@@ -275,7 +282,7 @@ export class QueueConsumerService {
                 data: {
                     status: 'PAID',
                     paymentKey: tossPayment?.paymentKey || payment.paymentKey,
-                    method: this.mapTossMethod(tossPayment?.method),
+                    method: mapTossMethod(tossPayment?.method),
                     approvedAmount,
                     approvedAt: tossPayment?.approvedAt ? new Date(tossPayment.approvedAt) : new Date(),
                     receiptUrl: tossPayment?.receipt?.url,
@@ -449,11 +456,42 @@ export class QueueConsumerService {
         return this.backoffSeconds[Math.min(attemptCount - 1, this.backoffSeconds.length - 1)];
     }
 
-    private mapTossMethod(method?: string) {
-        if (!method) {
-            return 'TOSS';
+    private async handleDeliveryStatusChanged(event: BackendQueueEvent<DeliveryStatusChangedEventPayload>) {
+        const payload = event.payload;
+        if (!payload.orderId || !payload.storeId || !payload.newStatus) {
+            throw new Error('delivery.status_changed payload requires orderId, storeId, and newStatus');
         }
 
-        return method === '카드' || method.toLowerCase().includes('card') ? 'CARD' : 'TOSS';
+        // 배달 완료/취소 등 고객에게 알림이 필요한 상태 변경에 대해 알림 발행.
+        const notifiableStatuses = ['ASSIGNED', 'PICKED_UP', 'DELIVERING', 'DELIVERED', 'CANCELLED'];
+        if (notifiableStatuses.includes(payload.newStatus)) {
+            const notificationType = payload.newStatus === 'DELIVERED'
+                ? 'ORDER_CONFIRMED' as const
+                : 'DELIVERY_STATUS_CHANGED' as const;
+
+            // 고객 알림
+            if (payload.userId) {
+                await this.queueService.publishNotificationSend({
+                    recipientType: 'CUSTOMER',
+                    recipientId: payload.userId,
+                    notificationType,
+                    orderId: payload.orderId,
+                    storeId: payload.storeId,
+                    channel: 'IN_APP',
+                });
+            }
+
+            // 매장 알림 (배달 취소 시)
+            if (payload.newStatus === 'CANCELLED') {
+                await this.queueService.publishNotificationSend({
+                    recipientType: 'STORE',
+                    recipientId: payload.storeId,
+                    notificationType: 'DELIVERY_STATUS_CHANGED',
+                    orderId: payload.orderId,
+                    storeId: payload.storeId,
+                    channel: 'IN_APP',
+                });
+            }
+        }
     }
 }
