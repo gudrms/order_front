@@ -133,8 +133,8 @@
 
 ## 다음 순서
 
-1. 관리자 MQ 운영 화면 연결 후 결제 성공 주문의 POS/알림 중복 노출 여부 E2E 확인
-2. Toss 테스트 카드결제 성공/실패/환불 E2E
+1. Toss 테스트 카드결제 성공/실패/환불 E2E
+2. 결제 성공 주문의 POS/알림 후처리 중 고객 중복 노출 여부 E2E 확인
 3. Capacitor 원격 WebView 실기기 실행과 `/orders/[id]` 딥링크 진입 검증
 4. `ReferenceError: location is not defined` 빌드 로그 원인 제거
 5. Sentry/PWA E2E 검증
