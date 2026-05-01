@@ -58,7 +58,11 @@ export class MenusController {
     @UseGuards(SupabaseGuard)
     @ApiBearerAuth('JWT-auth')
     @UsePipes(new ValidationPipe({ transform: true }))
+    @ApiOperation({ summary: '카테고리 생성', description: '매장 관리자가 새 메뉴 카테고리를 추가합니다.' })
+    @ApiParam({ name: 'storeId', description: '매장 ID (UUID)' })
     @ApiBody({ type: CreateMenuCategoryDto })
+    @ApiResponse({ status: 201, description: '카테고리 생성 성공' })
+    @ApiResponse({ status: 401, description: '인증 실패' })
     async createCategory(
         @CurrentUser() user: { id: string },
         @Param('storeId') storeId: string,
@@ -114,6 +118,11 @@ export class MenusController {
     @Get('admin/menus')
     @UseGuards(SupabaseGuard)
     @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: '관리자 메뉴 목록 조회', description: '관리자용 메뉴 목록을 조회합니다. 숨김/품절 포함.' })
+    @ApiParam({ name: 'storeId', description: '매장 ID (UUID)' })
+    @ApiQuery({ name: 'categoryId', required: false, description: '카테고리 ID' })
+    @ApiResponse({ status: 200, description: '메뉴 목록 조회 성공' })
+    @ApiResponse({ status: 401, description: '인증 실패' })
     async getAdminMenus(
         @CurrentUser() user: { id: string },
         @Param('storeId') storeId: string,
@@ -126,7 +135,11 @@ export class MenusController {
     @UseGuards(SupabaseGuard)
     @ApiBearerAuth('JWT-auth')
     @UsePipes(new ValidationPipe({ transform: true }))
+    @ApiOperation({ summary: '메뉴 생성', description: '매장 관리자가 새 메뉴를 등록합니다.' })
+    @ApiParam({ name: 'storeId', description: '매장 ID (UUID)' })
     @ApiBody({ type: CreateMenuDto })
+    @ApiResponse({ status: 201, description: '메뉴 생성 성공' })
+    @ApiResponse({ status: 401, description: '인증 실패' })
     async createMenu(
         @CurrentUser() user: { id: string },
         @Param('storeId') storeId: string,
@@ -139,7 +152,13 @@ export class MenusController {
     @UseGuards(SupabaseGuard)
     @ApiBearerAuth('JWT-auth')
     @UsePipes(new ValidationPipe({ transform: true }))
+    @ApiOperation({ summary: '메뉴 수정', description: '매장 관리자가 메뉴 정보를 수정합니다.' })
+    @ApiParam({ name: 'storeId', description: '매장 ID (UUID)' })
+    @ApiParam({ name: 'menuId', description: '메뉴 ID' })
     @ApiBody({ type: UpdateMenuDto })
+    @ApiResponse({ status: 200, description: '메뉴 수정 성공' })
+    @ApiResponse({ status: 401, description: '인증 실패' })
+    @ApiResponse({ status: 404, description: '메뉴를 찾을 수 없음' })
     async updateMenu(
         @CurrentUser() user: { id: string },
         @Param('storeId') storeId: string,
@@ -153,6 +172,11 @@ export class MenusController {
     @UseGuards(SupabaseGuard)
     @ApiBearerAuth('JWT-auth')
     @UsePipes(new ValidationPipe({ transform: true }))
+    @ApiOperation({ summary: '옵션 그룹 생성', description: '메뉴에 옵션 그룹(예: 맵기 선택)을 추가합니다.' })
+    @ApiParam({ name: 'storeId', description: '매장 ID' })
+    @ApiParam({ name: 'menuId', description: '메뉴 ID' })
+    @ApiResponse({ status: 201, description: '옵션 그룹 생성 성공' })
+    @ApiResponse({ status: 401, description: '인증 실패' })
     async createOptionGroup(
         @CurrentUser() user: { id: string },
         @Param('storeId') storeId: string,
@@ -166,6 +190,12 @@ export class MenusController {
     @UseGuards(SupabaseGuard)
     @ApiBearerAuth('JWT-auth')
     @UsePipes(new ValidationPipe({ transform: true }))
+    @ApiOperation({ summary: '옵션 그룹 수정', description: '옵션 그룹 이름이나 필수 여부를 수정합니다.' })
+    @ApiParam({ name: 'storeId', description: '매장 ID' })
+    @ApiParam({ name: 'menuId', description: '메뉴 ID' })
+    @ApiParam({ name: 'groupId', description: '옵션 그룹 ID' })
+    @ApiResponse({ status: 200, description: '옵션 그룹 수정 성공' })
+    @ApiResponse({ status: 401, description: '인증 실패' })
     async updateOptionGroup(
         @CurrentUser() user: { id: string },
         @Param('storeId') storeId: string,
@@ -180,6 +210,12 @@ export class MenusController {
     @UseGuards(SupabaseGuard)
     @ApiBearerAuth('JWT-auth')
     @HttpCode(204)
+    @ApiOperation({ summary: '옵션 그룹 삭제', description: '옵션 그룹과 하위 옵션을 모두 삭제합니다.' })
+    @ApiParam({ name: 'storeId', description: '매장 ID' })
+    @ApiParam({ name: 'menuId', description: '메뉴 ID' })
+    @ApiParam({ name: 'groupId', description: '옵션 그룹 ID' })
+    @ApiResponse({ status: 204, description: '옵션 그룹 삭제 성공' })
+    @ApiResponse({ status: 401, description: '인증 실패' })
     async deleteOptionGroup(
         @CurrentUser() user: { id: string },
         @Param('storeId') storeId: string,
@@ -193,6 +229,12 @@ export class MenusController {
     @UseGuards(SupabaseGuard)
     @ApiBearerAuth('JWT-auth')
     @UsePipes(new ValidationPipe({ transform: true }))
+    @ApiOperation({ summary: '옵션 항목 생성', description: '옵션 그룹에 선택 항목(예: 순한맛)을 추가합니다.' })
+    @ApiParam({ name: 'storeId', description: '매장 ID' })
+    @ApiParam({ name: 'menuId', description: '메뉴 ID' })
+    @ApiParam({ name: 'groupId', description: '옵션 그룹 ID' })
+    @ApiResponse({ status: 201, description: '옵션 항목 생성 성공' })
+    @ApiResponse({ status: 401, description: '인증 실패' })
     async createOption(
         @CurrentUser() user: { id: string },
         @Param('storeId') storeId: string,
@@ -207,6 +249,13 @@ export class MenusController {
     @UseGuards(SupabaseGuard)
     @ApiBearerAuth('JWT-auth')
     @UsePipes(new ValidationPipe({ transform: true }))
+    @ApiOperation({ summary: '옵션 항목 수정', description: '옵션 항목의 이름, 가격, 품절 여부를 수정합니다.' })
+    @ApiParam({ name: 'storeId', description: '매장 ID' })
+    @ApiParam({ name: 'menuId', description: '메뉴 ID' })
+    @ApiParam({ name: 'groupId', description: '옵션 그룹 ID' })
+    @ApiParam({ name: 'optionId', description: '옵션 항목 ID' })
+    @ApiResponse({ status: 200, description: '옵션 항목 수정 성공' })
+    @ApiResponse({ status: 401, description: '인증 실패' })
     async updateOption(
         @CurrentUser() user: { id: string },
         @Param('storeId') storeId: string,
@@ -222,6 +271,13 @@ export class MenusController {
     @UseGuards(SupabaseGuard)
     @ApiBearerAuth('JWT-auth')
     @HttpCode(204)
+    @ApiOperation({ summary: '옵션 항목 삭제', description: '옵션 그룹에서 선택 항목을 삭제합니다.' })
+    @ApiParam({ name: 'storeId', description: '매장 ID' })
+    @ApiParam({ name: 'menuId', description: '메뉴 ID' })
+    @ApiParam({ name: 'groupId', description: '옵션 그룹 ID' })
+    @ApiParam({ name: 'optionId', description: '옵션 항목 ID' })
+    @ApiResponse({ status: 204, description: '옵션 항목 삭제 성공' })
+    @ApiResponse({ status: 401, description: '인증 실패' })
     async deleteOption(
         @CurrentUser() user: { id: string },
         @Param('storeId') storeId: string,
