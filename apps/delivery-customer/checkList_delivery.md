@@ -1,5 +1,5 @@
 # 배달앱 체크리스트
-마지막 업데이트: 2026-04-30
+마지막 업데이트: 2026-05-01
 
 ## 현재 요약
 
@@ -9,7 +9,8 @@
 - 이번 작업으로 결제 승인 전 고객 주문 취소 API/UI를 연결했다.
 - 배달 상태 변경 API와 고객앱 주문상세의 배달 상태 표시를 연결했다.
 - 관리자 전액 취소/부분 환불 API와 버튼이 연결됐다.
-- 아직 남은 핵심은 실제 Toss E2E, 주소/찜 실사용자 연동, PWA/Sentry 검증이다.
+- MQ 도입 후 고객앱은 큐를 직접 구독하지 않고 REST API와 주문 상세 polling/Realtime으로 확정된 주문/배달 상태만 표시한다.
+- 아직 남은 핵심은 실제 Toss E2E, 결제/알림 사용자 경험 점검, PWA/Sentry 검증이다.
 
 ## 완료
 
@@ -54,6 +55,7 @@
 - [x] 배달 상태 변경 API `PATCH /stores/:storeId/orders/:orderId/delivery-status` 추가
 - [x] 주문상세 화면에 배달 상태와 라이더 메모 표시
 - [x] 주문상세 화면을 5초 간격으로 재조회해 배달 상태 갱신
+- [x] MQ retry/failure 내부 이벤트는 고객앱 알림으로 직접 노출하지 않는 정책 확정
 
 ## 기술 부채 및 개선 사항 (Technical Debt)
 
@@ -74,9 +76,10 @@
 - [ ] 실제 Toss 테스트 카드결제 실패/취소 E2E
 - [ ] 실제 Toss 테스트 결제 전액 취소/부분 환불 E2E
 - [x] 결제 timeout/pending 만료 처리
-- [ ] 중복 callback/idempotency 재시도 정책 보강
+- [x] 중복 callback/idempotency 재시도 정책 보강
 - [x] 결제 승인 실패 후 사용자 안내 UI 정리
 - [x] 결제 완료 주문의 관리자 환불/취소 API 연결
+- [ ] 결제 성공 후 POS/알림 내부 재시도 중 고객에게 중복 알림이 발생하지 않는지 E2E 확인
 
 ### P1: 주문 상태와 취소 정책
 
@@ -122,6 +125,7 @@
 - [ ] 최신 백엔드 전체 `vitest run`: `menus.service.spec.ts` 메뉴 상세 테스트 1건 실패. POS/catalog 작업자 영역이라 본 작업에서는 미수정.
 - [x] 백엔드 Prisma validate/generate 통과
 - [x] 개발 DB migration 적용 완료
+- [x] 운영 DB queue/POS migration 적용 완료
 - [ ] 공식 검증 필요: 카드결제 주문 생성/승인 E2E
 - [ ] 주문내역/상세 실제 API E2E
 - [ ] Sentry 이벤트 수신 E2E
@@ -129,7 +133,8 @@
 
 ## 다음 순서
 
-1. Toss 테스트 카드결제 성공/실패/환불 E2E
-2. Capacitor 원격 WebView 실기기 실행과 `/orders/[id]` 딥링크 진입 검증
-3. `ReferenceError: location is not defined` 빌드 로그 원인 제거
-4. Sentry/PWA E2E 검증
+1. 관리자 MQ 운영 화면 연결 후 결제 성공 주문의 POS/알림 중복 노출 여부 E2E 확인
+2. Toss 테스트 카드결제 성공/실패/환불 E2E
+3. Capacitor 원격 WebView 실기기 실행과 `/orders/[id]` 딥링크 진입 검증
+4. `ReferenceError: location is not defined` 빌드 로그 원인 제거
+5. Sentry/PWA E2E 검증
