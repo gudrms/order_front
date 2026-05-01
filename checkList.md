@@ -41,6 +41,7 @@
 - [x] 결제 상태는 `PaymentStatus`, 주문 상태는 `OrderStatus`, 배달 상태는 `DeliveryStatus`로 분리
 - [x] 주문번호는 매장별 유니크 제약으로 변경
 - [ ] 홈페이지 직접 주문 시 `Order.source = HOMEPAGE` 적용
+- [ ] 홈페이지 직접 주문을 열 경우에도 POS/알림 후처리는 백엔드 MQ worker가 담당하고 프론트는 확정 상태만 조회
 - [ ] Toss SDK/POS 직접 주문 시 채널 정책 확정
 - [ ] 관리자 수기 주문 시 `Order.source = ADMIN` 적용
 
@@ -125,6 +126,7 @@
 - [ ] 테이블오더: 실제 Store UUID/tableNumber 연결과 첫 주문/추가 주문 E2E
 - [ ] 홈페이지: 주문 CTA를 배달앱 매장 URL로 연결
 - [ ] 홈페이지: 매장/메뉴 API 연결
+- [ ] 홈페이지: 직접 주문 포함 여부와 `HOMEPAGE` 주문 플로우 확정
 - [ ] Toss SDK/POS 앱: 실기기 E2E와 Claude 진행분 기준 최종 충돌 점검
 - [ ] 공통: Swagger 명세 보강
 - [ ] 공통: 주요 API 테스트 코드 보강
