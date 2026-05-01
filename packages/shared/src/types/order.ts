@@ -1,4 +1,5 @@
 import type { CreateDeliveryOrderRequest } from './payment';
+import type { OrderChannel } from './payment';
 
 export type OrderStatus = 'PENDING' | 'PENDING_PAYMENT' | 'PAID' | 'CONFIRMED' | 'COOKING' | 'PREPARING' | 'READY' | 'DELIVERING' | 'COMPLETED' | 'CANCELLED';
 export type DeliveryStatus = 'PENDING' | 'ASSIGNED' | 'PICKED_UP' | 'DELIVERING' | 'DELIVERED' | 'FAILED' | 'CANCELLED';
@@ -83,7 +84,7 @@ export interface Order {
   storeId: string;
   userId?: string | null;
   type?: string;
-  source?: string;
+  source?: OrderChannel;
   items: OrderItem[];
   delivery?: OrderDelivery | null;
   payments?: OrderPayment[];

@@ -105,7 +105,7 @@ export class OrdersService {
                     userId: dto.userId,
                     orderNumber: await this.generateOrderNumber(tx, storeId),
                     type: 'DELIVERY',
-                    source: 'DELIVERY_APP',
+                    source: dto.source === 'HOMEPAGE' ? 'HOMEPAGE' : 'DELIVERY_APP',
                     status: 'PENDING_PAYMENT',
                     paymentStatus: 'READY',
                     totalAmount: expectedAmount,

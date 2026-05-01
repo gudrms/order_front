@@ -40,7 +40,7 @@
 - [x] 배달앱 주문은 `Order.type = DELIVERY`, `Order.source = DELIVERY_APP`
 - [x] 결제 상태는 `PaymentStatus`, 주문 상태는 `OrderStatus`, 배달 상태는 `DeliveryStatus`로 분리
 - [x] 주문번호는 매장별 유니크 제약으로 변경
-- [ ] 홈페이지 직접 주문 시 `Order.source = HOMEPAGE` 적용
+- [x] 홈페이지 직접 주문 시 `Order.source = HOMEPAGE` 적용
 - [ ] 홈페이지 직접 주문을 열 경우에도 POS/알림 후처리는 백엔드 MQ worker가 담당하고 프론트는 확정 상태만 조회
 - [ ] Toss SDK/POS 직접 주문 시 채널 정책 확정
 - [ ] 관리자 수기 주문 시 `Order.source = ADMIN` 적용
@@ -139,6 +139,7 @@
 - [x] `apps/backend`: `vitest run src/modules/auth/auth.service.spec.ts` 5 tests 통과
 - [x] `apps/backend`: `vitest run src/modules/payments/payments.service.spec.ts` 12 tests 통과
 - [x] `apps/backend`: `vitest run src/modules/orders/orders.service.spec.ts src/modules/queue/queue-operations.service.spec.ts` 25 tests 통과
+- [x] `apps/backend`: `vitest run src/modules/orders/orders.service.spec.ts` 21 tests 통과 (`HOMEPAGE` 주문 출처 지원 포함)
 - [x] `apps/admin`: `tsc --noEmit`
 - [x] `apps/admin`: `pnpm --filter admin build` 통과 및 `/operations` 라우트 생성 확인
 - [x] `apps/admin`: `/operations` 미인증 접근 시 로그인 화면 리다이렉트 브라우저 확인

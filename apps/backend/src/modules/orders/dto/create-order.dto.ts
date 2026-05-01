@@ -1,4 +1,4 @@
-import { IsArray, IsInt, IsNotEmpty, IsOptional, IsString, Min, ValidateNested } from 'class-validator';
+import { IsArray, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, Min, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -210,6 +210,17 @@ export class CreateDeliveryOrderDto {
     @IsString()
     @IsOptional()
     userId?: string;
+
+    @ApiProperty({
+        description: '주문 유입 경로. 배달앱은 DELIVERY_APP, 홈페이지 직접 주문은 HOMEPAGE를 사용한다.',
+        example: 'DELIVERY_APP',
+        required: false,
+        enum: ['DELIVERY_APP', 'HOMEPAGE'],
+    })
+    @IsString()
+    @IsOptional()
+    @IsIn(['DELIVERY_APP', 'HOMEPAGE'])
+    source?: 'DELIVERY_APP' | 'HOMEPAGE';
 
     @ApiProperty({ description: '배달 정보', type: DeliveryAddressDto })
     @ValidateNested()
