@@ -4,9 +4,10 @@ import { OrdersService } from './orders.service';
 import { PosModule } from '../integrations/pos/pos.module';
 import { QueueModule } from '../queue';
 import { SessionsModule } from '../sessions/sessions.module';
+import { CouponsModule } from '../coupons/coupons.module';
 
 @Module({
-    imports: [PosModule, QueueModule, SessionsModule],
+    imports: [PosModule, QueueModule, SessionsModule, CouponsModule],
     controllers: [OrdersController, RootOrdersController],
     providers: [OrdersService],
 })

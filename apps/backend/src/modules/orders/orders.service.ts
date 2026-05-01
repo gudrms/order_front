@@ -5,6 +5,7 @@ import { ResilientPosService } from '../integrations/pos/pos.resilience';
 import { SessionsService } from '../sessions/sessions.service';
 import { QueueService } from '../queue';
 import { assertCanManageStore } from '../../common/auth/permissions';
+import { CouponsService } from '../coupons/coupons.service';
 
 @Injectable()
 export class OrdersService {
@@ -13,6 +14,7 @@ export class OrdersService {
         private readonly posService: ResilientPosService,
         private readonly sessionsService: SessionsService,
         private readonly queueService?: QueueService,
+        private readonly couponsService?: CouponsService,
     ) { }
 
     async createFirstOrder(storeId: string, tableNumber: number, dto: CreateOrderDto) {
@@ -95,11 +97,22 @@ export class OrdersService {
                 : store.deliveryFee;
             const expectedAmount = totalPrice + deliveryFee;
 
-            if (dto.totalAmount !== expectedAmount || dto.payment.amount !== expectedAmount) {
+            let discountAmount = 0;
+            if (dto.userCouponId && this.couponsService) {
+                const result = await this.couponsService.validateAndCalculateDiscount(
+                    dto.userId,
+                    dto.userCouponId,
+                    expectedAmount,
+                );
+                discountAmount = result.discountAmount;
+            }
+            const finalAmount = expectedAmount - discountAmount;
+
+            if (dto.totalAmount !== expectedAmount || dto.payment.amount !== finalAmount) {
                 throw new BadRequestException('Order amount does not match current menu and delivery fee');
             }
 
-            return tx.order.create({
+            const order = await tx.order.create({
                 data: {
                     storeId,
                     userId: dto.userId,
@@ -108,7 +121,9 @@ export class OrdersService {
                     source: dto.source === 'HOMEPAGE' ? 'HOMEPAGE' : 'DELIVERY_APP',
                     status: 'PENDING_PAYMENT',
                     paymentStatus: 'READY',
-                    totalAmount: expectedAmount,
+                    totalAmount: finalAmount,
+                    discountAmount,
+                    ...(dto.userCouponId ? { userCouponId: dto.userCouponId } : {}),
                     note: dto.delivery.deliveryMemo,
                     items: {
                         create: orderItemsData.map((item) => ({
@@ -138,7 +153,7 @@ export class OrdersService {
                             provider: 'TOSS_PAYMENTS',
                             method: 'TOSS',
                             status: 'READY',
-                            amount: expectedAmount,
+                            amount: finalAmount,
                             paymentKey: dto.payment.paymentKey,
                             providerOrderId: dto.payment.orderId,
                             idempotencyKey: dto.payment.orderId,
@@ -148,6 +163,12 @@ export class OrdersService {
                 },
                 include: this.orderInclude(),
             });
+
+            if (dto.userCouponId && this.couponsService) {
+                await this.couponsService.markAsUsed(tx, dto.userCouponId, order.id);
+            }
+
+            return order;
         });
     }
 

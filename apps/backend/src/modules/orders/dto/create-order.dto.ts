@@ -242,4 +242,9 @@ export class CreateDeliveryOrderDto {
     @ValidateNested()
     @Type(() => DeliveryPaymentDto)
     payment: DeliveryPaymentDto;
+
+    @ApiProperty({ description: '적용할 UserCoupon ID (선택)', required: false })
+    @IsOptional()
+    @IsString()
+    userCouponId?: string;
 }
