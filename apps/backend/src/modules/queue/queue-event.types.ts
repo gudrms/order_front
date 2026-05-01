@@ -65,6 +65,14 @@ export interface PaymentRefundedEventPayload extends QueueEventPayload {
     isFullRefund: boolean;
 }
 
+export interface DeliveryStatusChangedEventPayload extends QueueEventPayload {
+    orderId: string;
+    storeId: string;
+    userId?: string;
+    previousStatus: string;
+    newStatus: string;
+}
+
 export type NotificationRecipientType = 'CUSTOMER' | 'STORE' | 'ADMIN';
 
 export type NotificationType =

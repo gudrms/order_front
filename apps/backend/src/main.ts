@@ -154,7 +154,7 @@ Bearer Token을 사용하여 인증합니다.
         },
         methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
         credentials: true,
-        allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'x-pos-api-key', 'Idempotency-Key', 'x-internal-secret'],
         exposedHeaders: ['X-Total-Count', 'X-Page-Count'],
         maxAge: 3600, // preflight 캐싱 1시간
     });

@@ -1,4 +1,5 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException, Optional } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException, Optional } from '@nestjs/common';
+import { mapTossMethod } from '../../common/utils/toss.utils';
 import { assertCanManageStore } from '../../common/auth/permissions';
 import { PrismaService } from '../prisma/prisma.service';
 import { TossApiService } from '../integrations/toss/toss-api.service';
@@ -7,6 +8,7 @@ import { ConfirmTossPaymentDto, ExpirePendingTossPaymentsDto, FailTossPaymentDto
 
 @Injectable()
 export class PaymentsService {
+    private readonly logger = new Logger(PaymentsService.name);
     constructor(
         private readonly prisma: PrismaService,
         private readonly tossApiService: TossApiService,
@@ -76,7 +78,7 @@ export class PaymentsService {
                     where: { id: payment.id },
                     data: {
                         status: 'PAID',
-                        method: this.mapTossMethod(tossPayment?.method),
+                        method: mapTossMethod(tossPayment?.method),
                         approvedAmount: dto.amount,
                         approvedAt: tossPayment?.approvedAt ? new Date(tossPayment.approvedAt) : new Date(),
                         receiptUrl: tossPayment?.receipt?.url,
@@ -96,6 +98,50 @@ export class PaymentsService {
                 // Unique constraint race — another request already completed confirmation.
                 return this.getOrderResponse(payment.orderId);
             }
+
+            // 핵심 안전 규칙: Toss 승인은 성공했지만 로컬 DB 확정이 실패한 상태.
+            // 고객의 돈이 빠져나갔으나 주문이 확정되지 않았으므로 즉시 보상 취소를 시도한다.
+            this.logger.error(
+                `Local DB commit failed after Toss approval for payment ${payment.id} ` +
+                `(paymentKey: ${dto.paymentKey}). Attempting compensation cancel. Error: ${err.message}`,
+            );
+
+            try {
+                await this.tossApiService.cancelPayment({
+                    paymentKey: dto.paymentKey,
+                    cancelReason: 'Local DB confirmation failed - automatic compensation',
+                    idempotencyKey: `compensation-${payment.id}-${Date.now()}`,
+                });
+
+                // 보상 취소 성공: Payment를 CANCELLED로 기록 (best-effort)
+                try {
+                    await this.prisma.payment.update({
+                        where: { id: payment.id },
+                        data: {
+                            status: 'CANCELLED',
+                            cancelledAt: new Date(),
+                            failureCode: 'LOCAL_DB_COMMIT_FAILED',
+                            failureMessage: `Toss approved but local commit failed: ${err.message}. Auto-cancelled.`,
+                        },
+                    });
+                } catch (recordError: any) {
+                    this.logger.error(
+                        `Compensation cancel succeeded for payment ${payment.id} but failed to record: ${recordError.message}`,
+                    );
+                }
+
+                this.logger.warn(
+                    `Compensation cancel succeeded for payment ${payment.id}. Customer will not be charged.`,
+                );
+            } catch (compensationError: any) {
+                // 보상 취소마저 실패 — 최악의 상황. reconciliation job이 복구하도록 한다.
+                this.logger.error(
+                    `CRITICAL: Compensation cancel FAILED for payment ${payment.id} ` +
+                    `(paymentKey: ${dto.paymentKey}). Customer may have been charged without order confirmation. ` +
+                    `Compensation error: ${compensationError.message}. Original error: ${err.message}`,
+                );
+            }
+
             throw err;
         }
 
@@ -373,13 +419,7 @@ export class PaymentsService {
         return this.getOrderResponse(orderId);
     }
 
-    private mapTossMethod(method?: string) {
-        if (!method) {
-            return 'TOSS';
-        }
-
-        return method === '카드' || method.toLowerCase().includes('card') ? 'CARD' : 'TOSS';
-    }
+    // mapTossMethod는 common/utils/toss.utils.ts로 이동됨
 
     private async getOrderResponse(orderId: string) {
         const order = await this.prisma.order.findUnique({
