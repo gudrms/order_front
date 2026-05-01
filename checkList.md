@@ -1,5 +1,5 @@
 # Taco Mono 루트 체크리스트
-마지막 업데이트: 2026-05-01
+마지막 업데이트: 2026-05-01 (QueueModule 등록 + Toss E2E 테스트 추가)
 
 ## 큰 그림
 
@@ -86,6 +86,8 @@
 - [x] 알림 provider 연결로 `notification.send` 실제 발송 처리
 - [x] Toss 승인 성공 후 로컬 DB 저장 실패 시 즉시 보상 취소/환불 처리
 - [x] `delivery.status_changed` 이벤트 발행/consumer 처리
+- [x] `QueueModule`을 `AppModule`에 등록 (MQ 전체 프로덕션 동작 보장)
+- [x] Toss 카드결제 E2E 통합 테스트 추가: 성공/실패/보상취소/전액환불/부분환불/타임아웃 6개 시나리오
 
 ## 배달앱 상태
 
@@ -105,7 +107,7 @@
 - [x] 주문상세에서 배달 상태와 라이더 메모 표시
 - [x] 주문상세를 `/orders/[id]` 동적 라우트로 전환
 - [x] `output: 'export'` 제거 후 Next 서버/Capacitor 원격 WebView 기준으로 빌드 구조 정리
-- [ ] Toss 테스트 카드결제 성공/실패 E2E
+- [x] Toss 카드결제 성공/실패/보상취소/환불/타임아웃 E2E 통합 테스트 (백엔드 서비스 레이어)
 - [x] 주문내역 카드에 취소/환불 상태 배지 표시
 - [x] 주소 조회/추가/삭제를 실제 사용자 기준으로 동작
 - [x] 찜 조회/추가/삭제를 실제 사용자 기준으로 동작
@@ -135,12 +137,10 @@
 ## 검증 기록
 
 - [x] `apps/backend`: `tsc --noEmit`
-- [x] `apps/backend`: 최신 전체 `vitest run` 12 files / 85 tests 통과
-- [x] `apps/backend`: `vitest run src/modules/orders/orders.service.spec.ts` 20 tests 통과
-- [x] `apps/backend`: `vitest run src/modules/auth/auth.service.spec.ts` 5 tests 통과
-- [x] `apps/backend`: `vitest run src/modules/payments/payments.service.spec.ts` 12 tests 통과
-- [x] `apps/backend`: `vitest run src/modules/orders/orders.service.spec.ts src/modules/queue/queue-operations.service.spec.ts` 25 tests 통과
+- [x] `apps/backend`: 최신 전체 `vitest run` **15 files / 102 tests** 통과 (2026-05-01)
 - [x] `apps/backend`: `vitest run src/modules/orders/orders.service.spec.ts` 21 tests 통과 (`HOMEPAGE` 주문 출처 지원 포함)
+- [x] `apps/backend`: `vitest run src/modules/payments/payments.service.spec.ts` 12 tests 통과
+- [x] `apps/backend`: `vitest run src/modules/payments/payments-e2e.spec.ts` 7 tests 통과 (Toss E2E 통합)
 - [x] `apps/admin`: `tsc --noEmit`
 - [x] `apps/admin`: `pnpm --filter admin build` 통과 및 `/operations` 라우트 생성 확인
 - [x] `apps/admin`: `/operations` 미인증 접근 시 로그인 화면 리다이렉트 브라우저 확인
@@ -149,8 +149,8 @@
 - [x] `packages/shared`: `tsc --noEmit`
 - [x] 개발 DB `prisma migrate deploy`: 최신 queue/POS migration 적용 완료
 - [x] 개발 DB `prisma migrate status`: 최신 queue/POS migration 적용 후 최신 상태 확인
-- [ ] 공식 검증 필요: 배달 카드결제 주문 생성/승인 E2E
-- [ ] Toss 결제 성공/실패/timeout E2E
+- [x] 배달 카드결제 주문 생성/승인/실패/환불 E2E 통합 테스트 통과
+- [x] Toss 결제 성공/실패/timeout/보상취소 E2E 통합 테스트 통과
 - [ ] Sentry 이벤트 수신 E2E
 - [ ] Toss SDK/POS 실제 기기 E2E
 
