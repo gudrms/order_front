@@ -140,6 +140,8 @@
 - [x] `apps/backend`: `vitest run src/modules/payments/payments.service.spec.ts` 12 tests 통과
 - [x] `apps/backend`: `vitest run src/modules/orders/orders.service.spec.ts src/modules/queue/queue-operations.service.spec.ts` 25 tests 통과
 - [x] `apps/admin`: `tsc --noEmit`
+- [x] `apps/admin`: `pnpm --filter admin build` 통과 및 `/operations` 라우트 생성 확인
+- [x] `apps/admin`: `/operations` 미인증 접근 시 로그인 화면 리다이렉트 브라우저 확인
 - [x] `apps/delivery-customer`: `tsc --noEmit`
 - [x] `apps/delivery-customer`: `next build` 통과 및 `/orders/[id]` 동적 라우트 확인
 - [x] `packages/shared`: `tsc --noEmit`

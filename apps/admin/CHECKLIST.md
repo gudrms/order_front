@@ -85,12 +85,14 @@
 - [x] `apps/admin`: `tsc --noEmit`
 - [x] `apps/backend`: `vitest run src/modules/orders/orders.service.spec.ts src/modules/queue/queue-operations.service.spec.ts` 25 tests 통과
 - [x] `apps/backend`: `vitest run src/modules/orders/orders.service.spec.ts` 17 tests 통과
+- [x] `apps/admin`: `pnpm --filter admin build` 통과 및 `/operations` 라우트 생성 확인
+- [x] 관리자 MQ 운영 화면 브라우저 진입 시 미인증 사용자를 로그인 화면으로 리다이렉트 확인
 - [ ] 관리자 주문 상태 변경/배달 상태 변경 브라우저 E2E
 - [ ] 관리자 Toss 전액/부분 환불 브라우저 E2E
 - [ ] 관리자 매장 설정 브라우저 E2E
 - [ ] 관리자 직접 메뉴 등록 브라우저 E2E
 - [ ] Toss 메뉴 동기화 브라우저 E2E
-- [ ] MQ 운영 화면 POS/알림 실패 조회 및 재시도 브라우저 E2E
+- [ ] MQ 운영 화면 POS/알림 실패 조회 및 재시도 브라우저 E2E: 로그인 세션과 실패 테스트 데이터 필요
 
 ## 다음 순서
 
