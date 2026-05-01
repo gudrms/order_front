@@ -49,7 +49,7 @@
 - [x] Prisma schema validate 통과
 - [x] Prisma client generate 통과
 - [x] 백엔드 TypeScript 타입체크 통과
-- [ ] 최신 queue/POS migration 개발 DB 적용 필요
+- [x] 최신 queue/POS migration 개발 DB 적용 완료
 - [x] `Payment`, `OrderDelivery`, delivery/payment enum 추가
 - [x] Store 배달 운영 필드 추가
 - [x] `User.role` 기본값을 `USER`로 변경
@@ -72,7 +72,7 @@
 - [x] 주문 서비스 단위 테스트에 고객 취소 정책 추가
 - [x] 주문 서비스 단위 테스트에 배달 상태 변경 정책 추가
 - [x] 결제 완료 후 관리자 환불/취소 API 추가
-- [ ] POS pending orders API를 새 정책 기준으로 확장
+- [x] POS pending orders API를 새 정책 기준으로 확장
 - [x] 백엔드 기술 스펙 문서 분리: `apps/backend/BACKEND_TECH_SPEC.md`
 - [x] MQ 기술 스펙 문서 분리: `apps/backend/MQ_TECH_SPEC.md`
 - [x] MQ 도입 설계 확정: Supabase Queues/`pgmq` 우선, backend worker에서 POS 전송/알림/재시도 처리
@@ -81,10 +81,10 @@
 - [x] POS 전송 worker가 queue consumer에서 실제 `ResilientPosService.sendOrder()` 호출
 - [x] Queue/POS 운영 상태 migration 추가: `pgmq`, `backend_events`, `QueueEventLog`, `NotificationLog`, `posSync*`
 - [x] 결제 만료/불일치 복구 운영 endpoint에 내부 secret 검증 추가
-- [ ] 실제 운영 DB에 최신 queue/POS migration 적용
-- [ ] 알림 provider 연결로 `notification.send` 실제 발송 처리
-- [ ] Toss 승인 성공 후 로컬 DB 저장 실패 시 즉시 보상 취소/환불 처리
-- [ ] `delivery.status_changed` 이벤트 발행/consumer 처리
+- [x] 실제 운영 DB에 최신 queue/POS migration 적용
+- [x] 알림 provider 연결로 `notification.send` 실제 발송 처리
+- [x] Toss 승인 성공 후 로컬 DB 저장 실패 시 즉시 보상 취소/환불 처리
+- [x] `delivery.status_changed` 이벤트 발행/consumer 처리
 
 ## 배달앱 상태
 
@@ -117,10 +117,11 @@
 - [ ] **[관리자 아키텍처]** 웹 브라우저의 한계(백그라운드 스로틀링, 자동재생 차단, 인쇄 팝업) 극복을 위해 Admin 웹을 Electron으로 랩핑하여 PC 전용 수신 프로그램으로 구축
 - [ ] **[배달앱 배포 전략]** 스토어 최적화 및 핫 푸시 업데이트를 위해 Capacitor를 활용하여 구글 플레이스토어 및 애플 앱스토어 배포 파이프라인 구축
 - [x] 배달앱: Capacitor 원격 WebView 기준선 설정 (`CAPACITOR_SERVER_URL`, `webDir: 'public'`)
-- [ ] 관리자: 매장 등록/운영 설정 화면을 백엔드 API에 연결
+- [x] 관리자: 매장 등록/운영 설정 화면을 백엔드 API에 연결
 - [x] 관리자: 주문 목록에서 `type`, `source`, `paymentStatus`, 배달 상태 표시
 - [x] 관리자: 배달 상태 변경 버튼/운영 화면 구현
 - [x] 관리자: 결제 완료 주문 전액 취소/부분 환불 버튼 구현
+- [ ] 관리자: MQ 운영 화면에서 POS/알림 실패 조회와 수동 재시도 연결
 - [ ] 테이블오더: 실제 Store UUID/tableNumber 연결과 첫 주문/추가 주문 E2E
 - [ ] 홈페이지: 주문 CTA를 배달앱 매장 URL로 연결
 - [ ] 홈페이지: 매장/메뉴 API 연결
@@ -139,8 +140,8 @@
 - [x] `apps/delivery-customer`: `tsc --noEmit`
 - [x] `apps/delivery-customer`: `next build` 통과 및 `/orders/[id]` 동적 라우트 확인
 - [x] `packages/shared`: `tsc --noEmit`
-- [ ] 개발 DB `prisma migrate deploy`: 최신 queue/POS migration 적용 필요
-- [ ] 개발 DB `prisma migrate status`: 최신 queue/POS migration 추가 후 재확인 필요
+- [x] 개발 DB `prisma migrate deploy`: 최신 queue/POS migration 적용 완료
+- [x] 개발 DB `prisma migrate status`: 최신 queue/POS migration 적용 후 최신 상태 확인
 - [ ] 공식 검증 필요: 배달 카드결제 주문 생성/승인 E2E
 - [ ] Toss 결제 성공/실패/timeout E2E
 - [ ] Sentry 이벤트 수신 E2E
@@ -148,7 +149,7 @@
 
 ## 다음 개발 순서
 
-1. 매장 수정/배달 운영 설정 화면 연결
+1. 관리자 MQ 운영 화면에서 POS/알림 실패 조회와 수동 재시도 연결
 2. Toss 테스트 카드결제 성공/실패/환불 E2E
 3. Capacitor 원격 WebView 실기기 실행과 주문상세 딥링크 검증
 4. `ReferenceError: location is not defined` 빌드 로그 원인 제거
