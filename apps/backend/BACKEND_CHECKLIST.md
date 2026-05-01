@@ -75,7 +75,7 @@
 - [x] POS 전송 worker가 실제 `ResilientPosService.sendOrder()`를 호출하고 성공/실패 상태를 기록한다.
 - [x] 큐 발행 실패를 `QueueEventLog`에 남겨 후속 운영 복구가 가능하게 한다.
 - [x] `expire-pending`, `reconcile`, `queue/process-once` 운영 endpoint를 내부 secret으로 보호한다.
-- [ ] 실제 운영 DB에 최신 queue/POS migration을 적용한다.
+- [x] 실제 운영 DB에 최신 queue/POS migration을 적용한다.
 - [x] 알림 provider(Push/SMS/Email 등)를 연결해 `notification.send`가 실제 발송까지 수행하게 한다.
 - [x] Toss 승인 성공 후 로컬 DB 저장 실패 시 즉시 보상 취소/환불을 수행한다.
 - [x] `delivery.status_changed` 이벤트 발행/consumer 처리를 추가한다.
