@@ -5,7 +5,7 @@ import { CategoryButton } from '../components/CategoryButton';
 import { useUIStore } from '@/stores';
 
 interface TopBarProps {
-  storeId?: string;
+  storeId: string;
   tableNumber?: number;
   activeCategoryId: string | null;
   onCategoryClick: (categoryId: string) => void;
@@ -20,12 +20,11 @@ interface TopBarProps {
  */
 export function TopBar({
   storeId,
-  tableNumber = 12,
+  tableNumber,
   activeCategoryId,
   onCategoryClick,
 }: TopBarProps) {
-  const finalStoreId = storeId || process.env.NEXT_PUBLIC_STORE_ID || 'default-store-id';
-  const { data: categories, isLoading } = useCategories(finalStoreId);
+  const { data: categories, isLoading } = useCategories(storeId);
   const openCallPanel = useUIStore((state) => state.openCallPanel);
 
   return (
@@ -57,7 +56,7 @@ export function TopBar({
           🔔 직원호출
         </button>
         <div className="text-lg font-semibold">
-          테이블 {tableNumber}
+          테이블 {tableNumber ?? '-'}
         </div>
       </div>
     </div>
