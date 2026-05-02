@@ -1,5 +1,5 @@
 # Taco Mono 루트 체크리스트
-마지막 업데이트: 2026-05-02 (P0 코드 완료: 쿠폰·PWA·Capacitor deeplink)
+마지막 업데이트: 2026-05-02 (P1 완료: 운영 모드 분기 — TOSS_POS/ADMIN_DIRECT POS 워커 분기 추가)
 
 ## 큰 그림
 
@@ -132,7 +132,7 @@
 - [x] 관리자: 배달 상태 변경 버튼/운영 화면 구현
 - [x] 관리자: 결제 완료 주문 전액 취소/부분 환불 버튼 구현
 - [x] 관리자: MQ 운영 화면에서 POS/알림 실패 조회와 수동 재시도 연결
-- [ ] **[P1]** 운영 모드 분기 코드 구현: `Store.operationMode` enum(`TOSS_POS` | `STANDALONE`) 추가, 메뉴 SSOT 분기, POS 전송 워커 분기, 관리자 매장 등록 시 운영 모드 선택 UI, `STANDALONE`에서만 메뉴 CRUD 활성
+- [x] **[P1]** 운영 모드 분기 코드 구현: `MenuManagementMode` enum(`TOSS_POS` | `ADMIN_DIRECT`) — 메뉴 SSOT 분기(menus.service), POS 워커 분기(queue-consumer: ADMIN_DIRECT skip + SKIPPED 처리), 관리자 매장 등록 운영 모드 선택 UI, ADMIN_DIRECT에서만 메뉴 CRUD 허용 — 전부 구현 완료
 - [ ] 테이블오더: 실제 Store UUID/tableNumber 연결과 첫 주문/추가 주문 E2E
 - [ ] 홈페이지: 주문 CTA를 배달앱 매장 URL로 연결
 - [ ] 홈페이지: 매장/메뉴 API 연결
