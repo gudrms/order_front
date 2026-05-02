@@ -79,7 +79,8 @@ export class OrdersService {
             if (!store.isDeliveryEnabled) {
                 throw new BadRequestException('Store is not accepting delivery orders');
             }
-            if (!dto.userId) {
+            const isHomepageOrder = dto.source === 'HOMEPAGE';
+            if (!dto.userId && !isHomepageOrder) {
                 throw new BadRequestException('Delivery orders require an authenticated user');
             }
             const paymentMethod = dto.payment.method as string | undefined;
@@ -98,7 +99,10 @@ export class OrdersService {
             const expectedAmount = totalPrice + deliveryFee;
 
             let discountAmount = 0;
-            if (dto.userCouponId && this.couponsService) {
+            if (dto.userCouponId && !dto.userId) {
+                throw new BadRequestException('Coupons require an authenticated user');
+            }
+            if (dto.userCouponId && dto.userId && this.couponsService) {
                 const result = await this.couponsService.validateAndCalculateDiscount(
                     dto.userId,
                     dto.userCouponId,
@@ -118,7 +122,7 @@ export class OrdersService {
                     userId: dto.userId,
                     orderNumber: await this.generateOrderNumber(tx, storeId),
                     type: 'DELIVERY',
-                    source: dto.source === 'HOMEPAGE' ? 'HOMEPAGE' : 'DELIVERY_APP',
+                    source: isHomepageOrder ? 'HOMEPAGE' : 'DELIVERY_APP',
                     status: 'PENDING_PAYMENT',
                     paymentStatus: 'READY',
                     totalAmount: finalAmount,
