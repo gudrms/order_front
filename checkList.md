@@ -1,5 +1,5 @@
 # Taco Mono 루트 체크리스트
-마지막 업데이트: 2026-05-02 (P1 완료: 운영 모드 분기 — TOSS_POS/ADMIN_DIRECT POS 워커 분기 추가)
+마지막 업데이트: 2026-05-02 (홈페이지 CTA + 매장/메뉴 API 전환 완료)
 
 ## 큰 그림
 
@@ -134,8 +134,8 @@
 - [x] 관리자: MQ 운영 화면에서 POS/알림 실패 조회와 수동 재시도 연결
 - [x] **[P1]** 운영 모드 분기 코드 구현: `MenuManagementMode` enum(`TOSS_POS` | `ADMIN_DIRECT`) — 메뉴 SSOT 분기(menus.service), POS 워커 분기(queue-consumer: ADMIN_DIRECT skip + SKIPPED 처리), 관리자 매장 등록 운영 모드 선택 UI, ADMIN_DIRECT에서만 메뉴 CRUD 허용 — 전부 구현 완료
 - [ ] 테이블오더: 실제 Store UUID/tableNumber 연결과 첫 주문/추가 주문 E2E
-- [ ] 홈페이지: 주문 CTA를 배달앱 매장 URL로 연결
-- [ ] 홈페이지: 매장/메뉴 API 연결
+- [x] 홈페이지: 주문 CTA를 배달앱 매장 URL로 연결 (Hero + 매장 카드별)
+- [x] 홈페이지: 매장/메뉴 API 연결 (GET /stores 퍼블릭 엔드포인트, 배달 정보 표시, 카테고리/메뉴 fetch)
 - [ ] 홈페이지: 직접 주문 포함 여부와 `HOMEPAGE` 주문 플로우 확정
 - [ ] Toss SDK/POS 앱: 실기기 E2E와 Claude 진행분 기준 최종 충돌 점검
 - [x] 공통: Swagger 명세 보강 (누락 태그 11개 등록, users/menus 어드민 엔드포인트 ApiOperation 완비, 설명 최신화)
