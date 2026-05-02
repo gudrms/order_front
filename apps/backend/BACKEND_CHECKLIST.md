@@ -1,5 +1,23 @@
 # 백엔드 체크리스트
-마지막 업데이트: 2026-05-01 (QueueModule 등록 + Toss E2E 테스트 추가)
+마지막 업데이트: 2026-05-03 (런칭 준비도 감사 결과 반영)
+
+## 🚨 1차 런칭 Blocker
+
+- [ ] **[P0] MQ consumer 자동 트리거 부재**: `apps/backend/VERCEL_CRON.md`에 따라 Hobby 플랜 한계로 비활성화. `pos.send_order` / `notification.send` / `payments/expire-pending` / `reconcile`을 호출하는 주체 없음 → MQ 인프라가 코드상 완성됐어도 **런타임에서 멈춰 있음**. Vercel Pro 업그레이드 / GitHub Actions schedule / Upstash QStash 중 1개 선정·도입
+- [ ] **[P0] CORS 다중 origin 화이트리스트**: `apps/backend/src/main.ts:145`의 `FRONTEND_URL` 단일 값 → admin/brand-website/delivery-customer/Capacitor WebView 다중 origin 배열 허용
+- [ ] **[P0] `.env.example` 정리**: `apps/backend/.env.example` 8~64라인 통째 중복 복붙 제거 + `INTERNAL_JOB_SECRET` (queue.controller·payments expire-pending에서 검증) 추가. 배포자가 보고 채울 수 없는 상태
+
+## ⚠️ High risk
+
+- [ ] 실 Toss 카드결제 자동화 E2E — `payments-e2e.spec.ts`는 서비스 레이어 mock 한정. 실 HTTP 콜백/idempotency/취소 무점검
+- [ ] Throttler in-memory store(`app.module.ts:28-44`) Vercel 다중 인스턴스에서 무력화 → Redis store 검토
+- [ ] 단일 serverless function 라우팅 (`vercel.json` 모든 메서드 → `src/main.ts`) — cold start/번들 크기 모니터링, queue function 분리 검토 (이미 [ ]로 있음)
+
+## 🧱 Tech debt
+
+- [ ] `apps/backend/src/modules/orders/orders.controller.ts:11-22` 인라인 OrderStatus enum 제거 (`// Prisma Client 생성 전까지 임시` 주석 — 이미 Prisma 생성됨)
+- [ ] BACKEND_CHECKLIST 131-133라인 HOMEPAGE 항목은 정책 폐기됨 (아래 정책 변경 섹션 참조)
+- [ ] `error-logs`, `sessions`, `integrations/toss`, `menu-detail`, `app.module` 테스트 미작성
 
 ## 현재 백엔드 범위
 
@@ -128,7 +146,19 @@
 - [x] 테이블오더 직원 호출 API `POST /stores/:storeId/tables/:tableNumber/calls` 추가 및 단위 테스트 통과
 - [x] 결제 완료/환불 이벤트 발행 및 POS/MQ 후처리 흐름 정리 완료
 - [x] 관리자 MQ 운영 화면용 실패 조회/재시도 API 연결 상태 반영
-- [x] 홈페이지 직접 주문용 공개 `POST /orders/homepage` 주문 생성 엔드포인트 구현
-- [x] 홈페이지 비회원 주문 생성 시 `Order.source = HOMEPAGE`, `PENDING_PAYMENT` 생성 정책 검증
-- [ ] 홈페이지 Toss 결제 승인 후 POS/알림 후처리 E2E
+- [~] ~~홈페이지 직접 주문용 공개 `POST /orders/homepage` 주문 생성 엔드포인트 구현~~ → **2026-05-02 정책 전환으로 제거**: 홈페이지 직접 주문 폐기, 배달앱 리다이렉트로 단일화
+- [~] ~~홈페이지 비회원 주문 생성 시 `Order.source = HOMEPAGE`, `PENDING_PAYMENT` 생성 정책~~ → **제거됨**: `CreateDeliveryOrderDto.source` 필드 삭제, HOMEPAGE 분기 삭제, 게스트 주문 차단
+- [~] ~~홈페이지 Toss 결제 승인 후 POS/알림 후처리 E2E~~ → **불필요**: 홈페이지에서 결제 발생 안 함
 - [ ] 테이블오더 첫 주문/추가 주문 브라우저-백엔드 E2E
+- [ ] DB schema `OrderSource` enum에서 `HOMEPAGE` 값 정리 (마이그레이션 영향 검토 후 별도 작업)
+
+## 최신 동기화 (2026-05-03) — 런칭 준비도 감사
+
+- [x] **결함 식별**: MQ 코드는 완비됐으나 cron 트리거 부재로 런타임 미동작 (Vercel Hobby 한계)
+- [x] **결함 식별**: CORS 단일 origin (admin/brand/delivery 다중 도메인 운영 시 막힘)
+- [x] **결함 식별**: `.env.example` 8~64라인 중복 + `INTERNAL_JOB_SECRET` 누락
+- [x] **결함 식별**: `orders.controller.ts:11-22` 인라인 enum, `any` 99개, `*.spec.ts` 19개로 핵심 도메인은 커버하나 일부 모듈 미테스트
+- [x] **강점 확인**: 도메인 모델(Order/Payment/OrderDelivery 분리, idempotency, posSyncStatus, dedupeKey, retry/backoff), 단위/E2E 142 tests, SupabaseGuard 일관 적용, Sentry beforeSend 헤더 필터링
+- [ ] [P0] cron 트리거 도입 방안 결정 후 운영 문서화
+- [ ] [P0] CORS allowed origins 환경변수를 콤마 구분 배열로 변경
+- [ ] [P0] `.env.example` 정리 + 운영 secret 누락 항목 보강

@@ -1,5 +1,31 @@
 # Taco Mono 루트 체크리스트
-마지막 업데이트: 2026-05-02 (테이블오더 Store UUID/tableNumber + 첫/추가 주문 API 연결 완료)
+마지막 업데이트: 2026-05-03 (런칭 준비도 감사 — Launch blocker 5개, High risk 5개 식별)
+
+## 🚨 1차 런칭 Blocker (admin / brand-website / delivery-customer + backend)
+
+런칭 직전 반드시 해소해야 하는 항목. 도메인 코어와 운영 인프라는 견고하나, 트리거·대시보드·dead code·CORS·env 설정에 결함 있음.
+
+- [ ] **[P0] MQ consumer 자동 트리거 부재**: `apps/backend/VERCEL_CRON.md`에 따라 Hobby 플랜으로 비활성화 상태. `pos.send_order`, `notification.send`, `payments/expire-pending`, `reconcile`을 호출하는 주체 없음. Vercel Pro / GitHub Actions / Upstash QStash 중 1개 즉시 도입
+- [ ] **[P0] Admin 대시보드 하드코딩 stats 제거**: `apps/admin/src/app/(dashboard)/page.tsx:7-12`의 `오늘 주문 45건 / 매출 ₩842,000 / 대기 3건 / 품절 2종` 상수 배열을 실 API 또는 "준비중" placeholder로 교체
+- [ ] **[P0] delivery-customer 결제 dead code 삭제**: `apps/delivery-customer/src/features/payment/payment.ts:54-137`의 토스/카카오/네이버/삼성/페이코 함수가 모두 TODO 후 `success: true` 반환. import 한 줄로 살아나면 무료 결제 — 즉시 삭제
+- [ ] **[P0] CORS 다중 origin 화이트리스트**: `apps/backend/src/main.ts:145`의 운영 `FRONTEND_URL` 단일 값 → admin/brand-website/delivery-customer/Capacitor 다중 origin 배열로 변경
+- [ ] **[P0] 백엔드 `.env.example` 정리**: `apps/backend/.env.example` 8~64라인 중복 복붙 제거 + `INTERNAL_JOB_SECRET` (queue/expire-pending/reconcile 보호용) 추가
+
+## ⚠️ High risk (런칭 후 곧 터질 가능성)
+
+- [ ] 실 Toss 카드결제 자동화 E2E 도입 (`payments-e2e.spec.ts`는 서비스 레이어 mock만)
+- [ ] 푸시 알림 미구현 — `apps/delivery-customer/src/lib/capacitor/push-notifications.ts:29,37,46` TODO. FCM/APNS 연결 없으면 배달 상태 알림 불가
+- [ ] Throttler in-memory store가 Vercel 다중 인스턴스에서 무력화 → Redis store 도입 검토
+- [ ] `apps/delivery-customer/src/features/delivery-tracking/hooks/useDeliveryTracking.ts:17-23` mock 데이터 + `apps/delivery-customer/src/components/menu/MenuDetail.tsx:8` menuId 미연결 — 사용자 노출 경로 점검
+- [ ] Capacitor `allowMixedContent: true` (`apps/delivery-customer/capacitor.config.ts`) — 운영 빌드에서 false로
+
+## 🧱 Tech debt (누적 시 문제)
+
+- [ ] 프론트 자동화 테스트 0건 (admin/brand-website/delivery-customer) — Playwright 도입
+- [ ] `apps/backend/src/modules/orders/orders.controller.ts:11-22` 인라인 OrderStatus enum 제거 (Prisma enum 사용)
+- [ ] 백엔드 단일 serverless function 라우팅 (`apps/backend/vercel.json`) — queue function 분리 검토
+- [ ] delivery-customer console.log 56개 정리 (Sentry treeshake 의존)
+- [ ] `apps/admin/CHECKLIST.md`, `apps/delivery-customer/checkList_delivery.md` 등 분기된 미완료 항목 통합
 
 ## 큰 그림
 
@@ -40,8 +66,8 @@
 - [x] 배달앱 주문은 `Order.type = DELIVERY`, `Order.source = DELIVERY_APP`
 - [x] 결제 상태는 `PaymentStatus`, 주문 상태는 `OrderStatus`, 배달 상태는 `DeliveryStatus`로 분리
 - [x] 주문번호는 매장별 유니크 제약으로 변경
-- [x] 홈페이지 직접 주문 시 `Order.source = HOMEPAGE` 적용
-- [x] 홈페이지 직접 주문 시 후처리 정책 확정: 백엔드 MQ worker가 관리자 알림 발송 + POS 연결 매장이면 POS 자동 연동, 프론트는 확정 상태만 조회
+- [~] ~~홈페이지 직접 주문 시 `Order.source = HOMEPAGE` 적용~~ → **정책 전환(2026-05-02)**: 홈페이지 직접 주문 폐기, 배달앱 리다이렉트로 단일화. `HOMEPAGE` source/공개 주문 API는 사용 중단
+- [~] ~~홈페이지 직접 주문 후처리 (MQ → POS/알림)~~ → 위 정책 전환에 따라 적용 대상 없음
 - [ ] Toss SDK/POS 직접 주문 시 채널 정책 확정
 - [~] ~~관리자 수기 주문 시 `Order.source = ADMIN` 적용~~ → **영역 밖**: 수기 주문은 해당 매장 POS에서 처리 (백엔드/관리자 웹은 미구현)
 
@@ -138,9 +164,11 @@
 - [x] 테이블오더: 주문 상태 API 연결 (current-session polling + 상태 배지)
 - [x] 테이블오더: 직원 호출 실제 API 연결 (`stores/:storeId/tables/:tableNumber/calls`)
 - [x] 테이블오더: 런타임 mock 데이터/MSW 제거
-- [x] 홈페이지: 주문 CTA를 배달앱 매장 URL로 연결 (Hero + 매장 카드별)
 - [x] 홈페이지: 매장/메뉴 API 연결 (GET /stores 퍼블릭 엔드포인트, 배달 정보 표시, 카테고리/메뉴 fetch)
-- [ ] 홈페이지: 직접 주문 포함 여부와 `HOMEPAGE` 주문 플로우 확정
+- [x] 홈페이지: 직접 주문 정책 확정 — **폐기, 배달앱 리다이렉트로 단일화** (2026-05-02)
+- [x] 홈페이지: Hero/매장 카드 CTA → `OrderCTAButton` (배달앱 URL + 모바일 `taco://` 딥링크 fallback)
+- [x] 홈페이지: `/order`, `/order/success`, `/order/fail` 라우트 제거
+- [x] 백엔드: `POST /orders/homepage` 엔드포인트 + `CreateDeliveryOrderDto.source` HOMEPAGE 분기 제거
 - [ ] Toss SDK/POS 앱: 실기기 E2E와 Claude 진행분 기준 최종 충돌 점검
 - [x] 공통: Swagger 명세 보강 (누락 태그 11개 등록, users/menus 어드민 엔드포인트 ApiOperation 완비, 설명 최신화)
 - [x] 공통: 주요 API 테스트 코드 보강 (17 files / 127 tests — stores/menus 어드민 CRUD, Sentry transport, AppController 추가)
@@ -172,7 +200,7 @@
 3. 배달앱: Capacitor 원격 WebView 실기기 실행, `/orders/[id]` 딥링크, PWA/Sentry 검증
 4. 관리자: MQ 운영 화면 POS/알림 실패 조회 및 재시도 브라우저 E2E
 5. 테이블오더: 첫 주문/추가 주문 브라우저 E2E, 직원 호출 Realtime/관리자 수신 화면 연결
-6. 홈페이지: 직접 주문 MVP 포함 여부 결정
+6. 홈페이지: `/order` 라우트/결제 페이지 제거 + Hero/매장 CTA를 배달앱 URL로 전환 (모바일 딥링크 fallback 포함), 백엔드 공개 HOMEPAGE 주문 API 비활성화
 
 ## 체크리스트 위치
 
@@ -190,9 +218,17 @@
 - [x] 테이블오더 런타임 mock/MSW/하드코딩 fallback 제거 완료 및 `tsc --noEmit`, `next build` 통과
 - [x] 관리자 MQ 운영 화면 연결 및 실패 재시도 흐름 구현 완료
 - [x] 홈페이지 매장/메뉴 조회는 실제 API 기반으로 전환 완료
-- [x] 홈페이지 직접 주문은 MVP 포함으로 확정
-- [x] 홈페이지 직접 주문 생성/결제 성공/실패 UI 및 공개 HOMEPAGE 주문 API 구현
-- [ ] 홈페이지 주문 상세/상태 조회 화면 구현
+- [x] **정책 전환**: 홈페이지 직접 주문 폐기, 배달앱 리다이렉트로 단일화 — 코드 롤백 완료 (a1d6366/4e00a74 부분 무효화)
+- [x] 홈페이지 `/order` 라우트/결제 페이지 제거 + Hero/매장 CTA를 배달앱 URL로 전환 (`OrderCTAButton` + 모바일 `taco://` 딥링크 fallback)
+- [x] 백엔드 공개 HOMEPAGE 주문 API 제거 (`POST /orders/homepage`, DTO source 필드, HOMEPAGE 분기)
+
+## 최신 동기화 (2026-05-03) — 런칭 준비도 감사
+
+- [x] 코드 직접 점검 기반 평가: 백엔드 도메인 코어/MQ/Sentry/인증은 상위권, **트리거·dashboard·dead code·CORS·env 5개 결함**으로 즉시 오픈 비추천
+- [x] Launch blocker 5개 / High risk 5개 / Tech debt 5개 / Strength 5개 식별 (위 섹션)
+- [x] 현실적 런칭 시나리오: Week 1 blocker 1~3,5 + closed beta → Week 2 blocker 4 + 실 카드 E2E → Week 3 일반 오픈
+- [x] 가장 위험한 착시: 체크리스트 `[x]` 비율 높음 vs 실 안정성(자동 cron 0 / 실 결제 E2E 0 / 프론트 자동화 0)
+- [ ] 본 평가 항목들이 각 앱 체크리스트에 반영되었는지 1주일 내 재확인
 - [ ] 테이블오더 첫 주문/추가 주문 브라우저-백엔드 E2E
 - [ ] 관리자 MQ 운영 화면 브라우저 E2E
 - [ ] Toss SDK/POS 실제 기기 E2E
