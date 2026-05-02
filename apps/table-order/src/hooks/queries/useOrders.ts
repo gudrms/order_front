@@ -15,5 +15,7 @@ export function useOrdersByTable(tableNumber?: number, storeId?: string) {
     queryKey: ['orders', 'table', storeId, tableNumber],
     queryFn: () => api.order.getOrdersByTable(tableNumber!, storeId!),
     enabled: !!tableNumber && !!storeId,
+    refetchInterval: 5000,
+    refetchIntervalInBackground: true,
   });
 }

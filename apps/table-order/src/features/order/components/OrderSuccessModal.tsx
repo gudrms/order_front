@@ -99,7 +99,7 @@ export function OrderSuccessModal({
         <p className="mb-4 text-3xl font-bold text-primary">{orderNumber}</p>
 
         {/* 안내 메시지 */}
-        <p className="mb-2 text-gray-600">주방에서 조리 중입니다</p>
+        <p className="mb-2 text-gray-600">주문 상태는 주문내역에서 자동으로 갱신됩니다</p>
         <p className="text-base text-gray-500">{countdown}초 후 창이 닫힙니다</p>
       </div>
     </>
