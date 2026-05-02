@@ -12,7 +12,7 @@ import type { Order } from '@/lib/api/endpoints/order';
  */
 export function useOrdersByTable(tableNumber?: number, storeId?: string) {
   return useQuery<Order[]>({
-    queryKey: ['orders', 'table', tableNumber],
+    queryKey: ['orders', 'table', storeId, tableNumber],
     queryFn: () => api.order.getOrdersByTable(tableNumber!, storeId!),
     enabled: !!tableNumber && !!storeId,
   });

@@ -1,11 +1,11 @@
 # 테이블오더 Front 체크리스트
-마지막 업데이트: 2026-05-01
+마지막 업데이트: 2026-05-02
 
 ## 현재 요약
 
 - QR/테이블 기반 UI는 존재한다.
 - 백엔드에서 매장 활성 상태, 테이블 존재 여부, 예약 테이블을 검증하도록 보강됐다.
-- 다음 핵심은 실제 Store UUID와 tableNumber를 프론트 라우팅/QR에서 안정적으로 결정하는 것이다.
+- 실제 Store UUID와 tableNumber를 프론트 라우팅/QR에서 안정적으로 결정하고, 첫 주문/추가 주문 API 분기까지 연결했다.
 - MQ 도입 후에도 테이블오더 프론트는 주문 생성 REST API를 사용하고, POS/알림 재시도 같은 내부 후처리는 백엔드 운영 영역으로 둔다.
 
 ## 완료
@@ -24,14 +24,15 @@
 - [x] 백엔드 세션 시작 시 예약 테이블 차단
 - [x] 주문번호 매장별 유니크 제약 적용
 - [x] MQ 도입 범위에서 테이블오더 프론트는 큐 직접 구독 대상이 아님을 확정
+- [x] 실제 Store UUID 결정: `/:storeType/:branchId`를 백엔드 `stores/identifier` 조회로 연결하고 기본 지점 강제 리다이렉트 제거
+- [x] QR에서 `tableNumber` 파싱 및 로컬 persist 저장
+- [x] 첫 주문/추가 주문 API 분기 연결: 활성 세션 없음 → `orders/first`, 활성 세션 있음 → `orders/:sessionId`
+- [x] 주문 내역 API 연결: 공개 `current-session` 응답의 주문 목록 사용
 
 ## 남은 일
 
-- [ ] 실제 Store UUID 결정 방식 확정
-- [ ] QR에서 tableNumber 파싱 및 검증
-- [ ] 첫 주문 API E2E
-- [ ] 추가 주문 API E2E
-- [ ] 주문 내역 API 연결
+- [ ] 첫 주문 API 브라우저/백엔드 E2E
+- [ ] 추가 주문 API 브라우저/백엔드 E2E
 - [ ] 주문 상태 API 연결
 - [ ] 직원 호출 실제 API/Realtime 연결
 - [ ] mock 데이터 제거
@@ -40,8 +41,8 @@
 
 ## 다음 순서
 
-1. URL/QR 기반 Store Context와 tableNumber 연결
-2. 첫 주문 E2E
-3. 추가 주문 E2E
-4. 주문 내역/상태 API 전환
+1. 첫 주문/추가 주문 브라우저 E2E
+2. 주문 상태 API 전환
+3. 직원 호출 실제 API/Realtime 연결
+4. mock 데이터 제거
 5. MQ 후처리 실패와 사용자 주문 흐름 분리 검증

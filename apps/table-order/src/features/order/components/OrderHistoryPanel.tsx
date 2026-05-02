@@ -50,7 +50,7 @@ export function OrderHistoryPanel() {
       }
 
       // React Query 캐시 무효화하여 주문내역 다시 불러오기
-      await queryClient.invalidateQueries({ queryKey: ['orders', 'table', tableNumber] });
+      await queryClient.invalidateQueries({ queryKey: ['orders', 'table', storeId, tableNumber] });
 
       alert('주문내역이 초기화되었습니다.');
     } catch (error) {
