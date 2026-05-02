@@ -1,15 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCartStore } from '@/stores';
 import { useTableStore } from '@/stores/tableStore';
 import { useUIStore } from '@/stores/uiStore';
 import { CartItemCardContainer } from './CartItemCardContainer';
 import { OrderSuccessModal } from '@/features/order';
-import { DOMAINS } from '@/lib/constants/domains';
-
-import { useStore } from '@/contexts/StoreContext';
+import { useCreateOrder } from '@/hooks/mutations/useCreateOrder';
+import type { CreateOrderRequest, OrderItemInput } from '@/lib/api/endpoints/order';
 
 /**
  * CartPanel 컴포넌트
@@ -29,56 +27,11 @@ export function CartPanel() {
     clearCart,
   } = useCartStore();
   const { tableNumber } = useTableStore();
-  const { id: storeId } = useStore();
-  const queryClient = useQueryClient();
+  const { mutate: createOrder, isPending } = useCreateOrder();
 
   const [successModal, setSuccessModal] = useState({
     isOpen: false,
     orderNumber: '',
-  });
-
-  // 주문 생성 mutation (MSW API 사용)
-  const orderMutation = useMutation({
-    mutationFn: async () => {
-      const API_URL = DOMAINS.API;
-
-      const response = await fetch(`${API_URL}/stores/${storeId}/orders/first`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          tableNumber: tableNumber || 0,
-          items: items.map((item) => ({
-            menuId: item.menuId,
-            quantity: item.quantity,
-            price: item.unitPrice,
-            options: item.options,
-          })),
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to create order');
-      }
-
-      const data = await response.json();
-      return data.data; // { session, order }
-    },
-    onSuccess: (data) => {
-      // 장바구니 비우기
-      clearCart();
-
-      // React Query 캐시 무효화 (주문내역 갱신)
-      queryClient.invalidateQueries({ queryKey: ['orders', 'table', tableNumber] });
-
-      // 성공 모달 표시
-      setSuccessModal({
-        isOpen: true,
-        orderNumber: data.order.orderNumber,
-      });
-    },
-    onError: () => {
-      alert('주문에 실패했습니다. 다시 시도해주세요.');
-    },
   });
 
   const handleOrder = () => {
@@ -92,8 +45,33 @@ export function CartPanel() {
       return;
     }
 
-    // 즉시 주문 실행
-    orderMutation.mutate();
+    const orderItems: OrderItemInput[] = items.map((item) => ({
+      menuId: item.menuId,
+      menuName: item.menuName,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+      totalPrice: item.totalPrice,
+      options: item.options,
+    }));
+
+    const request: CreateOrderRequest = {
+      tableNumber,
+      items: orderItems,
+      totalAmount: totalPrice,
+    };
+
+    createOrder(request, {
+      onSuccess: (data) => {
+        clearCart();
+        setSuccessModal({
+          isOpen: true,
+          orderNumber: data.orderNumber,
+        });
+      },
+      onError: () => {
+        alert('주문에 실패했습니다. 다시 시도해주세요.');
+      },
+    });
   };
 
   return (
@@ -149,10 +127,10 @@ export function CartPanel() {
             </button>
             <button
               onClick={handleOrder}
-              disabled={items.length === 0 || orderMutation.isPending}
+              disabled={items.length === 0 || isPending}
               className="flex-1 rounded bg-primary py-3 font-medium text-white hover:bg-primary-dark disabled:bg-gray-300"
             >
-              {orderMutation.isPending ? '주문 중...' : '주문하기'}
+              {isPending ? '주문 중...' : '주문하기'}
             </button>
           </div>
         </div>
