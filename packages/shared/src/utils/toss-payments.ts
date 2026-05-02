@@ -47,11 +47,4 @@ export async function requestPayment(params: TossPaymentParams) {
     });
 }
 
-/**
- * 주문 ID 생성 (UUID 대신 간단한 형식)
- */
-export function generateOrderId(): string {
-    const timestamp = Date.now();
-    const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-    return `ORDER_${timestamp}_${random}`;
-}
+// generateOrderId 는 utils/id.ts 로 이동 (SSR 안전)

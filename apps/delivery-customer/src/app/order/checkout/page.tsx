@@ -1,10 +1,18 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight, CreditCard, Tag, X } from 'lucide-react';
-import { TossPaymentWidget } from '@order/ui';
 import { calculateCouponDiscount, generateOrderId, useCartStore } from '@order/shared';
+
+// SSR에서 window.location 참조로 인한 ReferenceError 방지
+// @order/ui 배럴을 통하면 @tosspayments/payment-widget-sdk 가 SSR 번들에 포함되므로
+// payment 서브패스로 직접 import
+const TossPaymentWidget = dynamic(
+    () => import('@order/ui/payment').then((m) => ({ default: m.TossPaymentWidget })),
+    { ssr: false },
+);
 import type { CreateOrderRequest, OrderItemInput, UserCoupon } from '@order/shared';
 import type { PaymentWidgetInstance } from '@tosspayments/payment-widget-sdk';
 import { useAuth } from '@/contexts/AuthContext';
@@ -154,8 +162,8 @@ export default function CheckoutPage() {
                     : items[0].menuName,
                 customerName: deliveryInfo.customerName,
                 customerEmail: user?.email || undefined,
-                successUrl: `${window.location.origin}/order/success`,
-                failUrl: `${window.location.origin}/order/fail`,
+                successUrl: `${typeof window !== 'undefined' ? window.location.origin : ''}/order/success`,
+                failUrl: `${typeof window !== 'undefined' ? window.location.origin : ''}/order/fail`,
             });
         } catch (error) {
             console.error('결제 요청 오류:', error);

@@ -4,20 +4,25 @@ import Providers from './providers';
 import PWAInstaller from '@/components/PWAInstaller';
 
 export const metadata: Metadata = {
-  title: '배달 주문',
-  description: '우리 브랜드 배달 주문 앱',
+  title: '타코 배달',
+  description: '간편한 배달 주문 서비스',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: '배달앱',
+    title: '타코 배달',
   },
   formatDetection: {
     telephone: false,
   },
   icons: {
-    icon: '/icons/icon-192x192.png',
-    apple: '/icons/icon-192x192.png',
+    icon: [
+      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/icons/icon-192x192.png', sizes: '192x192', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
   },
 };
 

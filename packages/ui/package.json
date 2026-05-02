@@ -6,7 +6,8 @@
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./styles.css": "./src/styles/globals.css"
+    "./styles.css": "./src/styles/globals.css",
+    "./payment": "./src/components/payment/TossPaymentWidget.tsx"
   },
   "scripts": {
     "lint": "eslint",
