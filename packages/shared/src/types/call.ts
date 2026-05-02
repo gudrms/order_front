@@ -18,11 +18,12 @@ export type CallStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED';
  */
 export interface StaffCall {
   id: string; // UUID
-  tableId: string; // UUID
-  tableNumber?: number; // JOIN 결과
+  tableId?: string | null; // legacy UUID 기반 테이블 ID
+  tableNumber: number; // 테이블 번호
   storeId: string; // UUID
-  type: CallType;
-  message: string | null;
+  type?: CallType;
+  callType?: CallType | string | null;
+  message?: string | null;
   status: CallStatus;
   createdAt: Date | string;
   updatedAt: Date | string;
@@ -39,8 +40,9 @@ export type Call = StaffCall;
  * 직원 호출 생성 요청 DTO
  */
 export interface CreateCallRequest {
-  tableId: string; // UUID
-  storeId?: string; // UUID (선택적, 서버에서 추론 가능)
+  tableId?: string; // legacy UUID 기반 호출
+  storeId: string; // UUID
+  tableNumber: number;
   type: CallType;
   message?: string | null;
 }

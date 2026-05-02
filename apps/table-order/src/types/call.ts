@@ -20,15 +20,15 @@ export const CallTypeLabel: Record<CallType, string> = {
 /**
  * 호출 상태
  */
-export type CallStatus = 'PENDING' | 'COMPLETED' | 'CANCELLED';
+export type CallStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED';
 
 /**
  * 호출 상태 한글 매핑
  */
 export const CallStatusLabel: Record<CallStatus, string> = {
   PENDING: '대기중',
+  PROCESSING: '처리중',
   COMPLETED: '완료',
-  CANCELLED: '취소됨',
 };
 
 /**
@@ -36,10 +36,12 @@ export const CallStatusLabel: Record<CallStatus, string> = {
  */
 export interface Call {
   id: string; // UUID
-  tableId: string; // UUID
-  tableNumber?: number;
-  type: CallType;
-  message: string | null;
+  tableId?: string | null;
+  tableNumber: number;
+  storeId: string;
+  type?: CallType;
+  callType?: CallType | string | null;
+  message?: string | null;
   status: CallStatus;
   createdAt: string;
   completedAt: string | null;
@@ -49,7 +51,9 @@ export interface Call {
  * 직원 호출 생성 요청 DTO
  */
 export interface CreateCallRequest {
-  tableId: string; // UUID
+  tableId?: string; // legacy UUID 기반 호출
+  storeId: string;
+  tableNumber: number;
   type: CallType;
   message?: string | null;
 }

@@ -1,7 +1,8 @@
 'use client';
 
 import { useCreateCall } from '@/hooks/mutations/useCreateCall';
-import { useUIStore } from '@/stores';
+import { useTableStore, useUIStore } from '@/stores';
+import { useStore } from '@/contexts/StoreContext';
 import type { CallType } from '@order/shared';
 
 /**
@@ -11,9 +12,8 @@ import type { CallType } from '@order/shared';
 export function CallContent() {
   const { mutate: createCall, isPending } = useCreateCall();
   const closeDetailPanel = useUIStore((state) => state.closeDetailPanel);
-
-  // 테이블 ID (실제로는 props나 URL에서 가져와야 함)
-  const tableId = 'table-12'; // 임시 (UUID 형식)
+  const { id: storeId } = useStore();
+  const { tableNumber } = useTableStore();
 
   const callTypes: Array<{
     type: CallType;
@@ -44,8 +44,13 @@ export function CallContent() {
 
   // 직원 호출 처리
   const handleCall = (type: CallType) => {
+    if (!tableNumber) {
+      alert('테이블 번호가 설정되지 않았습니다. QR 코드를 다시 스캔해주세요.');
+      return;
+    }
+
     createCall(
-      { tableId, type },
+      { storeId, tableNumber, type },
       {
         onSuccess: () => {
           // 성공 메시지 (나중에 토스트로 변경)

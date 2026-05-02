@@ -3,7 +3,7 @@
  */
 
 import { useMutation } from '@tanstack/react-query';
-import { api } from '@order/shared';
+import { api } from '@/lib/api';
 import type { Call, CreateCallRequest } from '@order/shared';
 
 /**

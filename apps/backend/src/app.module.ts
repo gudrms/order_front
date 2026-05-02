@@ -17,6 +17,7 @@ import { UsersModule } from './modules/users/users.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { QueueModule } from './modules/queue';
 import { CouponsModule } from './modules/coupons/coupons.module';
+import { CallsModule } from './modules/calls/calls.module';
 
 @Module({
     imports: [
@@ -54,6 +55,7 @@ import { CouponsModule } from './modules/coupons/coupons.module';
         PaymentsModule,
         QueueModule,
         CouponsModule,
+        CallsModule,
     ],
     controllers: [AppController, HealthController],
     providers: [
