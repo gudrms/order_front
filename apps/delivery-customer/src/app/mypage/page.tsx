@@ -5,10 +5,12 @@ import { useRouter } from 'next/navigation';
 import { ChevronRight, Coins, Heart, LogOut, MapPin, Receipt, Ticket, User as UserIcon } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { MypageSkeleton } from '@/components/ui/Skeleton';
+import { useAvailableCoupons } from '@/hooks/queries/useCoupons';
 
 export default function MyPage() {
     const router = useRouter();
     const { user, signOut, loading } = useAuth();
+    const { data: availableCoupons = [] } = useAvailableCoupons(user?.id);
 
     useEffect(() => {
         if (!loading && !user) {
@@ -94,15 +96,20 @@ export default function MyPage() {
                             </div>
                             <span className="font-bold text-lg">0 P</span>
                         </div>
-                        <div className="bg-gray-50 rounded-xl p-4 flex items-center justify-between">
+                        <button
+                            onClick={() => router.push('/mypage/coupons')}
+                            className="bg-gray-50 rounded-xl p-4 flex items-center justify-between hover:bg-purple-50 transition-colors"
+                        >
                             <div className="flex items-center gap-2">
                                 <div className="p-2 bg-purple-100 rounded-lg text-purple-600">
                                     <Ticket size={20} />
                                 </div>
                                 <span className="text-sm font-medium text-gray-600">쿠폰</span>
                             </div>
-                            <span className="font-bold text-lg">0장</span>
-                        </div>
+                            <span className={`font-bold text-lg ${availableCoupons.length > 0 ? 'text-purple-600' : ''}`}>
+                                {availableCoupons.length}장
+                            </span>
+                        </button>
                     </div>
                 </section>
 

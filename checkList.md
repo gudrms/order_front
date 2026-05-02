@@ -1,5 +1,5 @@
 # Taco Mono 루트 체크리스트
-마지막 업데이트: 2026-05-01 (쿠폰 시스템 구현 완료: Prisma schema, 백엔드 모듈, OrdersService 연동)
+마지막 업데이트: 2026-05-02 (쿠폰 시스템 전체 완료: 백엔드 + 배달앱 UI)
 
 ## 큰 그림
 
@@ -92,6 +92,7 @@
 - [x] 쿠폰 모듈: `CouponsService` / `CouponsController` / `UserCouponsController` (PERCENTAGE·FIXED_AMOUNT, 프로모코드 등록, 관리자 발급)
 - [x] 쿠폰 적용 연동: `CreateDeliveryOrderDto.userCouponId`, `OrdersService.createDeliveryOrder` 내 할인 계산 + `markAsUsed` 호출
 - [x] 쿠폰 단위 테스트 추가: 15 tests (할인 계산, 만료/사용/한도 검증, 정률cap, 정액min 등)
+- [x] 배달앱 쿠폰 UI: shared 쿠폰 타입/API, 체크아웃 쿠폰 선택 바텀시트, /mypage/coupons 페이지, 마이페이지 쿠폰 개수 실시간 표시
 
 ## 배달앱 상태
 

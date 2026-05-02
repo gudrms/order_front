@@ -28,3 +28,6 @@ export * from './payment';
 
 // Address types
 export * from './address';
+
+// Coupon types
+export * from './coupon';

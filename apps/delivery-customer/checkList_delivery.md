@@ -102,8 +102,8 @@
 - [x] `test-user-id` 제거 완료
 - [x] 쿠폰 데이터 정책 결정 (PERCENTAGE·FIXED_AMOUNT, 1장/주문, 30일 기본, 5000원 정률 상한)
 - [x] 백엔드 쿠폰 시스템 구현 완료 (Coupon/UserCoupon 모델, CouponsService/Controller, OrdersService 연동)
-- [ ] 배달앱 체크아웃 쿠폰 선택 UI (사용 가능 쿠폰 목록 → 1장 선택 → 할인 금액 표시)
-- [ ] 배달앱 마이페이지 쿠폰 목록 UI (전체 쿠폰 상태 조회, 프로모코드 등록)
+- [x] 배달앱 체크아웃 쿠폰 선택 UI (사용 가능 쿠폰 바텀시트 → 1장 선택 → 할인/결제 금액 실시간 반영)
+- [x] 배달앱 마이페이지 쿠폰 목록 UI (`/mypage/coupons` — 전체 쿠폰 상태 조회, 프로모코드 등록)
 
 ### P2: 스토어 배포 및 PWA/빌드
 
@@ -137,8 +137,7 @@
 
 ## 다음 순서
 
-1. **[진행중]** 배달앱 체크아웃 쿠폰 선택 UI + 마이페이지 쿠폰 목록 UI
-2. Toss 테스트 카드결제 성공/실패/환불 E2E
+1. Toss 테스트 카드결제 성공/실패/환불 E2E
 3. 결제 성공 주문의 POS/알림 후처리 중 고객 중복 노출 여부 E2E 확인
 4. Capacitor 원격 WebView 실기기 실행과 `/orders/[id]` 딥링크 진입 검증
 5. `ReferenceError: location is not defined` 빌드 로그 원인 제거

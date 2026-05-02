@@ -2,10 +2,10 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronLeft, CreditCard } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CreditCard, Tag, X } from 'lucide-react';
 import { TossPaymentWidget } from '@order/ui';
-import { generateOrderId, useCartStore } from '@order/shared';
-import type { CreateOrderRequest, OrderItemInput } from '@order/shared';
+import { calculateCouponDiscount, generateOrderId, useCartStore } from '@order/shared';
+import type { CreateOrderRequest, OrderItemInput, UserCoupon } from '@order/shared';
 import type { PaymentWidgetInstance } from '@tosspayments/payment-widget-sdk';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCurrentStore } from '@/contexts/StoreContext';
@@ -13,6 +13,7 @@ import { useDeliveryStore } from '@/stores/deliveryStore';
 import { useCreateOrder } from '@/hooks/mutations/useCreateOrder';
 import { useFailTossPayment } from '@/hooks/mutations/useFailTossPayment';
 import { useAddresses } from '@/hooks/queries/useAddresses';
+import { useAvailableCoupons } from '@/hooks/queries/useCoupons';
 
 const TOSS_CLIENT_KEY = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY || 'test_ck_D5GePWvyJnrK0W0k6q8gLzN97Eoq';
 const PENDING_TOSS_ORDER_ID_KEY = 'delivery.pendingTossOrderId';
@@ -28,10 +29,18 @@ export default function CheckoutPage() {
     const failTossPaymentMutation = useFailTossPayment();
 
     const [isProcessing, setIsProcessing] = useState(false);
+    const [selectedCoupon, setSelectedCoupon] = useState<UserCoupon | null>(null);
+    const [showCouponSheet, setShowCouponSheet] = useState(false);
     const paymentWidgetRef = useRef<PaymentWidgetInstance | null>(null);
+
+    const { data: availableCoupons = [] } = useAvailableCoupons(user?.id);
 
     const totalAmount = orderTotal(totalPrice);
     const deliveryFee = totalAmount - totalPrice;
+    const discountAmount = selectedCoupon
+        ? calculateCouponDiscount(selectedCoupon.coupon, totalAmount)
+        : 0;
+    const paymentAmount = totalAmount - discountAmount;
     const isBelowMinimum = !!store && totalPrice < store.minimumOrderAmount;
     const canOrder = !!storeId
         && !!user
@@ -95,10 +104,11 @@ export default function CheckoutPage() {
                 addressId: deliveryInfo.address?.id,
             },
             items: orderItems,
-            totalAmount,
+            totalAmount,           // 쿠폰 적용 전 금액 (백엔드 메뉴 금액 검증용)
+            userCouponId: selectedCoupon?.id,
             payment: {
                 orderId,
-                amount: totalAmount,
+                amount: paymentAmount, // 쿠폰 할인 후 실결제 금액
                 paymentType: 'NORMAL',
                 method: 'TOSS',
             },
@@ -260,11 +270,59 @@ export default function CheckoutPage() {
                     <TossPaymentWidget
                         clientKey={TOSS_CLIENT_KEY}
                         customerKey={user?.id || 'ANONYMOUS'}
-                        amount={totalAmount}
+                        amount={paymentAmount}
                         onWidgetReady={(widget) => {
                             paymentWidgetRef.current = widget;
                         }}
                     />
+                </section>
+
+                {/* 쿠폰 선택 */}
+                <section className="bg-white rounded-xl p-4">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <Tag size={18} className="text-purple-500" />
+                            <h2 className="font-bold text-base">쿠폰</h2>
+                            {availableCoupons.length > 0 && (
+                                <span className="text-xs bg-purple-100 text-purple-600 font-semibold px-2 py-0.5 rounded-full">
+                                    {availableCoupons.length}장 보유
+                                </span>
+                            )}
+                        </div>
+                        {selectedCoupon ? (
+                            <div className="flex items-center gap-2">
+                                <span className="text-sm font-semibold text-purple-600">
+                                    -{discountAmount.toLocaleString()}원
+                                </span>
+                                <button
+                                    onClick={() => setSelectedCoupon(null)}
+                                    className="p-1 text-gray-400 hover:text-gray-600"
+                                    aria-label="쿠폰 제거"
+                                >
+                                    <X size={16} />
+                                </button>
+                            </div>
+                        ) : (
+                            <button
+                                onClick={() => availableCoupons.length > 0 && setShowCouponSheet(true)}
+                                className={`flex items-center gap-1 text-sm font-medium ${availableCoupons.length > 0 ? 'text-purple-600' : 'text-gray-400'}`}
+                            >
+                                {availableCoupons.length > 0 ? '선택' : '없음'}
+                                {availableCoupons.length > 0 && <ChevronRight size={16} />}
+                            </button>
+                        )}
+                    </div>
+                    {selectedCoupon && (
+                        <div className="mt-3 p-3 bg-purple-50 rounded-lg">
+                            <p className="text-sm font-semibold text-purple-700">{selectedCoupon.coupon.name}</p>
+                            <p className="text-xs text-purple-500 mt-0.5">
+                                {selectedCoupon.coupon.type === 'PERCENTAGE'
+                                    ? `${selectedCoupon.coupon.discountValue}% 할인${selectedCoupon.coupon.maxDiscountAmount ? ` (최대 ${selectedCoupon.coupon.maxDiscountAmount.toLocaleString()}원)` : ''}`
+                                    : `${selectedCoupon.coupon.discountValue.toLocaleString()}원 할인`}
+                                {' · '}만료 {new Date(selectedCoupon.expiresAt).toLocaleDateString('ko-KR')}
+                            </p>
+                        </div>
+                    )}
                 </section>
 
                 <section className="bg-white rounded-xl p-4 space-y-3">
@@ -278,11 +336,17 @@ export default function CheckoutPage() {
                             <span className="text-gray-500">배달비</span>
                             <span className="font-medium">{deliveryFee.toLocaleString()}원</span>
                         </div>
+                        {discountAmount > 0 && (
+                            <div className="flex justify-between text-purple-600">
+                                <span>쿠폰 할인</span>
+                                <span className="font-semibold">-{discountAmount.toLocaleString()}원</span>
+                            </div>
+                        )}
                         <div className="h-px bg-gray-200 my-2" />
                         <div className="flex justify-between text-lg">
                             <span className="font-bold">총 결제 금액</span>
                             <span className="font-bold text-brand-yellow">
-                                {totalAmount.toLocaleString()}원
+                                {paymentAmount.toLocaleString()}원
                             </span>
                         </div>
                     </div>
@@ -303,10 +367,84 @@ export default function CheckoutPage() {
                             ? '로그인하고 주문하기'
                             : isProcessing
                                 ? '처리 중...'
-                                : `${totalAmount.toLocaleString()}원 결제하기`}
+                                : `${paymentAmount.toLocaleString()}원 결제하기`}
                     </button>
                 </div>
             </div>
+
+            {/* 쿠폰 선택 바텀시트 */}
+            {showCouponSheet && (
+                <div className="fixed inset-0 z-50 flex flex-col justify-end">
+                    <div
+                        className="absolute inset-0 bg-black/40"
+                        onClick={() => setShowCouponSheet(false)}
+                    />
+                    <div className="relative bg-white rounded-t-2xl max-h-[70vh] flex flex-col">
+                        <div className="flex items-center justify-between p-4 border-b border-gray-100">
+                            <h3 className="font-bold text-lg">쿠폰 선택</h3>
+                            <button
+                                onClick={() => setShowCouponSheet(false)}
+                                className="p-2 text-gray-400"
+                                aria-label="닫기"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="overflow-y-auto p-4 space-y-3">
+                            {availableCoupons.map((uc) => {
+                                const discount = calculateCouponDiscount(uc.coupon, totalAmount);
+                                const isDisabled = uc.coupon.minOrderAmount != null && totalAmount < uc.coupon.minOrderAmount;
+                                return (
+                                    <button
+                                        key={uc.id}
+                                        disabled={isDisabled}
+                                        onClick={() => {
+                                            setSelectedCoupon(uc);
+                                            setShowCouponSheet(false);
+                                        }}
+                                        className={`w-full text-left p-4 rounded-xl border-2 transition-colors ${
+                                            isDisabled
+                                                ? 'border-gray-100 bg-gray-50 opacity-50 cursor-not-allowed'
+                                                : selectedCoupon?.id === uc.id
+                                                    ? 'border-purple-500 bg-purple-50'
+                                                    : 'border-gray-100 hover:border-purple-200'
+                                        }`}
+                                    >
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <p className="font-semibold text-sm">{uc.coupon.name}</p>
+                                                <p className="text-xs text-gray-500 mt-0.5">
+                                                    {uc.coupon.type === 'PERCENTAGE'
+                                                        ? `${uc.coupon.discountValue}% 할인${uc.coupon.maxDiscountAmount ? ` (최대 ${uc.coupon.maxDiscountAmount.toLocaleString()}원)` : ''}`
+                                                        : `${uc.coupon.discountValue.toLocaleString()}원 할인`}
+                                                </p>
+                                                {uc.coupon.minOrderAmount && (
+                                                    <p className="text-xs text-gray-400 mt-0.5">
+                                                        최소 주문 {uc.coupon.minOrderAmount.toLocaleString()}원 이상
+                                                    </p>
+                                                )}
+                                                <p className="text-xs text-gray-400 mt-1">
+                                                    만료: {new Date(uc.expiresAt).toLocaleDateString('ko-KR')}
+                                                </p>
+                                            </div>
+                                            {!isDisabled && (
+                                                <span className="text-purple-600 font-bold text-sm flex-shrink-0 ml-2">
+                                                    -{discount.toLocaleString()}원
+                                                </span>
+                                            )}
+                                        </div>
+                                        {isDisabled && (
+                                            <p className="text-xs text-red-400 mt-1">
+                                                최소 주문금액 {uc.coupon.minOrderAmount!.toLocaleString()}원 미달
+                                            </p>
+                                        )}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </div>
+            )}
         </main>
     );
 }
