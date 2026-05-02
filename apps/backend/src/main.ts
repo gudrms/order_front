@@ -78,12 +78,11 @@ async function bootstrap() {
     const config = new DocumentBuilder()
         .setTitle('🌮 Taco Mono API')
         .setDescription(`
-## 배달앱 · 테이블오더 · 홈페이지 통합 주문 API
+## 배달앱 · 테이블오더 통합 주문 API
 
 ### 채널별 주문 흐름
-- **배달앱 (DELIVERY_APP)**: 로그인 필수 → Toss 선결제 → PAID 확정 → MQ 처리
+- **배달앱 (DELIVERY_APP)**: 로그인 필수 → Toss 선결제 → PAID 확정 → MQ 처리. 홈페이지의 주문 CTA도 배달앱으로 리다이렉트되어 동일한 흐름을 따른다.
 - **테이블오더 (TABLE_ORDER)**: QR 세션 기반 → 테이블별 첫 주문/추가 주문
-- **홈페이지 (HOMEPAGE)**: 직접 주문 → Toss 결제 → MQ worker 후처리
 - **POS 연동**: PAID 주문을 POS 플러그인이 polling 수신
 
 ### 인증
