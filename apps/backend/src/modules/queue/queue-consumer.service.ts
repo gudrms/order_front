@@ -1,6 +1,6 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
 import { mapTossMethod } from '../../common/utils/toss.utils';
-import { Prisma } from '@prisma/client';
+import { MenuManagementMode, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { TossApiService } from '../integrations/toss/toss-api.service';
 import { ResilientPosService } from '../integrations/pos/pos.resilience';
@@ -113,18 +113,33 @@ export class QueueConsumerService {
             throw new Error('order.paid payload requires orderId');
         }
 
-        await this.queueService.publishPosSendOrder({
-            orderId,
-            storeId: typeof event.payload.storeId === 'string' ? event.payload.storeId : undefined,
-        });
+        const storeId = typeof event.payload.storeId === 'string' ? event.payload.storeId : undefined;
 
-        if (typeof event.payload.storeId === 'string') {
+        // TOSS_POS 모드 매장만 POS 전송 큐 발행. ADMIN_DIRECT 매장은 POS 기기가 없으므로 skip.
+        if (storeId) {
+            const store = await this.prisma.store.findUnique({
+                where: { id: storeId },
+                select: { menuManagementMode: true },
+            });
+            if (store?.menuManagementMode === MenuManagementMode.TOSS_POS) {
+                await this.queueService.publishPosSendOrder({ orderId, storeId });
+            } else {
+                this.logger.log(
+                    `[order.paid] storeId=${storeId} is ADMIN_DIRECT — skipping pos.send_order for orderId=${orderId}`,
+                );
+            }
+        } else {
+            // storeId 없으면 안전하게 POS 전송 시도
+            await this.queueService.publishPosSendOrder({ orderId });
+        }
+
+        if (storeId) {
             await this.queueService.publishNotificationSend({
                 recipientType: 'STORE',
-                recipientId: event.payload.storeId,
+                recipientId: storeId,
                 notificationType: 'ORDER_PAID',
                 orderId,
-                storeId: event.payload.storeId,
+                storeId,
                 channel: 'IN_APP',
             });
         }
@@ -156,6 +171,18 @@ export class QueueConsumerService {
         });
 
         if (!order) {
+            return;
+        }
+
+        // ADMIN_DIRECT 모드 매장은 POS 기기가 없으므로 전송하지 않고 SKIPPED 처리
+        if (order.store?.menuManagementMode !== MenuManagementMode.TOSS_POS) {
+            this.logger.log(
+                `[pos.send_order] store ${order.storeId} is ADMIN_DIRECT — skipping POS send for orderId=${orderId}`,
+            );
+            await this.prisma.order.update({
+                where: { id: orderId },
+                data: { posSyncStatus: 'SKIPPED', posSyncUpdatedAt: new Date() },
+            });
             return;
         }
 
