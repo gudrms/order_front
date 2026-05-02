@@ -13,6 +13,12 @@ const API_BASE = DOMAINS.API;
 const orders: any[] = [];
 let orderCounter = 1;
 
+function getMockUnitPrice(item: CreateOrderRequest['items'][number]) {
+  return 'unitPrice' in item && typeof item.unitPrice === 'number'
+    ? item.unitPrice
+    : 0;
+}
+
 export const ordersHandlers = [
   // POST /api/v1/stores/:storeId/orders/first (첫 주문 - 세션 시작)
   http.post(`${API_BASE}/stores/:storeId/orders/first`, async ({ request, params }) => {
@@ -28,7 +34,7 @@ export const ordersHandlers = [
 
     // 2. 주문 생성
     const orderNumber = `ORD-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${String(orderCounter++).padStart(3, '0')}`;
-    const totalAmount = body.items.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0);
+    const totalAmount = body.items.reduce((sum, item) => sum + (getMockUnitPrice(item) * item.quantity), 0);
 
     const newOrder = {
       id: crypto.randomUUID(),
@@ -43,8 +49,8 @@ export const ordersHandlers = [
         menuId: item.menuId,
         menuName: item.menuName || '',
         quantity: item.quantity,
-        unitPrice: item.unitPrice,
-        totalPrice: item.unitPrice * item.quantity,
+        unitPrice: getMockUnitPrice(item),
+        totalPrice: getMockUnitPrice(item) * item.quantity,
         options: item.options,
       })),
       createdAt: new Date().toISOString(),
@@ -75,7 +81,7 @@ export const ordersHandlers = [
     const { storeId, sessionId } = params;
 
     const orderNumber = `ORD-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${String(orderCounter++).padStart(3, '0')}`;
-    const totalAmount = body.items.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0);
+    const totalAmount = body.items.reduce((sum, item) => sum + (getMockUnitPrice(item) * item.quantity), 0);
 
     const newOrder = {
       id: crypto.randomUUID(),
@@ -90,8 +96,8 @@ export const ordersHandlers = [
         menuId: item.menuId,
         menuName: item.menuName || '',
         quantity: item.quantity,
-        unitPrice: item.unitPrice,
-        totalPrice: item.unitPrice * item.quantity,
+        unitPrice: getMockUnitPrice(item),
+        totalPrice: getMockUnitPrice(item) * item.quantity,
         options: item.options,
       })),
       createdAt: new Date().toISOString(),

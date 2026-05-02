@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 /**
  * 테이블 정보 관리 Store
@@ -16,10 +17,18 @@ interface TableStore {
   clearTableNumber: () => void;
 }
 
-export const useTableStore = create<TableStore>((set) => ({
-  tableNumber: null,
+export const useTableStore = create<TableStore>()(
+  persist(
+    (set) => ({
+      tableNumber: null,
 
-  setTableNumber: (tableNumber) => set({ tableNumber }),
+      setTableNumber: (tableNumber) => set({ tableNumber }),
 
-  clearTableNumber: () => set({ tableNumber: null }),
-}));
+      clearTableNumber: () => set({ tableNumber: null }),
+    }),
+    {
+      name: 'table-order-current-table',
+      partialize: (state) => ({ tableNumber: state.tableNumber }),
+    }
+  )
+);
