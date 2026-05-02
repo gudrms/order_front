@@ -38,6 +38,9 @@ describe('QueueConsumerService', () => {
                 findFirst: vi.fn(),
                 update: vi.fn((args) => ({ model: 'payment', args })),
             },
+            store: {
+                findUnique: vi.fn().mockResolvedValue({ menuManagementMode: 'TOSS_POS' }),
+            },
             $transaction: vi.fn(async (operations) => operations),
         };
         tossApiService = {
@@ -88,9 +91,9 @@ describe('QueueConsumerService', () => {
             }),
         }));
         expect(queueService.archive).toHaveBeenCalledWith(undefined, 1);
+        // storeId가 없으면 모드 조회 없이 바로 POS 전송 발행
         expect(queueService.publishPosSendOrder).toHaveBeenCalledWith({
             orderId: 'order-1',
-            storeId: undefined,
         });
         expect(queueService.publishNotificationSend).not.toHaveBeenCalled();
         expect(prisma.queueEventLog.update).toHaveBeenCalledWith({
@@ -102,7 +105,7 @@ describe('QueueConsumerService', () => {
         });
     });
 
-    it('publishes a store notification when a paid order has a store id', async () => {
+    it('publishes POS and notification when a TOSS_POS store order is paid', async () => {
         queueService.read.mockResolvedValue([
             {
                 msg_id: 5,
@@ -120,9 +123,18 @@ describe('QueueConsumerService', () => {
         ]);
         prisma.queueEventLog.findUnique.mockResolvedValue(null);
         prisma.queueEventLog.upsert.mockResolvedValue({ status: 'PROCESSING' });
+        prisma.store.findUnique.mockResolvedValue({ menuManagementMode: 'TOSS_POS' });
 
         await service.processOnce();
 
+        expect(prisma.store.findUnique).toHaveBeenCalledWith({
+            where: { id: 'store-1' },
+            select: { menuManagementMode: true },
+        });
+        expect(queueService.publishPosSendOrder).toHaveBeenCalledWith({
+            orderId: 'order-5',
+            storeId: 'store-1',
+        });
         expect(queueService.publishNotificationSend).toHaveBeenCalledWith({
             recipientType: 'STORE',
             recipientId: 'store-1',
@@ -131,6 +143,34 @@ describe('QueueConsumerService', () => {
             storeId: 'store-1',
             channel: 'IN_APP',
         });
+    });
+
+    it('skips POS send but still notifies when an ADMIN_DIRECT store order is paid', async () => {
+        queueService.read.mockResolvedValue([
+            {
+                msg_id: 6,
+                read_ct: 1,
+                enqueued_at: new Date(),
+                vt: new Date(),
+                message: {
+                    eventId: 'event-6',
+                    eventType: 'order.paid',
+                    idempotencyKey: 'order.paid:order-6',
+                    occurredAt: new Date().toISOString(),
+                    payload: { orderId: 'order-6', storeId: 'store-admin' },
+                },
+            },
+        ]);
+        prisma.queueEventLog.findUnique.mockResolvedValue(null);
+        prisma.queueEventLog.upsert.mockResolvedValue({ status: 'PROCESSING' });
+        prisma.store.findUnique.mockResolvedValue({ menuManagementMode: 'ADMIN_DIRECT' });
+
+        await service.processOnce();
+
+        expect(queueService.publishPosSendOrder).not.toHaveBeenCalled();
+        expect(queueService.publishNotificationSend).toHaveBeenCalledWith(
+            expect.objectContaining({ orderId: 'order-6', storeId: 'store-admin' }),
+        );
     });
 
     it('sends POS jobs and marks successful sync', async () => {
@@ -156,6 +196,7 @@ describe('QueueConsumerService', () => {
             status: 'PAID',
             tossOrderId: null,
             posSyncStatus: 'PENDING',
+            store: { menuManagementMode: 'TOSS_POS' },
             items: [],
             payments: [],
         });
@@ -203,6 +244,45 @@ describe('QueueConsumerService', () => {
         expect(queueService.archive).toHaveBeenCalledWith(undefined, 4);
     });
 
+    it('skips POS send and marks SKIPPED for ADMIN_DIRECT store on pos.send_order', async () => {
+        queueService.read.mockResolvedValue([
+            {
+                msg_id: 20,
+                read_ct: 1,
+                enqueued_at: new Date(),
+                vt: new Date(),
+                message: {
+                    eventId: 'event-20',
+                    eventType: 'pos.send_order',
+                    idempotencyKey: 'pos.send_order:order-20',
+                    occurredAt: new Date().toISOString(),
+                    payload: { orderId: 'order-20' },
+                },
+            },
+        ]);
+        prisma.queueEventLog.findUnique.mockResolvedValue(null);
+        prisma.queueEventLog.upsert.mockResolvedValue({ status: 'PROCESSING' });
+        prisma.order.findFirst.mockResolvedValue({
+            id: 'order-20',
+            storeId: 'store-admin',
+            status: 'PAID',
+            tossOrderId: null,
+            posSyncStatus: 'PENDING',
+            store: { menuManagementMode: 'ADMIN_DIRECT' },
+            items: [],
+            payments: [],
+        });
+
+        const result = await service.processOnce();
+
+        expect(result).toEqual({ processedCount: 1 });
+        expect(posService.sendOrder).not.toHaveBeenCalled();
+        expect(prisma.order.update).toHaveBeenCalledWith({
+            where: { id: 'order-20' },
+            data: expect.objectContaining({ posSyncStatus: 'SKIPPED' }),
+        });
+    });
+
     it('marks POS jobs failed when the provider returns failure', async () => {
         queueService.read.mockResolvedValue([
             {
@@ -227,6 +307,7 @@ describe('QueueConsumerService', () => {
             status: 'PAID',
             tossOrderId: null,
             posSyncStatus: 'PENDING',
+            store: { menuManagementMode: 'TOSS_POS' },
             items: [],
             payments: [],
         });
