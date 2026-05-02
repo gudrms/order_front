@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import { QueryProvider } from '@/lib/query/QueryProvider';
-import { MSWProvider } from '@/lib/msw/MSWProvider';
 import { ErrorBoundary, ErrorToast } from '@/components/error';
 import './globals.css';
 
@@ -63,12 +62,10 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <MSWProvider>
-          <ErrorBoundary>
-            <QueryProvider>{children}</QueryProvider>
-            <ErrorToast />
-          </ErrorBoundary>
-        </MSWProvider>
+        <ErrorBoundary>
+          <QueryProvider>{children}</QueryProvider>
+          <ErrorToast />
+        </ErrorBoundary>
       </body>
     </html>
   );

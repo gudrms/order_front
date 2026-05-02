@@ -5,8 +5,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@order/shared';
 import type { Menu, MenuCategory, MenuDetail } from '@order/shared';
-import { mockCategories, mockMenus, mockMenuDetails } from '@/mocks';
-import { USE_MOCK, mockQuery } from '@/lib/mock-config';
 
 /**
  * 카테고리 목록 조회 훅
@@ -14,9 +12,7 @@ import { USE_MOCK, mockQuery } from '@/lib/mock-config';
 export function useCategories(storeId: string) {
   return useQuery<MenuCategory[]>({
     queryKey: ['categories', storeId],
-    queryFn: USE_MOCK
-      ? () => mockQuery(mockCategories)
-      : () => api.menu.getCategories(storeId),
+    queryFn: () => api.menu.getCategories(storeId),
     enabled: !!storeId,
     // 캐싱 설정
     staleTime: 5 * 60 * 1000, // 5분간 신선한 데이터로 간주
@@ -30,15 +26,7 @@ export function useCategories(storeId: string) {
 export function useMenus(storeId: string, categoryId?: string) {
   return useQuery<Menu[]>({
     queryKey: ['menus', storeId, categoryId],
-    queryFn: USE_MOCK
-      ? () => {
-        // 카테고리 필터링
-        const filteredMenus = categoryId
-          ? mockMenus.filter((menu) => menu.categoryId === categoryId)
-          : mockMenus;
-        return mockQuery(filteredMenus);
-      }
-      : () => api.menu.getMenus(storeId, categoryId),
+    queryFn: () => api.menu.getMenus(storeId, categoryId),
     enabled: !!storeId,
     // 캐싱 설정
     staleTime: 5 * 60 * 1000, // 5분간 신선한 데이터로 간주
@@ -52,15 +40,7 @@ export function useMenus(storeId: string, categoryId?: string) {
 export function useMenuDetail(menuId?: string) {
   return useQuery<MenuDetail>({
     queryKey: ['menu', menuId],
-    queryFn: USE_MOCK
-      ? () => {
-        const menuDetail = mockMenuDetails[menuId!];
-        if (!menuDetail) {
-          throw new Error('Menu not found');
-        }
-        return mockQuery(menuDetail);
-      }
-      : () => api.menu.getMenuDetail(menuId!),
+    queryFn: () => api.menu.getMenuDetail(menuId!),
     enabled: !!menuId,
     // 캐싱 설정
     staleTime: 5 * 60 * 1000, // 5분간 신선한 데이터로 간주
