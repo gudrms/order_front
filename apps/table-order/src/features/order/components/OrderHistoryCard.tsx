@@ -14,8 +14,15 @@ function getStatusBadge(status: Order['status']) {
   switch (status) {
     case 'PENDING':
       return <Badge variant="warning">접수 대기</Badge>;
+    case 'CONFIRMED':
+      return <Badge variant="info">접수 완료</Badge>;
+    case 'PAID':
+      return <Badge variant="info">결제 완료</Badge>;
     case 'COOKING':
+    case 'PREPARING':
       return <Badge variant="info">조리 중</Badge>;
+    case 'READY':
+      return <Badge variant="success">준비 완료</Badge>;
     case 'COMPLETED':
       return <Badge variant="success">완료</Badge>;
     case 'CANCELLED':

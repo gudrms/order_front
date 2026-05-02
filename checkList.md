@@ -135,6 +135,7 @@
 - [x] **[P1]** 운영 모드 분기 코드 구현: `MenuManagementMode` enum(`TOSS_POS` | `ADMIN_DIRECT`) — 메뉴 SSOT 분기(menus.service), POS 워커 분기(queue-consumer: ADMIN_DIRECT skip + SKIPPED 처리), 관리자 매장 등록 운영 모드 선택 UI, ADMIN_DIRECT에서만 메뉴 CRUD 허용 — 전부 구현 완료
 - [x] 테이블오더: 실제 Store UUID/tableNumber 연결과 첫 주문/추가 주문 API 분기 연결
 - [ ] 테이블오더: 첫 주문/추가 주문 브라우저·백엔드 E2E
+- [x] 테이블오더: 주문 상태 API 연결 (current-session polling + 상태 배지)
 - [x] 테이블오더: 직원 호출 실제 API 연결 (`stores/:storeId/tables/:tableNumber/calls`)
 - [x] 홈페이지: 주문 CTA를 배달앱 매장 URL로 연결 (Hero + 매장 카드별)
 - [x] 홈페이지: 매장/메뉴 API 연결 (GET /stores 퍼블릭 엔드포인트, 배달 정보 표시, 카테고리/메뉴 fetch)
@@ -169,7 +170,7 @@
 2. 배달앱: Toss 테스트 카드결제 성공/실패/환불 E2E와 결제 후 POS/알림 중복 노출 검증
 3. 배달앱: Capacitor 원격 WebView 실기기 실행, `/orders/[id]` 딥링크, PWA/Sentry 검증
 4. 관리자: MQ 운영 화면 POS/알림 실패 조회 및 재시도 브라우저 E2E
-5. 테이블오더: 첫 주문/추가 주문 브라우저 E2E, 주문 상태 API, 직원 호출 Realtime/관리자 수신 화면 연결
+5. 테이블오더: 첫 주문/추가 주문 브라우저 E2E, 직원 호출 Realtime/관리자 수신 화면 연결
 6. 홈페이지: 직접 주문 MVP 포함 여부 결정
 
 ## 체크리스트 위치

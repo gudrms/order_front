@@ -28,13 +28,13 @@
 - [x] QR에서 `tableNumber` 파싱 및 로컬 persist 저장
 - [x] 첫 주문/추가 주문 API 분기 연결: 활성 세션 없음 → `orders/first`, 활성 세션 있음 → `orders/:sessionId`
 - [x] 주문 내역 API 연결: 공개 `current-session` 응답의 주문 목록 사용
+- [x] 주문 상태 API 연결: 주문 내역을 5초 간격으로 재조회하고 백엔드 주문 상태 배지 표시
 - [x] 직원 호출 실제 API 연결: `stores/:storeId/tables/:tableNumber/calls` 생성 endpoint와 Store Context/tableNumber 연동
 
 ## 남은 일
 
 - [ ] 첫 주문 API 브라우저/백엔드 E2E
 - [ ] 추가 주문 API 브라우저/백엔드 E2E
-- [ ] 주문 상태 API 연결
 - [ ] 직원 호출 Realtime/관리자 수신 화면 연결
 - [ ] mock 데이터 제거
 - [ ] 주문 실패/테이블 없음/예약됨 오류 UI 정리
@@ -43,7 +43,6 @@
 ## 다음 순서
 
 1. 첫 주문/추가 주문 브라우저 E2E
-2. 주문 상태 API 전환
-3. 직원 호출 Realtime/관리자 수신 화면 연결
-4. mock 데이터 제거
-5. MQ 후처리 실패와 사용자 주문 흐름 분리 검증
+2. 직원 호출 Realtime/관리자 수신 화면 연결
+3. mock 데이터 제거
+4. MQ 후처리 실패와 사용자 주문 흐름 분리 검증
