@@ -79,8 +79,7 @@ export class OrdersService {
             if (!store.isDeliveryEnabled) {
                 throw new BadRequestException('Store is not accepting delivery orders');
             }
-            const isHomepageOrder = dto.source === 'HOMEPAGE';
-            if (!dto.userId && !isHomepageOrder) {
+            if (!dto.userId) {
                 throw new BadRequestException('Delivery orders require an authenticated user');
             }
             const paymentMethod = dto.payment.method as string | undefined;
@@ -122,7 +121,7 @@ export class OrdersService {
                     userId: dto.userId,
                     orderNumber: await this.generateOrderNumber(tx, storeId),
                     type: 'DELIVERY',
-                    source: isHomepageOrder ? 'HOMEPAGE' : 'DELIVERY_APP',
+                    source: 'DELIVERY_APP',
                     status: 'PENDING_PAYMENT',
                     paymentStatus: 'READY',
                     totalAmount: finalAmount,

@@ -154,37 +154,13 @@ describe('OrdersService', () => {
         }));
     });
 
-    it('creates a homepage delivery order with HOMEPAGE source', async () => {
-        tx.store.findUnique.mockResolvedValue(store);
-        tx.menu.findMany.mockResolvedValue([menu]);
-        tx.order.count.mockResolvedValue(9);
-        tx.order.create.mockResolvedValue({ id: 'order-2', source: 'HOMEPAGE' });
-
-        const result = await service.createDeliveryOrder('store-1', {
-            ...dto,
-            userId: undefined,
-            source: 'HOMEPAGE',
-        });
-
-        expect(result).toEqual({ id: 'order-2', source: 'HOMEPAGE' });
-        expect(tx.order.create).toHaveBeenCalledWith(expect.objectContaining({
-            data: expect.objectContaining({
-                orderNumber: '0010',
-                source: 'HOMEPAGE',
-                userId: undefined,
-            }),
-        }));
-    });
-
-    it('rejects guest homepage orders with coupons', async () => {
+    it('rejects guest delivery orders without an authenticated user', async () => {
         tx.store.findUnique.mockResolvedValue(store);
         tx.menu.findMany.mockResolvedValue([menu]);
 
         await expect(service.createDeliveryOrder('store-1', {
             ...dto,
             userId: undefined,
-            source: 'HOMEPAGE',
-            userCouponId: 'coupon-1',
         })).rejects.toBeInstanceOf(BadRequestException);
 
         expect(tx.order.create).not.toHaveBeenCalled();

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import OrderCTAButton from './OrderCTAButton';
 import ScrollAnimation from './ScrollAnimation';
 
 export default function Hero() {
@@ -34,12 +35,11 @@ export default function Hero() {
                         >
                             메뉴 보기
                         </Link>
-                        <Link
-                            href="/order"
+                        <OrderCTAButton
                             className="w-full sm:w-auto px-8 py-4 bg-brand-green text-white font-bold text-lg rounded-full hover:bg-green-700 transition-all transform hover:scale-105 shadow-[0_0_20px_rgba(0,128,0,0.3)]"
                         >
                             지금 주문하기 🛵
-                        </Link>
+                        </OrderCTAButton>
                         <Link
                             href="/store"
                             className="w-full sm:w-auto px-8 py-4 bg-transparent border-2 border-white text-white font-bold text-lg rounded-full hover:bg-white hover:text-brand-black transition-all"
