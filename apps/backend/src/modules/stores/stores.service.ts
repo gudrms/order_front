@@ -14,6 +14,29 @@ export class StoresService {
         });
     }
 
+    async getActiveStores() {
+        return this.prisma.store.findMany({
+            where: { isActive: true },
+            orderBy: { createdAt: 'asc' },
+            select: {
+                id: true,
+                name: true,
+                branchName: true,
+                storeType: true,
+                branchId: true,
+                address: true,
+                phoneNumber: true,
+                businessHours: true,
+                isActive: true,
+                isDeliveryEnabled: true,
+                minimumOrderAmount: true,
+                deliveryFee: true,
+                freeDeliveryThreshold: true,
+                estimatedDeliveryMinutes: true,
+            },
+        });
+    }
+
     async getStoreByPath(storeType: string, branchId: string) {
         return this.prisma.store.findUnique({
             where: {
