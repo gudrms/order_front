@@ -11,3 +11,7 @@ export async function getStoreByIdentifier(
 ): Promise<Store> {
     return apiClient.get<Store>(`/stores/identifier/${storeType}/${branchId}`);
 }
+
+export async function getAllStores(): Promise<Store[]> {
+    return apiClient.get<Store[]>('/stores');
+}

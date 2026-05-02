@@ -26,6 +26,16 @@ export class StoresController {
         return this.storesService.createStore(user.id, dto);
     }
 
+    @Get()
+    @ApiOperation({
+        summary: '활성 매장 목록 조회 (공개)',
+        description: '브랜드 홈페이지 등 공개용. 활성화된 매장 목록을 반환합니다. 인증 불필요.',
+    })
+    @ApiResponse({ status: 200, description: '활성 매장 목록' })
+    async getActiveStores() {
+        return this.storesService.getActiveStores();
+    }
+
     @Get('me')
     @UseGuards(SupabaseGuard)
     @ApiBearerAuth('JWT-auth')

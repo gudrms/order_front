@@ -17,7 +17,7 @@ export { apiClient, ApiClientError } from './client';
 export { cancelOrder, createOrder, getDeliveryOrders, getOrder, getOrdersByTable, updateDeliveryStatus, updateOrderStatus } from './endpoints/order';
 export { cancelOrderTossPayment, confirmTossPayment, failTossPayment } from './endpoints/payment';
 export { getCategories, getMenus, getMenuDetail } from './endpoints/menu';
-export { getStore, getStoreByIdentifier } from './endpoints/store';
+export { getStore, getStoreByIdentifier, getAllStores } from './endpoints/store';
 export { syncCurrentUser } from './endpoints/auth';
 export { createAddress, deleteAddress, getAddresses, setDefaultAddress, updateAddress } from './endpoints/address';
 export { getAvailableCoupons, getMyCoupons, redeemCoupon } from './endpoints/coupon';
