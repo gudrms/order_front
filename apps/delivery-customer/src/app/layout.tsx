@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import Providers from './providers';
 import PWAInstaller from '@/components/PWAInstaller';
+import DeepLinkHandler from '@/components/DeepLinkHandler';
 
 export const metadata: Metadata = {
   title: '타코 배달',
@@ -43,6 +44,7 @@ export default function RootLayout({
     <html lang="ko">
       <body>
         <PWAInstaller />
+        <DeepLinkHandler />
         <Providers>{children}</Providers>
       </body>
     </html>

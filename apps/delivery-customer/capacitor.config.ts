@@ -3,8 +3,8 @@ import type { CapacitorConfig } from '@capacitor/cli';
 const serverUrl = process.env.CAPACITOR_SERVER_URL;
 
 const config: CapacitorConfig = {
-  appId: 'com.yourbrand.delivery',
-  appName: '우리브랜드 배달',
+  appId: 'com.taco.delivery',
+  appName: '타코 배달',
   webDir: 'public',
 
   server: serverUrl

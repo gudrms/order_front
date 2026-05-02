@@ -2,6 +2,25 @@ import { App } from '@capacitor/app';
 import { isNative } from './index';
 
 /**
+ * 딥링크/유니버설 링크 리스너
+ * Android App Links / iOS Universal Links / Custom Scheme 모두 처리.
+ * callback 에 전달되는 url 예시:
+ *   - https://delivery.taco.com/orders/abc123
+ *   - taco://orders/abc123
+ */
+export function addDeepLinkListener(callback: (url: string) => void): () => void {
+  if (!isNative) return () => {};
+
+  const listenerPromise = App.addListener('appUrlOpen', ({ url }) => {
+    callback(url);
+  });
+
+  return () => {
+    listenerPromise.then((handle) => handle.remove());
+  };
+}
+
+/**
  * 앱 상태 리스너 추가
  */
 export function addAppStateListener(
