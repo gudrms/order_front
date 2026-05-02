@@ -162,6 +162,7 @@ describe('OrdersService', () => {
 
         const result = await service.createDeliveryOrder('store-1', {
             ...dto,
+            userId: undefined,
             source: 'HOMEPAGE',
         });
 
@@ -170,8 +171,23 @@ describe('OrdersService', () => {
             data: expect.objectContaining({
                 orderNumber: '0010',
                 source: 'HOMEPAGE',
+                userId: undefined,
             }),
         }));
+    });
+
+    it('rejects guest homepage orders with coupons', async () => {
+        tx.store.findUnique.mockResolvedValue(store);
+        tx.menu.findMany.mockResolvedValue([menu]);
+
+        await expect(service.createDeliveryOrder('store-1', {
+            ...dto,
+            userId: undefined,
+            source: 'HOMEPAGE',
+            userCouponId: 'coupon-1',
+        })).rejects.toBeInstanceOf(BadRequestException);
+
+        expect(tx.order.create).not.toHaveBeenCalled();
     });
 
     it('throws not found when the delivery store is missing', async () => {

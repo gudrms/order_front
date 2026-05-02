@@ -116,6 +116,15 @@ export async function createOrder(
     return apiClient.post<OrderResponse>('/orders', request);
 }
 
+export async function createHomepageOrder(
+    request: CreateOrderRequest
+): Promise<OrderResponse> {
+    return apiClient.post<OrderResponse>('/orders/homepage', {
+        ...request,
+        source: 'HOMEPAGE',
+    });
+}
+
 export async function getDeliveryOrders(params: {
     storeId?: string | null;
     page?: number;

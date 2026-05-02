@@ -370,6 +370,29 @@ export class RootOrdersController {
         });
     }
 
+    @Post('homepage')
+    @UsePipes(new ValidationPipe({ transform: true }))
+    @ApiOperation({
+        summary: '홈페이지 직접 주문 생성',
+        description: '브랜드 홈페이지에서 비회원 배송 주문을 생성합니다. 결제 승인은 Toss success redirect 이후 공통 결제 승인 API에서 처리합니다.',
+    })
+    @ApiBody({
+        type: CreateDeliveryOrderDto,
+    })
+    @ApiResponse({
+        status: 201,
+        description: '홈페이지 주문 생성 성공',
+    })
+    async createHomepageOrder(
+        @Body() createOrderDto: CreateDeliveryOrderDto,
+    ) {
+        return this.ordersService.createDeliveryOrder(createOrderDto.storeId, {
+            ...createOrderDto,
+            source: 'HOMEPAGE',
+            userId: undefined,
+        });
+    }
+
     @Post()
     @UseGuards(SupabaseGuard)
     @ApiBearerAuth('JWT-auth')
