@@ -46,3 +46,17 @@
 2. 직원 호출 Realtime/관리자 수신 화면 연결
 3. mock 데이터 제거
 4. MQ 후처리 실패와 사용자 주문 흐름 분리 검증
+
+## 최신 동기화 (2026-05-02)
+
+- [x] 실제 Store UUID/tableNumber 기반 진입 및 QR fallback 제거 완료
+- [x] 첫 주문/추가 주문 API 분기 연결 완료
+- [x] 장바구니 주문 생성이 실제 백엔드 주문 API를 사용하도록 전환 완료
+- [x] 주문 상태 polling 및 상태 배지 연결 완료
+- [x] 직원 호출 API 연결 완료
+- [x] 런타임 mock/MSW/하드코딩 fallback 제거 완료
+- [x] `pnpm --filter table-order exec tsc --noEmit` 통과
+- [x] `pnpm --filter table-order build` 통과
+- [ ] 첫 주문/추가 주문 브라우저-백엔드 E2E
+- [ ] 직원 호출 Realtime/관리자 수신 화면 연결
+- [ ] 주문 실패/테이블 없음/예약 테이블 오류 UI 정리

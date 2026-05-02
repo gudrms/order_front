@@ -183,3 +183,15 @@
 - [관리자](apps/admin/CHECKLIST.md)
 - [홈페이지](apps/brand-website/checkList_website.md)
 - [Toss SDK/POS 앱](apps/toss-pos-plugin/toss-pos-plugin-checkList.md)
+
+## 최신 동기화 (2026-05-02)
+
+- [x] 테이블오더 실제 Store UUID/tableNumber 진입, 첫 주문/추가 주문 API 분기, 주문 상태 polling, 직원 호출 API 연결 완료
+- [x] 테이블오더 런타임 mock/MSW/하드코딩 fallback 제거 완료 및 `tsc --noEmit`, `next build` 통과
+- [x] 관리자 MQ 운영 화면 연결 및 실패 재시도 흐름 구현 완료
+- [x] 홈페이지 매장/메뉴 조회는 실제 API 기반으로 전환 완료
+- [x] 홈페이지 직접 주문은 MVP 포함으로 확정
+- [ ] 홈페이지 직접 주문 생성/결제/상태 조회 UI 및 공개 HOMEPAGE 주문 API 구현
+- [ ] 테이블오더 첫 주문/추가 주문 브라우저-백엔드 E2E
+- [ ] 관리자 MQ 운영 화면 브라우저 E2E
+- [ ] Toss SDK/POS 실제 기기 E2E
