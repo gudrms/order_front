@@ -30,13 +30,13 @@
 - [x] 주문 내역 API 연결: 공개 `current-session` 응답의 주문 목록 사용
 - [x] 주문 상태 API 연결: 주문 내역을 5초 간격으로 재조회하고 백엔드 주문 상태 배지 표시
 - [x] 직원 호출 실제 API 연결: `stores/:storeId/tables/:tableNumber/calls` 생성 endpoint와 Store Context/tableNumber 연동
+- [x] 런타임 mock 데이터 제거: 메뉴/매장 조회 mock 분기, MSW Provider, mock handlers/data 제거
 
 ## 남은 일
 
 - [ ] 첫 주문 API 브라우저/백엔드 E2E
 - [ ] 추가 주문 API 브라우저/백엔드 E2E
 - [ ] 직원 호출 Realtime/관리자 수신 화면 연결
-- [ ] mock 데이터 제거
 - [ ] 주문 실패/테이블 없음/예약됨 오류 UI 정리
 - [ ] 결제/주문 확정 이후 POS 후처리 실패가 테이블오더 사용자 흐름을 막지 않는지 E2E 확인
 

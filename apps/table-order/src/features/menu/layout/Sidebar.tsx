@@ -21,10 +21,10 @@ interface SidebarProps {
 export function Sidebar({ storeId, activeCategoryId, onCategoryClick }: SidebarProps) {
   const finalStoreId = storeId || process.env.NEXT_PUBLIC_STORE_ID || 'default-store-id';
   const { data: categories, isLoading } = useCategories(finalStoreId);
-  const { toggleSidebar, openMenuDetail } = useUIStore();
+  const { toggleSidebar, openCallPanel } = useUIStore();
 
   const handleStaffCall = () => {
-    openMenuDetail('menu-staff-call');
+    openCallPanel();
   };
 
   return (

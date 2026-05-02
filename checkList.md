@@ -137,6 +137,7 @@
 - [ ] 테이블오더: 첫 주문/추가 주문 브라우저·백엔드 E2E
 - [x] 테이블오더: 주문 상태 API 연결 (current-session polling + 상태 배지)
 - [x] 테이블오더: 직원 호출 실제 API 연결 (`stores/:storeId/tables/:tableNumber/calls`)
+- [x] 테이블오더: 런타임 mock 데이터/MSW 제거
 - [x] 홈페이지: 주문 CTA를 배달앱 매장 URL로 연결 (Hero + 매장 카드별)
 - [x] 홈페이지: 매장/메뉴 API 연결 (GET /stores 퍼블릭 엔드포인트, 배달 정보 표시, 카테고리/메뉴 fetch)
 - [ ] 홈페이지: 직접 주문 포함 여부와 `HOMEPAGE` 주문 플로우 확정
