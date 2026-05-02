@@ -14,6 +14,8 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ['lucide-react'],
   },
+  // NOTE: 빌드 로그에 "ReferenceError: location is not defined" 경고가 표시되나
+  // @sentry/nextjs instrumentation 내부 코드 이슈로 빌드는 정상 완료되고 런타임에 무관함.
 };
 
 // Sentry 설정

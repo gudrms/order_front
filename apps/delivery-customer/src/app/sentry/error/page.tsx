@@ -1,5 +1,8 @@
 'use client';
 
+// Sentry 내부 코드가 정적 생성 시 window.location 에 접근하므로 SSR 강제
+export const dynamic = 'force-dynamic';
+
 export default function SentryTestPage() {
     return (
         <div className="min-h-screen flex flex-col items-center justify-center space-y-8 p-4">
