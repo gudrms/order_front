@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { MapPin, Phone, Clock, Search, Navigation, ShoppingBag } from 'lucide-react';
 import { Map, MapMarker, useKakaoLoader } from 'react-kakao-maps-sdk';
-import { useGeolocation } from '@order/shared';
 import ScrollAnimation from '@/components/ScrollAnimation';
 
 interface StoreDisplay {
@@ -25,8 +25,38 @@ interface StoreDisplay {
 }
 
 const DEFAULT_CENTER = { lat: 37.566826, lng: 126.9786567 };
-const DELIVERY_URL = process.env.NEXT_PUBLIC_DELIVERY_URL || 'http://localhost:3001';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
+
+function useBrowserGeolocation() {
+    const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
+    const [loaded, setLoaded] = useState(false);
+    const [error, setError] = useState<GeolocationPositionError | Error | null>(null);
+
+    useEffect(() => {
+        if (!navigator.geolocation) {
+            setError(new Error('Geolocation is not supported'));
+            setLoaded(true);
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                setCoordinates({
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude,
+                });
+                setLoaded(true);
+            },
+            (geoError) => {
+                setError(geoError);
+                setLoaded(true);
+            },
+            { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 },
+        );
+    }, []);
+
+    return { loaded, coordinates, error };
+}
 
 function formatHours(businessHours: Record<string, any> | null): string {
     if (!businessHours) return '매장에 문의하세요';
@@ -59,7 +89,7 @@ export default function StoreContent() {
         libraries: ['services', 'clusterer'],
     });
 
-    const { loaded: geoLoaded, coordinates, error: geoError } = useGeolocation();
+    const { loaded: geoLoaded, coordinates, error: geoError } = useBrowserGeolocation();
 
     // 매장 목록 로드
     useEffect(() => {
@@ -153,15 +183,13 @@ export default function StoreContent() {
                         <Navigation size={18} />
                         내 주변 매장 찾기
                     </button>
-                    <a
-                        href={DELIVERY_URL}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                    <Link
+                        href={selectedStore ? `/order?storeId=${selectedStore.id}` : '/order'}
                         className="w-full flex md:hidden items-center justify-center gap-2 bg-brand-green text-white py-3 rounded-lg hover:bg-green-700 transition-colors font-bold"
                     >
                         <ShoppingBag size={18} />
                         지금 주문하기
-                    </a>
+                    </Link>
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
@@ -248,16 +276,14 @@ export default function StoreContent() {
 
                                 {/* 주문 버튼 */}
                                 {store.isDeliveryEnabled && store.isActive && (
-                                    <a
-                                        href={DELIVERY_URL}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
+                                    <Link
+                                        href={`/order?storeId=${store.id}`}
                                         onClick={(e) => e.stopPropagation()}
                                         className="mt-3 w-full flex items-center justify-center gap-2 bg-brand-green text-white py-2.5 rounded-lg hover:bg-green-700 transition-colors font-bold text-sm"
                                     >
                                         <ShoppingBag size={15} />
                                         지금 주문하기
-                                    </a>
+                                    </Link>
                                 )}
                             </div>
                         </ScrollAnimation>
