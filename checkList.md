@@ -126,6 +126,7 @@
 - [ ] **[관리자 아키텍처]** 웹 브라우저의 한계(백그라운드 스로틀링, 자동재생 차단, 인쇄 팝업) 극복을 위해 Admin 웹을 Electron으로 랩핑하여 PC 전용 수신 프로그램으로 구축
 - [ ] **[배달앱 배포 전략]** 스토어 최적화 및 핫 푸시 업데이트를 위해 Capacitor를 활용하여 구글 플레이스토어 및 애플 앱스토어 배포 파이프라인 구축
 - [x] 배달앱: Capacitor 원격 WebView 기준선 설정 (`CAPACITOR_SERVER_URL`, `webDir: 'public'`)
+- [x] 배달앱: Capacitor android/ios 네이티브 프로젝트 생성 + deeplink 훅 구현 (`taco://`, App Links)
 - [x] 관리자: 매장 등록/운영 설정 화면을 백엔드 API에 연결
 - [x] 관리자: 주문 목록에서 `type`, `source`, `paymentStatus`, 배달 상태 표시
 - [x] 관리자: 배달 상태 변경 버튼/운영 화면 구현
