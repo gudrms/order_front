@@ -34,6 +34,12 @@ export default function Hero() {
                         >
                             메뉴 보기
                         </Link>
+                        <a
+                            href={process.env.NEXT_PUBLIC_DELIVERY_URL || 'http://localhost:3001'}
+                            className="w-full sm:w-auto px-8 py-4 bg-brand-green text-white font-bold text-lg rounded-full hover:bg-green-700 transition-all transform hover:scale-105 shadow-[0_0_20px_rgba(0,128,0,0.3)]"
+                        >
+                            지금 주문하기 🛵
+                        </a>
                         <Link
                             href="/store"
                             className="w-full sm:w-auto px-8 py-4 bg-transparent border-2 border-white text-white font-bold text-lg rounded-full hover:bg-white hover:text-brand-black transition-all"
