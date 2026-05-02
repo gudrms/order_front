@@ -25,3 +25,13 @@
 2. manifest/icon/service worker 정리
 3. 실제 매장 QR 시나리오로 반복 검증
 4. MQ 후처리 실패/지연 상황에서 PWA 주문 완료 UX 검증
+
+## 최신 동기화 (2026-05-02)
+
+- [x] 테이블오더 런타임 mock 제거 후 production build 통과
+- [x] QR 기반 Store UUID/tableNumber 진입 흐름 확정
+- [ ] manifest/icon 경로 검증
+- [ ] Service Worker 캐싱 전략 검증
+- [ ] 오프라인/불안정 네트워크 안내 UI
+- [ ] 모바일 설치 테스트(Android Chrome/iOS Safari)
+- [ ] QR 재진입 시 세션 유지 검증

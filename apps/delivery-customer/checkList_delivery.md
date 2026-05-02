@@ -143,3 +143,13 @@
 4. Capacitor 원격 WebView 실기기 실행과 `/orders/[id]` 딥링크 진입 검증
 5. ~~`ReferenceError: location is not defined` 빌드 로그 원인 제거~~ — 완료 (@sentry/nextjs 내부 코드, 우리 코드 기인 경고 제거 완료)
 6. Sentry/PWA E2E 검증
+
+## 최신 동기화 (2026-05-02)
+
+- [x] 배달앱 주문 생성/결제/주문 내역/주문 상세는 인증 사용자 기준 실제 API로 연결 완료
+- [x] 쿠폰 선택 UI와 마이페이지 쿠폰 목록 구현 완료
+- [x] Toss 결제 성공/실패/중단 및 pending 만료 처리 흐름 반영 완료
+- [x] 주문 상세 동적 라우트와 Capacitor 원격 WebView/deeplink 기반 정리 완료
+- [ ] 실제 Toss 테스트 카드 성공/실패/환불 E2E
+- [ ] 결제 성공 후 POS/알림 후처리 중복 노출 방지 E2E
+- [ ] PWA 설치/Service Worker 캐싱/FCM/APNS 푸시 검증
