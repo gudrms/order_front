@@ -1,103 +1,83 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ScrollAnimation from '@/components/ScrollAnimation';
 
-// Mock Data
-const CATEGORIES = [
-    { id: 'taco', name: '타코 (Taco)' },
-    { id: 'burrito', name: '부리또 (Burrito)' },
-    { id: 'quesadilla', name: '퀘사디아 (Quesadilla)' },
-    { id: 'sides', name: '사이드 & 음료' },
-];
+interface Category {
+    id: string;
+    name: string;
+    sortOrder: number;
+}
 
-const MENU_ITEMS = [
-    {
-        id: 1,
-        category: 'taco',
-        name: '비프 타코',
-        description: '직화로 구운 소고기와 신선한 야채가 어우러진 정통 타코',
-        image: '🌮',
-        spicy: 1,
-    },
-    {
-        id: 2,
-        category: 'taco',
-        name: '스파이시 포크 타코',
-        description: '매콤한 제육볶음 스타일의 퓨전 타코',
-        image: '🌮',
-        spicy: 2,
-    },
-    {
-        id: 3,
-        category: 'taco',
-        name: '쉬림프 타코',
-        description: '탱글탱글한 새우와 상큼한 라임 소스의 조화',
-        image: '🍤',
-        spicy: 0,
-    },
-    {
-        id: 4,
-        category: 'burrito',
-        name: '비프 부리또',
-        description: '든든한 한 끼! 소고기, 라이스, 콩, 치즈가 듬뿍',
-        image: '🌯',
-        spicy: 1,
-    },
-    {
-        id: 5,
-        category: 'burrito',
-        name: '치킨 부리또',
-        description: '담백한 닭가슴살과 부드러운 소스의 만남',
-        image: '🌯',
-        spicy: 0,
-    },
-    {
-        id: 6,
-        category: 'quesadilla',
-        name: '치즈 퀘사디아',
-        description: '모짜렐라와 체다 치즈가 녹아내리는 고소한 맛',
-        image: '🧀',
-        spicy: 0,
-    },
-    {
-        id: 7,
-        category: 'quesadilla',
-        name: '불고기 퀘사디아',
-        description: '달콤짭짤한 불고기와 치즈의 환상 궁합',
-        image: '🧀',
-        spicy: 0,
-    },
-    {
-        id: 8,
-        category: 'sides',
-        name: '나초 & 살사',
-        description: '바삭한 나초칩과 매장에서 직접 만든 살사 소스',
-        image: '🥨',
-        spicy: 1,
-    },
-    {
-        id: 9,
-        category: 'sides',
-        name: '감자튀김',
-        description: '케이준 스타일의 바삭한 감자튀김',
-        image: '🍟',
-        spicy: 0,
-    },
-    {
-        id: 10,
-        category: 'sides',
-        name: '탄산음료',
-        description: '콜라 / 사이다 / 환타',
-        image: '🥤',
-        spicy: 0,
-    },
-];
+interface MenuOption {
+    id: string;
+    name: string;
+    price: number;
+}
+
+interface MenuItem {
+    id: string;
+    name: string;
+    description: string | null;
+    price: number;
+    imageUrl: string | null;
+    isAvailable: boolean;
+    categoryId: string;
+    options?: MenuOption[];
+}
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
+const SPICY_KEYWORDS = ['스파이시', '매운', '핫', 'spicy', '불닭', '매콤'];
+
+function isSpicy(name: string, desc: string | null): boolean {
+    const text = `${name} ${desc ?? ''}`.toLowerCase();
+    return SPICY_KEYWORDS.some((k) => text.includes(k));
+}
 
 export default function MenuContent() {
-    const [activeCategory, setActiveCategory] = useState('taco');
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+    const [activeCategory, setActiveCategory] = useState<string>('');
+    const [isLoading, setIsLoading] = useState(true);
+    const [storeId, setStoreId] = useState<string>('');
 
-    const filteredItems = MENU_ITEMS.filter(item => item.category === activeCategory);
+    // 1) 첫 번째 활성 매장 조회
+    useEffect(() => {
+        fetch(`${API_URL}/stores`)
+            .then((r) => r.json())
+            .then((stores: Array<{ id: string; isActive: boolean }>) => {
+                const active = stores.find((s) => s.isActive) ?? stores[0];
+                if (active) setStoreId(active.id);
+                else setIsLoading(false);
+            })
+            .catch(() => setIsLoading(false));
+    }, []);
+
+    // 2) 매장 확정 후 카테고리 로드
+    useEffect(() => {
+        if (!storeId) return;
+        fetch(`${API_URL}/stores/${storeId}/categories`)
+            .then((r) => r.json())
+            .then((cats: Category[]) => {
+                const sorted = [...cats].sort((a, b) => a.sortOrder - b.sortOrder);
+                setCategories(sorted);
+                if (sorted.length > 0) setActiveCategory(sorted[0].id);
+            })
+            .catch(() => setIsLoading(false));
+    }, [storeId]);
+
+    // 3) 카테고리 선택 시 메뉴 로드
+    useEffect(() => {
+        if (!storeId || !activeCategory) return;
+        setIsLoading(true);
+        fetch(`${API_URL}/stores/${storeId}/menus?categoryId=${activeCategory}`)
+            .then((r) => r.json())
+            .then((items: MenuItem[]) => {
+                setMenuItems(items.filter((m) => m.isAvailable));
+            })
+            .catch(() => setMenuItems([]))
+            .finally(() => setIsLoading(false));
+    }, [storeId, activeCategory]);
 
     return (
         <main className="min-h-screen bg-white text-brand-black pt-10 pb-20">
@@ -109,18 +89,58 @@ export default function MenuContent() {
                 </div>
 
                 {/* Category Tabs */}
-                <div className="flex flex-wrap justify-center gap-4 mb-12">
+                {categories.length > 0 && (
+                    <div className="flex flex-wrap justify-center gap-3 mb-10">
+                        {categories.map((cat) => (
+                            <button
+                                key={cat.id}
+                                onClick={() => setActiveCategory(cat.id)}
+                                className={`px-5 py-2.5 rounded-full font-bold text-sm transition-all ${
+                                    activeCategory === cat.id
+                                        ? 'bg-brand-black text-white shadow-md'
+                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                }`}
+                            >
+                                {cat.name}
+                            </button>
+                        ))}
+                    </div>
+                )}
 
-                    {/* Menu Grid */}
+                {/* Loading skeleton */}
+                {isLoading && (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        {filteredItems.map((item, idx) => (
+                        {[...Array(6)].map((_, i) => (
+                            <div key={i} className="bg-white rounded-2xl border border-gray-200 overflow-hidden animate-pulse">
+                                <div className="h-48 bg-gray-100" />
+                                <div className="p-6">
+                                    <div className="h-5 bg-gray-200 rounded w-2/3 mb-2" />
+                                    <div className="h-4 bg-gray-100 rounded w-full mb-1" />
+                                    <div className="h-4 bg-gray-100 rounded w-3/4" />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {/* Menu Grid */}
+                {!isLoading && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        {menuItems.map((item, idx) => (
                             <ScrollAnimation key={item.id} delay={idx * 0.05}>
-                                <div
-                                    className="bg-white rounded-2xl overflow-hidden border border-gray-200 hover:border-brand-yellow hover:shadow-lg transition-all group"
-                                >
-                                    {/* Image Placeholder */}
-                                    <div className="h-48 bg-gray-50 flex items-center justify-center text-6xl group-hover:scale-105 transition-transform duration-500">
-                                        {item.image}
+                                <div className="bg-white rounded-2xl overflow-hidden border border-gray-200 hover:border-brand-yellow hover:shadow-lg transition-all group">
+                                    {/* 이미지 */}
+                                    <div className="h-48 bg-gray-50 flex items-center justify-center text-6xl overflow-hidden group-hover:scale-105 transition-transform duration-500">
+                                        {item.imageUrl ? (
+                                            // eslint-disable-next-line @next/next/no-img-element
+                                            <img
+                                                src={item.imageUrl}
+                                                alt={item.name}
+                                                className="w-full h-full object-cover"
+                                            />
+                                        ) : (
+                                            '🌮'
+                                        )}
                                     </div>
 
                                     <div className="p-6">
@@ -128,27 +148,32 @@ export default function MenuContent() {
                                             <h3 className="text-xl font-bold text-brand-black group-hover:text-brand-green transition-colors">
                                                 {item.name}
                                             </h3>
+                                            <span className="text-brand-black font-bold text-lg ml-2 shrink-0">
+                                                {item.price.toLocaleString()}원
+                                            </span>
                                         </div>
 
-                                        <p className="text-gray-500 text-sm mb-4 min-h-[40px]">
-                                            {item.description}
-                                        </p>
+                                        {item.description && (
+                                            <p className="text-gray-500 text-sm mb-3 min-h-[40px] line-clamp-2">
+                                                {item.description}
+                                            </p>
+                                        )}
 
-                                        <div className="flex items-center gap-2">
-                                            {item.spicy > 0 && (
-                                                <div className="flex gap-1">
-                                                    {[...Array(item.spicy)].map((_, i) => (
-                                                        <span key={i} className="text-red-500 text-xs">🌶️</span>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
+                                        {isSpicy(item.name, item.description) && (
+                                            <span className="text-red-500 text-xs">🌶️ 매운맛</span>
+                                        )}
                                     </div>
                                 </div>
                             </ScrollAnimation>
                         ))}
+
+                        {menuItems.length === 0 && (
+                            <p className="col-span-3 text-center text-gray-400 py-16">
+                                메뉴 정보를 불러올 수 없습니다.
+                            </p>
+                        )}
                     </div>
-                </div>
+                )}
             </div>
         </main>
     );
