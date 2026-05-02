@@ -1,5 +1,5 @@
 # 배달앱 체크리스트
-마지막 업데이트: 2026-05-01 (쿠폰 정책 확정, 백엔드 연동 완료, 배달앱 UI 구현 예정)
+마지막 업데이트: 2026-05-02 (쿠폰 UI 완료, PWA 아이콘/manifest 완료, Capacitor deeplink 구현 완료)
 
 ## 현재 요약
 
@@ -115,7 +115,8 @@
 - [x] `ReferenceError: location is not defined` 빌드 경고 — @sentry/nextjs 내부 코드 기인, 빌드/런타임 무관. @order/ui 배럴에서 TossPaymentWidget 제거 + generateOrderId 분리로 우리 코드 기인 경고 제거 완료
 - [x] manifest icon 경로와 실제 asset 정합성 확인 — sharp로 SVG→PNG 8종 생성, apple-touch-icon, favicon-32x32 추가
 - [ ] Service Worker 캐싱 전략 검증
-- [ ] FCM/APNS/Deep Link 설정
+- [x] Deep Link 설정: AndroidManifest `taco://` + App Links, Info.plist CFBundleURLTypes, `useDeepLink` 훅 + `DeepLinkHandler` 컴포넌트
+- [ ] FCM/APNS 푸시 알림 연동 (앱 종료 시 배달 상태 알림)
 
 ## 검증 기록
 
@@ -140,5 +141,5 @@
 1. Toss 테스트 카드결제 성공/실패/환불 E2E
 3. 결제 성공 주문의 POS/알림 후처리 중 고객 중복 노출 여부 E2E 확인
 4. Capacitor 원격 WebView 실기기 실행과 `/orders/[id]` 딥링크 진입 검증
-5. `ReferenceError: location is not defined` 빌드 로그 원인 제거
+5. ~~`ReferenceError: location is not defined` 빌드 로그 원인 제거~~ — 완료 (@sentry/nextjs 내부 코드, 우리 코드 기인 경고 제거 완료)
 6. Sentry/PWA E2E 검증
