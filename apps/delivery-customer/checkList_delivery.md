@@ -1,5 +1,18 @@
 # 배달앱 체크리스트
-마지막 업데이트: 2026-05-02 (쿠폰 UI 완료, PWA 아이콘/manifest 완료, Capacitor deeplink 구현 완료)
+마지막 업데이트: 2026-05-03 (런칭 준비도 감사 결과 반영)
+
+## 🚨 1차 런칭 Blocker
+
+- [ ] **[P0] 결제 dead code 즉시 삭제**: `apps/delivery-customer/src/features/payment/payment.ts:54-137` — 토스/카카오/네이버/삼성/페이코 함수가 모두 TODO 후 `success: true` 만 반환. 현재 미사용이지만 import 한 줄로 살아나면 무료 결제 사고. 파일째 삭제 또는 throw로 잠금
+- [ ] **[P0] 결제 흐름 의존 트리거 확인**: 결제 자체는 동작하나 결제 완료 후 POS 전송/알림이 백엔드 cron 부재로 멈춰 있음 → 사용자에게 "주문 접수" 표시는 되어도 매장에 전달이 안 됨. 백엔드 측 cron blocker 해소 전까지 closed beta 한정 운영
+
+## ⚠️ High risk
+
+- [ ] `useDeliveryTracking.ts:17-23` mock 데이터 잔여 — 실 API 연동 또는 화면 비공개 처리
+- [ ] `MenuDetail.tsx:8` `// TODO: Get actual menu ID from props or store` — 메뉴 상세 진입 동작 점검 필요
+- [ ] `lib/capacitor/push-notifications.ts:29,37,46` 토큰 서버 전송/알림 표시/클릭 모두 TODO — FCM/APNS 미연결 = 배달 상태 푸시 불가
+- [ ] Capacitor `allowMixedContent: true` (`capacitor.config.ts`) — 운영 빌드에서 false로
+- [ ] console.log 56개 (21 files) — Sentry treeshake 의존, 빌드 설정 깨지면 정보 누출
 
 ## 현재 요약
 
@@ -153,3 +166,14 @@
 - [ ] 실제 Toss 테스트 카드 성공/실패/환불 E2E
 - [ ] 결제 성공 후 POS/알림 후처리 중복 노출 방지 E2E
 - [ ] PWA 설치/Service Worker 캐싱/FCM/APNS 푸시 검증
+
+## 최신 동기화 (2026-05-03) — 런칭 준비도 감사
+
+- [x] **결함 식별**: `features/payment/payment.ts` dead code (5개 함수 모두 `success: true` 반환). 즉시 삭제 대상
+- [x] **결함 식별**: `useDeliveryTracking.ts` Mock 데이터, `MenuDetail.tsx` menuId 미연결, `push-notifications.ts` TODO 3개
+- [x] **결함 식별**: console.log 56개 / `any` 타입 4 files / TODO 13개 (6 files)
+- [x] **결함 식별**: Capacitor `allowMixedContent: true` 운영 위험
+- [x] **결함 식별**: 자동화 테스트 0건, Playwright 미도입
+- [ ] [P0] dead code `payment.ts` 삭제 후 `tsc --noEmit` 재확인
+- [ ] 운영 환경 Capacitor 설정 분리 (`allowMixedContent: false`)
+- [ ] PWA `manifest.screenshots` 추가 (Play Store 등록 시 필요)
