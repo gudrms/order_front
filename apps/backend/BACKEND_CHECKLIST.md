@@ -128,6 +128,7 @@
 - [x] 테이블오더 직원 호출 API `POST /stores/:storeId/tables/:tableNumber/calls` 추가 및 단위 테스트 통과
 - [x] 결제 완료/환불 이벤트 발행 및 POS/MQ 후처리 흐름 정리 완료
 - [x] 관리자 MQ 운영 화면용 실패 조회/재시도 API 연결 상태 반영
-- [ ] 홈페이지 직접 주문용 공개 `HOMEPAGE` 주문 생성 엔드포인트 구현
-- [ ] 홈페이지 비회원 주문 생성 시 `Order.source = HOMEPAGE`, `PENDING_PAYMENT`, Toss 결제 승인 흐름 검증
+- [x] 홈페이지 직접 주문용 공개 `POST /orders/homepage` 주문 생성 엔드포인트 구현
+- [x] 홈페이지 비회원 주문 생성 시 `Order.source = HOMEPAGE`, `PENDING_PAYMENT` 생성 정책 검증
+- [ ] 홈페이지 Toss 결제 승인 후 POS/알림 후처리 E2E
 - [ ] 테이블오더 첫 주문/추가 주문 브라우저-백엔드 E2E

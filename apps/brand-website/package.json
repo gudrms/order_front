@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@order/shared": "workspace:*",
+    "@order/ui": "workspace:*",
     "@sentry/nextjs": "^10.32.1",
     "clsx": "^2.1.1",
     "framer-motion": "^12.25.0",
