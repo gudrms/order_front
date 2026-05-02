@@ -58,6 +58,8 @@ export interface CreateDeliveryOrderRequest {
     items: PaymentOrderItemInput[];
     totalAmount: number;
     payment: PaymentRequest;
+    /** 적용할 UserCoupon ID (선택) */
+    userCouponId?: string;
 }
 
 /**
