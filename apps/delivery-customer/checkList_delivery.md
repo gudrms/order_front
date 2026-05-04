@@ -3,7 +3,7 @@
 
 ## 🚨 1차 런칭 Blocker
 
-- [ ] **[P0] 결제 dead code 즉시 삭제**: `apps/delivery-customer/src/features/payment/payment.ts:54-137` — 토스/카카오/네이버/삼성/페이코 함수가 모두 TODO 후 `success: true` 만 반환. 현재 미사용이지만 import 한 줄로 살아나면 무료 결제 사고. 파일째 삭제 또는 throw로 잠금
+- [x] **[P0] 결제 dead code 삭제** (2026-05-04): `src/features/payment/` 디렉토리 통째 삭제 (`payment.ts` + `types.ts`). import 사용처 0건 확인 후 제거. `tsc --noEmit` 통과.
 - [ ] **[P0] 결제 흐름 의존 트리거 확인**: 결제 자체는 동작하나 결제 완료 후 POS 전송/알림이 백엔드 cron 부재로 멈춰 있음 → 사용자에게 "주문 접수" 표시는 되어도 매장에 전달이 안 됨. 백엔드 측 cron blocker 해소 전까지 closed beta 한정 운영
 
 ## ⚠️ High risk
