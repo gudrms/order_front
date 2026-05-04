@@ -18,7 +18,8 @@
 - [ ] Throttler in-memory store가 Vercel 다중 인스턴스에서 무력화 → Redis store 도입 검토
 - [x] `useDeliveryTracking.ts` mock 데이터 처리 (2026-05-04): import 사용처 0건 확인 후 `features/delivery-tracking/` 디렉토리 통째 삭제 (payment dead code와 동일 패턴). 실 배달 추적은 `app/orders/[id]/OrderDetailClient.tsx` + `@order/shared` `DeliveryStatus`로 이미 정상 동작
 - [x] `apps/delivery-customer/src/components/menu/MenuDetail.tsx` menuId 미연결 (2026-05-04): import 사용처 0건 확인 후 dead code 삭제. 실 메뉴 상세는 `MenuDetailBottomSheet.tsx`에서 `useMenuDetail` hook + Zustand `useUIStore.selectedMenuId`로 정상 동작
-- [ ] Capacitor `allowMixedContent: true` (`apps/delivery-customer/capacitor.config.ts`) — 운영 빌드에서 false로
+- [x] Capacitor `allowMixedContent` 운영 빌드 차단 (2026-05-04): 기존 `cleartext` 분기 패턴(`serverUrl?.startsWith('http://')`)을 `allowMixedContent`에도 적용. 운영(HTTPS / unset)에서 false, 로컬 HTTP dev 서버에서만 true. MITM 공격면 감소
+- [ ] **추가 발견**: `apps/delivery-customer/android/app/src/main/AndroidManifest.xml:41` App Links host가 `delivery.taco.com`으로 잘못 박힘. 운영 도메인은 `delivery.tacomole.kr` → 수정 + assetlinks.json 등록 필요
 
 ## 🧱 Tech debt (누적 시 문제)
 
