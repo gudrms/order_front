@@ -17,7 +17,7 @@
 - [ ] 푸시 알림 미구현 — `apps/delivery-customer/src/lib/capacitor/push-notifications.ts:29,37,46` TODO. FCM/APNS 연결 없으면 배달 상태 알림 불가
 - [ ] Throttler in-memory store가 Vercel 다중 인스턴스에서 무력화 → Redis store 도입 검토
 - [x] `useDeliveryTracking.ts` mock 데이터 처리 (2026-05-04): import 사용처 0건 확인 후 `features/delivery-tracking/` 디렉토리 통째 삭제 (payment dead code와 동일 패턴). 실 배달 추적은 `app/orders/[id]/OrderDetailClient.tsx` + `@order/shared` `DeliveryStatus`로 이미 정상 동작
-- [ ] `apps/delivery-customer/src/components/menu/MenuDetail.tsx:8` menuId 미연결 — 사용자 노출 경로 점검
+- [x] `apps/delivery-customer/src/components/menu/MenuDetail.tsx` menuId 미연결 (2026-05-04): import 사용처 0건 확인 후 dead code 삭제. 실 메뉴 상세는 `MenuDetailBottomSheet.tsx`에서 `useMenuDetail` hook + Zustand `useUIStore.selectedMenuId`로 정상 동작
 - [ ] Capacitor `allowMixedContent: true` (`apps/delivery-customer/capacitor.config.ts`) — 운영 빌드에서 false로
 
 ## 🧱 Tech debt (누적 시 문제)
