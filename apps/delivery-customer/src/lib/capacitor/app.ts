@@ -5,7 +5,7 @@ import { isNative } from './index';
  * 딥링크/유니버설 링크 리스너
  * Android App Links / iOS Universal Links / Custom Scheme 모두 처리.
  * callback 에 전달되는 url 예시:
- *   - https://delivery.taco.com/orders/abc123
+ *   - https://delivery.tacomole.kr/orders/abc123
  *   - taco://orders/abc123
  */
 export function addDeepLinkListener(callback: (url: string) => void): () => void {
