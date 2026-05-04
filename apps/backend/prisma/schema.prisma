@@ -242,12 +242,26 @@ model User {
   addresses       UserAddress[]
   orders          Order[]
   coupons         UserCoupon[]
+  devices         UserDevice[]
 }
 
 enum UserRole {
   ADMIN
   OWNER
   USER
+}
+
+/// 사용자 기기 (FCM 토큰 관리용)
+model UserDevice {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fcmToken   String   @unique
+  deviceType String?  // "ios", "android", "web" 등
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([userId])
 }
 
 /// 손님 정보 (비회원 포함)

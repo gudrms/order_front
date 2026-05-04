@@ -1,0 +1,29 @@
+name: Backend Cron Jobs
+
+on:
+  schedule:
+    # 매 5분마다 실행 (GitHub Actions의 최소/권장 주기)
+    - cron: '*/5 * * * *'
+  workflow_dispatch: # 수동으로도 트리거할 수 있도록 허용
+
+jobs:
+  run-cron-jobs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Process Queue (MQ Consumer)
+        run: |
+          curl -X POST "${{ secrets.API_BASE_URL }}/queue/process-once" \
+               -H "x-internal-job-secret: ${{ secrets.INTERNAL_JOB_SECRET }}" \
+               -H "Content-Type: application/json"
+
+      - name: Expire Pending Toss Payments
+        run: |
+          curl -X POST "${{ secrets.API_BASE_URL }}/payments/toss/expire-pending" \
+               -H "x-internal-job-secret: ${{ secrets.INTERNAL_JOB_SECRET }}" \
+               -H "Content-Type: application/json"
+
+      - name: Reconcile Toss Payments
+        run: |
+          curl -X POST "${{ secrets.API_BASE_URL }}/payments/toss/reconcile" \
+               -H "x-internal-job-secret: ${{ secrets.INTERNAL_JOB_SECRET }}" \
+               -H "Content-Type: application/json"
