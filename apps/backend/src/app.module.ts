@@ -18,6 +18,7 @@ import { PaymentsModule } from './modules/payments/payments.module';
 import { QueueModule } from './modules/queue';
 import { CouponsModule } from './modules/coupons/coupons.module';
 import { CallsModule } from './modules/calls/calls.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 
 @Module({
     imports: [
@@ -56,6 +57,7 @@ import { CallsModule } from './modules/calls/calls.module';
         QueueModule,
         CouponsModule,
         CallsModule,
+        NotificationsModule,
     ],
     controllers: [AppController, HealthController],
     providers: [

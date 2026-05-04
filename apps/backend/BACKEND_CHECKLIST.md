@@ -3,7 +3,7 @@
 
 ## 🚨 1차 런칭 Blocker
 
-- [ ] **[P0] MQ consumer 자동 트리거 부재**: `apps/backend/VERCEL_CRON.md`에 따라 Hobby 플랜 한계로 비활성화. `pos.send_order` / `notification.send` / `payments/expire-pending` / `reconcile`을 호출하는 주체 없음 → MQ 인프라가 코드상 완성됐어도 **런타임에서 멈춰 있음**. Vercel Pro 업그레이드 / GitHub Actions schedule / Upstash QStash 중 1개 선정·도입
+- [x] **[P0] MQ consumer 자동 트리거 부재** (2026-05-04): Vercel Pro 업그레이드 대신 **GitHub Actions**(`.github/workflows/backend-cron.yml`) schedule을 사용하여 `POST /queue/process-once` 등의 엔드포인트를 주기적으로 호출하도록 구축 완료.
 - [x] **[P0] CORS 다중 origin 화이트리스트** (2026-05-04): `main.ts` 운영 기본값에 tacomole.kr 5개 도메인 + Capacitor scheme 자동 허용. `FRONTEND_URLS` 콤마 구분 환경변수로 추가 origin override 가능
 - [x] **[P0] `.env.example` 정리** (2026-05-04): 중복 복붙 제거 + `INTERNAL_JOB_SECRET`, `FRONTEND_URLS` 추가, 섹션별 주석 보강
 
@@ -159,6 +159,15 @@
 - [x] **결함 식별**: `.env.example` 8~64라인 중복 + `INTERNAL_JOB_SECRET` 누락
 - [x] **결함 식별**: `orders.controller.ts:11-22` 인라인 enum, `any` 99개, `*.spec.ts` 19개로 핵심 도메인은 커버하나 일부 모듈 미테스트
 - [x] **강점 확인**: 도메인 모델(Order/Payment/OrderDelivery 분리, idempotency, posSyncStatus, dedupeKey, retry/backoff), 단위/E2E 142 tests, SupabaseGuard 일관 적용, Sentry beforeSend 헤더 필터링
-- [ ] [P0] cron 트리거 도입 방안 결정 후 운영 문서화
+- [x] [P0] cron 트리거 도입 방안 결정 후 운영 문서화 (GitHub Actions로 구축 완료)
 - [ ] [P0] CORS allowed origins 환경변수를 콤마 구분 배열로 변경
 - [ ] [P0] `.env.example` 정리 + 운영 secret 누락 항목 보강
+
+## 최신 동기화 (2026-05-04) — 운영 안정화 및 푸시 알림 계획
+
+- [x] Vercel Shared 환경변수(All-in-one) 세팅 완료 및 오버라이드(우선순위) 원리 문서화
+- [x] 구글 앱 비밀번호(App Password) 기반 메일 전송 환경변수 정리
+- [x] **푸시 알림 방향성 확정**: 앱 종료 시에도 동작하는 잠금화면 알림을 위해 **Firebase Cloud Messaging(FCM) 연동 채택 (옵션 A)**
+- [ ] 백엔드 FCM 연동 구현: `UserDevice` 테이블 설계, `firebase-admin` 설정, 토큰 발급/삭제 API 구현
+- [ ] 큐 컨슈머 연동: `notification.send` 수신 시 FCM 발송 로직 추가
+- [ ] **[인프라 고도화]** 개발(Dev)과 운영(Prod) 데이터베이스/환경 변수 물리적 분리 구조 도입 (추후 진행)

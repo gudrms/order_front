@@ -91,7 +91,7 @@ Supabase JWT를 Bearer Token으로 전달합니다.
 
 ### Base URL
 - Development: http://localhost:4000/api/v1
-- Production: https://order-front-backend.vercel.app/api/v1
+- Production: https://api.tacomole.kr/api/v1
         `)
         .setVersion('1.0.0')
         .setContact(
@@ -101,7 +101,7 @@ Supabase JWT를 Bearer Token으로 전달합니다.
         )
         .setLicense('MIT', 'https://opensource.org/licenses/MIT')
         .addServer('http://localhost:4000', 'Development Server')
-        .addServer('https://order-front-backend.vercel.app', 'Production Server')
+        .addServer('https://api.tacomole.kr', 'Production Server')
         .addBearerAuth(
             {
                 type: 'http',

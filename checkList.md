@@ -5,7 +5,7 @@
 
 런칭 직전 반드시 해소해야 하는 항목. 도메인 코어와 운영 인프라는 견고하나, 트리거·대시보드·dead code·CORS·env 설정에 결함 있음.
 
-- [ ] **[P0] MQ consumer 자동 트리거 부재**: `apps/backend/VERCEL_CRON.md`에 따라 Hobby 플랜으로 비활성화 상태. `pos.send_order`, `notification.send`, `payments/expire-pending`, `reconcile`을 호출하는 주체 없음. Vercel Pro / GitHub Actions / Upstash QStash 중 1개 즉시 도입
+- [x] **[P0] MQ consumer 자동 트리거 부재** (2026-05-04): Vercel Pro 업그레이드 대신 **GitHub Actions**(`.github/workflows/backend-cron.yml`)를 사용하여 무료로 5분 주기로 `POST /queue/process-once` 등을 호출하도록 구축 완료.
 - [x] **[P0] Admin 대시보드 하드코딩 stats 제거** (2026-05-04): 가짜 숫자(45건/₩842,000/3건/2종)를 `—` placeholder로 전환 + "통계 데이터 연동 준비 중" 안내 배너 추가. 운영자에게 가짜 숫자 노출 차단. 후속 작업: 매장별 일일 통계 API 구현 (별도 항목)
 - [x] **[P0] delivery-customer 결제 dead code 삭제** (2026-05-04): `apps/delivery-customer/src/features/payment/` 디렉토리 통째 삭제 (`payment.ts` + `types.ts`). 어디서도 import 안 되던 dead code 확인 후 제거. tsc 통과.
 - [x] **[P0] CORS 다중 origin 화이트리스트** (2026-05-04): `apps/backend/src/main.ts` 운영 기본값에 tacomole.kr 5개 도메인(`tacomole.kr`, `www`, `admin`, `delivery`, `order`) + Capacitor scheme(`capacitor://localhost`, `http://localhost`, `https://localhost`) 자동 허용. `FRONTEND_URLS` 콤마 구분 환경변수로 추가 origin override 가능. 기존 `FRONTEND_URL` 단일 값 호환 유지
@@ -14,7 +14,7 @@
 ## ⚠️ High risk (런칭 후 곧 터질 가능성)
 
 - [ ] 실 Toss 카드결제 자동화 E2E 도입 (`payments-e2e.spec.ts`는 서비스 레이어 mock만)
-- [ ] 푸시 알림 미구현 — `apps/delivery-customer/src/lib/capacitor/push-notifications.ts:29,37,46` TODO. FCM/APNS 연결 없으면 배달 상태 알림 불가
+- [ ] 푸시 알림 구현: **Firebase Cloud Messaging(FCM) 기반 잠금화면 푸시 연동 확정**. 배달앱(고객)은 네이티브 앱 푸시, 관리자웹(사장님)은 별도 앱 설치 없이 **PWA(홈 화면에 추가)** 방식을 통한 웹 푸시로 일괄 커버.
 - [ ] Throttler in-memory store가 Vercel 다중 인스턴스에서 무력화 → Redis store 도입 검토
 - [x] `useDeliveryTracking.ts` mock 데이터 처리 (2026-05-04): import 사용처 0건 확인 후 `features/delivery-tracking/` 디렉토리 통째 삭제 (payment dead code와 동일 패턴). 실 배달 추적은 `app/orders/[id]/OrderDetailClient.tsx` + `@order/shared` `DeliveryStatus`로 이미 정상 동작
 - [x] `apps/delivery-customer/src/components/menu/MenuDetail.tsx` menuId 미연결 (2026-05-04): import 사용처 0건 확인 후 dead code 삭제. 실 메뉴 상세는 `MenuDetailBottomSheet.tsx`에서 `useMenuDetail` hook + Zustand `useUIStore.selectedMenuId`로 정상 동작
@@ -152,6 +152,8 @@
 ## 단계별 남은 일
 
 - [ ] **[작업 우선순위]** 진행 순서는 백엔드 ➡️ 배달앱 ➡️ 관리자 ➡️ 홈페이지로 고정한다.
+- [x] **[운영 인프라]** Vercel Shared 환경변수(All-in-one) 셋업 및 오버라이딩 원리 정리 (2026-05-04)
+- [ ] **[인프라 고도화]** 추후 개발(Dev)과 운영(Prod) 환경을 물리적으로 분리하여 안전한 테스트 및 배포 파이프라인 구축
 - [ ] **[MVP 론칭 전략]** 초기 오픈은 '배달앱(고객) ➡️ 관리자웹(점주) ➡️ 영수증 출력' 구조로 한정 (Toss POS 및 테이블오더 연동은 Phase 2로 연기)
 - [ ] **[관리자 아키텍처]** 웹 브라우저의 한계(백그라운드 스로틀링, 자동재생 차단, 인쇄 팝업) 극복을 위해 Admin 웹을 Electron으로 랩핑하여 PC 전용 수신 프로그램으로 구축
 - [ ] **[배달앱 배포 전략]** 스토어 최적화 및 핫 푸시 업데이트를 위해 Capacitor를 활용하여 구글 플레이스토어 및 애플 앱스토어 배포 파이프라인 구축

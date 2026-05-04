@@ -134,6 +134,7 @@ export class QueueConsumerService {
         }
 
         if (storeId) {
+            // 앱 안의 IN_APP 알림
             await this.queueService.publishNotificationSend({
                 recipientType: 'STORE',
                 recipientId: storeId,
@@ -141,6 +142,17 @@ export class QueueConsumerService {
                 orderId,
                 storeId,
                 channel: 'IN_APP',
+            });
+            // 푸시 알림 (PWA/Native)
+            await this.queueService.publishNotificationSend({
+                recipientType: 'STORE',
+                recipientId: storeId,
+                notificationType: 'ORDER_PAID',
+                orderId,
+                storeId,
+                channel: 'PUSH',
+                title: '🌮 새로운 주문 접수!',
+                body: '새로운 배달 주문이 들어왔습니다. 확인해주세요.',
             });
         }
     }
@@ -525,8 +537,17 @@ export class QueueConsumerService {
                 ? 'ORDER_CONFIRMED' as const
                 : 'DELIVERY_STATUS_CHANGED' as const;
 
-            // 고객 알림
+            // 고객 알림 (배달 상태 변경 시)
             if (payload.userId) {
+                const messageMap: Record<string, string> = {
+                    'ASSIGNED': '라이더가 배정되었습니다.',
+                    'PICKED_UP': '메뉴가 픽업되어 배달을 시작합니다.',
+                    'DELIVERING': '배달 중입니다.',
+                    'DELIVERED': '배달이 완료되었습니다. 맛있게 드세요!',
+                    'CANCELLED': '주문이 취소되었습니다.',
+                };
+                const body = messageMap[payload.newStatus] || '배달 상태가 변경되었습니다.';
+
                 await this.queueService.publishNotificationSend({
                     recipientType: 'CUSTOMER',
                     recipientId: payload.userId,
@@ -534,6 +555,16 @@ export class QueueConsumerService {
                     orderId: payload.orderId,
                     storeId: payload.storeId,
                     channel: 'IN_APP',
+                });
+                await this.queueService.publishNotificationSend({
+                    recipientType: 'CUSTOMER',
+                    recipientId: payload.userId,
+                    notificationType,
+                    orderId: payload.orderId,
+                    storeId: payload.storeId,
+                    channel: 'PUSH',
+                    title: '🌮 타코몰리 배달 알림',
+                    body,
                 });
             }
 
@@ -546,6 +577,16 @@ export class QueueConsumerService {
                     orderId: payload.orderId,
                     storeId: payload.storeId,
                     channel: 'IN_APP',
+                });
+                await this.queueService.publishNotificationSend({
+                    recipientType: 'STORE',
+                    recipientId: payload.storeId,
+                    notificationType: 'DELIVERY_STATUS_CHANGED',
+                    orderId: payload.orderId,
+                    storeId: payload.storeId,
+                    channel: 'PUSH',
+                    title: '⚠️ 배달 취소 알림',
+                    body: '고객님의 주문이 취소되었습니다.',
                 });
             }
         }
