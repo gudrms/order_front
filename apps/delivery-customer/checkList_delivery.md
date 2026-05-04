@@ -8,7 +8,7 @@
 
 ## ⚠️ High risk
 
-- [ ] `useDeliveryTracking.ts:17-23` mock 데이터 잔여 — 실 API 연동 또는 화면 비공개 처리
+- [x] `useDeliveryTracking.ts` mock 데이터 잔여 (2026-05-04): import 사용처 0건 확인 후 `features/delivery-tracking/` 디렉토리 통째 삭제. 실 배달 추적은 `app/orders/[id]/OrderDetailClient.tsx`에서 정상 동작. `tsc --noEmit` + `next build` 19/19 통과
 - [ ] `MenuDetail.tsx:8` `// TODO: Get actual menu ID from props or store` — 메뉴 상세 진입 동작 점검 필요
 - [ ] `lib/capacitor/push-notifications.ts:29,37,46` 토큰 서버 전송/알림 표시/클릭 모두 TODO — FCM/APNS 미연결 = 배달 상태 푸시 불가
 - [ ] Capacitor `allowMixedContent: true` (`capacitor.config.ts`) — 운영 빌드에서 false로
