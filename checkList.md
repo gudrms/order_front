@@ -19,7 +19,9 @@
 - [x] `useDeliveryTracking.ts` mock 데이터 처리 (2026-05-04): import 사용처 0건 확인 후 `features/delivery-tracking/` 디렉토리 통째 삭제 (payment dead code와 동일 패턴). 실 배달 추적은 `app/orders/[id]/OrderDetailClient.tsx` + `@order/shared` `DeliveryStatus`로 이미 정상 동작
 - [x] `apps/delivery-customer/src/components/menu/MenuDetail.tsx` menuId 미연결 (2026-05-04): import 사용처 0건 확인 후 dead code 삭제. 실 메뉴 상세는 `MenuDetailBottomSheet.tsx`에서 `useMenuDetail` hook + Zustand `useUIStore.selectedMenuId`로 정상 동작
 - [x] Capacitor `allowMixedContent` 운영 빌드 차단 (2026-05-04): 기존 `cleartext` 분기 패턴(`serverUrl?.startsWith('http://')`)을 `allowMixedContent`에도 적용. 운영(HTTPS / unset)에서 false, 로컬 HTTP dev 서버에서만 true. MITM 공격면 감소
-- [ ] **추가 발견**: `apps/delivery-customer/android/app/src/main/AndroidManifest.xml:41` App Links host가 `delivery.taco.com`으로 잘못 박힘. 운영 도메인은 `delivery.tacomole.kr` → 수정 + assetlinks.json 등록 필요
+- [x] AndroidManifest App Links host 정정 (2026-05-04): `delivery.taco.com` → `delivery.tacomole.kr` (manifest 1건 + 코드 주석 useDeepLink/app.ts 3건 + CAPACITOR_DEEPLINK_TEST.md 4건). 코드 로직은 host 무관(`parsed.pathname` 사용)이라 동작 영향 없음
+- [ ] **후속**: 운영 배포 시 `https://delivery.tacomole.kr/.well-known/assetlinks.json` 호스팅 필요 (sha256 서명 인증서 지문 등록)
+- [ ] **후속**: iOS Universal Links 미구현 — `Info.plist`에 `taco://` custom scheme만 있고 Associated Domains capability 없음. 추가 작업: Xcode entitlements + `apple-app-site-association` 호스팅 + `applinks:delivery.tacomole.kr` 등록
 
 ## 🧱 Tech debt (누적 시 문제)
 

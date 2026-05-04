@@ -65,12 +65,12 @@ adb shell am start \
 # 기대 결과: 앱이 열리고 /orders/TEST_ORDER_ID 페이지로 이동
 ```
 
-### 3-2. HTTPS App Links (delivery.taco.com)
+### 3-2. HTTPS App Links (delivery.tacomole.kr)
 
 ```bash
 adb shell am start \
   -W -a android.intent.action.VIEW \
-  -d "https://delivery.taco.com/orders/TEST_ORDER_ID" \
+  -d "https://delivery.tacomole.kr/orders/TEST_ORDER_ID" \
   com.taco.delivery
 ```
 
@@ -112,7 +112,7 @@ xcrun simctl openurl booted "taco://orders/TEST_ORDER_ID"
 ## 5. App Links 프로덕션 설정 (배포 전 필요)
 
 ### Android assetlinks.json
-`https://delivery.taco.com/.well-known/assetlinks.json` 에 배포:
+`https://delivery.tacomole.kr/.well-known/assetlinks.json` 에 배포:
 ```json
 [{
   "relation": ["delegate_permission/common.handle_all_urls"],
@@ -125,7 +125,7 @@ xcrun simctl openurl booted "taco://orders/TEST_ORDER_ID"
 ```
 
 ### iOS apple-app-site-association
-`https://delivery.taco.com/.well-known/apple-app-site-association`:
+`https://delivery.tacomole.kr/.well-known/apple-app-site-association`:
 ```json
 {
   "applinks": {
