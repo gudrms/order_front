@@ -6,7 +6,7 @@
 런칭 직전 반드시 해소해야 하는 항목. 도메인 코어와 운영 인프라는 견고하나, 트리거·대시보드·dead code·CORS·env 설정에 결함 있음.
 
 - [ ] **[P0] MQ consumer 자동 트리거 부재**: `apps/backend/VERCEL_CRON.md`에 따라 Hobby 플랜으로 비활성화 상태. `pos.send_order`, `notification.send`, `payments/expire-pending`, `reconcile`을 호출하는 주체 없음. Vercel Pro / GitHub Actions / Upstash QStash 중 1개 즉시 도입
-- [ ] **[P0] Admin 대시보드 하드코딩 stats 제거**: `apps/admin/src/app/(dashboard)/page.tsx:7-12`의 `오늘 주문 45건 / 매출 ₩842,000 / 대기 3건 / 품절 2종` 상수 배열을 실 API 또는 "준비중" placeholder로 교체
+- [x] **[P0] Admin 대시보드 하드코딩 stats 제거** (2026-05-04): 가짜 숫자(45건/₩842,000/3건/2종)를 `—` placeholder로 전환 + "통계 데이터 연동 준비 중" 안내 배너 추가. 운영자에게 가짜 숫자 노출 차단. 후속 작업: 매장별 일일 통계 API 구현 (별도 항목)
 - [x] **[P0] delivery-customer 결제 dead code 삭제** (2026-05-04): `apps/delivery-customer/src/features/payment/` 디렉토리 통째 삭제 (`payment.ts` + `types.ts`). 어디서도 import 안 되던 dead code 확인 후 제거. tsc 통과.
 - [x] **[P0] CORS 다중 origin 화이트리스트** (2026-05-04): `apps/backend/src/main.ts` 운영 기본값에 tacomole.kr 5개 도메인(`tacomole.kr`, `www`, `admin`, `delivery`, `order`) + Capacitor scheme(`capacitor://localhost`, `http://localhost`, `https://localhost`) 자동 허용. `FRONTEND_URLS` 콤마 구분 환경변수로 추가 origin override 가능. 기존 `FRONTEND_URL` 단일 값 호환 유지
 - [x] **[P0] 백엔드 `.env.example` 정리** (2026-05-04): 중복 복붙 제거 + `INTERNAL_JOB_SECRET`, `FRONTEND_URLS` 추가, 섹션별 주석 정리

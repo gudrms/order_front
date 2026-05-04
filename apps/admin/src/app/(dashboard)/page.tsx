@@ -4,11 +4,13 @@ import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { ShoppingBag, Menu as MenuIcon, Users, TrendingUp } from 'lucide-react';
 
+// NOTE: 실 통계 API(오늘 주문/매출/대기/품절)는 후속 작업.
+// 임시로 "—" placeholder를 노출해 운영자에게 가짜 숫자를 보이지 않게 함.
 const stats = [
-  { name: '오늘 주문', value: '45건', icon: ShoppingBag, color: 'text-blue-600', bg: 'bg-blue-100' },
-  { name: '오늘 매출', value: '₩842,000', icon: TrendingUp, color: 'text-green-600', bg: 'bg-green-100' },
-  { name: '대기 중인 주문', value: '3건', icon: Users, color: 'text-orange-600', bg: 'bg-orange-100' },
-  { name: '품절 메뉴', value: '2종', icon: MenuIcon, color: 'text-red-600', bg: 'bg-red-100' },
+  { name: '오늘 주문', value: '—', icon: ShoppingBag, color: 'text-blue-600', bg: 'bg-blue-100' },
+  { name: '오늘 매출', value: '—', icon: TrendingUp, color: 'text-green-600', bg: 'bg-green-100' },
+  { name: '대기 중인 주문', value: '—', icon: Users, color: 'text-orange-600', bg: 'bg-orange-100' },
+  { name: '품절 메뉴', value: '—', icon: MenuIcon, color: 'text-red-600', bg: 'bg-red-100' },
 ];
 
 export default function DashboardHome() {
@@ -21,6 +23,10 @@ export default function DashboardHome() {
         <p className="text-gray-500">매장의 실시간 현황을 확인하세요.</p>
       </div>
 
+      <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        통계 데이터 연동 준비 중입니다. 정확한 일일 집계는 추후 적용됩니다. 현재 운영 정보는 좌측 메뉴의 <strong>주문 관리</strong>에서 실시간으로 확인하세요.
+      </div>
+
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => (
           <div key={stat.name} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
@@ -30,7 +36,7 @@ export default function DashboardHome() {
               </div>
               <div>
                 <p className="text-sm text-gray-500">{stat.name}</p>
-                <p className="text-2xl font-bold text-gray-800">{stat.value}</p>
+                <p className="text-2xl font-bold text-gray-400">{stat.value}</p>
               </div>
             </div>
           </div>
