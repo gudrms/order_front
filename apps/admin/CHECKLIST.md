@@ -4,7 +4,8 @@
 
 ## 🚨 1차 런칭 Blocker
 
-- [ ] **[P0] 대시보드 하드코딩 stats 제거**: `apps/admin/src/app/(dashboard)/page.tsx:7-12`의 `오늘 주문 45건 / 매출 ₩842,000 / 대기 3건 / 품절 2종` 상수 배열. 실 API 연결 또는 명시적 placeholder("준비중")로 교체. 점주 첫 화면 신뢰도 직결.
+- [x] **[P0] 대시보드 하드코딩 stats 제거** (2026-05-04): 가짜 숫자(45건/₩842,000/3건/2종)를 `—` placeholder + "통계 데이터 연동 준비 중" 안내 배너로 전환. 4개 카드 디자인 유지하여 추후 API 연결 시 뼈대 재사용.
+- [ ] **후속**: 매장별 일일 통계 API 구현 (오늘 주문 수, 매출, 대기 주문, 품절 메뉴 수). 백엔드 신규 엔드포인트 + admin 대시보드 useQuery 연결
 - [ ] **[P0] CORS origin 화이트리스트에 admin 도메인 포함 확인**: 백엔드 `apps/backend/src/main.ts:145` 단일 `FRONTEND_URL`로는 admin/brand-website/delivery 동시 허용 불가 — backend 측 수정과 함께 admin 운영 origin 명시
 
 ## ⚠️ High risk
