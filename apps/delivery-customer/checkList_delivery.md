@@ -11,7 +11,8 @@
 - [x] `useDeliveryTracking.ts` mock 데이터 잔여 (2026-05-04): import 사용처 0건 확인 후 `features/delivery-tracking/` 디렉토리 통째 삭제. 실 배달 추적은 `app/orders/[id]/OrderDetailClient.tsx`에서 정상 동작. `tsc --noEmit` + `next build` 19/19 통과
 - [x] `MenuDetail.tsx` menuId 미연결 (2026-05-04): import 사용처 0건 확인 후 dead code 삭제. 실 동작 컴포넌트는 옆에 있던 `MenuDetailBottomSheet.tsx` (실 API + Zustand store + 옵션/수량 로직 정상)
 - [ ] `lib/capacitor/push-notifications.ts:29,37,46` 토큰 서버 전송/알림 표시/클릭 모두 TODO — FCM/APNS 미연결 = 배달 상태 푸시 불가
-- [ ] Capacitor `allowMixedContent: true` (`capacitor.config.ts`) — 운영 빌드에서 false로
+- [x] Capacitor `allowMixedContent` 운영 빌드 차단 (2026-05-04): `capacitor.config.ts`에서 `serverUrl?.startsWith('http://')` 기반으로 `cleartext` / `allowMixedContent` 동시 분기. 운영 빌드(HTTPS 또는 server.url 미설정)에선 둘 다 false, 로컬 HTTP dev 서버 붙을 때만 true. MITM 공격면 감소
+- [ ] **후속**: `android/app/src/main/AndroidManifest.xml:41` App Links host `delivery.taco.com` → `delivery.tacomole.kr` 정정 + Google assetlinks.json 등록
 - [ ] console.log 56개 (21 files) — Sentry treeshake 의존, 빌드 설정 깨지면 정보 누출
 
 ## 현재 요약
