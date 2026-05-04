@@ -4,8 +4,8 @@
 ## 🚨 1차 런칭 Blocker
 
 - [ ] **[P0] MQ consumer 자동 트리거 부재**: `apps/backend/VERCEL_CRON.md`에 따라 Hobby 플랜 한계로 비활성화. `pos.send_order` / `notification.send` / `payments/expire-pending` / `reconcile`을 호출하는 주체 없음 → MQ 인프라가 코드상 완성됐어도 **런타임에서 멈춰 있음**. Vercel Pro 업그레이드 / GitHub Actions schedule / Upstash QStash 중 1개 선정·도입
-- [ ] **[P0] CORS 다중 origin 화이트리스트**: `apps/backend/src/main.ts:145`의 `FRONTEND_URL` 단일 값 → admin/brand-website/delivery-customer/Capacitor WebView 다중 origin 배열 허용
-- [ ] **[P0] `.env.example` 정리**: `apps/backend/.env.example` 8~64라인 통째 중복 복붙 제거 + `INTERNAL_JOB_SECRET` (queue.controller·payments expire-pending에서 검증) 추가. 배포자가 보고 채울 수 없는 상태
+- [x] **[P0] CORS 다중 origin 화이트리스트** (2026-05-04): `main.ts` 운영 기본값에 tacomole.kr 5개 도메인 + Capacitor scheme 자동 허용. `FRONTEND_URLS` 콤마 구분 환경변수로 추가 origin override 가능
+- [x] **[P0] `.env.example` 정리** (2026-05-04): 중복 복붙 제거 + `INTERNAL_JOB_SECRET`, `FRONTEND_URLS` 추가, 섹션별 주석 보강
 
 ## ⚠️ High risk
 

@@ -140,23 +140,44 @@ Supabase JWT를 Bearer Token으로 전달합니다.
     });
 
     // CORS 설정 (환경별 분리)
+    // 운영 도메인: tacomole.kr (브랜드), www.tacomole.kr, admin.tacomole.kr, delivery.tacomole.kr, order.tacomole.kr
+    // FRONTEND_URLS 환경변수(콤마 구분)로 추가/override 가능. 기존 FRONTEND_URL 단일 값도 호환 유지.
+    const PRODUCTION_DEFAULT_ORIGINS = [
+        'https://tacomole.kr',
+        'https://www.tacomole.kr',
+        'https://admin.tacomole.kr',
+        'https://delivery.tacomole.kr',
+        'https://order.tacomole.kr',
+        // Capacitor 네이티브 WebView (server.url 미설정 시 기본 origin)
+        'capacitor://localhost',
+        'http://localhost',
+        'https://localhost',
+    ];
+    const envOrigins = [
+        process.env.FRONTEND_URL,
+        ...(process.env.FRONTEND_URLS?.split(',') ?? []),
+    ]
+        .map((o) => o?.trim())
+        .filter((o): o is string => Boolean(o));
+
     const allowedOrigins = process.env.NODE_ENV === 'production'
-        ? [
-            process.env.FRONTEND_URL || 'https://order-front-frontend.vercel.app',
-            // 추가 도메인이 있다면 여기에 추가
-        ]
-        : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003']; // 개발 환경
+        ? Array.from(new Set([...PRODUCTION_DEFAULT_ORIGINS, ...envOrigins]))
+        : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003'];
 
     app.enableCors({
         origin: (origin, callback) => {
-            // origin이 없는 경우 (모바일 앱, Postman 등) 허용
+            // origin이 없는 경우 (모바일 앱 일부, Postman, 같은 origin 요청 등) 허용
             if (!origin) return callback(null, true);
 
-            if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
-                callback(null, true);
-            } else {
-                callback(new Error('Not allowed by CORS'));
+            if (process.env.NODE_ENV === 'development') {
+                return callback(null, true);
             }
+
+            if (allowedOrigins.includes(origin)) {
+                return callback(null, true);
+            }
+
+            return callback(new Error(`Not allowed by CORS: ${origin}`));
         },
         methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
         credentials: true,
