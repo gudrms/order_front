@@ -1,13 +1,55 @@
 'use client';
 
 import { useState } from 'react';
-import { useParams } from 'next/navigation';
 import { useCartStore, useTableStore } from '@/stores';
 import { useCreateOrder } from '@/hooks/mutations/useCreateOrder';
+import { ApiClientError } from '@/lib/api/client';
 import type {
   CreateOrderRequest,
   OrderItemInput,
 } from '@/lib/api/endpoints/order';
+
+/**
+ * 백엔드 에러 메시지를 고객용 한국어로 변환합니다.
+ * 주문 실패 / 테이블 없음 / 예약 테이블 / 품절 등 구분 처리.
+ */
+function parseOrderError(err: unknown): { message: string; type: 'warning' | 'error' } {
+  if (err instanceof ApiClientError) {
+    const msg = err.message;
+    // 테이블을 찾을 수 없음
+    if (msg.includes('Table not found')) {
+      return { message: 'QR을 다시 스캔해주세요. 이 테이블 번호를 찾을 수 없습니다.', type: 'warning' };
+    }
+    // 예약 테이블
+    if (msg.includes('Table is reserved')) {
+      return { message: '이 테이블은 예약석입니다. 직원에게 문의해주세요.', type: 'warning' };
+    }
+    // 매장 비활성 / 없음
+    if (
+      msg.includes('Store not found') ||
+      msg.includes('inactive') ||
+      msg.includes('not active') ||
+      msg.includes('not accepting')
+    ) {
+      return { message: '현재 매장이 운영 중이 아닙니다. 직원에게 문의해주세요.', type: 'warning' };
+    }
+    // 메뉴/옵션 품절
+    if (msg.includes('not available') || msg.includes('sold out') || msg.includes('soldOut')) {
+      const name = msg.split(': ')[1] ?? '일부 메뉴';
+      return { message: `'${name}'은(는) 현재 주문할 수 없습니다. 해당 메뉴를 장바구니에서 제거해주세요.`, type: 'warning' };
+    }
+    // 요청 타임아웃
+    if (err.status === 408) {
+      return { message: '요청 시간이 초과되었습니다. 네트워크를 확인 후 다시 시도해주세요.', type: 'error' };
+    }
+    // 서버 오류
+    if (err.status >= 500) {
+      return { message: '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.', type: 'error' };
+    }
+  }
+  const message = err instanceof Error ? err.message : '주문 생성에 실패했습니다. 다시 시도해주세요.';
+  return { message, type: 'error' };
+}
 
 /**
  * OrderConfirmModal Props
@@ -33,13 +75,10 @@ export function OrderConfirmModal({
   onClose,
   onSuccess,
 }: OrderConfirmModalProps) {
-  const params = useParams();
-  // const branchId = params?.branchId as string; // Not used in local CreateOrderRequest
-
   const { tableNumber } = useTableStore();
   const { items, totalPrice } = useCartStore();
 
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{ message: string; type: 'warning' | 'error' } | null>(null);
 
   const { mutate: createOrder, isPending } = useCreateOrder();
 
@@ -50,12 +89,12 @@ export function OrderConfirmModal({
     setError(null);
 
     if (!tableNumber) {
-      setError('테이블 번호가 설정되지 않았습니다.');
+      setError({ message: '테이블 번호가 설정되지 않았습니다. QR을 다시 스캔해주세요.', type: 'warning' });
       return;
     }
 
     if (items.length === 0) {
-      setError('장바구니가 비어있습니다.');
+      setError({ message: '장바구니가 비어있습니다.', type: 'error' });
       return;
     }
 
@@ -81,11 +120,15 @@ export function OrderConfirmModal({
         onSuccess(data.orderNumber);
       },
       onError: (err) => {
-        const errorMessage =
-          err instanceof Error ? err.message : '주문 생성에 실패했습니다.';
-        setError(errorMessage);
+        setError(parseOrderError(err));
       },
     });
+  };
+
+  // 모달이 닫힐 때 에러 초기화
+  const handleClose = () => {
+    setError(null);
+    onClose();
   };
 
   if (!isOpen) return null;
@@ -95,7 +138,7 @@ export function OrderConfirmModal({
       {/* 배경 오버레이 */}
       <div
         className="fixed inset-0 z-40 bg-black bg-opacity-50"
-        onClick={onClose}
+        onClick={handleClose}
       />
 
       {/* 모달 컨텐츠 */}
@@ -126,8 +169,17 @@ export function OrderConfirmModal({
 
         {/* 에러 메시지 */}
         {error && (
-          <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">
-            {error}
+          <div
+            className={`mb-4 rounded-lg p-4 text-sm flex items-start gap-3 ${
+              error.type === 'warning'
+                ? 'bg-orange-50 text-orange-800 border border-orange-200'
+                : 'bg-red-50 text-red-700 border border-red-200'
+            }`}
+          >
+            <span className="text-lg leading-none shrink-0">
+              {error.type === 'warning' ? '⚠️' : '❌'}
+            </span>
+            <p className="leading-snug">{error.message}</p>
           </div>
         )}
 
@@ -139,7 +191,7 @@ export function OrderConfirmModal({
         {/* 버튼 */}
         <div className="flex gap-3">
           <button
-            onClick={onClose}
+            onClick={handleClose}
             disabled={isPending}
             className="flex-1 rounded-lg border border-gray-300 py-3 font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
           >
