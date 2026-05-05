@@ -7,6 +7,7 @@ vi.mock('@tossplace/pos-plugin-sdk', () => ({
             on: vi.fn(),
         },
         order: { on: vi.fn() },
+        toast: { open: vi.fn() },
     },
 }));
 
@@ -50,6 +51,7 @@ const sampleCatalogs = [
 ];
 
 beforeEach(() => {
+    vi.useRealTimers();
     vi.clearAllMocks();
 });
 
@@ -101,16 +103,19 @@ describe('syncCatalogs', () => {
     });
 
     it('SDK 에러 시 에러 로그만 남긴다', async () => {
+        vi.useFakeTimers();
         (posPluginSdk.catalog.getCatalogs as any).mockRejectedValueOnce(new Error('SDK error'));
         const consoleSpy = vi.spyOn(console, 'error');
 
         await syncCatalogs();
 
         expect(consoleSpy).toHaveBeenCalledWith('Catalog sync error:', expect.any(Error));
+        expect(posPluginSdk.toast.open).toHaveBeenCalledWith('Menu sync failed. Retrying soon.');
         expect(mockFetch).not.toHaveBeenCalled();
     });
 
     it('백엔드 응답 실패 시 에러 로그를 남긴다', async () => {
+        vi.useFakeTimers();
         (posPluginSdk.catalog.getCatalogs as any).mockResolvedValueOnce(sampleCatalogs);
         mockFetch.mockResolvedValueOnce({ ok: false, status: 500 });
         const consoleSpy = vi.spyOn(console, 'error');
@@ -118,6 +123,7 @@ describe('syncCatalogs', () => {
         await syncCatalogs();
 
         expect(consoleSpy).toHaveBeenCalledWith('Catalog sync error:', expect.any(Error));
+        expect(posPluginSdk.toast.open).toHaveBeenCalledWith('Menu sync failed. Retrying soon.');
     });
 });
 

@@ -1,6 +1,33 @@
 import { posPluginSdk } from '@tossplace/pos-plugin-sdk';
 import { API_URL, STORE_ID, posApiHeaders } from './config';
 
+const CATALOG_RETRY_DELAYS_MS = [5_000, 10_000, 20_000, 40_000, 60_000];
+let catalogRetryAttempt = 0;
+let catalogRetryTimer: ReturnType<typeof setTimeout> | null = null;
+
+function clearCatalogRetry() {
+    if (catalogRetryTimer) {
+        clearTimeout(catalogRetryTimer);
+        catalogRetryTimer = null;
+    }
+    catalogRetryAttempt = 0;
+}
+
+function scheduleCatalogRetry() {
+    try {
+        posPluginSdk.toast.open('Menu sync failed. Retrying soon.');
+    } catch { /* toast best-effort */ }
+
+    if (catalogRetryTimer) return;
+
+    const delay = CATALOG_RETRY_DELAYS_MS[Math.min(catalogRetryAttempt, CATALOG_RETRY_DELAYS_MS.length - 1)];
+    catalogRetryTimer = setTimeout(() => {
+        catalogRetryTimer = null;
+        catalogRetryAttempt += 1;
+        syncCatalogs();
+    }, delay);
+}
+
 export async function syncCatalogs() {
     try {
         const catalogs = await posPluginSdk.catalog.getCatalogs();
@@ -39,8 +66,10 @@ export async function syncCatalogs() {
         if (!response.ok) throw new Error(`Sync failed: HTTP ${response.status}`);
         const result = await response.json();
         console.log(`Catalog sync complete: ${result.synced} items`);
+        clearCatalogRetry();
     } catch (error) {
         console.error('Catalog sync error:', error);
+        scheduleCatalogRetry();
     }
 }
 
