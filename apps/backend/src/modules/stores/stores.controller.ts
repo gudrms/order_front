@@ -90,6 +90,33 @@ export class StoresController {
         return store;
     }
 
+    @Get(':storeId/stats/daily')
+    @UseGuards(SupabaseGuard)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({
+        summary: '매장 일일 통계',
+        description: '오늘 주문 수, 매출 합계, 처리 중인 주문 수, 품절 메뉴 수를 반환합니다. 매장 소유자만 조회 가능.',
+    })
+    @ApiParam({ name: 'storeId', description: '매장 UUID' })
+    @ApiResponse({
+        status: 200,
+        description: '통계 조회 성공',
+        schema: {
+            example: {
+                todayOrderCount: 12,
+                todaySales: 158000,
+                pendingOrderCount: 3,
+                soldOutMenuCount: 1,
+            },
+        },
+    })
+    async getStoreStats(
+        @CurrentUser() user: { id: string },
+        @Param('storeId') storeId: string,
+    ) {
+        return this.storesService.getStoreStats(user.id, storeId);
+    }
+
     @Get(':storeId')
     @ApiOperation({
         summary: '매장 ID로 조회',
