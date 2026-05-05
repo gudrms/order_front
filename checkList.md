@@ -265,17 +265,17 @@
 - [x] 사이드바 '직원 호출' 메뉴 추가, DashboardLayout에 전역 Realtime 구독 마운트. tsc 통과.
 
 #### A-3. 관리자 웹(사장) FCM 웹 푸시 연동
-- [ ] `apps/admin`에 Service Worker 등록 (`firebase-messaging-sw.js`)
-- [ ] Firebase SDK 초기화 + `getToken()` 호출
-- [ ] 로그인 후 `POST /api/v1/devices` 토큰 전송 (deviceType: 'web')
-- [ ] 로그아웃 시 `DELETE /api/v1/devices/:token`
-- [ ] 백그라운드 메시지 수신 처리 (SW 핸들러)
+- [x] `apps/admin`에 Service Worker 등록 (API Route `/api/firebase-sw`로 동적 제공 — 환경변수 주입) (2026-05-05)
+- [x] Firebase SDK 초기화 + `getToken()` 호출 (`lib/firebase.ts`, `hooks/useWebPush.ts`) (2026-05-05)
+- [x] 로그인 후 `POST /api/v1/devices` 토큰 전송 (deviceType: 'WEB') (2026-05-05)
+- [x] 로그아웃 시 `DELETE /api/v1/devices/:token` (`AuthContext.signOut` 연동) (2026-05-05)
+- [x] 백그라운드 메시지 수신 처리 (SW 핸들러 `onBackgroundMessage` + notificationclick) (2026-05-05)
 
 #### A-4. 테이블오더 오류 UI 정리
-- [ ] 주문 실패(재고 부족/매장 비활성) 오류 화면 구현
-- [ ] 테이블 없음 오류 → "QR을 다시 스캔해주세요" 안내 화면
-- [ ] 예약 테이블 차단 오류 → "이 테이블은 예약석입니다" 안내 화면
-- [ ] POS 후처리 실패가 고객 주문 완료 화면을 막지 않는지 에러 핸들링 검토
+- [x] 주문 실패(재고 부족/매장 비활성) 오류 화면 구현 (2026-05-05): `OrderConfirmModal` — `parseOrderError()`로 `ApiClientError` 메시지 파싱 → 품절/비활성/서버오류 한국어 안내. ⚠️/❌ 구분 UI.
+- [x] 테이블 없음 오류 → "QR을 다시 스캔해주세요" 안내 화면 (2026-05-05): `[tableId]/page.tsx` 유효하지 않은 tableId 오류 풀스크린 UI. `OrderConfirmModal` `'Table not found'` 한국어 처리.
+- [x] 예약 테이블 차단 오류 → "이 테이블은 예약석입니다" 안내 화면 (2026-05-05): `OrderConfirmModal` `'Table is reserved'` → 한국어 안내.
+- [x] POS 후처리 실패가 고객 주문 완료 화면을 막지 않는지 에러 핸들링 검토 (2026-05-05): `orders.service.ts` `createOrder` 확인 — 테이블 주문 생성 시 POS 큐 호출 없음, 비동기 분리 확인. 안전.
 
 ---
 
