@@ -71,7 +71,7 @@
 
 ### 코드 리뷰 잔여 픽스 (시간 되면)
 
-- [ ] #4 #5 `(payment as any).orderId` / `as any` 캐스팅 제거 → 타입 안전성
+- [x] #4 #5 런타임 코드 `as any` 캐스팅 제거 → 타입 안전성 (2026-05-05). 테스트 mock 제어용 cast는 유지.
 - [x] #6 `removeChannel` 안전한 호출 위해 channel 객체 모듈 변수 보관 (2026-05-05)
 - [x] #7 polling이 fallback이 아니라 reconciliation임을 이름/주석으로 명확화 (2026-05-05)
 - [x] #8 `processOrder` 함수 분해 (buildPluginOrderDto / confirmOrCleanup 등) (2026-05-05)
