@@ -36,6 +36,7 @@
     "@capacitor/share": "^6.0.2",
     "@capacitor/status-bar": "^6.0.1",
     "@capacitor/toast": "^6.0.2",
+    "@order/order-core": "workspace:*",
     "@order/shared": "workspace:*",
     "@order/ui": "workspace:*",
     "@sentry/nextjs": "^10.32.1",
