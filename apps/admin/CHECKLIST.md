@@ -86,6 +86,8 @@
 - [x] MQ 운영 화면 추가: POS 전송 실패와 알림 발송 실패 상태 표시
 - [x] MQ 운영 화면에서 POS 전송 실패 수동 재시도 버튼 연결
 - [x] MQ 운영 화면에서 알림 발송 실패 수동 재시도 버튼 연결
+- [x] 관리자웹 FCM 웹 푸시 연동: Service Worker, `ADMIN_WEB` 토큰 등록/로그아웃 삭제, 포그라운드 알림 표시 (2026-05-05)
+- [x] 관리자웹 Sentry Next instrumentation 최신화: `onRequestError`, `onRouterTransitionStart`, client config 통합 (2026-05-05)
 - [ ] MQ 운영 화면 브라우저 E2E 검증
 - [ ] Playwright 자동화 설정 및 테스트 러너 도입 검토
 

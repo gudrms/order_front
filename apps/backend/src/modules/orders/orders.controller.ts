@@ -235,7 +235,7 @@ export class OrdersController {
             properties: {
                 status: {
                     type: 'string',
-                    enum: ['PENDING', 'CONFIRMED', 'COOKING', 'COMPLETED', 'CANCELLED'],
+                    enum: Object.values(OrderStatus),
                     description: '변경할 주문 상태',
                     example: 'CONFIRMED',
                 },

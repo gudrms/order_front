@@ -17,14 +17,20 @@ export function getCurrentWebPushToken(): string | null {
 }
 
 async function registerToken(token: string, accessToken: string) {
+  if (!API_URL) {
+    throw new Error('NEXT_PUBLIC_API_URL is required to register web push tokens');
+  }
+
   await axios.post(
     `${API_URL}/devices`,
-    { fcmToken: token, deviceType: 'WEB' },
+    { fcmToken: token, deviceType: 'ADMIN_WEB' },
     { headers: { Authorization: `Bearer ${accessToken}` } },
   );
 }
 
 async function unregisterToken(token: string, accessToken: string) {
+  if (!API_URL) return;
+
   await axios.delete(`${API_URL}/devices/${encodeURIComponent(token)}`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
@@ -90,7 +96,12 @@ export function useWebPush() {
         unsubscribeForeground = onMessage(messaging, (payload) => {
           const { title, body } = payload.notification ?? {};
           if (title && Notification.permission === 'granted') {
-            new Notification(title, { body: body ?? '', icon: '/icon-192x192.png' });
+            new Notification(title, {
+              body: body ?? '',
+              icon: '/icon-192x192.png',
+              data: payload.data,
+              tag: payload.data?.tag || 'taco-admin',
+            });
           }
         });
       } catch (err) {
