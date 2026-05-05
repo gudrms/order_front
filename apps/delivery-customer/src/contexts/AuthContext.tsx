@@ -3,6 +3,11 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { api, supabase } from '@order/shared';
 import type { Session, User } from '@supabase/supabase-js';
+import {
+    cleanupPushNotifications,
+    getCurrentPushToken,
+} from '@/lib/capacitor/push-notifications';
+import { isNative } from '@/lib/capacitor';
 
 interface AuthContextType {
     user: User | null;
@@ -120,6 +125,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     const signOut = async () => {
+        // 로그아웃 전 FCM 디바이스 토큰 삭제 (네이티브만)
+        if (isNative) {
+            const token = getCurrentPushToken();
+            if (token) {
+                try {
+                    await api.devices.unregisterDevice(token);
+                } catch {
+                    // 토큰 삭제 실패는 로그아웃을 막지 않음
+                }
+            }
+            await cleanupPushNotifications();
+        }
+
         const { error } = await supabase.auth.signOut();
         if (error) {
             console.error('로그아웃 오류:', error);

@@ -14,9 +14,9 @@
 ## ⚠️ High risk (런칭 후 곧 터질 가능성)
 
 - [ ] 실 Toss 카드결제 자동화 E2E 도입 (`payments-e2e.spec.ts`는 서비스 레이어 mock만)
-- [ ] 푸시 알림 구현: **Firebase Cloud Messaging(FCM) 기반 잠금화면 푸시 연동 진행 중**
+- [ ] 푸시 알림 구현: **Firebase Cloud Messaging(FCM) 기반 잠금화면 푸시 연동**
   - [x] 백엔드: 토큰 DB 저장, Firebase Admin 발송 API, 큐 연동 완료 (2026-05-04)
-  - [ ] 배달앱(고객): Capacitor `@capacitor/push-notifications` 연동, 기기 토큰 백엔드 전송(`POST /devices`), 수신/클릭 이벤트 처리
+  - [x] 배달앱(고객): Capacitor 푸시 알림 프론트 완성 (2026-05-05). `packages/shared/api/endpoints/devices.ts` 추가. `hooks/usePushNotifications.ts` — 권한 요청/토큰 등록/포어그라운드 표시/탭 라우팅. `AuthContext.signOut` 로그아웃 시 토큰 삭제. tsc 통과. 실기기 FCM 토큰 발급 E2E 검증 필요.
   - [ ] 관리자웹(사장): PWA Service Worker 기반 웹 푸시 연동, 토큰 백엔드 전송
 - [ ] Throttler in-memory store가 Vercel 다중 인스턴스에서 무력화 → Redis store 도입 검토
 - [x] `useDeliveryTracking.ts` mock 데이터 처리 (2026-05-04): import 사용처 0건 확인 후 `features/delivery-tracking/` 디렉토리 통째 삭제 (payment dead code와 동일 패턴). 실 배달 추적은 `app/orders/[id]/OrderDetailClient.tsx` + `@order/shared` `DeliveryStatus`로 이미 정상 동작
