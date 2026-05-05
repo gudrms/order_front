@@ -10,6 +10,12 @@ let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 let pollingTimer: ReturnType<typeof setInterval> | null = null;
 let realtimeChannel: ReturnType<typeof supabase.channel> | null = null;
 
+interface RealtimeOrderPayload {
+    id: string;
+    status?: string;
+    tossOrderId?: string | null;
+}
+
 function removeRealtimeChannel() {
     if (!realtimeChannel) return;
 
@@ -63,7 +69,7 @@ function bindRealtimeChannel() {
                 filter: `storeId=eq.${STORE_ID}`,
             },
             async (payload) => {
-                const updated = payload.new as any;
+                const updated = payload.new as RealtimeOrderPayload;
 
                 if (updated.status === 'PAID' && !updated.tossOrderId) {
                     console.log(`Order ${updated.id} reached PAID, triggering POS registration`);
