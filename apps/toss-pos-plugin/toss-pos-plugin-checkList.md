@@ -72,7 +72,7 @@
 ### 코드 리뷰 잔여 픽스 (시간 되면)
 
 - [ ] #4 #5 `(payment as any).orderId` / `as any` 캐스팅 제거 → 타입 안전성
-- [ ] #6 `removeChannel` 안전한 호출 위해 channel 객체 모듈 변수 보관
+- [x] #6 `removeChannel` 안전한 호출 위해 channel 객체 모듈 변수 보관 (2026-05-05)
 - [ ] #7 polling이 fallback이 아니라 reconciliation임을 이름/주석으로 명확화
 - [ ] #8 `processOrder` 함수 분해 (buildPluginOrderDto / confirmOrCleanup 등)
 - [ ] #9 catalog sync 실패 alert + 백오프 (rate limit 에러 silent fail 방지)

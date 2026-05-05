@@ -413,7 +413,7 @@
 
 #### E-1-1. 남은 코드 작업 후보
 - [x] Toss POS 플러그인: `catalogId/categoryId` Number 변환 NaN 가드 (2026-05-05)
-- [ ] Toss POS 플러그인: `removeChannel` 안전화(channel 객체 모듈 변수 보관)
+- [x] Toss POS 플러그인: `removeChannel` 안전화(channel 객체 모듈 변수 보관) (2026-05-05)
 - [ ] Toss POS 플러그인: polling 명칭을 reconciliation으로 정리
 - [ ] Toss POS 플러그인: `processOrder` 함수 분해(`buildPluginOrderDto`, `confirmOrCleanup` 등)
 - [ ] Toss POS 플러그인: catalog sync 실패 alert + 백오프
