@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
+import { Redis } from 'ioredis';
 import { APP_GUARD } from '@nestjs/core';
 import { PrismaModule } from './modules/prisma/prisma.module';
 import { MenusModule } from './modules/menus/menus.module';
@@ -26,23 +28,25 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
             isGlobal: true,
         }),
         // Rate Limiting (DDoS 방지)
-        ThrottlerModule.forRoot([
-            {
-                name: 'short',
-                ttl: 1000,  // 1초
-                limit: 10,  // 1초에 10개 요청
+        // REDIS_URL이 설정된 경우 Redis 분산 저장소 사용 (Vercel 다중 인스턴스 대응)
+        // REDIS_URL 미설정 시 in-memory 폴백 (개발 환경)
+        ThrottlerModule.forRootAsync({
+            imports: [ConfigModule],
+            inject: [ConfigService],
+            useFactory: (config: ConfigService) => {
+                const redisUrl = config.get<string>('REDIS_URL');
+                return {
+                    throttlers: [
+                        { name: 'short',  ttl: 1000,   limit: 10   }, // 1초  10회
+                        { name: 'medium', ttl: 60000,  limit: 100  }, // 1분  100회
+                        { name: 'long',   ttl: 900000, limit: 1000 }, // 15분 1000회
+                    ],
+                    ...(redisUrl && {
+                        storage: new ThrottlerStorageRedisService(new Redis(redisUrl)),
+                    }),
+                };
             },
-            {
-                name: 'medium',
-                ttl: 60000, // 1분
-                limit: 100, // 1분에 100개 요청
-            },
-            {
-                name: 'long',
-                ttl: 900000, // 15분
-                limit: 1000, // 15분에 1000개 요청
-            },
-        ]),
+        }),
         LoggerModule,
         PrismaModule,
         MenusModule,

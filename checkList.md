@@ -301,10 +301,11 @@
 - [x] tsc 통과 (2026-05-05)
 
 #### B-4. Throttler Redis store 도입
-- [ ] `@nestjs/throttler` Redis store 패키지 설치 (`throttler-storage-redis`)
-- [ ] `AppModule` ThrottlerModule에 Redis store 연결 (`REDIS_URL` 환경변수)
-- [ ] Upstash Redis 또는 Railway Redis 무료 인스턴스 연결
-- [ ] `.env.example`에 `REDIS_URL` 추가
+- [x] `@nest-lab/throttler-storage-redis` + `ioredis` 설치 (2026-05-05)
+- [x] `AppModule` ThrottlerModule.forRootAsync로 전환 — REDIS_URL 있으면 Redis 저장소, 없으면 in-memory 폴백 (2026-05-05)
+- [x] `.env.example`에 `REDIS_URL` 항목 및 Upstash 연결 방법 주석 추가 (2026-05-05)
+- [x] tsc --noEmit 통과 (2026-05-05)
+- [ ] Upstash Redis 무료 인스턴스 생성 후 `REDIS_URL` Vercel 환경변수에 등록 (인프라 작업)
 
 ---
 
