@@ -76,7 +76,7 @@
 - [ ] #7 polling이 fallback이 아니라 reconciliation임을 이름/주석으로 명확화
 - [ ] #8 `processOrder` 함수 분해 (buildPluginOrderDto / confirmOrCleanup 등)
 - [ ] #9 catalog sync 실패 alert + 백오프 (rate limit 에러 silent fail 방지)
-- [ ] #10 catalogId/categoryId 변환 가드 (Number 변환 NaN 방지)
+- [x] #10 catalogId/categoryId 변환 가드 (Number 변환 NaN 방지) (2026-05-05)
 - [ ] #11~17 폴리시: magic number 모음, 로그 레벨 분리, 파일 분할 등
 
 ### #9 실기기 E2E (출시 게이트)
