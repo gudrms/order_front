@@ -7,6 +7,13 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ['lucide-react'],
   },
+
+  // 프로덕션 빌드에서 console.log 제거 (console.error/warn 유지)
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production'
+      ? { exclude: ['error', 'warn'] }
+      : false,
+  },
 };
 
 // Sentry 설정

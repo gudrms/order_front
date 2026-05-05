@@ -1,0 +1,10 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appID": "TEAM_ID.com.taco.delivery",
+        "paths": ["/orders/*", "/mypage/*"]
+      }
+    ]
+  }
+}

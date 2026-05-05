@@ -23,8 +23,8 @@
 - [x] `apps/delivery-customer/src/components/menu/MenuDetail.tsx` menuId 미연결 (2026-05-04): import 사용처 0건 확인 후 dead code 삭제. 실 메뉴 상세는 `MenuDetailBottomSheet.tsx`에서 `useMenuDetail` hook + Zustand `useUIStore.selectedMenuId`로 정상 동작
 - [x] Capacitor `allowMixedContent` 운영 빌드 차단 (2026-05-04): 기존 `cleartext` 분기 패턴(`serverUrl?.startsWith('http://')`)을 `allowMixedContent`에도 적용. 운영(HTTPS / unset)에서 false, 로컬 HTTP dev 서버에서만 true. MITM 공격면 감소
 - [x] AndroidManifest App Links host 정정 (2026-05-04): `delivery.taco.com` → `delivery.tacomole.kr` (manifest 1건 + 코드 주석 useDeepLink/app.ts 3건 + CAPACITOR_DEEPLINK_TEST.md 4건). 코드 로직은 host 무관(`parsed.pathname` 사용)이라 동작 영향 없음
-- [ ] **후속**: 운영 배포 시 `https://delivery.tacomole.kr/.well-known/assetlinks.json` 호스팅 필요 (sha256 서명 인증서 지문 등록)
-- [ ] **후속**: iOS Universal Links 미구현 — `Info.plist`에 `taco://` custom scheme만 있고 Associated Domains capability 없음. 추가 작업: Xcode entitlements + `apple-app-site-association` 호스팅 + `applinks:delivery.tacomole.kr` 등록
+- [x] **후속**: `apps/delivery-customer/public/.well-known/assetlinks.json` 파일 생성 + Next.js headers 설정 완료 (2026-05-05). SHA-256 지문 placeholder(`AA:BB:...`) — 실 키스토어 생성 후 교체 필요. Content-Type: application/json 헤더 자동 적용.
+- [x] **후속**: `apps/delivery-customer/public/.well-known/apple-app-site-association` 파일 생성 완료 (2026-05-05). TEAM_ID placeholder — Xcode 팀 ID 확인 후 교체 필요. Associated Domains capability는 Xcode에서 별도 추가.
 
 ## 🧱 Tech debt (누적 시 문제)
 
@@ -332,23 +332,15 @@
 #### C-3. Android 앱 서명 및 assetlinks.json 배포
 - [ ] Android 릴리즈 키스토어 생성 (`keytool -genkey`)
 - [ ] SHA-256 인증서 지문 추출 (`keytool -list -v`)
-- [ ] `https://delivery.tacomole.kr/.well-known/assetlinks.json` 배포
-  ```json
-  [{ "relation": ["delegate_permission/common.handle_all_urls"],
-     "target": { "namespace": "android_app",
-                 "package_name": "com.taco.delivery",
-                 "sha256_cert_fingerprints": ["AA:BB:..."] } }]
-  ```
+- [x] `apps/delivery-customer/public/.well-known/assetlinks.json` 파일 생성 (2026-05-05) — SHA-256 placeholder, 키스토어 생성 후 교체 필요. Next.js headers `Content-Type: application/json` 자동 적용.
+- [ ] 키스토어 SHA-256 확정 후 `assetlinks.json` 업데이트 및 운영 배포 확인
 - [ ] `adb shell pm get-app-links com.taco.delivery` 로 App Links 검증
 
 #### C-4. iOS Universal Links 구현 (macOS + Xcode 필요)
 - [ ] Xcode → Signing & Capabilities → Associated Domains 추가 (`applinks:delivery.tacomole.kr`)
 - [ ] `Info.plist`에 `taco://` custom scheme 확인 (이미 등록됨)
-- [ ] `https://delivery.tacomole.kr/.well-known/apple-app-site-association` 배포
-  ```json
-  { "applinks": { "details": [{ "appID": "TEAM_ID.com.taco.delivery",
-                                "paths": ["/orders/*", "/mypage/*"] }] } }
-  ```
+- [x] `apps/delivery-customer/public/.well-known/apple-app-site-association` 파일 생성 (2026-05-05) — TEAM_ID placeholder, Xcode 팀 ID 확인 후 교체 필요.
+- [ ] TEAM_ID 확정 후 `apple-app-site-association` 업데이트 및 운영 배포 확인
 - [ ] 시뮬레이터 `xcrun simctl openurl booted "taco://orders/TEST_ID"` 확인
 - [ ] TestFlight 빌드 후 Universal Link 실기기 확인
 
@@ -395,7 +387,8 @@
 
 #### D-5. 운영 모니터링 고도화
 - [ ] Sentry Releases 연동: 배포 시 `sentry-cli releases` 자동 실행 (GitHub Actions)
-- [ ] Sentry Source Map 업로드 (배달앱/관리자/백엔드 각각)
+- [x] Sentry Source Map 업로드 설정 완료 (2026-05-05): 배달앱/관리자/홈페이지 `next.config.ts` 모두 `withSentryConfig({ widenClientFileUpload: true, hideSourceMaps: true })` 적용 완료. Vercel 빌드 시 `SENTRY_AUTH_TOKEN` 환경변수 추가하면 자동 업로드.
+- [x] `apps/admin/next.config.ts` `compiler.removeConsole` 프로덕션 적용 (2026-05-05) — delivery-customer와 동일 패턴.
 - [ ] Vercel Analytics 또는 PostHog 기본 이벤트 트래킹 설정
 - [ ] Uptime 모니터링: Better Uptime / UptimeRobot으로 주요 endpoint 감시
 - [ ] 백엔드 에러율 알림: Sentry → Slack/Discord 웹훅 연결
@@ -421,8 +414,8 @@
 - [ ] CI (GitHub Actions)에 Playwright 테스트 실행 추가
 
 #### E-4. 홈페이지 SEO 및 성능 최적화
-- [ ] `sitemap.xml` 자동 생성 (Next.js `generateSitemaps`)
-- [ ] `robots.txt` 설정
-- [ ] Open Graph / Twitter Card 메타태그 완비
+- [x] `sitemap.xml` 자동 생성 (2026-05-05): `apps/brand-website/src/app/sitemap.ts` — 5개 주요 URL 등록, Next.js `MetadataRoute.Sitemap` 기반.
+- [x] `robots.txt` 설정 (2026-05-05): `apps/brand-website/src/app/robots.ts` — `Allow: /`, sitemap URL 등록.
+- [x] Open Graph / Twitter Card 메타태그 완비 (2026-05-05): `layout.tsx` — `metadataBase`, `openGraph`(type/locale/url/siteName), `twitter`(summary_large_image), `robots`(index/follow/googleBot), `opengraph-image.tsx` OG 이미지 자동 생성.
 - [ ] Lighthouse 점수 90+ 목표 (LCP, CLS, FID 최적화)
 - [ ] 매장/메뉴 정적 생성(ISR) 적용으로 초기 로드 성능 개선

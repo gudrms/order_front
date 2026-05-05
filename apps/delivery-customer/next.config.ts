@@ -21,6 +21,21 @@ const nextConfig: NextConfig = {
       ? { exclude: ['error', 'warn'] }
       : false,
   },
+
+  // Android App Links / iOS Universal Links 검증 파일
+  // /.well-known/assetlinks.json → Content-Type: application/json (Android 필수)
+  // /.well-known/apple-app-site-association → Content-Type: application/json (iOS 필수)
+  async headers() {
+    return [
+      {
+        source: '/.well-known/:path*',
+        headers: [
+          { key: 'Content-Type', value: 'application/json' },
+          { key: 'Cache-Control', value: 'no-cache' },
+        ],
+      },
+    ];
+  },
   // NOTE: 빌드 로그에 "ReferenceError: location is not defined" 경고가 표시되나
   // @sentry/nextjs instrumentation 내부 코드 이슈로 빌드는 정상 완료되고 런타임에 무관함.
 };
