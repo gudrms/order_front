@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState } from 'react';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { StoreProvider } from '@/contexts/StoreContext';
+import PushNotificationHandler from '@/components/PushNotificationHandler';
 
 export default function Providers({ children }: { children: React.ReactNode }) {
     const [queryClient] = useState(
@@ -20,6 +21,8 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     return (
         <QueryClientProvider client={queryClient}>
             <AuthProvider>
+                {/* AuthProvider 하위에 마운트해야 useAuth() 접근 가능 */}
+                <PushNotificationHandler />
                 <StoreProvider>{children}</StoreProvider>
             </AuthProvider>
         </QueryClientProvider>
