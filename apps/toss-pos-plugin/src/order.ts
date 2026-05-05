@@ -5,6 +5,11 @@ import type { BackendOrder, BackendPayment } from './types';
 
 const processingOrders = new Set<string>();
 
+function toPositiveIntegerId(value: string | null | undefined): number | null {
+    const numeric = Number(value);
+    return Number.isSafeInteger(numeric) && numeric > 0 ? numeric : null;
+}
+
 export async function processOrder(order: BackendOrder) {
     if (processingOrders.has(order.id)) {
         console.log(`Order ${order.orderNumber} is already being processed. Skipping.`);
@@ -15,7 +20,11 @@ export async function processOrder(order: BackendOrder) {
     try {
         console.log(`Processing order: ${order.orderNumber}`);
 
-        const unmapped = order.items.filter(item => !item.catalogId || !item.category);
+        const unmapped = order.items.filter(item =>
+            toPositiveIntegerId(item.catalogId) == null ||
+            !item.category ||
+            toPositiveIntegerId(item.category.id) == null
+        );
         if (unmapped.length > 0) {
             const names = unmapped.map(i => i.menuName).join(', ');
             console.warn(`Order ${order.orderNumber} has unmapped menus, skipping: ${names}`);
@@ -33,23 +42,29 @@ export async function processOrder(order: BackendOrder) {
         const pluginOrderDto: PluginOrderDto = {
             memo: order.note ?? undefined,
             discounts: [],
-            lineItems: order.items.map(item => ({
-                diningOption: 'DELIVERY' as const,
-                item: {
-                    id: Number(item.catalogId),
-                    title: item.menuName,
-                    category: { id: Number(item.category!.id), title: item.category!.name },
-                    type: 'ITEM' as const,
-                },
-                quantity: { value: item.quantity },
-                chargePrice: { value: item.menuPrice * item.quantity },
-                optionChoices: item.options
-                    ?.filter(opt => !!opt.tossOptionCode)
-                    .map(opt => ({
-                        id: Number(opt.tossOptionCode),
-                        quantity: 1,
-                    })) ?? [],
-            })),
+            lineItems: order.items.map(item => {
+                const catalogId = toPositiveIntegerId(item.catalogId)!;
+                const categoryId = toPositiveIntegerId(item.category!.id)!;
+
+                return {
+                    diningOption: 'DELIVERY' as const,
+                    item: {
+                        id: catalogId,
+                        title: item.menuName,
+                        category: { id: categoryId, title: item.category!.name },
+                        type: 'ITEM' as const,
+                    },
+                    quantity: { value: item.quantity },
+                    chargePrice: { value: item.menuPrice * item.quantity },
+                    optionChoices: item.options
+                        ?.map(opt => toPositiveIntegerId(opt.tossOptionCode))
+                        .filter((id): id is number => id != null)
+                        .map(id => ({
+                            id,
+                            quantity: 1,
+                        })) ?? [],
+                };
+            }),
         };
 
         const result = await posPluginSdk.order.add(pluginOrderDto);

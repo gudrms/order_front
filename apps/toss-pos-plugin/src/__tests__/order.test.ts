@@ -230,6 +230,18 @@ describe('processOrder', () => {
         await processOrder(sampleOrder);
         expect(posPluginSdk.order.add).toHaveBeenCalledTimes(2);
     });
+    it('POS catalog/category id가 숫자로 변환되지 않으면 skip한다', async () => {
+        const invalidMapping: BackendOrder = {
+            ...sampleOrder,
+            items: [{ ...sampleOrder.items[0], catalogId: 'not-a-number' }],
+        };
+
+        await processOrder(invalidMapping);
+
+        expect(posPluginSdk.order.add).not.toHaveBeenCalled();
+        expect(posPluginSdk.payment.add).not.toHaveBeenCalled();
+        expect(mockFetch).not.toHaveBeenCalled();
+    });
 });
 
 describe('updateOrderStatus', () => {
