@@ -12,11 +12,8 @@ export default function PWAInstaller() {
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker
                 .register('/sw.js')
-                .then((registration) => {
-                    console.log('SW registered:', registration);
-                })
                 .catch((error) => {
-                    console.log('SW registration failed:', error);
+                    console.error('SW registration failed:', error);
                 });
         }
 
@@ -38,7 +35,6 @@ export default function PWAInstaller() {
 
         // 앱이 설치되었을 때
         window.addEventListener('appinstalled', () => {
-            console.log('PWA was installed');
             localStorage.setItem('pwa-installed', 'true');
             setShowInstallBanner(false);
         });
@@ -52,9 +48,7 @@ export default function PWAInstaller() {
         if (!deferredPrompt) return;
 
         deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-
-        console.log(`User response to the install prompt: ${outcome}`);
+        await deferredPrompt.userChoice;
 
         setDeferredPrompt(null);
         setShowInstallBanner(false);

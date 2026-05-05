@@ -30,7 +30,6 @@ enum OrderType {
 enum OrderChannel {
   TABLE_ORDER
   DELIVERY_APP
-  HOMEPAGE
   ADMIN
   TOSS_SDK
   POS

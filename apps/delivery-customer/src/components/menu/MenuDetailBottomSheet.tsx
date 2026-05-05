@@ -62,8 +62,6 @@ export default function MenuDetailBottomSheet() {
         });
 
         handleClose();
-        // TODO: Toast 알림
-        console.log('장바구니 담기 완료');
     };
 
     if (!selectedMenuId && !isClosing) return null;

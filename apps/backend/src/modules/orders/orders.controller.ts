@@ -6,20 +6,8 @@ import { CancelOrderDto } from './dto/cancel-order.dto';
 import { DeliveryStatusDto, UpdateDeliveryStatusDto } from './dto/update-delivery-status.dto';
 import { SupabaseGuard } from '../auth/guards/supabase.guard';
 import { CurrentUser } from '../../common/decorators/user.decorator';
+import { OrderStatus } from '@prisma/client';
 
-// Prisma Client 생성 전까지 임시로 enum 정의
-export enum OrderStatus {
-    PENDING = 'PENDING',
-    PENDING_PAYMENT = 'PENDING_PAYMENT',
-    PAID = 'PAID',
-    CONFIRMED = 'CONFIRMED',
-    COOKING = 'COOKING',
-    PREPARING = 'PREPARING',
-    READY = 'READY',
-    DELIVERING = 'DELIVERING',
-    COMPLETED = 'COMPLETED',
-    CANCELLED = 'CANCELLED',
-}
 
 @ApiTags('Orders')
 @Controller('stores/:storeId/orders')
