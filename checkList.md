@@ -254,10 +254,8 @@
 ### 🔴 A. 런칭 직결 코드 작업
 
 #### A-1. 관리자 대시보드 통계 API 연결
-- [ ] 백엔드: 매장별 일일 통계 endpoint 신규 구현
-  - `GET /stores/:storeId/stats/daily` — 오늘 주문 수, 매출 합계, 대기 주문 수, 품절 메뉴 수
-  - Prisma aggregate 쿼리 기반, SupabaseGuard(OWNER) 보호
-- [ ] 관리자 대시보드 4개 카드를 실제 API useQuery로 연결 (현재 `—` placeholder)
+- [x] 백엔드: `GET /stores/:storeId/stats/daily` 구현 (2026-05-05): Prisma aggregate로 오늘 주문 수(취소/미결제 제외), 오늘 매출(approvedAmount 합산), 처리 중인 주문 수(PAID~DELIVERING), 품절 활성 메뉴 수 반환. SupabaseGuard + assertCanManageStore 소유권 검증. tsc 통과.
+- [x] 관리자 대시보드 4개 카드를 실제 API useQuery로 연결 (2026-05-05): 60초 자동 갱신, 로딩 중 `...` 표시, 매장 미선택 시 안내 배너. `—` placeholder 안내 배너 제거. tsc 통과.
 
 #### A-2. 관리자 직원 호출 수신 화면 연결
 - [ ] 관리자 앱에 Supabase Realtime 구독 추가: `tables_calls` 테이블 변경 감지

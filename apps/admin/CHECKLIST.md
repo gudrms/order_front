@@ -5,7 +5,7 @@
 ## 🚨 1차 런칭 Blocker
 
 - [x] **[P0] 대시보드 하드코딩 stats 제거** (2026-05-04): 가짜 숫자(45건/₩842,000/3건/2종)를 `—` placeholder + "통계 데이터 연동 준비 중" 안내 배너로 전환. 4개 카드 디자인 유지하여 추후 API 연결 시 뼈대 재사용.
-- [ ] **후속**: 매장별 일일 통계 API 구현 (오늘 주문 수, 매출, 대기 주문, 품절 메뉴 수). 백엔드 신규 엔드포인트 + admin 대시보드 useQuery 연결
+- [x] **후속**: 매장별 일일 통계 API 구현 (2026-05-05): `GET /stores/:storeId/stats/daily` 백엔드 구현 + admin 대시보드 useQuery 연결. 60초 자동 갱신, 매출 금액 포맷, 로딩/미선택 상태 처리.
 - [ ] **[P0] CORS origin 화이트리스트에 admin 도메인 포함 확인**: 백엔드 `apps/backend/src/main.ts:145` 단일 `FRONTEND_URL`로는 admin/brand-website/delivery 동시 허용 불가 — backend 측 수정과 함께 admin 운영 origin 명시
 
 ## ⚠️ High risk

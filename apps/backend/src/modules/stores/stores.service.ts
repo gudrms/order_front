@@ -137,6 +137,61 @@ export class StoresService {
         });
     }
 
+    /**
+     * 매장 일일 통계 (오늘 자정 기준)
+     * - todayOrderCount : 오늘 접수된 주문 수 (결제 여부 무관)
+     * - todaySales      : 오늘 승인 완료된 결제 합계
+     * - pendingOrderCount: 현재 처리 중인 주문 수 (PAID ~ DELIVERING)
+     * - soldOutMenuCount : 품절 처리된 활성 메뉴 수
+     */
+    async getStoreStats(userId: string, storeId: string) {
+        await this.assertCanManageStore(userId, storeId);
+
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
+
+        const [todayOrderCount, salesAgg, pendingOrderCount, soldOutMenuCount] =
+            await Promise.all([
+                // 오늘 들어온 주문 (취소 제외)
+                this.prisma.order.count({
+                    where: {
+                        storeId,
+                        createdAt: { gte: todayStart },
+                        status: { notIn: ['CANCELLED', 'PENDING_PAYMENT'] },
+                    },
+                }),
+                // 오늘 결제 승인 합계
+                this.prisma.payment.aggregate({
+                    _sum: { approvedAmount: true },
+                    where: {
+                        order: { storeId },
+                        status: 'PAID',
+                        updatedAt: { gte: todayStart },
+                    },
+                }),
+                // 현재 처리 중인 주문 (매장이 조치해야 하는 상태)
+                this.prisma.order.count({
+                    where: {
+                        storeId,
+                        status: {
+                            in: ['PAID', 'CONFIRMED', 'COOKING', 'PREPARING', 'READY', 'DELIVERING'],
+                        },
+                    },
+                }),
+                // 품절 처리된 활성 메뉴
+                this.prisma.menu.count({
+                    where: { storeId, soldOut: true, isActive: true },
+                }),
+            ]);
+
+        return {
+            todayOrderCount,
+            todaySales: salesAgg._sum.approvedAmount ?? 0,
+            pendingOrderCount,
+            soldOutMenuCount,
+        };
+    }
+
     private async assertAdmin(userId: string) {
         const user = await this.prisma.user.findUnique({
             where: { id: userId },
