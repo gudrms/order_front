@@ -7,6 +7,15 @@ import Sidebar from '@/components/dashboard/Sidebar';
 import { usePathname } from 'next/navigation';
 import { canAccessAdmin, canAccessPath } from '@/lib/adminPermissions';
 import { OrderAlertControls } from '@/components/dashboard/OrderAlertControls';
+import { StaffCallNotification } from '@/components/dashboard/StaffCallNotification';
+import { useStaffCalls } from '@/hooks/useStaffCalls';
+import { useAdminStore } from '@/contexts/AdminStoreContext';
+
+/** Realtime 구독은 레이아웃 마운트 시 한 번만 시작 */
+function StaffCallRealtimeSubscriber() {
+  useStaffCalls(); // 구독 + 쿼리 — 결과는 페이지에서 별도 useStaffCalls()로 소비
+  return null;
+}
 
 export default function DashboardLayout({
   children,
@@ -16,6 +25,7 @@ export default function DashboardLayout({
   const { user, profile, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const { selectedStoreId } = useAdminStore();
 
   useEffect(() => {
     if (!loading && !user) {
@@ -67,6 +77,11 @@ export default function DashboardLayout({
         )}
         {children}
       </main>
+
+      {/* 직원 호출 Realtime 구독 (전역 — 페이지 이동과 무관하게 유지) */}
+      {selectedStoreId && <StaffCallRealtimeSubscriber />}
+      {/* 직원 호출 토스트 알림 */}
+      <StaffCallNotification />
     </div>
   );
 }
