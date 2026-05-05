@@ -1,40 +1,21 @@
 # @order/order-core
 
-주문 관련 공통 프론트엔드 비즈니스 로직 패키지
+Framework-free order business logic shared by order-facing apps.
 
-## 사용하는 앱
+## Current Exports
 
-- table-order (테이블 주문)
-- delivery-customer (배달 주문)
+- `calculateOptionSubtotal`
+- `calculateItemSubtotal`
+- `calculateItemsSubtotal`
+- `calculateDeliveryFee`
+- `calculateOrderTotals`
+- `validateOrderItems`
+- `validateStorePolicy`
+- `validateDiscount`
+- `validateOrder`
 
-## 포함 내용
+## Scope
 
-### cart/ - 장바구니 로직
-- `useCart()` - 장바구니 Zustand store
-- `cartUtils.ts` - 가격 계산, 옵션 처리
+This package should contain pure order-domain logic that can be reused by delivery, table-order, admin, and future order surfaces before calling app-specific APIs.
 
-### order/ - 주문 로직
-- `useOrderMutation()` - 주문 API 호출 (TanStack Query)
-- `orderValidation.ts` - 프론트엔드 검증
-
-### payment/ - 결제 로직
-- `usePayment()` - 결제 처리
-
-## 사용법
-
-```typescript
-import { useCart, useOrderMutation } from '@order/order-core';
-
-const { addItem, items, totalPrice } = useCart();
-const { mutate: createOrder } = useOrderMutation();
-```
-
-## 의존성
-
-- `@order/shared` - 공통 타입, 유틸
-- `@order/ui` - UI 컴포넌트
-
-## 주의사항
-
-이 패키지는 **프론트엔드 비즈니스 로직**만 포함합니다.
-백엔드 로직은 `apps/backend`에 있습니다.
+Backend persistence and side effects still live in `apps/backend`.

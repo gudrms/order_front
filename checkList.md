@@ -307,6 +307,11 @@
 - [x] tsc --noEmit 통과 (2026-05-05)
 - [x] Upstash Redis 무료 인스턴스 생성 후 `REDIS_URL` Vercel 공유 환경변수에 등록 (2026-05-05)
 
+#### B-5. Toss POS 플러그인 4xx 재시도 제거
+- [x] `apps/toss-pos-plugin/src/order.ts` `updateOrderStatus`에서 4xx 응답은 즉시 실패 처리하고, 5xx/네트워크 오류만 재시도 (2026-05-05)
+- [x] `apps/toss-pos-plugin/toss-pos-plugin-checkList.md` #15 완료 반영 (2026-05-05)
+- [x] `pnpm --filter toss-pos-plugin build` 통과 (2026-05-05)
+
 ---
 
 ### 🟠 C. 실기기·환경 필요 검증
@@ -398,9 +403,24 @@
 ### ⚪ E. Phase 2 기능 확장
 
 #### E-1. packages/order-core 실제 구현 확장
-- [ ] 현재 빈 패키지 상태 — 공통 주문 비즈니스 로직 추출
-- [ ] 주문 유효성 검증 로직 (최소 주문금액, 배달 가능 여부, 재고 확인)
-- [ ] 배달앱/테이블오더/홈페이지 공통 사용 가능한 순수 함수 형태로 구현
+- [x] 현재 빈 패키지 상태 해소 — 공통 주문 비즈니스 로직 1차 추출 (2026-05-05)
+- [x] 주문 유효성 검증 로직 구현: 최소 주문금액, 배달 가능 여부, 매장 활성 상태, 품절/판매중/재고성 검증 (2026-05-05)
+- [x] 배달앱/테이블오더 공통 사용 가능한 순수 함수 형태로 구현 (2026-05-05)
+- [x] 주문 금액 계산 함수 구현: 상품 합계, 옵션 합계, 배달비, 할인, 최종 결제금액 (2026-05-05)
+- [x] 주문 가능 여부 검증 함수 구현: 빈 장바구니, 수량, 메뉴 판매중/품절, 최소 주문금액, 배달 가능 매장 (2026-05-05)
+- [x] 순수 함수 타입 export 후 `@order/order-core` 타입 검증 통과 (2026-05-05)
+- [ ] 배달앱/테이블오더 기존 계산/검증 로직을 `@order/order-core`로 단계적 이관
+
+#### E-1-1. 남은 코드 작업 후보
+- [ ] Toss POS 플러그인: `catalogId/categoryId` Number 변환 NaN 가드
+- [ ] Toss POS 플러그인: `removeChannel` 안전화(channel 객체 모듈 변수 보관)
+- [ ] Toss POS 플러그인: polling 명칭을 reconciliation으로 정리
+- [ ] Toss POS 플러그인: `processOrder` 함수 분해(`buildPluginOrderDto`, `confirmOrCleanup` 등)
+- [ ] Toss POS 플러그인: catalog sync 실패 alert + 백오프
+- [ ] Brand website: 창업 문의 저장 API/DB 모델/관리자 조회 화면 연결
+- [ ] Brand website: Kakao Map 실제 연동 및 운영 키 환경변수 정리
+- [ ] Admin E2E 확장: 주문 상태 변경, 배달 상태 변경, 전액/부분 환불, 매장 설정, 직접 메뉴 등록, MQ 실패 재시도
+- [ ] Table-order E2E 확장: 첫 주문/추가 주문, QR 재진입 세션 유지, MQ 후처리 지연에도 완료 UX 유지
 
 #### E-2. Toss SDK/POS 채널 정책 확정 및 구현
 - [ ] `Order.source = TOSS_POS` 처리 정책 확정
@@ -420,3 +440,36 @@
 - [x] Open Graph / Twitter Card 메타태그 완비 (2026-05-05): `layout.tsx` — `metadataBase`, `openGraph`(type/locale/url/siteName), `twitter`(summary_large_image), `robots`(index/follow/googleBot), `opengraph-image.tsx` OG 이미지 자동 생성.
 - [ ] Lighthouse 점수 90+ 목표 (LCP, CLS, FID 최적화)
 - [ ] 매장/메뉴 정적 생성(ISR) 적용으로 초기 로드 성능 개선
+
+---
+
+### 🧪 F. 운영 테스트 작업 백로그
+
+#### F-1. 운영 배포/DB 검증
+- [ ] 운영 DB `prisma migrate deploy` 실행 전 백업/마이그레이션 diff 확인
+- [ ] 운영 DB `OrderChannel.HOMEPAGE` 제거 migration 적용 후 주문 조회/관리자 화면 smoke 검증
+- [ ] Vercel Production/Preview 환경변수 분리 상태 확인 (`FRONTEND_URLS`, `REDIS_URL`, Firebase, Toss, Sentry)
+- [ ] GitHub Actions cron `POST /queue/process-once` 실제 실행 로그 확인
+- [ ] Queue backlog/failed event가 관리자 `/operations`에서 조회·재시도되는지 운영 데이터로 확인
+
+#### F-2. 결제/환불 운영 테스트
+- [ ] Toss 테스트 카드 결제 성공: 주문 생성 → 결제 승인 → `PAID` → 주문 상세 갱신
+- [ ] Toss 결제 실패/취소: fail 페이지 안내와 재시도 UX 확인
+- [ ] 관리자 전액 취소 후 배달앱 주문 상태/결제 상태 갱신 확인
+- [ ] 관리자 부분 환불 후 남은 금액/환불 배지/주문 상세 표시 확인
+- [ ] 결제 후 POS 전송 큐 처리와 알림 발송이 중복 발생하지 않는지 확인
+
+#### F-3. 배달앱 실기기/스토어 테스트
+- [ ] Android `.apk`/`.aab` 릴리즈 빌드 및 USB 실기기 실행
+- [ ] Android FCM 토큰 발급, 잠금화면 푸시 수신, 푸시 탭 라우팅 확인
+- [ ] Android App Links `assetlinks.json` SHA-256 교체 후 `adb shell pm get-app-links com.taco.delivery` 검증
+- [ ] iOS Associated Domains 추가 후 Universal Link/TestFlight 실기기 확인
+- [ ] Vercel 원격 WebView 핫 업데이트 파이프라인 검증
+- [ ] PWA 설치, Service Worker 캐싱, 오프라인/불안정 네트워크 안내 확인
+
+#### F-4. POS/관리자 운영 테스트
+- [ ] Toss POS 단말기에서 플러그인 앱 실행 및 최신 코드 충돌 점검
+- [ ] `POST /queue/process-once` 수동 trigger → POS 주문 수신 확인
+- [ ] POS 전송 실패 케이스 생성 후 관리자 MQ 화면에서 실패 조회/재시도 확인
+- [ ] 관리자 브라우저 백그라운드 상태에서 주문/직원 호출 알림 수신 확인
+- [ ] 영수증 출력/자동 소리 재생 한계 확인 및 Electron 래핑 필요성 재평가
