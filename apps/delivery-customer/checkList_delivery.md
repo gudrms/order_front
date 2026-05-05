@@ -10,7 +10,7 @@
 
 - [x] `useDeliveryTracking.ts` mock 데이터 잔여 (2026-05-04): import 사용처 0건 확인 후 `features/delivery-tracking/` 디렉토리 통째 삭제. 실 배달 추적은 `app/orders/[id]/OrderDetailClient.tsx`에서 정상 동작. `tsc --noEmit` + `next build` 19/19 통과
 - [x] `MenuDetail.tsx` menuId 미연결 (2026-05-04): import 사용처 0건 확인 후 dead code 삭제. 실 동작 컴포넌트는 옆에 있던 `MenuDetailBottomSheet.tsx` (실 API + Zustand store + 옵션/수량 로직 정상)
-- [ ] `lib/capacitor/push-notifications.ts:29,37,46` 토큰 서버 전송/알림 표시/클릭 모두 TODO — FCM/APNS 미연결 = 배달 상태 푸시 불가
+- [ ] FCM 푸시 알림 프론트 연동: `lib/capacitor/push-notifications.ts` 구현. (백엔드는 발송 준비 완료됨). 로그인 시 토큰 발급하여 `POST /api/v1/devices` 전송, 로그아웃 시 `DELETE /api/v1/devices/:token` 전송 처리 필요.
 - [x] Capacitor `allowMixedContent` 운영 빌드 차단 (2026-05-04): `capacitor.config.ts`에서 `serverUrl?.startsWith('http://')` 기반으로 `cleartext` / `allowMixedContent` 동시 분기. 운영 빌드(HTTPS 또는 server.url 미설정)에선 둘 다 false, 로컬 HTTP dev 서버 붙을 때만 true. MITM 공격면 감소
 - [x] AndroidManifest App Links host 정정 (2026-05-04): `delivery.taco.com` → `delivery.tacomole.kr` (manifest + 주석 + 문서 일괄). 코드 로직은 host 무관
 - [ ] **후속**: `https://delivery.tacomole.kr/.well-known/assetlinks.json` 운영 배포 (서명 인증서 sha256)
@@ -83,7 +83,7 @@
 - [x] **라우팅 구조 개선**: 주문 상세 페이지 URL을 쿼리 파라미터(`?id=`) 방식에서 동적 라우팅(`/orders/[id]`)으로 변경
 - [x] **배포 구조 개선**: `output: 'export'` 제거 후 `/orders/[id]` 동적 라우트를 Next 서버/원격 WebView 기준으로 유지
 - [x] **Capacitor 기준선 정리**: `CAPACITOR_SERVER_URL` 기반 원격 WebView 설정과 `cap:sync` 스크립트 정리
-- [ ] **네이티브 기능 연동**: Capacitor 기반 백그라운드 푸시 알림(FCM / APNs) 연동하여 앱 종료 시에도 배달 상태 알림 수신
+- [ ] **네이티브 기능 연동**: Capacitor `@capacitor/push-notifications` 플러그인 연동 (백엔드 `POST /devices` API 호출하여 토큰 등록). 앱 종료 시에도 배달 상태(배정/픽업/완료/취소) 푸시 알림 수신.
 
 ## 남은 일
 
