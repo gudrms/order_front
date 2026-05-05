@@ -158,6 +158,10 @@ export async function updateOrderStatus(
                 console.warn(`Status update conflict for ${orderId} (Idempotency-Key=${idempotencyKey})`);
                 return 'CONFLICT';
             }
+            if (response.status >= 400 && response.status < 500) {
+                console.error(`Status update rejected for ${orderId}: HTTP ${response.status} ${response.statusText}`);
+                return 'FAILED';
+            }
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
             return 'OK';
         } catch (error) {
