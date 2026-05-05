@@ -75,7 +75,7 @@
 - [x] #6 `removeChannel` 안전한 호출 위해 channel 객체 모듈 변수 보관 (2026-05-05)
 - [ ] #7 polling이 fallback이 아니라 reconciliation임을 이름/주석으로 명확화
 - [ ] #8 `processOrder` 함수 분해 (buildPluginOrderDto / confirmOrCleanup 등)
-- [ ] #9 catalog sync 실패 alert + 백오프 (rate limit 에러 silent fail 방지)
+- [x] #9 catalog sync 실패 alert + 백오프 (rate limit 에러 silent fail 방지) (2026-05-05)
 - [x] #10 catalogId/categoryId 변환 가드 (Number 변환 NaN 방지) (2026-05-05)
 - [ ] #11~17 폴리시: magic number 모음, 로그 레벨 분리, 파일 분할 등
 
@@ -103,4 +103,4 @@
 - [x] 관리자 MQ 운영 화면에서 POS 전송 실패 조회/재시도 가능
 - [x] `updateOrderStatus` 4xx 즉시 fail 분기 (2026-05-05)
 - [ ] 실제 기기 E2E: 결제 주문 POS 등록, 취소 동기화, timeout 미등록 검증
-- [ ] catalog sync 실패 alert/backoff 및 남은 리팩터링 항목 정리
+- [x] catalog sync 실패 alert/backoff 및 남은 리팩터링 항목 정리 (2026-05-05)
