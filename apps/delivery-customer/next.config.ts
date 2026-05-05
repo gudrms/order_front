@@ -14,6 +14,13 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ['lucide-react'],
   },
+
+  // 프로덕션 빌드에서 console.log 제거 (console.error/warn 유지)
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production'
+      ? { exclude: ['error', 'warn'] }
+      : false,
+  },
   // NOTE: 빌드 로그에 "ReferenceError: location is not defined" 경고가 표시되나
   // @sentry/nextjs instrumentation 내부 코드 이슈로 빌드는 정상 완료되고 런타임에 무관함.
 };

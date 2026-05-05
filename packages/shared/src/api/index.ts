@@ -15,7 +15,7 @@ import * as couponApi from './endpoints/coupon';
 import * as devicesApi from './endpoints/devices';
 
 export { apiClient, ApiClientError } from './client';
-export { cancelOrder, createHomepageOrder, createOrder, getDeliveryOrders, getOrder, getOrdersByTable, updateDeliveryStatus, updateOrderStatus } from './endpoints/order';
+export { cancelOrder, createOrder, getDeliveryOrders, getOrder, getOrdersByTable, updateDeliveryStatus, updateOrderStatus } from './endpoints/order';
 export { cancelOrderTossPayment, confirmTossPayment, failTossPayment } from './endpoints/payment';
 export { getCategories, getMenus, getMenuDetail } from './endpoints/menu';
 export { getStore, getStoreByIdentifier, getAllStores } from './endpoints/store';

@@ -53,7 +53,6 @@ const orderTypeLabel: Record<string, string> = {
 const sourceLabel: Record<string, string> = {
   TABLE_ORDER: '테이블오더',
   DELIVERY_APP: '배달앱',
-  HOMEPAGE: '홈페이지',
   TOSS_POS: 'Toss POS',
   ADMIN: '관리자',
 };

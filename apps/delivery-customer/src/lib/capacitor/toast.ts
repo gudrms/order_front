@@ -9,9 +9,7 @@ export async function showToast(
   duration: 'short' | 'long' = 'short'
 ) {
   if (!isNative) {
-    // 웹에서는 간단한 alert 또는 커스텀 토스트 사용
-    console.log('Toast:', text);
-    // TODO: 웹용 토스트 UI 컴포넌트 추가
+    // 웹(브라우저) 환경에서는 무시 (향후 웹용 토스트 UI 컴포넌트로 교체 예정)
     return;
   }
 

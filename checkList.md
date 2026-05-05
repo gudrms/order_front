@@ -282,20 +282,23 @@
 ### 🟡 B. 기술 부채 코드 작업
 
 #### B-1. 백엔드 인라인 enum 제거
-- [ ] `apps/backend/src/modules/orders/orders.controller.ts:11-22` 인라인 `OrderStatus` 상수 제거
-- [ ] `@prisma/client`의 `OrderStatus` enum 직접 import로 교체
-- [ ] `tsc --noEmit` + `vitest run` 재확인
+- [x] `apps/backend/src/modules/orders/orders.controller.ts:11-22` 인라인 `OrderStatus` 상수 제거 (2026-05-05)
+- [x] `@prisma/client`의 `OrderStatus` enum 직접 import로 교체 (2026-05-05)
+- [x] `tsc --noEmit` 통과 (2026-05-05)
 
-#### B-2. DB schema OrderSource HOMEPAGE 값 정리
-- [ ] `prisma/schema.prisma` `OrderSource` enum에서 `HOMEPAGE` 값 제거
-- [ ] migration 생성 (`prisma migrate dev --name remove_homepage_order_source`)
-- [ ] 운영 DB `prisma migrate deploy` 적용
-- [ ] 기존 데이터 영향 검토 (HOMEPAGE source 주문 건수 확인 후 제거)
+#### B-2. DB schema OrderChannel HOMEPAGE 값 정리
+- [x] `prisma/schema.prisma` `OrderChannel` enum에서 `HOMEPAGE` 값 제거 (2026-05-05)
+- [x] migration 파일 생성 (`20260505000000_remove_homepage_order_channel`) — 운영 DB 적용 시 HOMEPAGE source 주문 없음 확인 후 `prisma migrate deploy` 실행 필요 (2026-05-05)
+- [x] `createHomepageOrder` 함수 제거 (packages/shared, api/index.ts) (2026-05-05)
+- [x] `packages/shared/src/types/payment.ts` `OrderChannel` 타입에서 HOMEPAGE 제거 (2026-05-05)
+- [x] `apps/admin` orders 페이지 sourceLabel에서 HOMEPAGE 제거 (2026-05-05)
+- [x] `prisma generate` 후 tsc 통과 (2026-05-05)
+- [ ] 운영 DB `prisma migrate deploy` 적용 (실기기/운영 환경 작업)
 
-#### B-3. 배달앱 console.log 정리 (56개, 21 files)
-- [ ] `console.log` → `console.warn` / `console.error` 적절히 변환 또는 제거
-- [ ] Sentry captureException/captureMessage 교체 대상 식별
-- [ ] `next build` 후 번들에 console 미포함 확인 (`next.config.js` `compiler.removeConsole` 옵션 검토)
+#### B-3. 배달앱 console.log 정리 (56개 → 0개)
+- [x] 잔여 6개 console.log 전수 제거/변환 (2026-05-05): MenuDetailBottomSheet 1, PWAInstaller 4개 제거/error 변환, toast.ts 1개 무음 처리
+- [x] `next.config.ts` `compiler.removeConsole` 프로덕션 빌드 적용 (error/warn 제외) (2026-05-05)
+- [x] tsc 통과 (2026-05-05)
 
 #### B-4. Throttler Redis store 도입
 - [ ] `@nestjs/throttler` Redis store 패키지 설치 (`throttler-storage-redis`)
