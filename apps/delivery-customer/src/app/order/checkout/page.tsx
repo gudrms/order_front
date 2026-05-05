@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight, CreditCard, Tag, X } from 'lucide-react';
+import { calculateOrderTotals, validateOrder, type OrderItemInput as CoreOrderItemInput } from '@order/order-core';
 import { calculateCouponDiscount, generateOrderId, useCartStore } from '@order/shared';
 
 // SSR에서 window.location 참조로 인한 ReferenceError 방지
@@ -13,7 +14,7 @@ const TossPaymentWidget = dynamic(
     () => import('@order/ui/payment').then((m) => ({ default: m.TossPaymentWidget })),
     { ssr: false },
 );
-import type { CreateOrderRequest, OrderItemInput, UserCoupon } from '@order/shared';
+import type { CreateOrderRequest, OrderItemInput as PaymentOrderItemInput, UserCoupon } from '@order/shared';
 import type { PaymentWidgetInstance } from '@tosspayments/payment-widget-sdk';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCurrentStore } from '@/contexts/StoreContext';
@@ -28,7 +29,7 @@ const PENDING_TOSS_ORDER_ID_KEY = 'delivery.pendingTossOrderId';
 
 export default function CheckoutPage() {
     const router = useRouter();
-    const { store, storeId, isLoading: isStoreLoading, orderTotal } = useCurrentStore();
+    const { store, storeId, isLoading: isStoreLoading } = useCurrentStore();
     const { user, loading: isAuthLoading } = useAuth();
     const { items, totalPrice } = useCartStore();
     const { deliveryInfo, setAddress, setCustomerInfo, setDeliveryRequest } = useDeliveryStore();
@@ -43,18 +44,40 @@ export default function CheckoutPage() {
 
     const { data: availableCoupons = [] } = useAvailableCoupons(user?.id);
 
-    const totalAmount = orderTotal(totalPrice);
-    const deliveryFee = totalAmount - totalPrice;
+    const coreOrderItems: CoreOrderItemInput[] = items.map((item) => ({
+        menuId: item.menuId,
+        name: item.menuName,
+        unitPrice: item.unitPrice,
+        quantity: item.quantity,
+    }));
+    const storePolicy = store
+        ? {
+            isActive: store.isActive,
+            isDeliveryEnabled: store.isDeliveryEnabled,
+            minimumOrderAmount: store.minimumOrderAmount,
+            deliveryFee: store.deliveryFee,
+            freeDeliveryThreshold: store.freeDeliveryThreshold,
+        }
+        : undefined;
+    const orderTotals = calculateOrderTotals({
+        items: coreOrderItems,
+        storePolicy,
+    });
+    const orderValidation = validateOrder({
+        flow: 'DELIVERY',
+        items: coreOrderItems,
+        storePolicy,
+    });
+    const totalAmount = orderTotals.totalAmount;
+    const deliveryFee = orderTotals.deliveryFee;
     const discountAmount = selectedCoupon
         ? calculateCouponDiscount(selectedCoupon.coupon, totalAmount)
         : 0;
     const paymentAmount = totalAmount - discountAmount;
-    const isBelowMinimum = !!store && totalPrice < store.minimumOrderAmount;
+    const isBelowMinimum = orderValidation.issues.some((issue) => issue.code === 'BELOW_MINIMUM_ORDER');
     const canOrder = !!storeId
         && !!user
-        && !!store?.isActive
-        && !!store?.isDeliveryEnabled
-        && !isBelowMinimum
+        && orderValidation.valid
         && !!deliveryInfo.customerName
         && !!deliveryInfo.customerPhone
         && !!deliveryInfo.address?.address
@@ -87,7 +110,7 @@ export default function CheckoutPage() {
     }
 
     const buildOrderRequest = (orderId: string): CreateOrderRequest => {
-        const orderItems: OrderItemInput[] = items.map((item) => ({
+        const orderItems: PaymentOrderItemInput[] = items.map((item) => ({
             menuId: item.menuId,
             menuName: item.menuName,
             quantity: item.quantity,
