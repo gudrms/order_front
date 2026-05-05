@@ -10,124 +10,50 @@ function toPositiveIntegerId(value: string | null | undefined): number | null {
     return Number.isSafeInteger(numeric) && numeric > 0 ? numeric : null;
 }
 
-export async function processOrder(order: BackendOrder) {
-    if (processingOrders.has(order.id)) {
-        console.log(`Order ${order.orderNumber} is already being processed. Skipping.`);
-        return;
-    }
-    processingOrders.add(order.id);
+function findUnmappedItems(order: BackendOrder) {
+    return order.items.filter(item =>
+        toPositiveIntegerId(item.catalogId) == null ||
+        !item.category ||
+        toPositiveIntegerId(item.category.id) == null
+    );
+}
 
+function buildPluginOrderDto(order: BackendOrder): PluginOrderDto {
+    return {
+        memo: order.note ?? undefined,
+        discounts: [],
+        lineItems: order.items.map(item => {
+            const catalogId = toPositiveIntegerId(item.catalogId)!;
+            const categoryId = toPositiveIntegerId(item.category!.id)!;
+
+            return {
+                diningOption: 'DELIVERY' as const,
+                item: {
+                    id: catalogId,
+                    title: item.menuName,
+                    category: { id: categoryId, title: item.category!.name },
+                    type: 'ITEM' as const,
+                },
+                quantity: { value: item.quantity },
+                chargePrice: { value: item.menuPrice * item.quantity },
+                optionChoices: item.options
+                    ?.map(opt => toPositiveIntegerId(opt.tossOptionCode))
+                    .filter((id): id is number => id != null)
+                    .map(id => ({ id, quantity: 1 })) ?? [],
+            };
+        }),
+    };
+}
+
+async function cancelTossOrder(tossOrderId: string, context: string) {
     try {
-        console.log(`Processing order: ${order.orderNumber}`);
-
-        const unmapped = order.items.filter(item =>
-            toPositiveIntegerId(item.catalogId) == null ||
-            !item.category ||
-            toPositiveIntegerId(item.category.id) == null
-        );
-        if (unmapped.length > 0) {
-            const names = unmapped.map(i => i.menuName).join(', ');
-            console.warn(`Order ${order.orderNumber} has unmapped menus, skipping: ${names}`);
-            try {
-                posPluginSdk.toast.open(`매장 메뉴 매핑 누락: ${names}`);
-            } catch { /* toast best-effort */ }
-            return;
-        }
-
-        if (!order.payment) {
-            console.warn(`Order ${order.orderNumber} has no PAID payment record, skipping.`);
-            return;
-        }
-
-        const pluginOrderDto: PluginOrderDto = {
-            memo: order.note ?? undefined,
-            discounts: [],
-            lineItems: order.items.map(item => {
-                const catalogId = toPositiveIntegerId(item.catalogId)!;
-                const categoryId = toPositiveIntegerId(item.category!.id)!;
-
-                return {
-                    diningOption: 'DELIVERY' as const,
-                    item: {
-                        id: catalogId,
-                        title: item.menuName,
-                        category: { id: categoryId, title: item.category!.name },
-                        type: 'ITEM' as const,
-                    },
-                    quantity: { value: item.quantity },
-                    chargePrice: { value: item.menuPrice * item.quantity },
-                    optionChoices: item.options
-                        ?.map(opt => toPositiveIntegerId(opt.tossOptionCode))
-                        .filter((id): id is number => id != null)
-                        .map(id => ({
-                            id,
-                            quantity: 1,
-                        })) ?? [],
-                };
-            }),
-        };
-
-        const result = await posPluginSdk.order.add(pluginOrderDto);
-        console.log('Toss POS Order Created:', result.id);
-
-        // payment.add가 실패하면 방금 만든 토스 주문이 결제 누락 상태로 떠돌게 됨.
-        // 다음 폴링이 같은 주문을 또 처리해 tossOrderId-2를 새로 만들어 중복 등록되는 걸 막기 위해
-        // 실패 즉시 우리가 만든 toss 주문을 취소하고 빠진다 (백엔드 PATCH도 안 보냄 → 다음 폴링에서 깨끗이 재시도).
-        try {
-            await registerExternalPayment(result.id, order.payment);
-        } catch (paymentError) {
-            console.error(`Payment registration failed for ${result.id}, cancelling orphan order to avoid duplicate on retry`, paymentError);
-            try {
-                await posPluginSdk.order.cancel(result.id);
-            } catch (cancelError) {
-                console.error('Failed to cancel orphan Toss POS order after payment failure:', cancelError);
-            }
-            return;
-        }
-        console.log(`Toss POS Payment registered: ${order.payment.paymentKey}`);
-
-        const updated = await updateOrderStatus(order.id, {
-            status: 'CONFIRMED',
-            tossOrderId: result.id,
-        });
-
-        // 백엔드가 이미 다른 tossOrderId로 연결돼 있어 409로 거부 → 우리가 만든 중복 토스 주문은 취소.
-        if (updated === 'CONFLICT') {
-            console.warn(`Order ${order.orderNumber} already linked to a different tossOrderId — cancelling duplicate ${result.id}`);
-            try {
-                await posPluginSdk.order.cancel(result.id);
-            } catch (cancelError) {
-                console.error('Failed to cancel duplicate Toss POS order:', cancelError);
-            }
-            return;
-        }
-
-        // PATCH가 3회 모두 실패: 토스 POS에는 order+payment 등록됐는데 DB tossOrderId 미반영.
-        // 이 상태로 두면 다음 폴링에서 같은 주문을 또 처리해 토스에 중복 등록 → 백엔드 409 가드에 막혀 무한 루프.
-        // 따라서 우리가 만든 토스 주문을 취소해 다음 폴링이 깨끗하게 재시도하도록 한다.
-        // (운영 알림용 토스트도 띄움.)
-        if (updated === 'FAILED') {
-            console.error(`Order ${order.orderNumber} PATCH failed after retries — cancelling Toss POS order ${result.id} for clean retry`);
-            try { posPluginSdk.toast.open(`주문 동기화 실패: ${order.orderNumber} 재시도 예정`); } catch { /* best-effort */ }
-            try {
-                await posPluginSdk.order.cancel(result.id);
-            } catch (cancelError) {
-                console.error('Failed to cancel Toss POS order after PATCH failure:', cancelError);
-            }
-            return;
-        }
-
-        console.log(`Order ${order.orderNumber} synced successfully.`);
-    } catch (error) {
-        console.error(`Failed to process order ${order.orderNumber}:`, error);
-    } finally {
-        processingOrders.delete(order.id);
+        await posPluginSdk.order.cancel(tossOrderId);
+    } catch (cancelError) {
+        console.error(`Failed to cancel Toss POS order (${context}):`, cancelError);
     }
 }
 
 async function registerExternalPayment(tossOrderId: string, payment: BackendPayment) {
-    // PluginPaymentDto<EXTERNAL>: 배달앱이 토스페이먼츠로 이미 결제 완료 → POS에 EXTERNAL 원장 생성.
-    // 명시적 타입을 박아 SDK 시그니처 변경 시 컴파일 타임에 잡히도록 한다.
     const dto: PluginPaymentDto<'EXTERNAL'> = {
         sourceType: 'EXTERNAL',
         orderId: tossOrderId,
@@ -143,16 +69,76 @@ async function registerExternalPayment(tossOrderId: string, payment: BackendPaym
     await posPluginSdk.payment.add({ id: tossOrderId }, dto);
 }
 
-/**
- * 백엔드 주문 상태/tossOrderId 업데이트.
- * Idempotency-Key를 같이 보내 재시도/플러그인 재시작에도 안전하게 처리:
- * - 동일 키 + 동일 결과 → 백엔드가 기존 결과 반환 (no-op)
- * - 동일 키 + 다른 tossOrderId 덮어쓰기 → 백엔드가 409 Conflict
- * 반환값:
- *   - 'OK'        : 성공 (또는 멱등 no-op)
- *   - 'CONFLICT'  : 다른 tossOrderId가 이미 연결됨 → 호출부가 중복 토스 주문 취소
- *   - 'FAILED'    : 재시도 모두 실패
- */
+async function confirmOrCleanupBackendStatus(order: BackendOrder, tossOrderId: string) {
+    const updated = await updateOrderStatus(order.id, {
+        status: 'CONFIRMED',
+        tossOrderId,
+    });
+
+    if (updated === 'CONFLICT') {
+        console.warn(`Order ${order.orderNumber} already linked to a different tossOrderId; cancelling duplicate ${tossOrderId}`);
+        await cancelTossOrder(tossOrderId, 'duplicate backend status conflict');
+        return false;
+    }
+
+    if (updated === 'FAILED') {
+        console.error(`Order ${order.orderNumber} PATCH failed after retries; cancelling Toss POS order ${tossOrderId} for clean retry`);
+        try { posPluginSdk.toast.open(`Order sync failed: ${order.orderNumber}. Retrying later.`); } catch { /* best-effort */ }
+        await cancelTossOrder(tossOrderId, 'backend status update failure');
+        return false;
+    }
+
+    return true;
+}
+
+export async function processOrder(order: BackendOrder) {
+    if (processingOrders.has(order.id)) {
+        console.log(`Order ${order.orderNumber} is already being processed. Skipping.`);
+        return;
+    }
+    processingOrders.add(order.id);
+
+    try {
+        console.log(`Processing order: ${order.orderNumber}`);
+
+        const unmapped = findUnmappedItems(order);
+        if (unmapped.length > 0) {
+            const names = unmapped.map(i => i.menuName).join(', ');
+            console.warn(`Order ${order.orderNumber} has unmapped menus, skipping: ${names}`);
+            try {
+                posPluginSdk.toast.open(`Menu mapping missing: ${names}`);
+            } catch { /* toast best-effort */ }
+            return;
+        }
+
+        if (!order.payment) {
+            console.warn(`Order ${order.orderNumber} has no PAID payment record, skipping.`);
+            return;
+        }
+
+        const result = await posPluginSdk.order.add(buildPluginOrderDto(order));
+        console.log('Toss POS Order Created:', result.id);
+
+        try {
+            await registerExternalPayment(result.id, order.payment);
+        } catch (paymentError) {
+            console.error(`Payment registration failed for ${result.id}, cancelling orphan order to avoid duplicate on retry`, paymentError);
+            await cancelTossOrder(result.id, 'payment registration failure');
+            return;
+        }
+        console.log(`Toss POS Payment registered: ${order.payment.paymentKey}`);
+
+        const confirmed = await confirmOrCleanupBackendStatus(order, result.id);
+        if (!confirmed) return;
+
+        console.log(`Order ${order.orderNumber} synced successfully.`);
+    } catch (error) {
+        console.error(`Failed to process order ${order.orderNumber}:`, error);
+    } finally {
+        processingOrders.delete(order.id);
+    }
+}
+
 export async function updateOrderStatus(
     orderId: string,
     body: { status: string; tossOrderId: string },
@@ -190,15 +176,12 @@ export async function updateOrderStatus(
     return 'FAILED';
 }
 
-export async function pollOrders() {
+export async function reconcilePendingOrders() {
     try {
         const response = await fetch(`${API_URL}/pos/orders/pending`, {
             headers: posApiHeaders(),
         });
         if (!response.ok) {
-            // 404를 silent return 처리하면 안 됨: "주문 없음"이 아니라 "라우트 자체가 없음"이라는
-            // 배포 실수 신호. 빈 목록은 200 + [] 로 와야 정상.
-            // 모든 비-2xx는 명확한 에러로 처리해 운영 가시성 확보.
             throw new Error(`API Error: ${response.status} ${response.statusText} for ${API_URL}/pos/orders/pending`);
         }
 
@@ -210,14 +193,13 @@ export async function pollOrders() {
             await processOrder(order);
         }
     } catch (error) {
-        console.error('Polling error:', error);
+        console.error('Order reconciliation error:', error);
     }
 }
 
+export const pollOrders = reconcilePendingOrders;
+
 export function setupOrderCancelListener() {
-    // SDK 0.0.16+: order.on('cancel')는 deprecated. payment.on('cancel')로 대체.
-    // 분할 결제 시 cancel이 결제마다 발생하므로, 완납 취소 여부는 백엔드가 판정.
-    // PluginPayment는 PluginPaymentBase를 공유 → orderId는 항상 안전하게 접근 가능.
     posPluginSdk.payment.on('cancel', async (payment) => {
         const tossOrderId = payment.orderId;
         if (!tossOrderId) {
@@ -229,7 +211,7 @@ export function setupOrderCancelListener() {
             console.warn(`No backend order found for tossOrderId=${tossOrderId}`);
             return;
         }
-        console.log(`Payment cancelled in Toss POS for tossOrderId=${tossOrderId} → backend orderId=${backendOrderId}`);
+        console.log(`Payment cancelled in Toss POS for tossOrderId=${tossOrderId}; backend orderId=${backendOrderId}`);
         try {
             await updateOrderStatus(backendOrderId, {
                 status: 'CANCELLED',
