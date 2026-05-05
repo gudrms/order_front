@@ -4,9 +4,29 @@
         {
             "src": "src/main.ts",
             "use": "@vercel/node"
+        },
+        {
+            "src": "src/queue.ts",
+            "use": "@vercel/node"
         }
     ],
+    "functions": {
+        "src/main.ts": {
+            "maxDuration": 30
+        },
+        "src/queue.ts": {
+            "maxDuration": 60
+        }
+    },
     "routes": [
+        {
+            "src": "/api/v1/queue/(.*)",
+            "dest": "src/queue.ts",
+            "methods": [
+                "POST",
+                "OPTIONS"
+            ]
+        },
         {
             "src": "/(.*)",
             "dest": "src/main.ts",

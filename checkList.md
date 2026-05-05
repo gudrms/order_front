@@ -17,7 +17,7 @@
 - [ ] 푸시 알림 구현: **Firebase Cloud Messaging(FCM) 기반 잠금화면 푸시 연동**
   - [x] 백엔드: 토큰 DB 저장, Firebase Admin 발송 API, 큐 연동 완료 (2026-05-04)
   - [x] 배달앱(고객): Capacitor 푸시 알림 프론트 완성 (2026-05-05). `packages/shared/api/endpoints/devices.ts` 추가. `hooks/usePushNotifications.ts` — 권한 요청/토큰 등록/포어그라운드 표시/탭 라우팅. `AuthContext.signOut` 로그아웃 시 토큰 삭제. tsc 통과. 실기기 FCM 토큰 발급 E2E 검증 필요.
-  - [ ] 관리자웹(사장): PWA Service Worker 기반 웹 푸시 연동, 토큰 백엔드 전송
+  - [x] 관리자웹(사장): PWA Service Worker 기반 웹 푸시 연동, `ADMIN_WEB` 토큰 백엔드 등록/로그아웃 삭제, 포그라운드 표시 연결 (2026-05-05). 운영 Firebase env/VAPID 입력 후 브라우저 수신 E2E 필요.
 - [ ] Throttler in-memory store가 Vercel 다중 인스턴스에서 무력화 → Redis store 도입 검토
 - [x] `useDeliveryTracking.ts` mock 데이터 처리 (2026-05-04): import 사용처 0건 확인 후 `features/delivery-tracking/` 디렉토리 통째 삭제 (payment dead code와 동일 패턴). 실 배달 추적은 `app/orders/[id]/OrderDetailClient.tsx` + `@order/shared` `DeliveryStatus`로 이미 정상 동작
 - [x] `apps/delivery-customer/src/components/menu/MenuDetail.tsx` menuId 미연결 (2026-05-04): import 사용처 0건 확인 후 dead code 삭제. 실 메뉴 상세는 `MenuDetailBottomSheet.tsx`에서 `useMenuDetail` hook + Zustand `useUIStore.selectedMenuId`로 정상 동작
@@ -29,8 +29,8 @@
 ## 🧱 Tech debt (누적 시 문제)
 
 - [ ] 프론트 자동화 테스트 0건 (admin/brand-website/delivery-customer) — Playwright 도입
-- [ ] `apps/backend/src/modules/orders/orders.controller.ts:11-22` 인라인 OrderStatus enum 제거 (Prisma enum 사용)
-- [ ] 백엔드 단일 serverless function 라우팅 (`apps/backend/vercel.json`) — queue function 분리 검토
+- [x] `apps/backend/src/modules/orders/orders.controller.ts` 인라인 OrderStatus enum 제거 (Prisma enum 사용) (2026-05-05)
+- [x] 백엔드 단일 serverless function 라우팅 개선 (2026-05-05): `/api/v1/queue/*`를 `src/queue.ts` 전용 Vercel function으로 분리, 일반 API 30s/queue 60s timeout 설정.
 - [ ] delivery-customer console.log 56개 정리 (Sentry treeshake 의존)
 - [ ] `apps/admin/CHECKLIST.md`, `apps/delivery-customer/checkList_delivery.md` 등 분기된 미완료 항목 통합
 
@@ -393,7 +393,7 @@
 #### D-5. 운영 모니터링 고도화
 - [ ] Sentry Releases 연동: 배포 시 `sentry-cli releases` 자동 실행 (GitHub Actions)
 - [x] Sentry Source Map 업로드 설정 완료 (2026-05-05): 배달앱/관리자/홈페이지 `next.config.ts` 모두 `withSentryConfig({ widenClientFileUpload: true, hideSourceMaps: true })` 적용 완료. Vercel 빌드 시 `SENTRY_AUTH_TOKEN` 환경변수 추가하면 자동 업로드.
-- [x] Sentry Next.js instrumentation 최신화 (2026-05-05): delivery-customer/table-order `onRequestError` hook 추가, `sentry.client.config.ts`를 `instrumentation-client.ts`로 통합해 빌드 경고 정리.
+- [x] Sentry Next.js instrumentation 최신화 (2026-05-05): admin/delivery-customer/table-order `onRequestError` hook 추가, `sentry.client.config.ts`를 `instrumentation-client.ts`로 통합해 빌드 경고 정리.
 - [x] `apps/admin/next.config.ts` `compiler.removeConsole` 프로덕션 적용 (2026-05-05) — delivery-customer와 동일 패턴.
 - [ ] Vercel Analytics 또는 PostHog 기본 이벤트 트래킹 설정
 - [ ] Uptime 모니터링: Better Uptime / UptimeRobot으로 주요 endpoint 감시
