@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { calculateOrderTotals, type OrderItemInput as CoreOrderItemInput } from '@order/order-core';
 import { useCartStore, useTableStore } from '@/stores';
 import { useCreateOrder } from '@/hooks/mutations/useCreateOrder';
 import { ApiClientError } from '@/lib/api/client';
@@ -77,6 +78,13 @@ export function OrderConfirmModal({
 }: OrderConfirmModalProps) {
   const { tableNumber } = useTableStore();
   const { items, totalPrice } = useCartStore();
+  const coreOrderItems: CoreOrderItemInput[] = items.map((item) => ({
+    menuId: item.menuId,
+    name: item.menuName,
+    unitPrice: item.unitPrice,
+    quantity: item.quantity,
+  }));
+  const orderTotals = calculateOrderTotals({ items: coreOrderItems });
 
   const [error, setError] = useState<{ message: string; type: 'warning' | 'error' } | null>(null);
 
@@ -112,7 +120,7 @@ export function OrderConfirmModal({
     const request: CreateOrderRequest = {
       tableNumber,
       items: orderItems,
-      totalAmount: totalPrice,
+      totalAmount: orderTotals.totalAmount,
     };
 
     createOrder(request, {

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { calculateOrderTotals, type OrderItemInput as CoreOrderItemInput } from '@order/order-core';
 import { useCartStore } from '@/stores';
 import { useTableStore } from '@/stores/tableStore';
 import { useUIStore } from '@/stores/uiStore';
@@ -28,6 +29,13 @@ export function CartPanel() {
   } = useCartStore();
   const { tableNumber } = useTableStore();
   const { mutate: createOrder, isPending } = useCreateOrder();
+  const coreOrderItems: CoreOrderItemInput[] = items.map((item) => ({
+    menuId: item.menuId,
+    name: item.menuName,
+    unitPrice: item.unitPrice,
+    quantity: item.quantity,
+  }));
+  const orderTotals = calculateOrderTotals({ items: coreOrderItems });
 
   const [successModal, setSuccessModal] = useState({
     isOpen: false,
@@ -57,7 +65,7 @@ export function CartPanel() {
     const request: CreateOrderRequest = {
       tableNumber,
       items: orderItems,
-      totalAmount: totalPrice,
+      totalAmount: orderTotals.totalAmount,
     };
 
     createOrder(request, {

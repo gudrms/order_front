@@ -411,7 +411,7 @@
 - [x] 순수 함수 타입 export 후 `@order/order-core` 타입 검증 통과 (2026-05-05)
 - [ ] 배달앱/테이블오더 기존 계산/검증 로직을 `@order/order-core`로 단계적 이관
   - [x] 배달앱 checkout 금액/최소주문/매장 배달 가능 검증을 `@order/order-core` 계산/검증으로 1차 연결 (2026-05-05)
-  - [ ] 테이블오더 장바구니/주문확정 금액 계산을 `@order/order-core`로 이관
+  - [x] 테이블오더 장바구니/주문확정 금액 계산을 `@order/order-core`로 이관 (2026-05-05)
 
 #### E-1-1. 남은 코드 작업 후보
 - [x] Toss POS 플러그인: `catalogId/categoryId` Number 변환 NaN 가드 (2026-05-05)
