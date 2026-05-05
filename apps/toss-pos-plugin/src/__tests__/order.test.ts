@@ -335,7 +335,7 @@ describe('pollOrders', () => {
 
         expect(posPluginSdk.order.add).not.toHaveBeenCalled();
         expect(consoleSpy).toHaveBeenCalledWith(
-            'Polling error:',
+            'Order reconciliation error:',
             expect.objectContaining({ message: expect.stringContaining('404') }),
         );
     });
@@ -348,7 +348,7 @@ describe('pollOrders', () => {
 
         expect(posPluginSdk.order.add).not.toHaveBeenCalled();
         expect(consoleSpy).toHaveBeenCalledWith(
-            'Polling error:',
+            'Order reconciliation error:',
             expect.objectContaining({ message: expect.stringContaining('503') }),
         );
     });
