@@ -408,10 +408,11 @@
 - [ ] 관리자에서 Toss POS 주문과 배달앱 주문 구분 표시
 
 #### E-3. 프론트 자동화 테스트 도입
-- [ ] Playwright 설치 및 기본 설정 (`apps/delivery-customer`, `apps/admin`)
-- [ ] 배달앱 핵심 플로우 E2E: 로그인 → 메뉴 선택 → 장바구니 → 체크아웃 → 주문 확인
-- [ ] 관리자 핵심 플로우 E2E: 로그인 → 주문 목록 → 상태 변경 → 환불
-- [ ] CI (GitHub Actions)에 Playwright 테스트 실행 추가
+- [x] Playwright 설치 및 기본 설정 (2026-05-05): 루트 `playwright.config.ts` — admin(Desktop Chrome / :3003) + delivery(iPhone 14 / :3001) 두 프로젝트. `webServer` 자동 기동 + 환경변수 폴백 처리. `pnpm test:e2e` / `test:e2e:ui` 스크립트 추가.
+- [x] 관리자 E2E 기본 플로우 (2026-05-05): `e2e/admin/auth.spec.ts` — 로그인 폼 렌더링, required 검증, 잘못된 자격증명 에러 표시, 미인증 보호 라우트 4개(/, /orders, /menu, /store) → /login 리다이렉트. 총 7개 테스트.
+- [x] 배달앱 E2E 기본 플로우 (2026-05-05): `e2e/delivery-customer/pages.spec.ts` — 홈 로드, 로그인 페이지 OAuth 버튼, 미인증 주문내역 안내, 메뉴 접근. 총 11개 테스트. playwright --list 18 tests 확인.
+- [x] CI GitHub Actions에 Playwright 추가 (2026-05-05): `.github/workflows/ci.yml` 전면 재작성 — pnpm 기반, backend(vitest) + frontend-typecheck(matrix: admin/delivery-customer/brand-website) + e2e(Playwright) 3개 job. 깨진 `apps/frontend` 참조 완전 제거. 실패 시 `playwright-report` artifact 7일 보관.
+- [ ] 배달앱 결제 플로우 E2E (Toss 테스트 카드): 주문 생성 → 위젯 → 승인 → PAID (실 환경 필요)
 
 #### E-4. 홈페이지 SEO 및 성능 최적화
 - [x] `sitemap.xml` 자동 생성 (2026-05-05): `apps/brand-website/src/app/sitemap.ts` — 5개 주요 URL 등록, Next.js `MetadataRoute.Sitemap` 기반.

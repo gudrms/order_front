@@ -2,44 +2,127 @@ name: CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [master, main]
   pull_request:
-    branches: [ "main" ]
+    branches: [master, main]
+
+env:
+  PNPM_VERSION: "9.15.0"
+  NODE_VERSION: "20"
 
 jobs:
-  build-and-test:
+  # ─────────────────────────────────────────
+  # 1. 백엔드 타입 체크 + 단위 테스트
+  # ─────────────────────────────────────────
+  backend:
+    name: Backend (tsc + vitest)
     runs-on: ubuntu-latest
-    
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm --filter backend exec prisma generate
+        env:
+          DATABASE_URL: "postgresql://postgres:test@localhost:5432/postgres"
+          DIRECT_URL: "postgresql://postgres:test@localhost:5432/postgres"
+
+      - name: Type check
+        run: pnpm --filter backend exec tsc --noEmit
+
+      - name: Unit tests
+        run: pnpm --filter backend exec vitest run
+        env:
+          DATABASE_URL: "postgresql://postgres:test@localhost:5432/postgres"
+          DIRECT_URL: "postgresql://postgres:test@localhost:5432/postgres"
+          SUPABASE_URL: "https://placeholder.supabase.co"
+          SUPABASE_ANON_KEY: "placeholder"
+          SUPABASE_SERVICE_KEY: "placeholder"
+          NODE_ENV: test
+
+  # ─────────────────────────────────────────
+  # 2. 프론트엔드 타입 체크 (세 앱 병렬)
+  # ─────────────────────────────────────────
+  frontend-typecheck:
+    name: Frontend type check (${{ matrix.app }})
+    runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [18.x]
-
+        app: [admin, delivery-customer, brand-website]
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ matrix.node-version }}
-        cache: 'npm'
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
 
-    - name: Install Dependencies
-      run: npm install
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
 
-    - name: Generate Prisma Client
-      run: npm run postinstall --workspace=apps/backend
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
-    - name: Test Backend
-      run: npm run test --workspace=apps/backend
+      # shared 패키지 빌드 (프론트 타입 체크 의존성)
+      - name: Build shared packages
+        run: pnpm --filter @order/shared build || true
 
-    - name: Build Backend
-      run: npm run build --workspace=apps/backend
+      - name: Type check ${{ matrix.app }}
+        run: pnpm --filter ${{ matrix.app }} exec tsc --noEmit
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: "https://placeholder.supabase.co"
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.placeholder.placeholder"
+          NEXT_PUBLIC_API_URL: "http://localhost:4000/api/v1"
 
-    - name: Lint Frontend
-      run: npm run lint --workspace=apps/frontend
+  # ─────────────────────────────────────────
+  # 3. Playwright E2E (admin + delivery-customer)
+  # ─────────────────────────────────────────
+  e2e:
+    name: E2E tests (Playwright)
+    runs-on: ubuntu-latest
+    needs: [backend, frontend-typecheck]
+    steps:
+      - uses: actions/checkout@v4
 
-    - name: Test Frontend
-      run: npm run test --workspace=apps/frontend
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
 
-    - name: Build Frontend
-      run: npm run build --workspace=apps/frontend
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run E2E tests
+        run: pnpm test:e2e --project=admin --project=delivery
+        env:
+          CI: true
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          NEXT_PUBLIC_API_URL: "http://localhost:4000/api/v1"
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
