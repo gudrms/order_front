@@ -258,9 +258,11 @@
 - [x] 관리자 대시보드 4개 카드를 실제 API useQuery로 연결 (2026-05-05): 60초 자동 갱신, 로딩 중 `...` 표시, 매장 미선택 시 안내 배너. `—` placeholder 안내 배너 제거. tsc 통과.
 
 #### A-2. 관리자 직원 호출 수신 화면 연결
-- [ ] 관리자 앱에 Supabase Realtime 구독 추가: `tables_calls` 테이블 변경 감지
-- [ ] 호출 수신 시 알림 배너/사운드 재생 UI 구현
-- [ ] 수신된 호출 목록과 처리(완료) 버튼 연결
+- [x] 백엔드 `GET /stores/:storeId/calls` + `PATCH /stores/:storeId/calls/:callId/complete` 추가 (2026-05-05). SupabaseGuard + 소유권 검증.
+- [x] `useStaffCalls` 훅: Realtime INSERT 구독 + 30초 폴링 + `admin:new-staff-call` 이벤트 발행 (2026-05-05)
+- [x] `StaffCallNotification`: 토스트 알림 (테이블 번호 + 호출 유형 + 2회 알림음) 8초 자동 닫기 (2026-05-05)
+- [x] `/calls` 페이지: 대기 호출 카드 목록 + 처리 완료 버튼 (2026-05-05)
+- [x] 사이드바 '직원 호출' 메뉴 추가, DashboardLayout에 전역 Realtime 구독 마운트. tsc 통과.
 
 #### A-3. 관리자 웹(사장) FCM 웹 푸시 연동
 - [ ] `apps/admin`에 Service Worker 등록 (`firebase-messaging-sw.js`)

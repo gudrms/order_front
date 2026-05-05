@@ -1,14 +1,57 @@
-import { Body, Controller, Param, ParseIntPipe, Post, UsePipes, ValidationPipe } from '@nestjs/common';
-import { ApiBody, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { CurrentUser } from '../../common/decorators/user.decorator';
+import { SupabaseGuard } from '../auth/guards/supabase.guard';
 import { CallsService } from './calls.service';
 import { CreateCallDto } from './dto/create-call.dto';
 
 @ApiTags('Calls')
-@Controller('stores/:storeId/tables/:tableNumber/calls')
+@Controller()
 export class CallsController {
     constructor(private readonly callsService: CallsService) { }
 
-    @Post()
+    // ──────────────────────────────────────────
+    // 관리자 전용 (인증 필요)
+    // ──────────────────────────────────────────
+
+    @Get('stores/:storeId/calls')
+    @UseGuards(SupabaseGuard)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({
+        summary: '직원 호출 목록 조회 (관리자)',
+        description: 'PENDING/PROCESSING 상태의 호출 목록을 반환합니다. 매장 소유자 또는 어드민만 조회 가능.',
+    })
+    @ApiParam({ name: 'storeId', description: '매장 ID' })
+    @ApiResponse({ status: 200, description: '호출 목록' })
+    async getPendingCalls(
+        @CurrentUser() user: { id: string },
+        @Param('storeId') storeId: string,
+    ) {
+        return this.callsService.getPendingCalls(user.id, storeId);
+    }
+
+    @Patch('stores/:storeId/calls/:callId/complete')
+    @UseGuards(SupabaseGuard)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({
+        summary: '직원 호출 완료 처리 (관리자)',
+        description: '호출 상태를 COMPLETED로 변경합니다.',
+    })
+    @ApiParam({ name: 'storeId', description: '매장 ID' })
+    @ApiParam({ name: 'callId', description: '호출 ID' })
+    async completeCall(
+        @CurrentUser() user: { id: string },
+        @Param('storeId') storeId: string,
+        @Param('callId') callId: string,
+    ) {
+        return this.callsService.completeCall(user.id, storeId, callId);
+    }
+
+    // ──────────────────────────────────────────
+    // 테이블오더용 (인증 없음, 테이블 유효성만 검증)
+    // ──────────────────────────────────────────
+
+    @Post('stores/:storeId/tables/:tableNumber/calls')
     @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
     @ApiOperation({
         summary: '테이블 직원 호출 생성',

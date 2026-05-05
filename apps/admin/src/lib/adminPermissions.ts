@@ -1,5 +1,6 @@
 import {
   Activity,
+  Bell,
   LayoutDashboard,
   Menu as MenuIcon,
   ShoppingBag,
@@ -24,6 +25,7 @@ export type AdminNavItem = {
 export const adminNavItems: AdminNavItem[] = [
   { name: '홈', href: '/', icon: LayoutDashboard, roles: ['ADMIN', 'OWNER'] },
   { name: '주문 관리', href: '/orders', icon: ShoppingBag, roles: ['ADMIN', 'OWNER'] },
+  { name: '직원 호출', href: '/calls', icon: Bell, roles: ['ADMIN', 'OWNER'] },
   { name: '메뉴 관리', href: '/menu', icon: MenuIcon, roles: ['ADMIN', 'OWNER'] },
   { name: '매장 관리', href: '/store', icon: Store, roles: ['ADMIN', 'OWNER'] },
   { name: '운영 관리', href: '/operations', icon: Activity, roles: ['ADMIN', 'OWNER'] },
