@@ -14,7 +14,10 @@
 ## ⚠️ High risk (런칭 후 곧 터질 가능성)
 
 - [ ] 실 Toss 카드결제 자동화 E2E 도입 (`payments-e2e.spec.ts`는 서비스 레이어 mock만)
-- [ ] 푸시 알림 구현: **Firebase Cloud Messaging(FCM) 기반 잠금화면 푸시 연동 확정**. 배달앱(고객)은 네이티브 앱 푸시, 관리자웹(사장님)은 별도 앱 설치 없이 **PWA(홈 화면에 추가)** 방식을 통한 웹 푸시로 일괄 커버.
+- [ ] 푸시 알림 구현: **Firebase Cloud Messaging(FCM) 기반 잠금화면 푸시 연동 진행 중**
+  - [x] 백엔드: 토큰 DB 저장, Firebase Admin 발송 API, 큐 연동 완료 (2026-05-04)
+  - [ ] 배달앱(고객): Capacitor `@capacitor/push-notifications` 연동, 기기 토큰 백엔드 전송(`POST /devices`), 수신/클릭 이벤트 처리
+  - [ ] 관리자웹(사장): PWA Service Worker 기반 웹 푸시 연동, 토큰 백엔드 전송
 - [ ] Throttler in-memory store가 Vercel 다중 인스턴스에서 무력화 → Redis store 도입 검토
 - [x] `useDeliveryTracking.ts` mock 데이터 처리 (2026-05-04): import 사용처 0건 확인 후 `features/delivery-tracking/` 디렉토리 통째 삭제 (payment dead code와 동일 패턴). 실 배달 추적은 `app/orders/[id]/OrderDetailClient.tsx` + `@order/shared` `DeliveryStatus`로 이미 정상 동작
 - [x] `apps/delivery-customer/src/components/menu/MenuDetail.tsx` menuId 미연결 (2026-05-04): import 사용처 0건 확인 후 dead code 삭제. 실 메뉴 상세는 `MenuDetailBottomSheet.tsx`에서 `useMenuDetail` hook + Zustand `useUIStore.selectedMenuId`로 정상 동작
