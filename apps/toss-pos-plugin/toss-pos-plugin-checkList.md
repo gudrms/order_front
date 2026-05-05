@@ -67,7 +67,7 @@
 
 ### 코드 리뷰 잔여 픽스 (실기기 E2E 전 권장)
 
-- [ ] **#15 `updateOrderStatus` 4xx 즉시 fail** (`order.ts:158-169`). 현재 4xx도 3회 재시도해 6초 헛지연. 5xx + 네트워크 에러만 재시도.
+- [x] **#15 `updateOrderStatus` 4xx 즉시 fail** (`order.ts:158-169`). 409는 기존처럼 `CONFLICT`, 그 외 4xx는 즉시 `FAILED` 반환. 5xx + 네트워크 에러만 재시도. (2026-05-05)
 
 ### 코드 리뷰 잔여 픽스 (시간 되면)
 
@@ -93,15 +93,14 @@
 
 ## 다음 순서
 
-1. (#15) `updateOrderStatus` 4xx 즉시 fail 분기
-2. (#9) 실기기 E2E — 출시 게이트, 코드로 진행 불가
-3. 시간 되면 #4~#10 리뷰 잔여 픽스
+1. (#9) 실기기 E2E — 출시 게이트, 코드로 진행 불가
+2. 시간 되면 #4~#10 리뷰 잔여 픽스
 
 ## 최신 동기화 (2026-05-02)
 
 - [x] 배달/홈페이지/테이블오더 주문 소스는 백엔드 `Order.source` 기준으로 분리
 - [x] POS 전송 기준은 결제 완료 주문 및 매장 운영 모드 기준으로 정리 완료
 - [x] 관리자 MQ 운영 화면에서 POS 전송 실패 조회/재시도 가능
-- [ ] `updateOrderStatus` 4xx 즉시 fail 분기
+- [x] `updateOrderStatus` 4xx 즉시 fail 분기 (2026-05-05)
 - [ ] 실제 기기 E2E: 결제 주문 POS 등록, 취소 동기화, timeout 미등록 검증
 - [ ] catalog sync 실패 alert/backoff 및 남은 리팩터링 항목 정리
