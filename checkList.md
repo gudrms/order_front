@@ -241,3 +241,184 @@
 - [ ] 테이블오더 첫 주문/추가 주문 브라우저-백엔드 E2E
 - [ ] 관리자 MQ 운영 화면 브라우저 E2E
 - [ ] Toss SDK/POS 실제 기기 E2E
+
+---
+
+## 📋 전체 잔여 작업 마스터 목록 (2026-05-05 기준)
+
+> 코드 작업과 비코드 작업(인프라·실기기·정책) 모두 포함.
+> 완료 시 `[ ]` → `[x]` 로 변경하고 날짜 기재.
+
+---
+
+### 🔴 A. 런칭 직결 코드 작업
+
+#### A-1. 관리자 대시보드 통계 API 연결
+- [ ] 백엔드: 매장별 일일 통계 endpoint 신규 구현
+  - `GET /stores/:storeId/stats/daily` — 오늘 주문 수, 매출 합계, 대기 주문 수, 품절 메뉴 수
+  - Prisma aggregate 쿼리 기반, SupabaseGuard(OWNER) 보호
+- [ ] 관리자 대시보드 4개 카드를 실제 API useQuery로 연결 (현재 `—` placeholder)
+
+#### A-2. 관리자 직원 호출 수신 화면 연결
+- [ ] 관리자 앱에 Supabase Realtime 구독 추가: `tables_calls` 테이블 변경 감지
+- [ ] 호출 수신 시 알림 배너/사운드 재생 UI 구현
+- [ ] 수신된 호출 목록과 처리(완료) 버튼 연결
+
+#### A-3. 관리자 웹(사장) FCM 웹 푸시 연동
+- [ ] `apps/admin`에 Service Worker 등록 (`firebase-messaging-sw.js`)
+- [ ] Firebase SDK 초기화 + `getToken()` 호출
+- [ ] 로그인 후 `POST /api/v1/devices` 토큰 전송 (deviceType: 'web')
+- [ ] 로그아웃 시 `DELETE /api/v1/devices/:token`
+- [ ] 백그라운드 메시지 수신 처리 (SW 핸들러)
+
+#### A-4. 테이블오더 오류 UI 정리
+- [ ] 주문 실패(재고 부족/매장 비활성) 오류 화면 구현
+- [ ] 테이블 없음 오류 → "QR을 다시 스캔해주세요" 안내 화면
+- [ ] 예약 테이블 차단 오류 → "이 테이블은 예약석입니다" 안내 화면
+- [ ] POS 후처리 실패가 고객 주문 완료 화면을 막지 않는지 에러 핸들링 검토
+
+---
+
+### 🟡 B. 기술 부채 코드 작업
+
+#### B-1. 백엔드 인라인 enum 제거
+- [ ] `apps/backend/src/modules/orders/orders.controller.ts:11-22` 인라인 `OrderStatus` 상수 제거
+- [ ] `@prisma/client`의 `OrderStatus` enum 직접 import로 교체
+- [ ] `tsc --noEmit` + `vitest run` 재확인
+
+#### B-2. DB schema OrderSource HOMEPAGE 값 정리
+- [ ] `prisma/schema.prisma` `OrderSource` enum에서 `HOMEPAGE` 값 제거
+- [ ] migration 생성 (`prisma migrate dev --name remove_homepage_order_source`)
+- [ ] 운영 DB `prisma migrate deploy` 적용
+- [ ] 기존 데이터 영향 검토 (HOMEPAGE source 주문 건수 확인 후 제거)
+
+#### B-3. 배달앱 console.log 정리 (56개, 21 files)
+- [ ] `console.log` → `console.warn` / `console.error` 적절히 변환 또는 제거
+- [ ] Sentry captureException/captureMessage 교체 대상 식별
+- [ ] `next build` 후 번들에 console 미포함 확인 (`next.config.js` `compiler.removeConsole` 옵션 검토)
+
+#### B-4. Throttler Redis store 도입
+- [ ] `@nestjs/throttler` Redis store 패키지 설치 (`throttler-storage-redis`)
+- [ ] `AppModule` ThrottlerModule에 Redis store 연결 (`REDIS_URL` 환경변수)
+- [ ] Upstash Redis 또는 Railway Redis 무료 인스턴스 연결
+- [ ] `.env.example`에 `REDIS_URL` 추가
+
+---
+
+### 🟠 C. 실기기·환경 필요 검증
+
+#### C-1. Toss 실 카드결제 E2E (테스트 카드)
+- [ ] Toss 테스트 카드로 배달앱 결제 성공 플로우 전체 확인
+  - 주문 생성(`PENDING_PAYMENT`) → 위젯 → 승인 → `PAID` → 주문상세 갱신
+- [ ] 결제 실패/취소 플로우 확인 (fail 페이지 → 재시도 안내)
+- [ ] 결제 완료 후 관리자 전액 취소 → 배달앱 상태 갱신 확인
+- [ ] 결제 완료 후 관리자 부분 환불 확인
+- [ ] 결제 후 POS 전송 큐 처리 + 알림 발송 E2E (cron 수동 trigger로)
+- [ ] GitHub Actions cron 실제 동작 확인 (`POST /queue/process-once` 응답 로그)
+
+#### C-2. 배달앱 Capacitor 실기기 E2E (Android)
+- [ ] Android Studio에서 `.aab`/`.apk` 빌드 성공
+- [ ] 실기기 USB 디버깅 연결 후 `npx cap run android` 실행
+- [ ] 원격 WebView 로드 확인 (`CAPACITOR_SERVER_URL` 로컬 IP 기반)
+- [ ] FCM 토큰 발급 확인 (`POST /devices` 실제 등록 로그)
+- [ ] `adb shell am start -d "taco://orders/TEST_ID"` 딥링크 진입 확인
+- [ ] 앱 종료 후 백엔드 FCM 발송 → 잠금화면 푸시 수신 확인
+- [ ] 푸시 탭 → `/orders/:id` 페이지 라우팅 확인
+
+#### C-3. Android 앱 서명 및 assetlinks.json 배포
+- [ ] Android 릴리즈 키스토어 생성 (`keytool -genkey`)
+- [ ] SHA-256 인증서 지문 추출 (`keytool -list -v`)
+- [ ] `https://delivery.tacomole.kr/.well-known/assetlinks.json` 배포
+  ```json
+  [{ "relation": ["delegate_permission/common.handle_all_urls"],
+     "target": { "namespace": "android_app",
+                 "package_name": "com.taco.delivery",
+                 "sha256_cert_fingerprints": ["AA:BB:..."] } }]
+  ```
+- [ ] `adb shell pm get-app-links com.taco.delivery` 로 App Links 검증
+
+#### C-4. iOS Universal Links 구현 (macOS + Xcode 필요)
+- [ ] Xcode → Signing & Capabilities → Associated Domains 추가 (`applinks:delivery.tacomole.kr`)
+- [ ] `Info.plist`에 `taco://` custom scheme 확인 (이미 등록됨)
+- [ ] `https://delivery.tacomole.kr/.well-known/apple-app-site-association` 배포
+  ```json
+  { "applinks": { "details": [{ "appID": "TEAM_ID.com.taco.delivery",
+                                "paths": ["/orders/*", "/mypage/*"] }] } }
+  ```
+- [ ] 시뮬레이터 `xcrun simctl openurl booted "taco://orders/TEST_ID"` 확인
+- [ ] TestFlight 빌드 후 Universal Link 실기기 확인
+
+#### C-5. Toss SDK/POS 플러그인 실기기 E2E
+- [ ] Toss POS 단말기 연결 후 플러그인 앱 실행
+- [ ] 백엔드 `POST /queue/process-once` → POS 전송 → 단말 수신 확인
+- [ ] POS 전송 실패 시 관리자 화면 재시도 플로우 확인
+- [ ] `toss-pos-plugin` 최신 코드 기준 충돌 점검
+
+---
+
+### 🟣 D. 인프라·배포 파이프라인
+
+#### D-1. 배달앱 Google Play 스토어 배포
+- [ ] Google Play Console 계정 등록 (개발자 계정 25달러)
+- [ ] `capacitor.config.ts` appId `com.taco.delivery` 확정
+- [ ] `android/app/build.gradle` versionCode/versionName 설정
+- [ ] 릴리즈 `.aab` 빌드: `./gradlew bundleRelease`
+- [ ] Play Console 내부 테스트 트랙 업로드 → 심사
+- [ ] Vercel 배포 → Capacitor 원격 WebView 핫 업데이트 파이프라인 검증 (심사 없이 업데이트)
+
+#### D-2. 배달앱 Apple App Store 배포 (macOS 필요)
+- [ ] Apple Developer Program 등록 (연 129달러)
+- [ ] Xcode에서 Archive 빌드 (`Product → Archive`)
+- [ ] App Store Connect 앱 등록 + 메타데이터 작성
+- [ ] TestFlight 베타 배포 → 내부 테스터 검증
+- [ ] App Store 심사 제출
+
+#### D-3. 관리자 Electron 래핑 (PC 전용 수신 프로그램)
+- [ ] Electron 프로젝트 초기화 (`apps/admin-electron/`)
+- [ ] `BrowserWindow`에 기존 admin 웹 URL 로드
+- [ ] 백그라운드 주문 알림: Tray 아이콘 + OS 네이티브 알림
+- [ ] 자동 소리 재생 (웹 브라우저 자동재생 차단 우회)
+- [ ] 영수증 무음 자동 출력 브리지 (`win.webContents.print()`)
+- [ ] Windows `.exe` 인스톨러 빌드 (`electron-builder`)
+- [ ] 자동 업데이트 (`electron-updater` + GitHub Releases)
+
+#### D-4. Dev/Prod 환경 분리
+- [ ] Supabase 프로젝트 Dev 인스턴스 별도 생성
+- [ ] Vercel Preview 배포에 Dev DB/env 자동 연결
+- [ ] Production 배포는 main 브랜치 merge 시에만 Prod DB 사용
+- [ ] GitHub Actions cron을 Dev/Prod 각각 별도 워크플로우로 분리
+- [ ] `.env.development` / `.env.production` 분리 정책 문서화
+
+#### D-5. 운영 모니터링 고도화
+- [ ] Sentry Releases 연동: 배포 시 `sentry-cli releases` 자동 실행 (GitHub Actions)
+- [ ] Sentry Source Map 업로드 (배달앱/관리자/백엔드 각각)
+- [ ] Vercel Analytics 또는 PostHog 기본 이벤트 트래킹 설정
+- [ ] Uptime 모니터링: Better Uptime / UptimeRobot으로 주요 endpoint 감시
+- [ ] 백엔드 에러율 알림: Sentry → Slack/Discord 웹훅 연결
+
+---
+
+### ⚪ E. Phase 2 기능 확장
+
+#### E-1. packages/order-core 실제 구현 확장
+- [ ] 현재 빈 패키지 상태 — 공통 주문 비즈니스 로직 추출
+- [ ] 주문 유효성 검증 로직 (최소 주문금액, 배달 가능 여부, 재고 확인)
+- [ ] 배달앱/테이블오더/홈페이지 공통 사용 가능한 순수 함수 형태로 구현
+
+#### E-2. Toss SDK/POS 채널 정책 확정 및 구현
+- [ ] `Order.source = TOSS_POS` 처리 정책 확정
+- [ ] Toss POS 직접 주문 시 백엔드 수신 → DB 저장 흐름 구현
+- [ ] 관리자에서 Toss POS 주문과 배달앱 주문 구분 표시
+
+#### E-3. 프론트 자동화 테스트 도입
+- [ ] Playwright 설치 및 기본 설정 (`apps/delivery-customer`, `apps/admin`)
+- [ ] 배달앱 핵심 플로우 E2E: 로그인 → 메뉴 선택 → 장바구니 → 체크아웃 → 주문 확인
+- [ ] 관리자 핵심 플로우 E2E: 로그인 → 주문 목록 → 상태 변경 → 환불
+- [ ] CI (GitHub Actions)에 Playwright 테스트 실행 추가
+
+#### E-4. 홈페이지 SEO 및 성능 최적화
+- [ ] `sitemap.xml` 자동 생성 (Next.js `generateSitemaps`)
+- [ ] `robots.txt` 설정
+- [ ] Open Graph / Twitter Card 메타태그 완비
+- [ ] Lighthouse 점수 90+ 목표 (LCP, CLS, FID 최적화)
+- [ ] 매장/메뉴 정적 생성(ISR) 적용으로 초기 로드 성능 개선
