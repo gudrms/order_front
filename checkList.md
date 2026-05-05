@@ -393,6 +393,7 @@
 #### D-5. 운영 모니터링 고도화
 - [ ] Sentry Releases 연동: 배포 시 `sentry-cli releases` 자동 실행 (GitHub Actions)
 - [x] Sentry Source Map 업로드 설정 완료 (2026-05-05): 배달앱/관리자/홈페이지 `next.config.ts` 모두 `withSentryConfig({ widenClientFileUpload: true, hideSourceMaps: true })` 적용 완료. Vercel 빌드 시 `SENTRY_AUTH_TOKEN` 환경변수 추가하면 자동 업로드.
+- [x] Sentry Next.js instrumentation 최신화 (2026-05-05): delivery-customer/table-order `onRequestError` hook 추가, `sentry.client.config.ts`를 `instrumentation-client.ts`로 통합해 빌드 경고 정리.
 - [x] `apps/admin/next.config.ts` `compiler.removeConsole` 프로덕션 적용 (2026-05-05) — delivery-customer와 동일 패턴.
 - [ ] Vercel Analytics 또는 PostHog 기본 이벤트 트래킹 설정
 - [ ] Uptime 모니터링: Better Uptime / UptimeRobot으로 주요 endpoint 감시

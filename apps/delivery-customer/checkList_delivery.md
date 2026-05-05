@@ -128,7 +128,7 @@
 - [ ] Vercel 배포를 통한 핫 푸시(Hot Push) 무심사 업데이트 파이프라인 검증
 - [x] Next.js `output: 'export'` 제거 및 주문상세 동적 라우트 빌드 확인
 - [x] Capacitor 원격 WebView URL 설정값 `CAPACITOR_SERVER_URL` 추가
-- [x] `ReferenceError: location is not defined` 빌드 경고 — @sentry/nextjs 내부 코드 기인, 빌드/런타임 무관. @order/ui 배럴에서 TossPaymentWidget 제거 + generateOrderId 분리로 우리 코드 기인 경고 제거 완료
+- [x] `ReferenceError: location is not defined` 빌드 경고 제거 (2026-05-05): checkout render 중 `router.push`를 `useEffect` + `router.replace`로 이동하고, Sentry client 설정을 `instrumentation-client.ts`로 통합.
 - [x] manifest icon 경로와 실제 asset 정합성 확인 — sharp로 SVG→PNG 8종 생성, apple-touch-icon, favicon-32x32 추가
 - [ ] Service Worker 캐싱 전략 검증
 - [x] Deep Link 설정: AndroidManifest `taco://` + App Links, Info.plist CFBundleURLTypes, `useDeepLink` 훅 + `DeepLinkHandler` 컴포넌트
@@ -157,7 +157,7 @@
 1. Toss 테스트 카드결제 성공/실패/환불 E2E
 3. 결제 성공 주문의 POS/알림 후처리 중 고객 중복 노출 여부 E2E 확인
 4. Capacitor 원격 WebView 실기기 실행과 `/orders/[id]` 딥링크 진입 검증
-5. ~~`ReferenceError: location is not defined` 빌드 로그 원인 제거~~ — 완료 (@sentry/nextjs 내부 코드, 우리 코드 기인 경고 제거 완료)
+5. ~~`ReferenceError: location is not defined` 빌드 로그 원인 제거~~ — 완료 (checkout render redirect 제거 + Sentry Next instrumentation 최신화)
 6. Sentry/PWA E2E 검증
 
 ## 최신 동기화 (2026-05-02)

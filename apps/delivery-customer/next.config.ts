@@ -15,16 +15,14 @@ const nextConfig: NextConfig = {
     optimizePackageImports: ['lucide-react'],
   },
 
-  // 프로덕션 빌드에서 console.log 제거 (console.error/warn 유지)
+  // Remove console.log in production builds while keeping error/warn.
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production'
       ? { exclude: ['error', 'warn'] }
       : false,
   },
 
-  // Android App Links / iOS Universal Links 검증 파일
-  // /.well-known/assetlinks.json → Content-Type: application/json (Android 필수)
-  // /.well-known/apple-app-site-association → Content-Type: application/json (iOS 필수)
+  // Verification files for Android App Links and iOS Universal Links.
   async headers() {
     return [
       {
@@ -36,19 +34,15 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-  // NOTE: 빌드 로그에 "ReferenceError: location is not defined" 경고가 표시되나
-  // @sentry/nextjs instrumentation 내부 코드 이슈로 빌드는 정상 완료되고 런타임에 무관함.
 };
 
-// Sentry 설정
 const sentryWebpackPluginOptions = {
   org: process.env.SENTRY_ORG,
   project: process.env.SENTRY_PROJECT,
   silent: true,
   widenClientFileUpload: true,
   hideSourceMaps: true,
-
-  // Webpack treeshaking 설정으로 disableLogger 대체
+  // Replace Sentry debug logger output through webpack treeshaking.
   webpack: {
     treeshake: {
       removeDebugLogging: true,

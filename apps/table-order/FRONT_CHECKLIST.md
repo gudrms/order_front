@@ -57,6 +57,7 @@
 - [x] 런타임 mock/MSW/하드코딩 fallback 제거 완료
 - [x] `pnpm --filter table-order exec tsc --noEmit` 통과
 - [x] `pnpm --filter table-order build` 통과
+- [x] Sentry Next instrumentation 최신화 (`onRequestError`, `instrumentation-client.ts` 통합)
 - [ ] 첫 주문/추가 주문 브라우저-백엔드 E2E
 - [ ] 직원 호출 Realtime/관리자 수신 화면 연결
 - [ ] 주문 실패/테이블 없음/예약 테이블 오류 UI 정리

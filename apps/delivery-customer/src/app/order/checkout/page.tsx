@@ -104,8 +104,13 @@ export default function CheckoutPage() {
         }
     }, [addresses, deliveryInfo.address?.address, setAddress, setCustomerInfo, setDeliveryRequest]);
 
+    useEffect(() => {
+        if (items.length === 0) {
+            router.replace('/menu');
+        }
+    }, [items.length, router]);
+
     if (items.length === 0) {
-        router.push('/menu');
         return null;
     }
 
