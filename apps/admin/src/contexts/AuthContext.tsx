@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
+import { unregisterWebPush } from '@/hooks/useWebPush';
 import axios from 'axios';
 
 interface AuthContextType {
@@ -72,6 +73,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [router]);
 
   const signOut = async () => {
+    // 웹 푸시 토큰 해제 (로그아웃 전에 먼저 처리)
+    if (session?.access_token) {
+      await unregisterWebPush(session.access_token);
+    }
     await supabase.auth.signOut();
     router.push('/login');
   };
