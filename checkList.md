@@ -305,7 +305,7 @@
 - [x] `AppModule` ThrottlerModule.forRootAsync로 전환 — REDIS_URL 있으면 Redis 저장소, 없으면 in-memory 폴백 (2026-05-05)
 - [x] `.env.example`에 `REDIS_URL` 항목 및 Upstash 연결 방법 주석 추가 (2026-05-05)
 - [x] tsc --noEmit 통과 (2026-05-05)
-- [ ] Upstash Redis 무료 인스턴스 생성 후 `REDIS_URL` Vercel 환경변수에 등록 (인프라 작업)
+- [x] Upstash Redis 무료 인스턴스 생성 후 `REDIS_URL` Vercel 공유 환경변수에 등록 (2026-05-05)
 
 ---
 
