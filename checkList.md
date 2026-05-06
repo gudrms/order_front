@@ -421,7 +421,7 @@
 - [x] Toss POS 플러그인: `processOrder` 함수 분해(`buildPluginOrderDto`, `confirmOrCleanup` 등) (2026-05-05)
 - [x] Toss POS 플러그인: catalog sync 실패 alert + 백오프 (2026-05-05)
 - [x] Brand website: 창업 문의 저장 API/DB 모델/관리자 조회 화면 연결 (2026-05-06): `FranchiseInquiry` Prisma 모델 + 공개 접수 API, 브랜드 server action 저장 연동, 관리자 전용 `/franchise-inquiries` 조회/상태/메모 화면 추가. backend/admin/brand tsc 통과.
-- [ ] Brand website: Kakao Map 실제 연동 및 운영 키 환경변수 정리
+- [x] Brand website: Kakao Map 실제 연동 및 운영 키 환경변수 정리 (2026-05-06): `StoreContent.tsx`는 `NEXT_PUBLIC_KAKAO_MAP_KEY`를 사용하고, 로컬에 등록된 키는 운영용으로 확인. 배포 후 지도 렌더링 검증만 별도 필요.
 - [ ] Admin E2E 확장: 주문 상태 변경, 배달 상태 변경, 전액/부분 환불, 매장 설정, 직접 메뉴 등록, MQ 실패 재시도
 - [ ] Table-order E2E 확장: 첫 주문/추가 주문, QR 재진입 세션 유지, MQ 후처리 지연에도 완료 UX 유지
 

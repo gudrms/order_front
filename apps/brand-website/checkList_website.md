@@ -33,16 +33,15 @@
 
 ## 남은 일 — 기존 미해결
 
-- [ ] Kakao Map 실제 연동
+- [x] Kakao Map 실제 연동/운영 키 환경변수 정리 (2026-05-06): `NEXT_PUBLIC_KAKAO_MAP_KEY` 기준으로 연동되어 있고, 로컬 등록 키는 운영용으로 확인. 배포 후 지도 렌더링 검증만 별도 필요.
 - [x] 창업 문의 저장/관리자 연결 (2026-05-06): 백엔드 `FranchiseInquiry` 저장 API와 관리자 전용 조회/상태/메모 화면 연결.
 - [ ] 결제 콜백/리다이렉트 URL 환경변수에서 brand-website 경로 정리 (운영 배포 직전 점검)
 - [ ] DB schema의 `OrderSource` enum에서 `HOMEPAGE` 값 정리 (마이그레이션 영향 검토 후 별도 작업)
 
 ## 다음 순서
 
-1. 창업 문의 데이터를 관리자에서 볼 수 있게 연결
-2. Kakao Map 실제 키/운영 환경 검증
-3. `OrderSource` enum 정리 마이그레이션 영향 평가
+1. Kakao Map 배포 후 지도 렌더링 검증
+2. `OrderSource` enum 정리 마이그레이션 영향 평가
 
 ## 최신 동기화 (2026-05-02)
 
@@ -52,6 +51,6 @@
 
 - [x] **상태**: 4개 앱 중 가장 안정적. SSG 마케팅 사이트 역할에 충실하고 결제·주소·푸시 같은 위험 표면이 없음
 - [x] **결함 없음**: TODO/FIXME/console.log 0건. 자동화 테스트는 0건이나 SSG 특성상 위험도 낮음
-- [x] **운영 위험 1개**: `.env.example`의 `NEXT_PUBLIC_KAKAO_MAP_KEY=` 빈 값 → 운영 배포 시 `StoreContent.tsx`의 카카오 지도가 "Kakao Map API Key Required" 오버레이 표시. 운영 키 등록 후 검증 필요
-- [ ] 운영 카카오 맵 키 등록 + 배포 후 매장 지도 동작 검증
-- [ ] 창업 문의 데이터를 관리자에서 볼 수 있게 연결 (현재 server action만 있고 저장처 없음)
+- [x] **운영 키 등록 확인**: `NEXT_PUBLIC_KAKAO_MAP_KEY` 로컬 등록 값은 운영용. `.env.example`은 비밀값을 싣지 않기 위해 빈 값 유지.
+- [ ] 배포 후 매장 지도 동작 검증
+- [x] 창업 문의 데이터를 관리자에서 볼 수 있게 연결 (2026-05-06): 저장 API/DB 모델/관리자 조회 화면 연결 완료.
