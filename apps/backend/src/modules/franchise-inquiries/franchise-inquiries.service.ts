@@ -1,67 +1,58 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { FranchiseInquiryStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateFranchiseInquiryDto } from './dto/create-franchise-inquiry.dto';
+import { CreateFranchiseInquiryDto, UpdateFranchiseInquiryDto } from './dto/franchise-inquiry.dto';
 
 @Injectable()
 export class FranchiseInquiriesService {
-    constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-    /** 창업 문의 저장 (공개) */
-    async create(dto: CreateFranchiseInquiryDto) {
-        return this.prisma.franchiseInquiry.create({
-            data: {
-                name: dto.name,
-                phone: dto.phone,
-                email: dto.email,
-                area: dto.area,
-                message: dto.message ?? null,
-            },
-        });
+  create(dto: CreateFranchiseInquiryDto) {
+    return this.prisma.franchiseInquiry.create({
+      data: {
+        name: dto.name.trim(),
+        phone: dto.phone.trim(),
+        email: dto.email.trim().toLowerCase(),
+        area: dto.area.trim(),
+        message: dto.message?.trim() || null,
+      },
+    });
+  }
+
+  async findAll(userId: string, status?: FranchiseInquiryStatus) {
+    await this.assertPlatformAdmin(userId);
+
+    return this.prisma.franchiseInquiry.findMany({
+      where: status ? { status } : undefined,
+      orderBy: { createdAt: 'desc' },
+      take: 200,
+    });
+  }
+
+  async update(userId: string, inquiryId: string, dto: UpdateFranchiseInquiryDto) {
+    await this.assertPlatformAdmin(userId);
+
+    const existing = await this.prisma.franchiseInquiry.findUnique({
+      where: { id: inquiryId },
+      select: { id: true },
+    });
+    if (!existing) {
+      throw new NotFoundException('Franchise inquiry not found');
     }
 
-    /** 창업 문의 목록 조회 — 최신순 (관리자) */
-    async findAll(adminId: string) {
-        await this.assertAdmin(adminId);
+    return this.prisma.franchiseInquiry.update({
+      where: { id: inquiryId },
+      data: {
+        ...(dto.status && { status: dto.status }),
+        ...(dto.adminNote !== undefined && { adminNote: dto.adminNote.trim() || null }),
+      },
+    });
+  }
 
-        return this.prisma.franchiseInquiry.findMany({
-            orderBy: { createdAt: 'desc' },
-        });
+  private async assertPlatformAdmin(userId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (user?.role !== 'ADMIN') {
+      throw new ForbiddenException('Only platform admins can manage franchise inquiries');
     }
-
-    /** 읽지 않은 문의 수 */
-    async countUnread(adminId: string): Promise<number> {
-        await this.assertAdmin(adminId);
-
-        return this.prisma.franchiseInquiry.count({
-            where: { isRead: false },
-        });
-    }
-
-    /** 읽음 처리 */
-    async markAsRead(adminId: string, id: string) {
-        await this.assertAdmin(adminId);
-
-        const inquiry = await this.prisma.franchiseInquiry.findUnique({
-            where: { id },
-            select: { id: true },
-        });
-        if (!inquiry) {
-            throw new NotFoundException('창업 문의를 찾을 수 없습니다');
-        }
-
-        return this.prisma.franchiseInquiry.update({
-            where: { id },
-            data: { isRead: true },
-        });
-    }
-
-    private async assertAdmin(userId: string) {
-        const user = await this.prisma.user.findUnique({
-            where: { id: userId },
-            select: { role: true },
-        });
-        if (!user || user.role !== 'ADMIN') {
-            throw new ForbiddenException('관리자만 접근할 수 있습니다');
-        }
-    }
+  }
 }
