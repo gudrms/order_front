@@ -128,10 +128,24 @@ Supabase JWT를 Bearer Token으로 전달합니다.
         .build();
 
     const document = SwaggerModule.createDocument(app, config);
+    
+    // Vercel Analytics inline script for Swagger UI
+    const analyticsScript = `
+        (function() {
+            // Vercel Analytics - Web Analytics for API Documentation
+            window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+            var script = document.createElement('script');
+            script.defer = true;
+            script.src = '/_vercel/insights/script.js';
+            document.head.appendChild(script);
+        })();
+    `;
+    
     SwaggerModule.setup('api/docs', app, document, {
         customSiteTitle: 'Order System API Docs',
         customfavIcon: 'https://nestjs.com/img/logo_text.svg',
         customCss: '.swagger-ui .topbar { display: none }',
+        customJsStr: analyticsScript,
         swaggerOptions: {
             persistAuthorization: true,
             tagsSorter: 'alpha',
