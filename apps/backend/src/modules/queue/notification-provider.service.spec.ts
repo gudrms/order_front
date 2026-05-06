@@ -34,7 +34,7 @@ describe('NotificationProviderService', () => {
         expect(fetchMock).not.toHaveBeenCalled();
     });
 
-    it('sends non in-app notifications through the configured webhook', async () => {
+    it('sends webhook-backed notifications through the configured webhook', async () => {
         process.env.NOTIFICATION_WEBHOOK_URL = 'https://notify.example/send';
         process.env.NOTIFICATION_WEBHOOK_SECRET = 'secret';
         const fetchMock = vi.fn().mockResolvedValue({
@@ -49,7 +49,7 @@ describe('NotificationProviderService', () => {
             notificationType: 'DELIVERY_STATUS_CHANGED',
             orderId: 'order-1',
             storeId: 'store-1',
-            channel: 'EMAIL',
+            channel: 'SMS',
         });
 
         expect(result).toEqual({ provider: 'webhook', messageId: 'message-1' });

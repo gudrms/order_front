@@ -3,7 +3,6 @@ import { mapTossMethod } from '../../common/utils/toss.utils';
 import { MenuManagementMode, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { TossApiService } from '../integrations/toss/toss-api.service';
-import { ResilientPosService } from '../integrations/pos/pos.resilience';
 import { NotificationProviderService } from './notification-provider.service';
 import {
     BackendQueueEvent,
@@ -25,7 +24,6 @@ export class QueueConsumerService {
         private readonly queueService: QueueService,
         private readonly prisma: PrismaService,
         @Optional() private readonly tossApiService?: TossApiService,
-        @Optional() private readonly posService?: ResilientPosService,
         @Optional() private readonly notificationProvider?: NotificationProviderService,
     ) { }
 
@@ -127,6 +125,10 @@ export class QueueConsumerService {
                 this.logger.log(
                     `[order.paid] storeId=${storeId} is ADMIN_DIRECT — skipping pos.send_order for orderId=${orderId}`,
                 );
+                await this.prisma.order.update({
+                    where: { id: orderId },
+                    data: { posSyncStatus: 'SKIPPED', posSyncUpdatedAt: new Date() },
+                });
             }
         } else {
             // storeId 없으면 안전하게 POS 전송 시도
@@ -198,37 +200,12 @@ export class QueueConsumerService {
             return;
         }
 
+        // 실제 Toss POS 등록은 플러그인이 /pos/orders/pending polling 후 SDK로 수행한다.
+        // 여기서 MockPosService로 SENT 처리하면 플러그인 polling 대상에서 빠져 실단말 전송이 막힌다.
         await this.prisma.order.update({
             where: { id: orderId },
             data: {
                 posSyncStatus: 'PENDING',
-                posSyncAttemptCount: { increment: 1 },
-                posSyncLastError: null,
-                posSyncUpdatedAt: new Date(),
-            },
-        });
-
-        if (!this.posService) {
-            throw new Error('POS service is not configured');
-        }
-
-        const sent = await this.posService.sendOrder(order);
-        if (!sent) {
-            await this.prisma.order.update({
-                where: { id: orderId },
-                data: {
-                    posSyncStatus: 'FAILED',
-                    posSyncLastError: 'POS provider returned failure',
-                    posSyncUpdatedAt: new Date(),
-                },
-            });
-            throw new Error('POS provider returned failure');
-        }
-
-        await this.prisma.order.update({
-            where: { id: orderId },
-            data: {
-                posSyncStatus: 'SENT',
                 posSyncLastError: null,
                 posSyncUpdatedAt: new Date(),
             },
@@ -516,8 +493,9 @@ export class QueueConsumerService {
     private buildNotificationDedupeKey(payload: NotificationSendEventPayload): string {
         const recipientId = payload.recipientId || payload.storeId || payload.recipientType;
         const subjectId = payload.orderId || payload.storeId || 'global';
+        const channel = payload.channel || 'IN_APP';
 
-        return `${recipientId}:${payload.notificationType}:${subjectId}`;
+        return `${recipientId}:${payload.notificationType}:${subjectId}:${channel}`;
     }
 
     private getBackoffSeconds(attemptCount: number): number {

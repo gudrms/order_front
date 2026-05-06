@@ -1,5 +1,5 @@
 # 홈페이지 체크리스트
-마지막 업데이트: 2026-05-02 (정책 전환 — 홈페이지 직접 주문 폐기, 배달앱 리다이렉트로 단일화)
+마지막 업데이트: 2026-05-06 (체크리스트 문서 정합성 정리)
 
 ## 현재 요약
 
@@ -36,7 +36,7 @@
 - [x] Kakao Map 실제 연동/운영 키 환경변수 정리 (2026-05-06): `NEXT_PUBLIC_KAKAO_MAP_KEY` 기준으로 연동되어 있고, 로컬 등록 키는 운영용으로 확인. 배포 후 지도 렌더링 검증만 별도 필요.
 - [x] 창업 문의 저장/관리자 연결 (2026-05-06): 백엔드 `FranchiseInquiry` 저장 API와 관리자 전용 조회/상태/메모 화면 연결.
 - [ ] 결제 콜백/리다이렉트 URL 환경변수에서 brand-website 경로 정리 (운영 배포 직전 점검)
-- [ ] DB schema의 `OrderSource` enum에서 `HOMEPAGE` 값 정리 (마이그레이션 영향 검토 후 별도 작업)
+- [x] DB schema의 `OrderChannel` enum에서 `HOMEPAGE` 값 정리 (2026-05-05): schema/migration/`packages/shared`/admin orders sourceLabel/createHomepageOrder 함수까지 일괄 제거. 운영 DB `prisma migrate deploy`만 별도 잔여.
 
 ## 다음 순서
 
