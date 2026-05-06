@@ -114,7 +114,7 @@ export default function FranchiseContent() {
                                 required
                                 className="w-full bg-gray-100 border border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:border-brand-green transition-colors"
                                 placeholder="010-1234-5678"
-                                maxLength={11}
+                                maxLength={13}
                                 onInput={(e) => {
                                     const target = e.target as HTMLInputElement;
                                     target.value = target.value.replace(/[^0-9]/g, '');

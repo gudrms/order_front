@@ -437,7 +437,7 @@
 - [x] Toss POS 플러그인: polling 명칭을 reconciliation으로 정리 (2026-05-05)
 - [x] Toss POS 플러그인: `processOrder` 함수 분해(`buildPluginOrderDto`, `confirmOrCleanup` 등) (2026-05-05)
 - [x] Toss POS 플러그인: catalog sync 실패 alert + 백오프 (2026-05-05)
-- [x] Brand website: 창업 문의 저장 API/DB 모델/관리자 조회 화면 연결 (2026-05-05): `FranchiseInquiry` Prisma 모델 + migration, 백엔드 `POST /franchise-inquiries` (공개) + `GET` / `PATCH /:id/read` (관리자), brand-website `actions.ts` 백엔드 API 연결 + 중복 HTML 버그 수정 + nodemailer 제거, 관리자 `/franchise-inquiries` 페이지 (읽음/미읽음 구분, 확인 완료 버튼). tsc 통과.
+- [x] Brand website: 창업 문의 저장 API/DB 모델/관리자 조회 화면 연결 (2026-05-06): `FranchiseInquiry` Prisma 모델 + migration, 백엔드 `POST /franchise-inquiries` (공개) + `GET` / `PATCH /:id/read` (관리자), brand-website `actions.ts` 백엔드 API 연결 + 중복 HTML 버그 수정 + nodemailer 제거, 관리자 `/franchise-inquiries` 페이지 (읽음/미읽음 구분, 확인 완료 버튼). 관리자 전용 API 권한 제한, 입력 trim/phone 정규화/길이 제한, 서비스 단위 테스트 추가. `backend tsc`, `admin type-check`, `brand-website type-check`, `franchise-inquiries.service.spec.ts` 5 tests 통과.
 - [ ] Brand website: Kakao Map 실제 연동 및 운영 키 환경변수 정리
 - [ ] Admin E2E 확장: 주문 상태 변경, 배달 상태 변경, 전액/부분 환불, 매장 설정, 직접 메뉴 등록, MQ 실패 재시도
 - [ ] Table-order E2E 확장: 첫 주문/추가 주문, QR 재진입 세션 유지, MQ 후처리 지연에도 완료 UX 유지

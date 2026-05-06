@@ -1,6 +1,5 @@
 'use server';
 
-import { sendEmail } from '../../../../../packages/shared/src/utils/email';
 import { cookies } from 'next/headers';
 
 interface FranchiseInquiryState {
@@ -9,82 +8,81 @@ interface FranchiseInquiryState {
 }
 
 export async function submitFranchiseInquiry(prevState: any, formData: FormData): Promise<FranchiseInquiryState> {
-    // Rate Limiting (Cookie-based)
+    // Rate Limiting (Cookie-based, 60초 쿨다운)
     const cookieStore = await cookies();
     const lastSubmit = cookieStore.get('last-franchise-inquiry');
 
     if (lastSubmit) {
         const lastTime = parseInt(lastSubmit.value);
-        const now = Date.now();
-        const timeDiff = now - lastTime;
-        const cooldown = 60 * 1000; // 60 seconds
+        const timeDiff = Date.now() - lastTime;
+        const cooldown = 60_000;
 
         if (timeDiff < cooldown) {
             const remaining = Math.ceil((cooldown - timeDiff) / 1000);
-            return { success: false, message: `너무 많은 요청이 발생했습니다. ${remaining}초 후에 다시 시도해주세요.` };
+            return {
+                success: false,
+                message: `너무 많은 요청이 발생했습니다. ${remaining}초 후에 다시 시도해주세요.`,
+            };
         }
     }
 
-    const name = formData.get('name') as string;
-    const phone = formData.get('phone') as string;
-    const email = formData.get('email') as string;
-    const area = formData.get('area') as string;
-    const message = formData.get('message') as string;
     const honeypot = formData.get('website') as string;
 
-    // Honeypot Check
     if (honeypot) {
-        // Bot detected - return success to fool the bot, but don't send email
         return { success: true, message: '가맹 상담 신청이 완료되었습니다.' };
     }
 
-    if (!name || !phone || !area || !email) {
+    const name = (formData.get('name') as string)?.trim();
+    const phone = (formData.get('phone') as string)?.replace(/[^0-9]/g, '');
+    const email = (formData.get('email') as string)?.trim().toLowerCase();
+    const area = (formData.get('area') as string)?.trim();
+    const message = (formData.get('message') as string)?.trim();
+
+    if (!name || !phone || !email || !area) {
         return { success: false, message: '필수 항목을 모두 입력해주세요.' };
     }
 
-    // Validation
-    const phoneRegex = /^[0-9]{11}$/;
-    if (!phoneRegex.test(phone)) {
-        return { success: false, message: '연락처는 11자리 숫자만 입력해주세요.' };
+    if (!/^[0-9]{10,11}$/.test(phone)) {
+        return { success: false, message: '연락처는 10~11자리 숫자만 입력해주세요.' };
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         return { success: false, message: '올바른 이메일 형식을 입력해주세요.' };
     }
 
-    // Email Content
-    const emailHtml = `
-        <h2>[타코몰리] 새로운 가맹 문의가 도착했습니다.</h2>
-        <p><strong>이름:</strong> ${name}</p>
-        <p><strong>이름:</strong> ${name}</p>
-        <p><strong>연락처:</strong> ${phone}</p>
-        <p><strong>이메일:</strong> ${email}</p>
-        <p><strong>희망 지역:</strong> ${area}</p>
-        <p><strong>희망 지역:</strong> ${area}</p>
-        <p><strong>문의 내용:</strong></p>
-        <pre>${message}</pre>
-    `;
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 
-    // Send Email (to admin)
-    // In a real app, EMAIL_TO would be in env, or hardcoded for now
-    const adminEmail = process.env.ADMIN_EMAIL || 'vndanwl@naver.com';
+    try {
+        const res = await fetch(`${apiUrl}/franchise-inquiries`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, phone, email, area, message: message || undefined }),
+            signal: AbortSignal.timeout(10_000),
+        });
 
-    const result = await sendEmail({
-        to: adminEmail,
-        subject: `[가맹문의] ${name}님 - ${area}`,
-        html: emailHtml,
+        if (!res.ok) {
+            const body = await res.json().catch(() => ({}));
+            return {
+                success: false,
+                message: body?.message ?? '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
+            };
+        }
+    } catch {
+        return {
+            success: false,
+            message: '서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.',
+        };
+    }
+
+    cookieStore.set('last-franchise-inquiry', Date.now().toString(), {
+        maxAge: 60,
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
     });
 
-    if (result.success) {
-        // Set Rate Limit Cookie
-        cookieStore.set('last-franchise-inquiry', Date.now().toString(), {
-            maxAge: 60, // 1 minute
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-        });
-        return { success: true, message: '가맹 상담 신청이 완료되었습니다. 담당자가 곧 연락드리겠습니다.' };
-    } else {
-        return { success: false, message: '메일 전송에 실패했습니다. 잠시 후 다시 시도해주세요.' };
-    }
+    return {
+        success: true,
+        message: '가맹 상담 신청이 완료되었습니다. 담당자가 곧 연락드리겠습니다.',
+    };
 }
