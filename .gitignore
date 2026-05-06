@@ -4,7 +4,9 @@ node_modules
 .pnp.js
 
 # pnpm
+# Keep the workspace lockfile committed for CI/deploy cache resolution.
 pnpm-lock.yaml
+!/pnpm-lock.yaml
 .pnpm-debug.log*
 
 # npm (pnpm 프로젝트에서 불필요)
