@@ -1,17 +1,17 @@
 # 관리자 체크리스트
 
-마지막 업데이트: 2026-05-03 (런칭 준비도 감사 결과 반영)
+마지막 업데이트: 2026-05-06 (체크리스트 문서 정합성 정리)
 
 ## 🚨 1차 런칭 Blocker
 
 - [x] **[P0] 대시보드 하드코딩 stats 제거** (2026-05-04): 가짜 숫자(45건/₩842,000/3건/2종)를 `—` placeholder + "통계 데이터 연동 준비 중" 안내 배너로 전환. 4개 카드 디자인 유지하여 추후 API 연결 시 뼈대 재사용.
 - [x] **후속**: 매장별 일일 통계 API 구현 (2026-05-05): `GET /stores/:storeId/stats/daily` 백엔드 구현 + admin 대시보드 useQuery 연결. 60초 자동 갱신, 매출 금액 포맷, 로딩/미선택 상태 처리.
-- [ ] **[P0] CORS origin 화이트리스트에 admin 도메인 포함 확인**: 백엔드 `apps/backend/src/main.ts:145` 단일 `FRONTEND_URL`로는 admin/brand-website/delivery 동시 허용 불가 — backend 측 수정과 함께 admin 운영 origin 명시
+- [x] **[P0] CORS origin 화이트리스트에 admin 도메인 포함 확인** (2026-05-04): 백엔드 `apps/backend/src/main.ts` 운영 기본값에 tacomole.kr 5개 도메인(`tacomole.kr`/`www`/`admin`/`delivery`/`order`) + Capacitor scheme 자동 허용. `FRONTEND_URLS` 콤마 구분 환경변수로 추가 origin override 가능.
 
 ## ⚠️ High risk
 
-- [ ] 관리자 자동화 테스트 0건 — Playwright 도입 (`ADMIN_E2E.md`는 수동 점검표)
-- [ ] 직원 호출 Realtime/관리자 수신 화면 미연결 (테이블오더 측에서 호출 발행, 관리자에서 수신/알림 화면 부재)
+- [x] 관리자 자동화 테스트 0건 — Playwright 도입 (2026-05-06): `e2e/admin/auth.spec.ts`(10 tests), `operations.spec.ts`(MQ 재시도), `orders.spec.ts`(주문/배달 상태/환불), `store.spec.ts`(매장 설정) 추가. CI Playwright job 통합. 수동 점검표 `ADMIN_E2E.md`는 보조용.
+- [x] 직원 호출 Realtime/관리자 수신 화면 연결 (2026-05-05): `useStaffCalls` Realtime 구독 + 30초 폴링, `StaffCallNotification` 토스트(2회 알림음/8초 자동닫기), `/calls` 페이지 + 사이드바 메뉴 + DashboardLayout 전역 마운트.
 
 ## 현재 요약
 
@@ -88,8 +88,8 @@
 - [x] MQ 운영 화면에서 알림 발송 실패 수동 재시도 버튼 연결
 - [x] 관리자웹 FCM 웹 푸시 연동: Service Worker, `ADMIN_WEB` 토큰 등록/로그아웃 삭제, 포그라운드 알림 표시 (2026-05-05)
 - [x] 관리자웹 Sentry Next instrumentation 최신화: `onRequestError`, `onRouterTransitionStart`, client config 통합 (2026-05-05)
-- [ ] MQ 운영 화면 브라우저 E2E 검증
-- [ ] Playwright 자동화 설정 및 테스트 러너 도입 검토
+- [x] MQ 운영 화면 브라우저 E2E 검증 (2026-05-06): `e2e/admin/operations.spec.ts` — Supabase 세션/API mock 기반 POS/알림 실패 표시 + 재시도 PATCH 검증.
+- [x] Playwright 자동화 설정 및 테스트 러너 도입 (2026-05-05): 루트 `playwright.config.ts` admin/delivery 두 프로젝트, `webServer` 자동 기동, CI workflow에 e2e job 추가.
 
 ## 검증 기록
 
@@ -100,12 +100,12 @@
 - [x] `apps/backend`: `vitest run src/modules/orders/orders.service.spec.ts` 17 tests 통과
 - [x] `apps/admin`: `pnpm --filter admin build` 통과 및 `/operations` 라우트 생성 확인
 - [x] 관리자 MQ 운영 화면 브라우저 진입 시 미인증 사용자를 로그인 화면으로 리다이렉트 확인
-- [ ] 관리자 주문 상태 변경/배달 상태 변경 브라우저 E2E
-- [ ] 관리자 Toss 전액/부분 환불 브라우저 E2E
-- [ ] 관리자 매장 설정 브라우저 E2E
+- [x] 관리자 주문 상태 변경/배달 상태 변경 브라우저 E2E (2026-05-06): `e2e/admin/orders.spec.ts` — `PAID -> CONFIRMED`, `PENDING -> ASSIGNED` PATCH 검증.
+- [x] 관리자 Toss 전액/부분 환불 브라우저 E2E (2026-05-06): `e2e/admin/orders.spec.ts` — 전액 취소/부분 환불 payload 검증.
+- [x] 관리자 매장 설정 브라우저 E2E (2026-05-06): `e2e/admin/store.spec.ts` — 기본 정보/배달 설정 수정 후 `PATCH /stores/:storeId` payload 검증.
 - [ ] 관리자 직접 메뉴 등록 브라우저 E2E
 - [ ] Toss 메뉴 동기화 브라우저 E2E
-- [ ] MQ 운영 화면 POS/알림 실패 조회 및 재시도 브라우저 E2E: 로그인 세션과 실패 테스트 데이터 필요
+- [x] MQ 운영 화면 POS/알림 실패 조회 및 재시도 브라우저 E2E (2026-05-06): `e2e/admin/operations.spec.ts` — Supabase 세션/API mock으로 검증.
 
 ## 다음 순서
 
@@ -121,14 +121,14 @@
 - [x] 주문 목록에서 `type`, `source`, `paymentStatus`, 배송 상태 노출 완료
 - [x] 매장 운영 모드(`TOSS_POS` / `ADMIN_DIRECT`) 분기 및 직접 메뉴 관리 UI 연결 완료
 - [x] 테이블오더 직원 호출 API는 백엔드까지 연결 완료
-- [ ] 직원 호출 Realtime/관리자 수신 화면 연결
-- [ ] MQ 운영 화면 브라우저 E2E
-- [ ] 주문 상태/배송 상태/환불/매장 설정/메뉴 관리 브라우저 E2E
+- [x] 직원 호출 Realtime/관리자 수신 화면 연결 (2026-05-05)
+- [x] MQ 운영 화면 브라우저 E2E (2026-05-06)
+- [x] 주문 상태/배송 상태/환불/매장 설정 브라우저 E2E (2026-05-06): 메뉴 관리 E2E는 별도 잔여.
 
 ## 최신 동기화 (2026-05-03) — 런칭 준비도 감사
 
 - [x] **결함 식별**: 대시보드 home page hardcoded stats (`page.tsx:7-12`) — 점주 1차 노출 신뢰도 즉사 위험
 - [x] **결함 식별**: 자동화 테스트 0건. `*.test.*`/`*.spec.*` 검색 결과 0
-- [ ] [P0] 대시보드 stats 실 API 연결 또는 placeholder 전환
-- [ ] MQ 운영 화면이 실제 cron 부재 환경에서 보일 메시지 정의 (백엔드 cron 도입 전까지 "처리 대기" 상태가 무한히 쌓일 수 있음)
+- [x] [P0] 대시보드 stats 실 API 연결 (2026-05-05): `GET /stores/:storeId/stats/daily` 4개 카드 useQuery 연결.
+- [x] MQ 운영 화면 cron 환경 메시지 (2026-05-04): GitHub Actions `backend-cron.yml`로 5분 주기 `POST /queue/process-once` 자동 트리거 도입. 정상 운영 환경에서 처리 지연 누적 없음.
 - [ ] 운영자 인수인계용 운영 매뉴얼/장애 대응 문서 작성
