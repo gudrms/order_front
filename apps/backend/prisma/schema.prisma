@@ -886,6 +886,27 @@ model UserCoupon {
   @@index([expiresAt])
 }
 
+/// 창업 가맹 문의 (홈페이지 접수)
+model FranchiseInquiry {
+  id        String   @id @default(uuid())
+  /// 신청자 이름
+  name      String
+  /// 연락처 (숫자 10~11자리)
+  phone     String
+  /// 이메일
+  email     String
+  /// 희망 창업 지역
+  area      String
+  /// 추가 문의 내용
+  message   String?
+  /// 읽음 처리 여부 (관리자 확인 시 true)
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([isRead])
+}
+
 /// 배달 주소
 model UserAddress {
   id              String   @id @default(uuid())
