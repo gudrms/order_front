@@ -34,7 +34,7 @@
 ## 남은 일 — 기존 미해결
 
 - [ ] Kakao Map 실제 연동
-- [ ] 창업 문의 저장/관리자 연결
+- [x] 창업 문의 저장/관리자 연결 (2026-05-06): 백엔드 `FranchiseInquiry` 저장 API와 관리자 전용 조회/상태/메모 화면 연결.
 - [ ] 결제 콜백/리다이렉트 URL 환경변수에서 brand-website 경로 정리 (운영 배포 직전 점검)
 - [ ] DB schema의 `OrderSource` enum에서 `HOMEPAGE` 값 정리 (마이그레이션 영향 검토 후 별도 작업)
 

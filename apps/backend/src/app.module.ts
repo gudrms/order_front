@@ -21,6 +21,7 @@ import { QueueModule } from './modules/queue';
 import { CouponsModule } from './modules/coupons/coupons.module';
 import { CallsModule } from './modules/calls/calls.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { FranchiseInquiriesModule } from './modules/franchise-inquiries/franchise-inquiries.module';
 
 @Module({
     imports: [
@@ -62,6 +63,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
         CouponsModule,
         CallsModule,
         NotificationsModule,
+        FranchiseInquiriesModule,
     ],
     controllers: [AppController, HealthController],
     providers: [
