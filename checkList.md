@@ -1,5 +1,22 @@
 # Taco Mono 루트 체크리스트
-마지막 업데이트: 2026-05-03 (런칭 준비도 감사 — Launch blocker 5개, High risk 5개 식별)
+마지막 업데이트: 2026-05-06 (git log + 코드단 잔여 감사 — 실환경 테스트 전 코드 마무리 항목 식별)
+
+## 🔎 2026-05-06 코드단 잔여 감사 메모 (다음 세션 우선 확인)
+
+최근 git log 기준으로 `order-core`, Toss POS 플러그인, Queue/FCM/Sentry/E2E가 연속 정리되었으나, 실환경 테스트 전에 코드로 먼저 닫을 수 있는 결함을 추가 식별했다.
+
+- [x] **[P0] 알림 dedupe key 채널 충돌 식별**: `notification.send` idempotency/dedupe key가 `channel`을 포함하지 않아 같은 주문의 `IN_APP`과 `PUSH` 알림이 동일 key로 처리될 수 있음. 결과적으로 먼저 처리된 채널만 `SUCCEEDED`가 되고 다른 채널은 큐에서 archive될 위험이 있음.
+  - [x] 코드 수정: `apps/backend/src/modules/queue/queue.service.ts`, `queue-consumer.service.ts`의 notification dedupe key를 `{recipient}:{type}:{subject}:{channel}` 구조로 변경.
+  - [x] 검증 완료 (2026-05-06): `pnpm --filter backend exec vitest run src/modules/queue/queue-consumer.service.spec.ts src/modules/queue/queue-operations.service.spec.ts src/modules/queue/notification-provider.service.spec.ts src/modules/integrations/pos/pos.controller.spec.ts` — 4 files / 29 tests 통과.
+- [x] **[P0] POS 큐가 실제 Toss POS 플러그인 polling을 막는 흐름 식별**: `pos.send_order` consumer가 백엔드 `MockPosService`를 호출한 뒤 `posSyncStatus=SENT`로 바꾸면, 실제 `toss-pos-plugin`의 `GET /pos/orders/pending` polling 대상(`PAID`, `tossOrderId IS NULL`, `posSyncStatus in PENDING/FAILED`)에서 빠져 실단말 전송이 막힐 수 있음.
+  - [x] 코드 수정: `apps/backend/src/modules/queue/queue-consumer.service.ts`에서 `TOSS_POS` 주문의 `pos.send_order`는 실제 SDK 전송을 하지 않고 `PENDING` 유지. 실제 등록은 `apps/toss-pos-plugin` polling + SDK가 담당.
+  - [x] 코드 수정: `ADMIN_DIRECT` 매장은 `order.paid` 처리 시 `posSyncStatus=SKIPPED`로 명시 처리해 POS plugin polling에 남지 않게 함.
+  - [x] 코드 수정: `apps/backend/src/modules/integrations/pos/pos.controller.ts`의 pending polling 조회에 `store.menuManagementMode = TOSS_POS` 방어 조건 추가.
+  - [x] 코드 정리: `QueueConsumerService`에서 더 이상 사용하지 않는 `ResilientPosService` 주입 제거.
+  - [x] 검증 완료 (2026-05-06): 위 queue/pos/notification 테스트 통과 + `pnpm --filter backend exec tsc --noEmit` 통과.
+- [ ] **[P1] 체크리스트 문서 정합성 정리**: 루트 체크리스트와 앱별 체크리스트(`apps/admin/CHECKLIST.md`, `apps/delivery-customer/checkList_delivery.md`, `apps/brand-website/checkList_website.md`)에 이미 완료된 항목이 `[ ]`로 남아 있음. 다음 세션에서 “실제 코드 기준 완료/미완료”로 문서 정리 필요.
+- [ ] **[P1] 브라우저 E2E 코드 보강 가능 영역**: 실환경 테스트 전에도 Playwright로 관리자 주문/환불/MQ, 테이블오더 첫 주문/추가 주문 smoke는 mock/seed 기반으로 일부 자동화 가능. 현재 `e2e/admin/auth.spec.ts`, `e2e/delivery-customer/pages.spec.ts` 수준만 존재.
+- [ ] **[P2] 런타임 로그 정리 후보**: `packages/shared/src/api/client.ts`, `apps/table-order/src/lib/api/client.ts`, `apps/admin/src/hooks/useRealtimeOrders.ts`에 개발용 `console.log`가 남아 있음. 운영 빌드 노출/소음 여부 확인 후 dev-only guard 또는 제거 검토.
 
 ## 🚨 1차 런칭 Blocker (admin / brand-website / delivery-customer + backend)
 
@@ -18,7 +35,7 @@
   - [x] 백엔드: 토큰 DB 저장, Firebase Admin 발송 API, 큐 연동 완료 (2026-05-04)
   - [x] 배달앱(고객): Capacitor 푸시 알림 프론트 완성 (2026-05-05). `packages/shared/api/endpoints/devices.ts` 추가. `hooks/usePushNotifications.ts` — 권한 요청/토큰 등록/포어그라운드 표시/탭 라우팅. `AuthContext.signOut` 로그아웃 시 토큰 삭제. tsc 통과. 실기기 FCM 토큰 발급 E2E 검증 필요.
   - [x] 관리자웹(사장): PWA Service Worker 기반 웹 푸시 연동, `ADMIN_WEB` 토큰 백엔드 등록/로그아웃 삭제, 포그라운드 표시 연결 (2026-05-05). 운영 Firebase env/VAPID 입력 후 브라우저 수신 E2E 필요.
-- [ ] Throttler in-memory store가 Vercel 다중 인스턴스에서 무력화 → Redis store 도입 검토
+- [x] Throttler in-memory store가 Vercel 다중 인스턴스에서 무력화 → Redis store 도입 완료 (2026-05-05): B-4 — `@nest-lab/throttler-storage-redis` + Upstash Redis 적용.
 - [x] `useDeliveryTracking.ts` mock 데이터 처리 (2026-05-04): import 사용처 0건 확인 후 `features/delivery-tracking/` 디렉토리 통째 삭제 (payment dead code와 동일 패턴). 실 배달 추적은 `app/orders/[id]/OrderDetailClient.tsx` + `@order/shared` `DeliveryStatus`로 이미 정상 동작
 - [x] `apps/delivery-customer/src/components/menu/MenuDetail.tsx` menuId 미연결 (2026-05-04): import 사용처 0건 확인 후 dead code 삭제. 실 메뉴 상세는 `MenuDetailBottomSheet.tsx`에서 `useMenuDetail` hook + Zustand `useUIStore.selectedMenuId`로 정상 동작
 - [x] Capacitor `allowMixedContent` 운영 빌드 차단 (2026-05-04): 기존 `cleartext` 분기 패턴(`serverUrl?.startsWith('http://')`)을 `allowMixedContent`에도 적용. 운영(HTTPS / unset)에서 false, 로컬 HTTP dev 서버에서만 true. MITM 공격면 감소
@@ -28,10 +45,10 @@
 
 ## 🧱 Tech debt (누적 시 문제)
 
-- [ ] 프론트 자동화 테스트 0건 (admin/brand-website/delivery-customer) — Playwright 도입
+- [x] 프론트 자동화 테스트 도입 완료 (2026-05-05): E-3 — Playwright 18 tests (admin 7 + delivery 11), CI 재작성.
 - [x] `apps/backend/src/modules/orders/orders.controller.ts` 인라인 OrderStatus enum 제거 (Prisma enum 사용) (2026-05-05)
 - [x] 백엔드 단일 serverless function 라우팅 개선 (2026-05-05): `/api/v1/queue/*`를 `src/queue.ts` 전용 Vercel function으로 분리, 일반 API 30s/queue 60s timeout 설정.
-- [ ] delivery-customer console.log 56개 정리 (Sentry treeshake 의존)
+- [x] delivery-customer console.log 정리 완료 (2026-05-05): B-3 — 잔여 6개 제거/변환 + `next.config.ts` `compiler.removeConsole` 프로덕션 적용.
 - [ ] `apps/admin/CHECKLIST.md`, `apps/delivery-customer/checkList_delivery.md` 등 분기된 미완료 항목 통합
 
 ## 큰 그림
@@ -420,7 +437,7 @@
 - [x] Toss POS 플러그인: polling 명칭을 reconciliation으로 정리 (2026-05-05)
 - [x] Toss POS 플러그인: `processOrder` 함수 분해(`buildPluginOrderDto`, `confirmOrCleanup` 등) (2026-05-05)
 - [x] Toss POS 플러그인: catalog sync 실패 alert + 백오프 (2026-05-05)
-- [ ] Brand website: 창업 문의 저장 API/DB 모델/관리자 조회 화면 연결
+- [x] Brand website: 창업 문의 저장 API/DB 모델/관리자 조회 화면 연결 (2026-05-05): `FranchiseInquiry` Prisma 모델 + migration, 백엔드 `POST /franchise-inquiries` (공개) + `GET` / `PATCH /:id/read` (관리자), brand-website `actions.ts` 백엔드 API 연결 + 중복 HTML 버그 수정 + nodemailer 제거, 관리자 `/franchise-inquiries` 페이지 (읽음/미읽음 구분, 확인 완료 버튼). tsc 통과.
 - [ ] Brand website: Kakao Map 실제 연동 및 운영 키 환경변수 정리
 - [ ] Admin E2E 확장: 주문 상태 변경, 배달 상태 변경, 전액/부분 환불, 매장 설정, 직접 메뉴 등록, MQ 실패 재시도
 - [ ] Table-order E2E 확장: 첫 주문/추가 주문, QR 재진입 세션 유지, MQ 후처리 지연에도 완료 UX 유지
