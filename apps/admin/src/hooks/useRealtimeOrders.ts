@@ -25,8 +25,6 @@ export function useRealtimeOrders(storeId: string) {
           filter: `store_id=eq.${storeId}`, // ⭐️ 내 매장 주문만 필터링
         },
         (payload) => {
-          console.log('Realtime Order Update:', payload);
-
           if (payload.eventType === 'INSERT') {
             const order = payload.new as {
               id?: string;
