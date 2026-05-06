@@ -40,13 +40,19 @@ pnpm install
 pnpm dev
 ```
 
-### 특정 앱만 실행
+### 특정 앱만 실행 (TurboRepo 사용)
 ```bash
-pnpm --filter table-order dev         # localhost:3000 (테이블 주문)
-pnpm --filter delivery-customer dev   # localhost:3001 (배달 주문)
-pnpm --filter brand-website dev       # localhost:3002 (브랜드 웹사이트)
-pnpm --filter admin dev               # localhost:3003 (관리자)
-pnpm --filter backend dev             # localhost:4000 (백엔드)
+pnpm dev --filter=table-order         # localhost:3000 (테이블 주문)
+pnpm dev --filter=delivery-customer   # localhost:3001 (배달 주문)
+pnpm dev --filter=brand-website       # localhost:3002 (브랜드 웹사이트)
+pnpm dev --filter=admin               # localhost:3003 (관리자)
+pnpm dev --filter=backend             # localhost:4000 (백엔드)
+```
+
+### 토스 POS 플러그인 실행 (단독 실행)
+> **참고**: `toss-pos-plugin`은 루트 `pnpm dev` 명령어의 동시 실행에서 제외되어 있으므로 단독으로 실행해야 합니다.
+```bash
+pnpm --filter toss-pos-plugin dev     # localhost:5173 (Vite)
 ```
 
 ---
@@ -103,6 +109,12 @@ pnpm clean
 ### pnpm이 없다는 에러
 ```bash
 npm install -g pnpm
+```
+
+### Windows에서 pnpm 실행 시 "스크립트를 실행할 수 없으므로..." 보안 오류 (Execution Policy)
+Windows PowerShell에서 스크립트 실행 권한이 막혀있을 때 발생합니다. PowerShell을 관리자 권한으로 실행한 후 아래 명령어를 입력하세요.
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 ```
 
 ### workspace:* 에러
