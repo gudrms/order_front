@@ -45,6 +45,7 @@ export class PosController {
                 status: 'PAID',
                 tossOrderId: null,
                 posSyncStatus: { in: ['PENDING', 'FAILED'] },
+                store: { menuManagementMode: 'TOSS_POS' },
             },
             include: {
                 items: {

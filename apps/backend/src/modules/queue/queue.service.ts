@@ -175,7 +175,8 @@ export class QueueService {
     private buildNotificationDedupeKey(payload: NotificationSendEventPayload): string {
         const recipientId = payload.recipientId || payload.storeId || payload.recipientType;
         const subjectId = payload.orderId || payload.storeId || 'global';
+        const channel = payload.channel || 'IN_APP';
 
-        return `${recipientId}:${payload.notificationType}:${subjectId}`;
+        return `${recipientId}:${payload.notificationType}:${subjectId}:${channel}`;
     }
 }
