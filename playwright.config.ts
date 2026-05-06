@@ -78,12 +78,16 @@ export default defineConfig({
   ],
 
   webServer: [
-    // ── Admin 개발 서버 ───────────────────────────────────────────────────
+    // ── Admin 서버 ────────────────────────────────────────────────────────
+    // CI: 미리 build 된 산출물을 next start 로 띄움 (콜드스타트 빠름)
+    // 로컬: next dev 로 hot reload 가능하게 유지
     {
-      command: 'pnpm --filter admin exec next dev --port 3003',
+      command: isCI
+        ? 'pnpm --filter admin exec next start --port 3003'
+        : 'pnpm --filter admin exec next dev --port 3003',
       url: 'http://localhost:3003',
       reuseExistingServer: !isCI,
-      timeout: 120_000,
+      timeout: 180_000,
       env: buildEnv({
         // Firebase Web Push — 테스트에서는 불필요하므로 빈 값
         NEXT_PUBLIC_FIREBASE_API_KEY: '',
@@ -95,12 +99,14 @@ export default defineConfig({
       }),
     },
 
-    // ── Delivery-Customer 개발 서버 ──────────────────────────────────────
+    // ── Delivery-Customer 서버 ───────────────────────────────────────────
     {
-      command: 'pnpm --filter delivery-customer exec next dev --port 3001',
+      command: isCI
+        ? 'pnpm --filter delivery-customer exec next start --port 3001'
+        : 'pnpm --filter delivery-customer exec next dev --port 3001',
       url: 'http://localhost:3001',
       reuseExistingServer: !isCI,
-      timeout: 120_000,
+      timeout: 180_000,
       env: buildEnv(),
     },
   ],
