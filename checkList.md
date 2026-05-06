@@ -454,7 +454,7 @@
 #### F-1. 운영 배포/DB 검증
 - [ ] 운영 DB `prisma migrate deploy` 실행 전 백업/마이그레이션 diff 확인
 - [ ] 운영 DB `OrderChannel.HOMEPAGE` 제거 migration 적용 후 주문 조회/관리자 화면 smoke 검증
-- [ ] Vercel Production/Preview 환경변수 분리 상태 확인 (`FRONTEND_URLS`, `REDIS_URL`, Firebase, Toss, Sentry)
+- [ ] Vercel Production/Preview 환경변수 분리 상태 확인 (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `FRONTEND_URLS`, `REDIS_URL`, Firebase, Toss, Sentry)
 - [ ] GitHub Actions cron `POST /queue/process-once` 실제 실행 로그 확인
 - [ ] Queue backlog/failed event가 관리자 `/operations`에서 조회·재시도되는지 운영 데이터로 확인
 
