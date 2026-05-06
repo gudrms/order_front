@@ -122,6 +122,12 @@ enum NotificationStatus {
   SKIPPED
 }
 
+enum FranchiseInquiryStatus {
+  NEW
+  CONTACTED
+  CLOSED
+}
+
 /// 세션 상태
 enum SessionStatus {
   ACTIVE       // 활성 (손님 있음)
@@ -935,4 +941,22 @@ model UserAddress {
   orderDeliveries OrderDelivery[]
 
   @@index([userId])
+}
+
+model FranchiseInquiry {
+  id        String                 @id @default(uuid())
+  name      String
+  phone     String
+  email     String
+  area      String
+  message   String?                @db.Text
+  status    FranchiseInquiryStatus @default(NEW)
+  adminNote String?                @db.Text
+  createdAt DateTime               @default(now())
+  updatedAt DateTime               @updatedAt
+
+  @@index([status, createdAt])
+  @@index([createdAt])
+  @@index([phone])
+  @@index([email])
 }
