@@ -422,7 +422,7 @@
 - [x] Toss POS 플러그인: catalog sync 실패 alert + 백오프 (2026-05-05)
 - [x] Brand website: 창업 문의 저장 API/DB 모델/관리자 조회 화면 연결 (2026-05-06): `FranchiseInquiry` Prisma 모델 + 공개 접수 API, 브랜드 server action 저장 연동, 관리자 전용 `/franchise-inquiries` 조회/상태/메모 화면 추가. backend/admin/brand tsc 통과.
 - [x] Brand website: Kakao Map 실제 연동 및 운영 키 환경변수 정리 (2026-05-06): `StoreContent.tsx`는 `NEXT_PUBLIC_KAKAO_MAP_KEY`를 사용하고, 로컬에 등록된 키는 운영용으로 확인. 배포 후 지도 렌더링 검증만 별도 필요.
-- [ ] Admin E2E 확장: 매장 설정, 직접 메뉴 등록
+- [ ] Admin E2E 확장: 직접 메뉴 등록
 - [ ] Table-order E2E 확장: 첫 주문/추가 주문, QR 재진입 세션 유지, MQ 후처리 지연에도 완료 UX 유지
 
 #### E-2. Toss SDK/POS 채널 정책 확정 및 구현
@@ -435,6 +435,7 @@
 - [x] 관리자 E2E 기본 플로우 확장 (2026-05-06): `e2e/admin/auth.spec.ts` — 로그인 폼 렌더링, required 검증, 잘못된 자격증명 에러 표시, 미인증 보호 라우트 7개(/, /orders, /menu, /store, /calls, /operations, /franchise-inquiries) → /login 리다이렉트. 총 10개 테스트.
 - [x] 관리자 MQ 운영 화면 E2E (2026-05-06): `e2e/admin/operations.spec.ts` — 인증 세션/API mock으로 POS 실패 1건 + 알림 실패 1건 표시, 각 재시도 PATCH 요청 검증. playwright --list 1 test 확인, admin tsc 통과.
 - [x] 관리자 주문/배달 상태/환불 E2E (2026-05-06): `e2e/admin/orders.spec.ts` — 인증 세션/API mock으로 `/orders` 주문 목록 렌더링, 주문 상태 `PAID -> CONFIRMED` PATCH, 배달 상태 `PENDING -> ASSIGNED` PATCH, 전액 취소/부분 환불 payload 검증. 실제 Playwright Chromium 실행 2 tests 통과, admin tsc 통과.
+- [x] 관리자 매장 설정 E2E (2026-05-06): `e2e/admin/store.spec.ts` — 인증 세션/API mock으로 `/store` 기본 정보/배달 설정 수정 후 `PATCH /stores/:storeId` payload 검증. 실제 Playwright Chromium 실행 1 test 통과, admin tsc 통과.
 - [x] 배달앱 E2E 기본 플로우 (2026-05-05): `e2e/delivery-customer/pages.spec.ts` — 홈 로드, 로그인 페이지 OAuth 버튼, 미인증 주문내역 안내, 메뉴 접근. 총 11개 테스트. playwright --list 18 tests 확인.
 - [x] CI GitHub Actions에 Playwright 추가 (2026-05-05): `.github/workflows/ci.yml` 전면 재작성 — pnpm 기반, backend(vitest) + frontend-typecheck(matrix: admin/delivery-customer/brand-website) + e2e(Playwright) 3개 job. 깨진 `apps/frontend` 참조 완전 제거. 실패 시 `playwright-report` artifact 7일 보관.
 - [ ] 배달앱 결제 플로우 E2E (Toss 테스트 카드): 주문 생성 → 위젯 → 승인 → PAID (실 환경 필요)
