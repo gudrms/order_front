@@ -127,7 +127,7 @@ export default defineConfig({
     // ── Table-Order 개발 서버 ────────────────────────────────────────────
     {
       command: 'pnpm --filter table-order exec next dev --port 3002',
-      url: 'http://localhost:3002',
+      url: 'http://localhost:3002/favicon.ico',
       reuseExistingServer: !isCI,
       timeout: 300_000,
       env: buildEnv(),

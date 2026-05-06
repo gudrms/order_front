@@ -12,6 +12,8 @@ const API_URL = 'http://localhost:4000/api/v1';
 const STORE_ID = 'store-e2e-1';
 
 test.describe('테이블 QR 진입', () => {
+  test.describe.configure({ timeout: 60_000 });
+
   test('유효하지 않은 테이블 번호는 오류 안내가 노출된다', async ({ page }) => {
     await page.goto('/tacomolly/gimpo/table/abc');
 

@@ -48,7 +48,7 @@ export function startStubBackend(port = 4000): Promise<Server> {
   return new Promise((resolve, reject) => {
     const server = createServer(handle);
     server.once('error', reject);
-    server.listen(port, '127.0.0.1', () => {
+    server.listen(port, () => {
       server.removeListener('error', reject);
       resolve(server);
     });
