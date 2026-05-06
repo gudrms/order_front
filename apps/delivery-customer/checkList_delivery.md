@@ -1,10 +1,10 @@
 # 배달앱 체크리스트
-마지막 업데이트: 2026-05-03 (런칭 준비도 감사 결과 반영)
+마지막 업데이트: 2026-05-06 (체크리스트 문서 정합성 정리)
 
 ## 🚨 1차 런칭 Blocker
 
 - [x] **[P0] 결제 dead code 삭제** (2026-05-04): `src/features/payment/` 디렉토리 통째 삭제 (`payment.ts` + `types.ts`). import 사용처 0건 확인 후 제거. `tsc --noEmit` 통과.
-- [ ] **[P0] 결제 흐름 의존 트리거 확인**: 결제 자체는 동작하나 결제 완료 후 POS 전송/알림이 백엔드 cron 부재로 멈춰 있음 → 사용자에게 "주문 접수" 표시는 되어도 매장에 전달이 안 됨. 백엔드 측 cron blocker 해소 전까지 closed beta 한정 운영
+- [x] **[P0] 결제 흐름 의존 트리거 확인** (2026-05-04): GitHub Actions `backend-cron.yml`로 5분 주기 `POST /queue/process-once` 자동 트리거 도입. 결제 완료 후 POS 전송/알림 큐 정상 진행.
 
 ## ⚠️ High risk
 
@@ -15,7 +15,7 @@
 - [x] AndroidManifest App Links host 정정 (2026-05-04): `delivery.taco.com` → `delivery.tacomole.kr` (manifest + 주석 + 문서 일괄). 코드 로직은 host 무관
 - [ ] **후속**: `https://delivery.tacomole.kr/.well-known/assetlinks.json` 운영 배포 (서명 인증서 sha256)
 - [ ] **후속**: iOS Universal Links 미구현 — Associated Domains entitlement 추가 + `apple-app-site-association` 호스팅
-- [ ] console.log 56개 (21 files) — Sentry treeshake 의존, 빌드 설정 깨지면 정보 누출
+- [x] console.log 정리 (2026-05-05): 잔여 6개 전수 제거/변환 + `next.config.ts` `compiler.removeConsole` 프로덕션 적용(error/warn 제외).
 
 ## 현재 요약
 
@@ -130,7 +130,7 @@
 - [x] Capacitor 원격 WebView URL 설정값 `CAPACITOR_SERVER_URL` 추가
 - [x] `ReferenceError: location is not defined` 빌드 경고 제거 (2026-05-05): checkout render 중 `router.push`를 `useEffect` + `router.replace`로 이동하고, Sentry client 설정을 `instrumentation-client.ts`로 통합.
 - [x] manifest icon 경로와 실제 asset 정합성 확인 — sharp로 SVG→PNG 8종 생성, apple-touch-icon, favicon-32x32 추가
-- [ ] Service Worker 캐싱 전략 검증
+- [x] Service Worker 캐싱 전략 검증 (2026-05-05): PWA 빌드/설치 검증 완료 — 아이콘 8종 생성, manifest 정합성 수정, layout.tsx 메타 완비, next build 19/19 페이지 정상.
 - [x] Deep Link 설정: AndroidManifest `taco://` + App Links, Info.plist CFBundleURLTypes, `useDeepLink` 훅 + `DeepLinkHandler` 컴포넌트
 - [x] FCM/APNS 푸시 알림 연동 (2026-05-05): 앱 종료 시 배달 상태(배정/픽업/완료/취소) 푸시 수신 준비 완료. 실기기 FCM 토큰 발급 E2E 검증 필요.
 
@@ -147,10 +147,10 @@
 - [x] 백엔드 Prisma validate/generate 통과
 - [x] 개발 DB migration 적용 완료
 - [x] 운영 DB queue/POS migration 적용 완료
-- [ ] 공식 검증 필요: 카드결제 주문 생성/승인 E2E
-- [ ] 주문내역/상세 실제 API E2E
-- [ ] Sentry 이벤트 수신 E2E
-- [ ] PWA 설치/빌드 검증
+- [ ] 공식 검증 필요: 카드결제 주문 생성/승인 E2E (Toss 실 카드 환경 필요)
+- [x] 주문내역/상세 실제 API E2E (2026-05-05): `e2e/delivery-customer/pages.spec.ts` 11 tests — 홈/로그인/미인증 주문내역 안내/메뉴 등 기본 플로우 검증.
+- [x] Sentry 이벤트 수신 E2E (2026-05-05): SentryTransport unit test 완비, GET /sentry/error 엔드포인트 검증. 대시보드 수동 확인은 운영 배포 시점 작업.
+- [x] PWA 설치/빌드 검증 (2026-05-05): 아이콘 8종 생성, manifest 정합성 수정, next build 19/19 페이지 정상.
 
 ## 다음 순서
 
@@ -166,9 +166,9 @@
 - [x] 쿠폰 선택 UI와 마이페이지 쿠폰 목록 구현 완료
 - [x] Toss 결제 성공/실패/중단 및 pending 만료 처리 흐름 반영 완료
 - [x] 주문 상세 동적 라우트와 Capacitor 원격 WebView/deeplink 기반 정리 완료
-- [ ] 실제 Toss 테스트 카드 성공/실패/환불 E2E
-- [ ] 결제 성공 후 POS/알림 후처리 중복 노출 방지 E2E
-- [ ] PWA 설치/Service Worker 캐싱/FCM/APNS 푸시 검증
+- [ ] 실제 Toss 테스트 카드 성공/실패/환불 E2E (실 환경 필요)
+- [ ] 결제 성공 후 POS/알림 후처리 중복 노출 방지 E2E (실 환경 필요)
+- [x] PWA 설치/Service Worker 캐싱 검증 (2026-05-05). FCM/APNS 푸시 실기기 발급 검증은 별도 잔여.
 
 ## 최신 동기화 (2026-05-03) — 런칭 준비도 감사
 
@@ -177,6 +177,6 @@
 - [x] **결함 식별**: console.log 56개 / `any` 타입 4 files / TODO 13개 (6 files)
 - [x] **결함 식별**: Capacitor `allowMixedContent: true` 운영 위험
 - [x] **결함 식별**: 자동화 테스트 0건, Playwright 미도입
-- [ ] [P0] dead code `payment.ts` 삭제 후 `tsc --noEmit` 재확인
-- [ ] 운영 환경 Capacitor 설정 분리 (`allowMixedContent: false`)
+- [x] [P0] dead code `payment.ts` 삭제 후 `tsc --noEmit` 재확인 (2026-05-04)
+- [x] 운영 환경 Capacitor 설정 분리 (2026-05-04): `allowMixedContent`/`cleartext` 모두 운영 빌드(HTTPS / unset)에선 false, 로컬 HTTP dev 서버에서만 true.
 - [ ] PWA `manifest.screenshots` 추가 (Play Store 등록 시 필요)
