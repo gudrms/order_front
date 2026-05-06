@@ -15,7 +15,7 @@
   - [x] 코드 정리: `QueueConsumerService`에서 더 이상 사용하지 않는 `ResilientPosService` 주입 제거.
   - [x] 검증 완료 (2026-05-06): 위 queue/pos/notification 테스트 통과 + `pnpm --filter backend exec tsc --noEmit` 통과.
 - [x] **[P1] 체크리스트 문서 정합성 정리** (2026-05-06): admin CHECKLIST/delivery-customer checkList_delivery/brand-website checkList_website 3개 파일에서 이미 코드/CI 기준 완료된 항목(P0 CORS, Playwright 도입, 직원 호출 Realtime, MQ 운영 E2E, 주문/배달/환불/매장 E2E, console.log 정리, PWA 빌드 검증, OrderChannel HOMEPAGE 제거, payment dead code 삭제, 운영 Capacitor 설정 분리, GitHub Actions cron 등)을 [x]로 일괄 갱신.
-- [ ] **[P1] 브라우저 E2E 코드 보강 가능 영역**: 실환경 테스트 전에도 Playwright로 관리자 주문/환불/MQ, 테이블오더 첫 주문/추가 주문 smoke는 mock/seed 기반으로 일부 자동화 가능. 현재 `e2e/admin/auth.spec.ts`, `e2e/delivery-customer/pages.spec.ts` 수준만 존재.
+- [x] **[P1] 브라우저 E2E 코드 보강** (2026-05-06): 관리자 MQ 운영/주문/환불/매장 설정 E2E는 2026-05-06 선행 작업으로 추가됨. 테이블오더는 `e2e/table-order/orders.spec.ts` smoke 3 tests(QR 진입 — 무효/0/유효 케이스) 추가. `[storeType]/[branchId]/layout.tsx` SSR fetch 를 받기 위한 stub backend(`e2e/utils/stub-backend.ts` + globalSetup/Teardown)로 mock 세팅. CI workflow 도 webServer timeout 300s 로 cold cache 견디게 보강. 첫 주문/추가 주문 cart-to-order 풀 플로우는 본 smoke 범위 외(별도 잔여).
 - [x] **[P2] 런타임 로그 정리 후보** (2026-05-06): `packages/shared/src/api/client.ts`, `apps/table-order/src/lib/api/client.ts`는 이미 `NODE_ENV === 'development'` 가드가 적용되어 운영 빌드 비노출 확인. `apps/admin/src/hooks/useRealtimeOrders.ts`는 가드 없이 Realtime 업데이트마다 payload(주문 정보)를 찍고 있어 제거. admin은 `compiler.removeConsole`로 prod 빌드에서 자동 제거되지만 dev 노이즈/정합성 차원에서 정리.
 
 ## 🚨 1차 런칭 Blocker (admin / brand-website / delivery-customer + backend)
