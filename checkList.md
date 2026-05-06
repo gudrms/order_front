@@ -16,7 +16,7 @@
   - [x] 검증 완료 (2026-05-06): 위 queue/pos/notification 테스트 통과 + `pnpm --filter backend exec tsc --noEmit` 통과.
 - [ ] **[P1] 체크리스트 문서 정합성 정리**: 루트 체크리스트와 앱별 체크리스트(`apps/admin/CHECKLIST.md`, `apps/delivery-customer/checkList_delivery.md`, `apps/brand-website/checkList_website.md`)에 이미 완료된 항목이 `[ ]`로 남아 있음. 다음 세션에서 “실제 코드 기준 완료/미완료”로 문서 정리 필요.
 - [ ] **[P1] 브라우저 E2E 코드 보강 가능 영역**: 실환경 테스트 전에도 Playwright로 관리자 주문/환불/MQ, 테이블오더 첫 주문/추가 주문 smoke는 mock/seed 기반으로 일부 자동화 가능. 현재 `e2e/admin/auth.spec.ts`, `e2e/delivery-customer/pages.spec.ts` 수준만 존재.
-- [ ] **[P2] 런타임 로그 정리 후보**: `packages/shared/src/api/client.ts`, `apps/table-order/src/lib/api/client.ts`, `apps/admin/src/hooks/useRealtimeOrders.ts`에 개발용 `console.log`가 남아 있음. 운영 빌드 노출/소음 여부 확인 후 dev-only guard 또는 제거 검토.
+- [x] **[P2] 런타임 로그 정리 후보** (2026-05-06): `packages/shared/src/api/client.ts`, `apps/table-order/src/lib/api/client.ts`는 이미 `NODE_ENV === 'development'` 가드가 적용되어 운영 빌드 비노출 확인. `apps/admin/src/hooks/useRealtimeOrders.ts`는 가드 없이 Realtime 업데이트마다 payload(주문 정보)를 찍고 있어 제거. admin은 `compiler.removeConsole`로 prod 빌드에서 자동 제거되지만 dev 노이즈/정합성 차원에서 정리.
 
 ## 🚨 1차 런칭 Blocker (admin / brand-website / delivery-customer + backend)
 
