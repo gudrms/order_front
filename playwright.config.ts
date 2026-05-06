@@ -35,6 +35,10 @@ function buildEnv(extra: Record<string, string> = {}) {
 export default defineConfig({
   testDir: './e2e',
 
+  // 테이블오더 layout 의 SSR fetch 를 받을 stub backend 기동/정리
+  globalSetup: './e2e/global-setup.ts',
+  globalTeardown: './e2e/global-teardown.ts',
+
   // 테스트 타임아웃
   timeout: 30_000,
 
@@ -75,19 +79,31 @@ export default defineConfig({
       },
       testMatch: 'delivery-customer/**/*.spec.ts',
     },
+
+    // ── 테이블오더 (Tablet) ──────────────────────────────────────────────
+    // 태블릿용 UI 지만 CI 의 chromium 만으로 실행하도록 Desktop Chrome +
+    // 태블릿 viewport 조합. WebKit 기반 iPad 디바이스는 별도 브라우저 설치 필요.
+    {
+      name: 'table-order',
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1024, height: 768 },
+        baseURL: 'http://localhost:3002',
+      },
+      testMatch: 'table-order/**/*.spec.ts',
+    },
   ],
 
   webServer: [
-    // ── Admin 서버 ────────────────────────────────────────────────────────
-    // CI: 미리 build 된 산출물을 next start 로 띄움 (콜드스타트 빠름)
-    // 로컬: next dev 로 hot reload 가능하게 유지
+    // ── Admin 개발 서버 ───────────────────────────────────────────────────
+    // CI 의 cold cache 에서 next dev 첫 컴파일이 오래 걸려 timeout 을
+    // 넉넉하게 잡는다. next start 는 admin 테스트가 dev mode 동작에
+    // 의존(예: API mock 타이밍, hydration 차이)해서 사용하지 않는다.
     {
-      command: isCI
-        ? 'pnpm --filter admin exec next start --port 3003'
-        : 'pnpm --filter admin exec next dev --port 3003',
+      command: 'pnpm --filter admin exec next dev --port 3003',
       url: 'http://localhost:3003',
       reuseExistingServer: !isCI,
-      timeout: 180_000,
+      timeout: 300_000,
       env: buildEnv({
         // Firebase Web Push — 테스트에서는 불필요하므로 빈 값
         NEXT_PUBLIC_FIREBASE_API_KEY: '',
@@ -99,14 +115,21 @@ export default defineConfig({
       }),
     },
 
-    // ── Delivery-Customer 서버 ───────────────────────────────────────────
+    // ── Delivery-Customer 개발 서버 ──────────────────────────────────────
     {
-      command: isCI
-        ? 'pnpm --filter delivery-customer exec next start --port 3001'
-        : 'pnpm --filter delivery-customer exec next dev --port 3001',
+      command: 'pnpm --filter delivery-customer exec next dev --port 3001',
       url: 'http://localhost:3001',
       reuseExistingServer: !isCI,
-      timeout: 180_000,
+      timeout: 300_000,
+      env: buildEnv(),
+    },
+
+    // ── Table-Order 개발 서버 ────────────────────────────────────────────
+    {
+      command: 'pnpm --filter table-order exec next dev --port 3002',
+      url: 'http://localhost:3002',
+      reuseExistingServer: !isCI,
+      timeout: 300_000,
       env: buildEnv(),
     },
   ],

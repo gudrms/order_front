@@ -111,25 +111,8 @@ jobs:
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps chromium
 
-      # CI에서는 next dev 콜드스타트가 webServer 타임아웃을 유발하므로
-      # 미리 production build 후 next start 로 띄운다.
-      - name: Build admin & delivery-customer
-        run: |
-          pnpm --filter admin build
-          pnpm --filter delivery-customer build
-        env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co' }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.placeholder.placeholder' }}
-          NEXT_PUBLIC_API_URL: "http://localhost:4000/api/v1"
-          NEXT_PUBLIC_FIREBASE_API_KEY: ""
-          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ""
-          NEXT_PUBLIC_FIREBASE_PROJECT_ID: ""
-          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ""
-          NEXT_PUBLIC_FIREBASE_APP_ID: ""
-          NEXT_PUBLIC_FIREBASE_VAPID_KEY: ""
-
       - name: Run E2E tests
-        run: pnpm test:e2e --project=admin --project=delivery
+        run: pnpm test:e2e --project=admin --project=delivery --project=table-order
         env:
           CI: true
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co' }}
