@@ -181,4 +181,93 @@ test.describe('admin orders page', () => {
       riderMemo: '관리자 화면에서 라이더 배정 처리',
     });
   });
+
+  test('submits full and partial refunds with the expected cancel payload', async ({ page }) => {
+    const refundOrderId = 'order-refundable-1';
+    const refundRequests: unknown[] = [];
+
+    await page.route(`${API_URL}/stores/${storeId}/orders`, async (route) => {
+      await route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({
+          data: [
+            {
+              id: refundOrderId,
+              orderNumber: 'E2E-REFUND-001',
+              storeId,
+              type: 'DELIVERY',
+              source: 'DELIVERY_APP',
+              items: [
+                {
+                  id: 'item-refund-1',
+                  orderId: refundOrderId,
+                  menuId: 'menu-refund-1',
+                  menuName: 'Refundable Taco',
+                  quantity: 1,
+                  unitPrice: 20000,
+                  totalPrice: 20000,
+                },
+              ],
+              delivery: {
+                id: 'delivery-refund-1',
+                recipientName: 'Refund Customer',
+                recipientPhone: '010-3333-4444',
+                address: 'Seoul',
+                detailAddress: '202',
+                deliveryFee: 3000,
+                status: 'PENDING',
+                requestedAt: '2026-05-06T03:40:00.000Z',
+              },
+              payments: [
+                {
+                  id: 'payment-refund-1',
+                  provider: 'TOSS_PAYMENTS',
+                  method: 'CARD',
+                  status: 'PAID',
+                  amount: 23000,
+                  approvedAmount: 23000,
+                  cancelledAmount: 3000,
+                },
+              ],
+              totalPrice: 20000,
+              totalAmount: 23000,
+              paymentStatus: 'PAID',
+              status: 'READY',
+              createdAt: '2026-05-06T03:40:00.000Z',
+              updatedAt: '2026-05-06T03:40:00.000Z',
+            },
+          ],
+        }),
+      });
+    });
+
+    await page.route(`${API_URL}/payments/orders/${refundOrderId}/toss/cancel`, async (route) => {
+      refundRequests.push(route.request().postDataJSON());
+      await route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({ data: { ok: true } }),
+      });
+    });
+
+    await page.goto('/orders');
+
+    await expect(page.getByTestId('admin-orders-table')).toBeVisible();
+    await expect(page.getByTestId(`admin-order-row-${refundOrderId}`)).toContainText('E2E-REFUND-001');
+
+    await page.getByTestId(`admin-refund-full-${refundOrderId}`).click();
+    await page.locator('textarea').fill('고객 요청 전액 취소');
+    await page.getByTestId('admin-refund-submit-full').click();
+    await expect(page.getByTestId('admin-order-operation-message')).toBeVisible();
+    expect(refundRequests[0]).toEqual({ cancelReason: '고객 요청 전액 취소' });
+
+    await page.getByTestId(`admin-refund-partial-${refundOrderId}`).click();
+    await page.locator('input[inputmode="numeric"]').fill('5000');
+    await page.locator('textarea').fill('고객 요청 부분 환불');
+    await page.getByTestId('admin-refund-submit-partial').click();
+    await expect(page.getByTestId('admin-order-operation-message')).toBeVisible();
+    expect(refundRequests[1]).toEqual({
+      cancelReason: '고객 요청 부분 환불',
+      cancelAmount: 5000,
+    });
+  });
 });
