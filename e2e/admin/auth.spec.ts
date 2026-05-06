@@ -63,4 +63,19 @@ test.describe('관리자 인증 가드 (보호된 라우트)', () => {
     await page.goto('/store');
     await expect(page).toHaveURL(/\/login/, { timeout: 10_000 });
   });
+
+  test('미인증 상태에서 직원 호출(/calls) 접근 → /login 리다이렉트', async ({ page }) => {
+    await page.goto('/calls');
+    await expect(page).toHaveURL(/\/login/, { timeout: 10_000 });
+  });
+
+  test('미인증 상태에서 운영 관리(/operations) 접근 → /login 리다이렉트', async ({ page }) => {
+    await page.goto('/operations');
+    await expect(page).toHaveURL(/\/login/, { timeout: 10_000 });
+  });
+
+  test('미인증 상태에서 가맹 문의(/franchise-inquiries) 접근 → /login 리다이렉트', async ({ page }) => {
+    await page.goto('/franchise-inquiries');
+    await expect(page).toHaveURL(/\/login/, { timeout: 10_000 });
+  });
 });

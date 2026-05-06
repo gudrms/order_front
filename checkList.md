@@ -432,7 +432,7 @@
 
 #### E-3. 프론트 자동화 테스트 도입
 - [x] Playwright 설치 및 기본 설정 (2026-05-05): 루트 `playwright.config.ts` — admin(Desktop Chrome / :3003) + delivery(iPhone 14 / :3001) 두 프로젝트. `webServer` 자동 기동 + 환경변수 폴백 처리. `pnpm test:e2e` / `test:e2e:ui` 스크립트 추가.
-- [x] 관리자 E2E 기본 플로우 (2026-05-05): `e2e/admin/auth.spec.ts` — 로그인 폼 렌더링, required 검증, 잘못된 자격증명 에러 표시, 미인증 보호 라우트 4개(/, /orders, /menu, /store) → /login 리다이렉트. 총 7개 테스트.
+- [x] 관리자 E2E 기본 플로우 확장 (2026-05-06): `e2e/admin/auth.spec.ts` — 로그인 폼 렌더링, required 검증, 잘못된 자격증명 에러 표시, 미인증 보호 라우트 7개(/, /orders, /menu, /store, /calls, /operations, /franchise-inquiries) → /login 리다이렉트. 총 10개 테스트.
 - [x] 배달앱 E2E 기본 플로우 (2026-05-05): `e2e/delivery-customer/pages.spec.ts` — 홈 로드, 로그인 페이지 OAuth 버튼, 미인증 주문내역 안내, 메뉴 접근. 총 11개 테스트. playwright --list 18 tests 확인.
 - [x] CI GitHub Actions에 Playwright 추가 (2026-05-05): `.github/workflows/ci.yml` 전면 재작성 — pnpm 기반, backend(vitest) + frontend-typecheck(matrix: admin/delivery-customer/brand-website) + e2e(Playwright) 3개 job. 깨진 `apps/frontend` 참조 완전 제거. 실패 시 `playwright-report` artifact 7일 보관.
 - [ ] 배달앱 결제 플로우 E2E (Toss 테스트 카드): 주문 생성 → 위젯 → 승인 → PAID (실 환경 필요)
