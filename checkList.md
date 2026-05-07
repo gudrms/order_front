@@ -1,5 +1,12 @@
 # Taco Mono 루트 체크리스트
-마지막 업데이트: 2026-05-06 (git log + 코드단 잔여 감사 — 실환경 테스트 전 코드 마무리 항목 식별)
+마지막 업데이트: 2026-05-07 (Playwright E2E 런타임 mock/import 안정화 및 로컬 전체 통과 반영)
+
+## 🔎 2026-05-07 Playwright E2E 안정화 메모
+
+- [x] **[P1] Playwright E2E 런타임/fixture 안정화** (2026-05-07, commit `8871a1d`): admin 공통 fixture(`e2e/admin/fixtures.ts`)로 Supabase 세션/localStorage/API mock을 통합하고, delivery fixture(`e2e/delivery-customer/fixtures.ts`)로 매장/메뉴/카테고리/찜 API를 고정 응답 처리. stub backend CORS/매장 응답 보강, CI `maxFailures: 1`, delivery/table-order Chromium 실행, Next dev `--webpack` 고정으로 CI 환경 흔들림 감소.
+- [x] **[P1] `@order/shared` 배럴 import 런타임 undefined 대응** (2026-05-07): delivery-customer/table-order에서 `supabase`, `api`, `apiClient`, `useCartStore`, `useMenuSelection`, `useOrderStatus` 등 실행 값은 `@order/shared/*` 명시 subpath import로 전환. 각 앱 `tsconfig.json`에 `@order/shared/*` path 추가. Next webpack dev에서 배럴 export 일부가 `undefined`로 들어오던 문제 제거.
+- [x] **[P1] 관리자 인증 로딩 race 수정** (2026-05-07): `apps/admin/src/contexts/AuthContext.tsx`에서 Supabase session/profile 동기화가 끝난 뒤 `loading=false`가 되도록 수정해, E2E와 실제 화면에서 profile 로딩 중 보호 라우트가 먼저 redirect되는 문제 완화.
+- [x] **검증 완료** (2026-05-07): `tsc -p e2e/tsconfig.json --noEmit`, `tsc -p apps/delivery-customer/tsconfig.json --noEmit`, `tsc -p apps/table-order/tsconfig.json --noEmit` 통과. `CI=true playwright test --project=admin --project=delivery --project=table-order` 로컬 실행 결과 27 tests 전부 통과.
 
 ## 🔎 2026-05-06 코드단 잔여 감사 메모 (다음 세션 우선 확인)
 
@@ -455,6 +462,7 @@
 - [x] 관리자 매장 설정 E2E (2026-05-06): `e2e/admin/store.spec.ts` — 인증 세션/API mock으로 `/store` 기본 정보/배달 설정 수정 후 `PATCH /stores/:storeId` payload 검증. 실제 Playwright Chromium 실행 1 test 통과, admin tsc 통과.
 - [x] 배달앱 E2E 기본 플로우 (2026-05-05): `e2e/delivery-customer/pages.spec.ts` — 홈 로드, 로그인 페이지 OAuth 버튼, 미인증 주문내역 안내, 메뉴 접근. 총 11개 테스트. playwright --list 18 tests 확인.
 - [x] CI GitHub Actions에 Playwright 추가 (2026-05-05): `.github/workflows/ci.yml` 전면 재작성 — pnpm 기반, backend(vitest) + frontend-typecheck(matrix: admin/delivery-customer/brand-website) + e2e(Playwright) 3개 job. 깨진 `apps/frontend` 참조 완전 제거. 실패 시 `playwright-report` artifact 7일 보관.
+- [x] Playwright E2E 안정화 완료 (2026-05-07): `e2e/admin/fixtures.ts`, `e2e/delivery-customer/fixtures.ts`, `e2e/utils/stub-backend.ts`, `playwright.config.ts` 정리. admin/delivery/table-order 27 tests 로컬 CI 모드 전체 통과. commit `8871a1d`.
 - [ ] 배달앱 결제 플로우 E2E (Toss 테스트 카드): 주문 생성 → 위젯 → 승인 → PAID (실 환경 필요)
 
 #### E-4. 홈페이지 SEO 및 성능 최적화
