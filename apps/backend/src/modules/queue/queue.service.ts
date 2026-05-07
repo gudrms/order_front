@@ -109,7 +109,7 @@ export class QueueService {
         quantity = 10,
     ): Promise<QueueMessageRecord[]> {
         return this.prisma.$queryRawUnsafe(
-            'select * from pgmq.read($1, $2, $3)',
+            'select * from pgmq.read($1::text, $2::integer, $3::integer)',
             queueName,
             visibilityTimeoutSeconds,
             quantity,
@@ -118,7 +118,7 @@ export class QueueService {
 
     async archive(queueName = this.defaultQueueName, messageId: number): Promise<void> {
         await this.prisma.$queryRawUnsafe(
-            'select * from pgmq.archive($1, $2)',
+            'select * from pgmq.archive($1::text, $2::bigint)',
             queueName,
             messageId,
         );
@@ -127,7 +127,7 @@ export class QueueService {
     private async send(queueName: string, event: BackendQueueEvent, delaySeconds: number): Promise<void> {
         try {
             await this.prisma.$queryRawUnsafe(
-                'select * from pgmq.send($1, $2::jsonb, $3)',
+                'select * from pgmq.send($1::text, $2::jsonb, $3::integer)',
                 queueName,
                 JSON.stringify(event),
                 delaySeconds,
