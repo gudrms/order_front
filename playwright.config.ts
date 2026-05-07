@@ -41,9 +41,13 @@ export default defineConfig({
 
   // 테스트 타임아웃
   timeout: 30_000,
+  expect: {
+    timeout: 15_000,
+  },
 
   // CI: 실패 시 1회 재시도 / 로컬: 재시도 없음
   retries: isCI ? 1 : 0,
+  maxFailures: isCI ? 1 : undefined,
 
   // CI: 단일 워커 (리소스 안정성) / 로컬: 병렬 실행
   workers: isCI ? 1 : undefined,
@@ -75,6 +79,7 @@ export default defineConfig({
       name: 'delivery',
       use: {
         ...devices['iPhone 14'],
+        browserName: 'chromium',
         baseURL: 'http://localhost:3001',
       },
       testMatch: 'delivery-customer/**/*.spec.ts',
@@ -100,7 +105,7 @@ export default defineConfig({
     // 넉넉하게 잡는다. next start 는 admin 테스트가 dev mode 동작에
     // 의존(예: API mock 타이밍, hydration 차이)해서 사용하지 않는다.
     {
-      command: 'pnpm --filter admin exec next dev --port 3003',
+      command: 'pnpm --filter admin exec next dev --webpack --port 3003',
       url: 'http://localhost:3003',
       reuseExistingServer: !isCI,
       timeout: 300_000,
@@ -117,7 +122,7 @@ export default defineConfig({
 
     // ── Delivery-Customer 개발 서버 ──────────────────────────────────────
     {
-      command: 'pnpm --filter delivery-customer exec next dev --port 3001',
+      command: 'pnpm --filter delivery-customer exec next dev --webpack --port 3001',
       url: 'http://localhost:3001',
       reuseExistingServer: !isCI,
       timeout: 300_000,
@@ -126,7 +131,7 @@ export default defineConfig({
 
     // ── Table-Order 개발 서버 ────────────────────────────────────────────
     {
-      command: 'pnpm --filter table-order exec next dev --port 3002',
+      command: 'pnpm --filter table-order exec next dev --webpack --port 3002',
       url: 'http://localhost:3002/favicon.ico',
       reuseExistingServer: !isCI,
       timeout: 300_000,

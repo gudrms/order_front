@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ChevronLeft, Plus, MapPin, Trash2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { apiClient } from '@order/shared';
+import { apiClient } from '@order/shared/api';
 import { AddressListSkeleton } from '@/components/ui/Skeleton';
 
 interface Address {

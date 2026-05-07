@@ -3,7 +3,7 @@
  */
 
 import { useMutation } from '@tanstack/react-query';
-import { createOrder } from '@order/shared';
+import { createOrder } from '@order/shared/api';
 import type { CreateOrderRequest, OrderResponse } from '@order/shared';
 
 export function useCreateOrder() {

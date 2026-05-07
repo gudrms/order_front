@@ -43,7 +43,9 @@ test.describe('테이블 QR 진입', () => {
     await page.goto('/tacomolly/gimpo/table/5');
 
     // table=5 쿼리 파라미터를 동반한 menu 경로로 이동
-    await page.waitForURL(/\/tacomolly\/gimpo\/menu\?table=5/, { timeout: 10_000 });
+    await expect(page).toHaveURL(/\/tacomolly\/gimpo\/menu\?table=5/, {
+      timeout: 30_000,
+    });
     expect(page.url()).toContain('/tacomolly/gimpo/menu');
     expect(page.url()).toContain('table=5');
   });

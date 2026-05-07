@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { api } from '@order/shared';
+import { api } from '@order/shared/api';
 import type { Menu, MenuCategory, MenuDetail } from '@order/shared';
 
 export function useCategories(storeId?: string | null) {

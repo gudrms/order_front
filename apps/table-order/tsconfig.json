@@ -21,6 +21,7 @@
     "paths": {
       "@/*": ["./src/*"],
       "@order/shared": ["../../packages/shared/src"],
+      "@order/shared/*": ["../../packages/shared/src/*"],
       "@order/ui": ["../../packages/ui/src"],
       "@order/order-core": ["../../packages/order-core/src"]
     },

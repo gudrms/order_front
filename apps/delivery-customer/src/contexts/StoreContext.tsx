@@ -2,7 +2,8 @@
 
 import { createContext, useContext } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { api, type Store } from '@order/shared';
+import { api } from '@order/shared/api';
+import type { Store } from '@order/shared';
 
 interface StoreContextValue {
     store: Store | null;

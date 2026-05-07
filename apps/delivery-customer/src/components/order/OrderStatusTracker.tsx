@@ -1,7 +1,7 @@
 'use client';
 
 import { CheckCircle2, ChefHat, Clock, MapPin, Package, XCircle } from 'lucide-react';
-import { useOrderStatus } from '@order/shared';
+import { useOrderStatus } from '@order/shared/hooks/useOrderStatus';
 import type { DeliveryStatus, OrderStatus } from '@order/shared';
 
 interface OrderStatusTrackerProps {

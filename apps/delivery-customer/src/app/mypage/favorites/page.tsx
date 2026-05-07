@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ChevronLeft, Heart } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import Image from 'next/image';
-import { apiClient } from '@order/shared';
+import { apiClient } from '@order/shared/api';
 import { FavoritesListSkeleton } from '@/components/ui/Skeleton';
 
 interface Menu {

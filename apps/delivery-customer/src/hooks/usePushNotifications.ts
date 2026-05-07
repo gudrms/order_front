@@ -10,7 +10,7 @@ import {
     getCurrentPushToken,
     getPushDeviceType,
 } from '@/lib/capacitor/push-notifications';
-import { api } from '@order/shared';
+import { api } from '@order/shared/api';
 
 /**
  * FCM 푸시 알림 초기화 훅.

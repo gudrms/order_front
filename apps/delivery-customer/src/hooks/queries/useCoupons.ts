@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { api } from '@order/shared';
+import { api } from '@order/shared/api';
 import type { RedeemCouponRequest } from '@order/shared';
 
 export const couponQueryKey = ['coupons'];

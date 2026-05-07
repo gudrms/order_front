@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import { failTossPayment } from '@order/shared';
+import { failTossPayment } from '@order/shared/api';
 import type { FailTossPaymentRequest, OrderResponse } from '@order/shared';
 
 export function useFailTossPayment() {

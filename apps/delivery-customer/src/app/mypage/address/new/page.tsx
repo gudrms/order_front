@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronLeft } from 'lucide-react';
 import DaumPostcodeEmbed from 'react-daum-postcode';
-import { apiClient } from '@order/shared';
+import { apiClient } from '@order/shared/api';
 
 interface CreateAddressDto {
     name: string;

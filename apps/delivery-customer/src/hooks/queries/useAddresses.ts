@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { api } from '@order/shared';
+import { api } from '@order/shared/api';
 import type { CreateUserAddressRequest, UpdateUserAddressRequest } from '@order/shared';
 
 export const addressQueryKey = ['addresses'];

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { api } from '@order/shared';
+import { api } from '@order/shared/api';
 
 export function useOrders(params: {
     storeId?: string | null;

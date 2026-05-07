@@ -21,23 +21,49 @@ const STUB_STORE = {
   storeType: 'tacomolly',
   branchId: 'gimpo',
   isActive: true,
+  isDeliveryEnabled: true,
   menuManagementMode: 'ADMIN_DIRECT',
   deliveryEnabled: false,
   minOrderAmount: 0,
+  minimumOrderAmount: 0,
   deliveryFee: 0,
+  freeDeliveryThreshold: 0,
   freeDeliveryAmount: 0,
 };
 
 function json(res: ServerResponse, data: unknown, status = 200) {
-  res.writeHead(status, { 'Content-Type': 'application/json' });
+  res.writeHead(status, {
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Allow-Methods': 'GET, POST, PATCH, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Origin': '*',
+    'Content-Type': 'application/json',
+  });
   res.end(JSON.stringify(data));
 }
 
 function handle(req: IncomingMessage, res: ServerResponse) {
   const url = req.url ?? '';
 
+  if (req.method === 'OPTIONS') {
+    json(res, {}, 204);
+    return;
+  }
+
   if (req.method === 'GET' && url.startsWith('/api/v1/stores/identifier/')) {
     json(res, { data: STUB_STORE });
+    return;
+  }
+
+  if (req.method === 'GET' && /^\/api\/v1\/stores\/[^/]+$/.test(url)) {
+    json(res, { data: STUB_STORE });
+    return;
+  }
+
+  if (
+    req.method === 'GET' &&
+    /^\/api\/v1\/stores\/[^/]+\/(menus|categories)(\?.*)?$/.test(url)
+  ) {
+    json(res, { data: [] });
     return;
   }
 

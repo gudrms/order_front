@@ -1,7 +1,8 @@
 'use client';
 
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
-import { api, supabase } from '@order/shared';
+import { api } from '@order/shared/api';
+import { supabase } from '@order/shared/lib/supabase';
 import type { Session, User } from '@supabase/supabase-js';
 import {
     cleanupPushNotifications,

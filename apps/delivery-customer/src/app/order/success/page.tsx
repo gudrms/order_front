@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { CheckCircle2, RotateCcw } from 'lucide-react';
-import { useCartStore } from '@order/shared';
+import { useCartStore } from '@order/shared/stores/cartStore';
 import { useConfirmTossPayment } from '@/hooks/mutations/useConfirmTossPayment';
 import { useCurrentStore } from '@/contexts/StoreContext';
 import { useDeliveryStore } from '@/stores/deliveryStore';

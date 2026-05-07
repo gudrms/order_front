@@ -4,7 +4,8 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
-      "@order/shared": ["../../packages/shared/src"]
+      "@order/shared": ["../../packages/shared/src"],
+      "@order/shared/*": ["../../packages/shared/src/*"]
     },
     "types": ["node", "react", "react-dom"]
   },

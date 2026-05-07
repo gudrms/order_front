@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDeliveryStore } from '@/stores/deliveryStore';
 import { useAddresses } from '@/hooks/queries/useAddresses';
-import { openDaumPostcode, type DaumAddress } from '@order/shared';
+import { openDaumPostcode, type DaumAddress } from '@order/shared/utils/daum-postcode';
 
 interface AddressInputBottomSheetProps {
     isOpen: boolean;
