@@ -14,6 +14,7 @@
         "paths": {
             "@order/shared": ["../../packages/shared/src"]
         },
+        "types": ["node"],
         "incremental": true,
         "skipLibCheck": true,
         "strictNullChecks": false,
