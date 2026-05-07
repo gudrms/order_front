@@ -1,27 +1,17 @@
 {
     "version": 2,
-    "builds": [
-        {
-            "src": "src/main.ts",
-            "use": "@vercel/node"
-        },
-        {
-            "src": "src/queue.ts",
-            "use": "@vercel/node"
-        }
-    ],
     "functions": {
-        "src/main.ts": {
+        "api/index.ts": {
             "maxDuration": 30
         },
-        "src/queue.ts": {
+        "api/queue.ts": {
             "maxDuration": 60
         }
     },
     "routes": [
         {
             "src": "/api/v1/queue/(.*)",
-            "dest": "src/queue.ts",
+            "dest": "/api/queue",
             "methods": [
                 "POST",
                 "OPTIONS"
@@ -29,7 +19,7 @@
         },
         {
             "src": "/(.*)",
-            "dest": "src/main.ts",
+            "dest": "/api/index",
             "methods": [
                 "GET",
                 "POST",
