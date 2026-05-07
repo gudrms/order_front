@@ -1,5 +1,13 @@
 # Taco Mono 루트 체크리스트
-마지막 업데이트: 2026-05-07 (Playwright E2E 런타임 mock/import 안정화 및 로컬 전체 통과 반영)
+마지막 업데이트: 2026-05-07 (Playwright E2E 안정화 + Vercel 백엔드 배포 안정화 반영)
+
+## 🔎 2026-05-07 Vercel 백엔드 배포 안정화 메모
+
+- [x] **[P0] 백엔드 Vercel 함수 설정 충돌 해소** (2026-05-07, commit `7068ab6`): `apps/backend/vercel.json`의 `builds`/`functions` 동시 사용 제거. `api/index.ts`, `api/queue.ts` 얇은 entrypoint로 전환하고 일반 API/queue API 함수 분리 및 `maxDuration` 유지.
+- [x] **[P0] 운영 queue consumer PGMQ 타입 불일치 수정** (2026-05-07, commit `76acae3`): Prisma raw query가 `pgmq.read(text,bigint,bigint)`로 호출되던 문제를 `text/integer/integer` 명시 cast로 수정. `archive`/`send`도 `bigint`/`integer` cast 정리. `queue.service.spec.ts` 회귀 테스트 추가.
+- [x] **[P0] Vercel install 단계 husky prepare 실패 제거** (2026-05-07, commit `76acae3`): backend 배포 install 중 workspace `apps/table-order`의 `prepare: husky`가 실행되어 실패하던 문제를 package-local prepare 제거로 해결. `pnpm install --frozen-lockfile` 통과.
+- [x] **[P0] Vercel backend build 명령 정리** (2026-05-07, commit `41eca50`): backend 프로젝트가 devDependencies를 포함해 설치하도록 `installCommand`를 고정하고, 전체 `turbo run build` 대신 `pnpm --filter backend build`만 수행하도록 `buildCommand` 명시. backend build는 `pnpm exec prisma generate && pnpm exec nest build`로 정리, pnpm 버전 힌트 통일, `types: ["node"]`로 `@types/minimatch` 빌드 오염 차단.
+- [x] **운영 배포 확인** (2026-05-07): push 후 Vercel backend 배포 정상 진행 확인.
 
 ## 🔎 2026-05-07 Playwright E2E 안정화 메모
 
@@ -477,6 +485,7 @@
 ### 🧪 F. 운영 테스트 작업 백로그
 
 #### F-1. 운영 배포/DB 검증
+- [x] Vercel backend Production 배포 안정화 확인 (2026-05-07): `functions`/`builds` 충돌, PGMQ 타입 캐스팅, workspace husky prepare, backend build command 문제 순차 해결 후 push 배포 정상 확인.
 - [ ] 운영 DB `prisma migrate deploy` 실행 전 백업/마이그레이션 diff 확인
 - [ ] 운영 DB `OrderChannel.HOMEPAGE` 제거 migration 적용 후 주문 조회/관리자 화면 smoke 검증
 - [ ] Vercel Production/Preview 환경변수 분리 상태 확인 (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `FRONTEND_URLS`, `REDIS_URL`, Firebase, Toss, Sentry)
