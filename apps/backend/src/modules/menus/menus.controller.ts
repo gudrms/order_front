@@ -33,18 +33,10 @@ export class MenusController {
         description: '카테고리 목록 조회 성공',
         schema: {
             example: {
-                success: true,
+                statusCode: 200,
                 data: [
-                    {
-                        id: 'cat-1',
-                        name: '메인 메뉴',
-                        displayOrder: 1,
-                    },
-                    {
-                        id: 'cat-2',
-                        name: '사이드 메뉴',
-                        displayOrder: 2,
-                    },
+                    { id: 'cat-uuid-1', name: '타코류', displayOrder: 1 },
+                    { id: 'cat-uuid-2', name: '음료', displayOrder: 2 },
                 ],
             },
         },
@@ -92,16 +84,28 @@ export class MenusController {
         description: '메뉴 목록 조회 성공',
         schema: {
             example: {
-                success: true,
+                statusCode: 200,
                 data: [
                     {
-                        id: 'menu-1',
-                        name: '불고기 정식',
-                        price: 12000,
-                        description: '신선한 불고기와 각종 반찬',
-                        imageUrl: 'https://example.com/bulgogi.jpg',
-                        categoryId: 'cat-1',
+                        id: 'menu-uuid-1',
+                        name: '비프 타코',
+                        price: 9500,
+                        description: '부드러운 소고기와 신선한 채소',
+                        imageUrl: 'https://cdn.tacomole.kr/menus/beef-taco.jpg',
+                        categoryId: 'cat-uuid-1',
                         isAvailable: true,
+                        soldOut: false,
+                        optionGroups: [
+                            {
+                                id: 'og-uuid-1',
+                                name: '맵기 선택',
+                                isRequired: true,
+                                options: [
+                                    { id: 'opt-uuid-1', name: '순한맛', price: 0 },
+                                    { id: 'opt-uuid-2', name: '매운맛', price: 0 },
+                                ],
+                            },
+                        ],
                     },
                 ],
             },

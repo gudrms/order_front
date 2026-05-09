@@ -14,7 +14,27 @@ export class UsersController {
 
     @Get('me/addresses')
     @ApiOperation({ summary: '내 배달 주소 목록 조회', description: '로그인 사용자의 저장된 배달 주소 목록을 반환합니다.' })
-    @ApiResponse({ status: 200, description: '주소 목록 조회 성공' })
+    @ApiResponse({
+        status: 200,
+        description: '주소 목록 조회 성공',
+        schema: {
+            example: {
+                statusCode: 200,
+                data: [
+                    {
+                        id: 'addr-uuid-1',
+                        recipientName: '홍길동',
+                        recipientPhone: '010-1234-5678',
+                        address: '서울시 강남구 테헤란로 123',
+                        detailAddress: '101동 1001호',
+                        zipCode: '06234',
+                        deliveryMemo: '문 앞에 두고 벨 눌러주세요.',
+                        isDefault: true,
+                    },
+                ],
+            },
+        },
+    })
     @ApiResponse({ status: 401, description: '인증 실패' })
     async getMyAddresses(@CurrentUser() user: { id: string }) {
         return this.usersService.getAddresses(user.id);
@@ -22,7 +42,25 @@ export class UsersController {
 
     @Post('me/addresses')
     @ApiOperation({ summary: '배달 주소 추가', description: '로그인 사용자의 배달 주소를 추가합니다.' })
-    @ApiResponse({ status: 201, description: '주소 추가 성공' })
+    @ApiResponse({
+        status: 201,
+        description: '주소 추가 성공',
+        schema: {
+            example: {
+                statusCode: 201,
+                data: {
+                    id: 'addr-uuid-2',
+                    recipientName: '홍길동',
+                    recipientPhone: '010-1234-5678',
+                    address: '서울시 강남구 테헤란로 123',
+                    detailAddress: '101동 1001호',
+                    zipCode: '06234',
+                    deliveryMemo: '문 앞에 두고 벨 눌러주세요.',
+                    isDefault: false,
+                },
+            },
+        },
+    })
     @ApiResponse({ status: 401, description: '인증 실패' })
     async createAddress(
         @CurrentUser() user: { id: string; email?: string; userMetadata?: Record<string, unknown> },
@@ -47,7 +85,28 @@ export class UsersController {
 
     @Get('me/favorites')
     @ApiOperation({ summary: '내 찜 목록 조회', description: '로그인 사용자가 찜한 메뉴 목록을 반환합니다.' })
-    @ApiResponse({ status: 200, description: '찜 목록 조회 성공' })
+    @ApiResponse({
+        status: 200,
+        description: '찜 목록 조회 성공',
+        schema: {
+            example: {
+                statusCode: 200,
+                data: [
+                    {
+                        id: 'fav-uuid-1',
+                        menuId: 'menu-uuid-1',
+                        menu: {
+                            id: 'menu-uuid-1',
+                            name: '비프 타코',
+                            price: 9500,
+                            imageUrl: 'https://cdn.tacomole.kr/menus/beef-taco.jpg',
+                        },
+                        createdAt: '2024-01-01T00:00:00.000Z',
+                    },
+                ],
+            },
+        },
+    })
     @ApiResponse({ status: 401, description: '인증 실패' })
     async getMyFavorites(@CurrentUser() user: { id: string }) {
         return this.usersService.getFavorites(user.id);

@@ -20,22 +20,39 @@ export class PosController {
         status: 200,
         description: '주문 목록 조회 성공',
         schema: {
-            example: [
-                {
-                    id: 'order-123',
-                    orderNumber: 'ORD-001',
-                    totalAmount: 15000,
-                    items: [
-                        {
-                            menuName: 'Taco',
-                            menuPrice: 5000,
-                            quantity: 3,
-                            options: []
-                        }
-                    ]
-                }
-            ]
-        }
+            example: {
+                statusCode: 200,
+                data: [
+                    {
+                        id: 'cm9ord456ghi789jkl',
+                        orderNumber: 'ORD-20241231-001',
+                        totalAmount: 15000,
+                        note: null,
+                        posSyncStatus: 'PENDING',
+                        payment: {
+                            paymentKey: 'tgen_20260425123456AbCdE',
+                            approvedNo: 'CARD-APPROVAL-123',
+                            approvedAt: '2024-01-01T12:00:00.000Z',
+                            amountMoney: 15000,
+                            supplyMoney: 13636,
+                            taxMoney: 1364,
+                            tipMoney: 0,
+                            taxExemptMoney: 0,
+                        },
+                        items: [
+                            {
+                                menuName: '비프 타코',
+                                menuPrice: 5000,
+                                quantity: 3,
+                                catalogId: 'TOSS-CAT-001',
+                                category: { id: 'TOSS-MENU-001', name: '타코류' },
+                                options: [],
+                            },
+                        ],
+                    },
+                ],
+            },
+        },
     })
     async getPendingOrders() {
         // 결제 정책: 배달은 토스페이먼츠 카드 결제만 받음 → status=PAID 가 POS 전송 트리거.

@@ -17,7 +17,23 @@ export class PaymentsController {
         description: '배달앱/홈페이지 등 공통 주문 채널에서 Toss success redirect로 받은 paymentKey, orderId, amount를 서버에서 승인하고 주문 결제 상태를 PAID로 확정합니다.',
     })
     @ApiBody({ type: ConfirmTossPaymentDto })
-    @ApiResponse({ status: 201, description: '결제 승인 성공' })
+    @ApiResponse({
+        status: 201,
+        description: '결제 승인 성공',
+        schema: {
+            example: {
+                statusCode: 201,
+                data: {
+                    orderId: 'cm9ord456ghi789jkl',
+                    orderNumber: 'ORD-20240101-001',
+                    paymentKey: 'tgen_20260425123456AbCdE',
+                    status: 'PAID',
+                    approvedAmount: 24000,
+                    approvedAt: '2024-01-01T12:00:00.000Z',
+                },
+            },
+        },
+    })
     @ApiResponse({ status: 400, description: '금액 불일치 또는 Toss 승인 실패' })
     @ApiResponse({ status: 404, description: '대기 중인 결제 정보를 찾을 수 없음' })
     async confirmTossPayment(@Body() dto: ConfirmTossPaymentDto) {
@@ -79,7 +95,21 @@ export class PaymentsController {
     })
     @ApiParam({ name: 'orderId', description: '주문 ID' })
     @ApiBody({ type: CancelTossPaymentDto })
-    @ApiResponse({ status: 201, description: '결제 취소/환불 성공' })
+    @ApiResponse({
+        status: 201,
+        description: '결제 취소/환불 성공',
+        schema: {
+            example: {
+                statusCode: 201,
+                data: {
+                    orderId: 'cm9ord456ghi789jkl',
+                    canceledAmount: 24000,
+                    remainAmount: 0,
+                    status: 'CANCELLED',
+                },
+            },
+        },
+    })
     @ApiResponse({ status: 400, description: '환불할 수 없는 결제 상태 또는 금액' })
     @ApiResponse({ status: 401, description: '인증 실패' })
     @ApiResponse({ status: 404, description: '주문 또는 결제 정보를 찾을 수 없음' })

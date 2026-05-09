@@ -97,13 +97,13 @@ export class AuthController {
         description: '사용자 등록 성공',
         schema: {
             example: {
-                success: true,
+                statusCode: 201,
                 data: {
                     id: '123e4567-e89b-12d3-a456-426614174000',
                     email: 'user@example.com',
                     name: '홍길동',
                     phoneNumber: '010-1234-5678',
-                    createdAt: '2024-01-01T00:00:00Z',
+                    createdAt: '2024-01-01T00:00:00.000Z',
                 },
             },
         },
@@ -126,11 +126,14 @@ export class AuthController {
         description: '사용자 정보 조회 성공',
         schema: {
             example: {
-                id: '123e4567-e89b-12d3-a456-426614174000',
-                email: 'user@example.com',
-                name: '홍길동',
-                role: 'STAFF',
-                createdAt: '2024-01-01T00:00:00Z',
+                statusCode: 200,
+                data: {
+                    id: '123e4567-e89b-12d3-a456-426614174000',
+                    email: 'user@example.com',
+                    name: '홍길동',
+                    role: 'OWNER',
+                    createdAt: '2024-01-01T00:00:00.000Z',
+                },
             },
         },
     })

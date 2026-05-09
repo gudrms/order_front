@@ -19,6 +19,24 @@ export class StoresController {
         description: '관리자가 새 매장을 만들고 사장님 가입용 초대코드를 발급합니다.',
     })
     @ApiBody({ type: CreateStoreDto })
+    @ApiResponse({
+        status: 201,
+        description: '매장 생성 성공',
+        schema: {
+            example: {
+                statusCode: 201,
+                data: {
+                    id: 'cm9abc123def456ghi',
+                    name: '타코몰리 김포점',
+                    storeType: 'tacomolly',
+                    branchId: 'gimpo',
+                    inviteCode: 'TACO-AB12',
+                    createdAt: '2024-01-01T00:00:00.000Z',
+                },
+            },
+        },
+    })
+    @ApiResponse({ status: 401, description: '인증 실패' })
     async createStore(
         @CurrentUser() user: { id: string },
         @Body() dto: CreateStoreDto,
@@ -31,7 +49,27 @@ export class StoresController {
         summary: '활성 매장 목록 조회 (공개)',
         description: '브랜드 홈페이지 등 공개용. 활성화된 매장 목록을 반환합니다. 인증 불필요.',
     })
-    @ApiResponse({ status: 200, description: '활성 매장 목록' })
+    @ApiResponse({
+        status: 200,
+        description: '활성 매장 목록',
+        schema: {
+            example: {
+                statusCode: 200,
+                data: [
+                    {
+                        id: 'cm9abc123def456ghi',
+                        name: '타코몰리 김포점',
+                        storeType: 'tacomolly',
+                        branchId: 'gimpo',
+                        address: '경기도 김포시 장기동 123',
+                        phoneNumber: '031-123-4567',
+                        isActive: true,
+                        isDeliveryEnabled: true,
+                    },
+                ],
+            },
+        },
+    })
     async getActiveStores() {
         return this.storesService.getActiveStores();
     }
@@ -67,14 +105,17 @@ export class StoresController {
         description: '매장 조회 성공',
         schema: {
             example: {
-                id: '123e4567-e89b-12d3-a456-426614174000',
-                name: '타코몰리 김포점',
-                storeType: 'tacomolly',
-                branchId: 'gimpo',
-                address: '경기도 김포시 ...',
-                phoneNumber: '031-123-4567',
-                isActive: true,
-                isDeliveryEnabled: true,
+                statusCode: 200,
+                data: {
+                    id: 'cm9abc123def456ghi',
+                    name: '타코몰리 김포점',
+                    storeType: 'tacomolly',
+                    branchId: 'gimpo',
+                    address: '경기도 김포시 장기동 123',
+                    phoneNumber: '031-123-4567',
+                    isActive: true,
+                    isDeliveryEnabled: true,
+                },
             },
         },
     })
@@ -103,10 +144,13 @@ export class StoresController {
         description: '통계 조회 성공',
         schema: {
             example: {
-                todayOrderCount: 12,
-                todaySales: 158000,
-                pendingOrderCount: 3,
-                soldOutMenuCount: 1,
+                statusCode: 200,
+                data: {
+                    todayOrderCount: 12,
+                    todaySales: 158000,
+                    pendingOrderCount: 3,
+                    soldOutMenuCount: 1,
+                },
             },
         },
     })
@@ -132,16 +176,19 @@ export class StoresController {
         description: '매장 조회 성공',
         schema: {
             example: {
-                id: '123e4567-e89b-12d3-a456-426614174000',
-                name: '타코몰리 김포점',
-                storeType: 'tacomolly',
-                branchId: 'gimpo',
-                address: '경기도 김포시 ...',
-                phoneNumber: '031-123-4567',
-                isActive: true,
-                isDeliveryEnabled: true,
-                tableCount: 20,
-                createdAt: '2026-04-26T00:00:00.000Z',
+                statusCode: 200,
+                data: {
+                    id: 'cm9abc123def456ghi',
+                    name: '타코몰리 김포점',
+                    storeType: 'tacomolly',
+                    branchId: 'gimpo',
+                    address: '경기도 김포시 장기동 123',
+                    phoneNumber: '031-123-4567',
+                    isActive: true,
+                    isDeliveryEnabled: true,
+                    tableCount: 20,
+                    createdAt: '2024-01-01T00:00:00.000Z',
+                },
             },
         },
     })
@@ -163,6 +210,9 @@ export class StoresController {
         description: '관리자 또는 해당 매장 사장님이 매장 정보와 배달 운영 설정을 수정합니다.',
     })
     @ApiBody({ type: UpdateStoreDto })
+    @ApiResponse({ status: 200, description: '매장 수정 성공' })
+    @ApiResponse({ status: 401, description: '인증 실패' })
+    @ApiResponse({ status: 404, description: '매장을 찾을 수 없음' })
     async updateStore(
         @CurrentUser() user: { id: string },
         @Param('storeId') storeId: string,

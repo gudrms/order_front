@@ -35,17 +35,18 @@ export class SessionsController {
     description: '현재 세션 조회 성공 (세션이 없으면 null 반환)',
     schema: {
       example: {
+        statusCode: 200,
         data: {
-          id: 'session-123',
+          id: 'cm9abc123def456ghi',
           sessionNumber: 'SES-20241231-001',
           tableNumber: 5,
           guestCount: 2,
           status: 'ACTIVE',
           totalAmount: 36000,
-          startedAt: '2024-12-31T10:00:00Z',
+          startedAt: '2024-12-31T10:00:00.000Z',
           orders: [
             {
-              id: 'order-456',
+              id: 'cm9ord456ghi789jkl',
               orderNumber: 'ORD-20241231-001',
               totalAmount: 36000,
               items: [],
@@ -59,11 +60,7 @@ export class SessionsController {
     @Param('storeId') storeId: string,
     @Param('tableNumber') tableNumber: string,
   ) {
-    const session = await this.sessionsService.getCurrentSession(
-      storeId,
-      parseInt(tableNumber),
-    );
-    return { data: session };
+    return this.sessionsService.getCurrentSession(storeId, parseInt(tableNumber));
   }
 
   @Get('sessions/:sessionId')
@@ -79,11 +76,24 @@ export class SessionsController {
   @ApiParam({
     name: 'sessionId',
     description: '세션 ID',
-    example: 'session-123',
+    example: 'cm9abc123def456ghi',
   })
   @ApiResponse({
     status: 200,
     description: '세션 조회 성공',
+    schema: {
+      example: {
+        statusCode: 200,
+        data: {
+          id: 'cm9abc123def456ghi',
+          sessionNumber: 'SES-20241231-001',
+          tableNumber: 5,
+          status: 'ACTIVE',
+          totalAmount: 36000,
+          startedAt: '2024-12-31T10:00:00.000Z',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 404,
@@ -93,8 +103,7 @@ export class SessionsController {
     @Param('storeId') storeId: string,
     @Param('sessionId') sessionId: string,
   ) {
-    const session = await this.sessionsService.getSessionById(sessionId);
-    return { data: session };
+    return this.sessionsService.getSessionById(sessionId);
   }
 
   @Post('tables/:tableNumber/reset')
@@ -114,7 +123,17 @@ export class SessionsController {
   })
   @ApiResponse({
     status: 200,
-    description: '세션 강제 종료 성공',
+    description: '세션 강제 종료 성공 (활성 세션이 없으면 null 반환)',
+    schema: {
+      example: {
+        statusCode: 200,
+        data: {
+          id: 'cm9abc123def456ghi',
+          status: 'COMPLETED',
+          endedAt: '2024-12-31T12:00:00.000Z',
+        },
+      },
+    },
   })
   async resetTable(
     @Param('storeId') storeId: string,
@@ -125,17 +144,13 @@ export class SessionsController {
       parseInt(tableNumber),
     );
 
-    if (!session) {
-      return { data: null, message: 'No active session' };
-    }
+    if (!session) return null;
 
     // 강제 종료
-    const completedSession = await this.sessionsService.completeSession(
+    return this.sessionsService.completeSession(
       session.id,
       { guestCount: 1 }, // 기본값
     );
-
-    return { data: completedSession, message: 'Session reset successfully' };
   }
 
   @Post('sessions/:sessionId/complete')
@@ -152,7 +167,7 @@ export class SessionsController {
   @ApiParam({
     name: 'sessionId',
     description: '세션 ID',
-    example: 'session-123',
+    example: 'cm9abc123def456ghi',
   })
   @ApiBody({
     type: CompleteSessionDto,
@@ -180,13 +195,14 @@ export class SessionsController {
     description: '세션 종료 성공',
     schema: {
       example: {
+        statusCode: 200,
         data: {
-          id: 'session-123',
+          id: 'cm9abc123def456ghi',
           sessionNumber: 'SES-20241231-001',
           status: 'COMPLETED',
           totalAmount: 36000,
           guestCount: 2,
-          endedAt: '2024-12-31T12:00:00Z',
+          endedAt: '2024-12-31T12:00:00.000Z',
           guest: {
             id: 'guest-789',
             phoneNumber: '010-1234-5678',
@@ -207,7 +223,6 @@ export class SessionsController {
     @Param('sessionId') sessionId: string,
     @Body() dto: CompleteSessionDto,
   ) {
-    const session = await this.sessionsService.completeSession(sessionId, dto);
-    return { data: session };
+    return this.sessionsService.completeSession(sessionId, dto);
   }
 }

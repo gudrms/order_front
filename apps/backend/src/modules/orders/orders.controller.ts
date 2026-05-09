@@ -55,25 +55,41 @@ export class OrdersController {
         description: '첫 주문 성공 (세션 시작)',
         schema: {
             example: {
-                success: true,
+                statusCode: 201,
                 data: {
                     session: {
-                        id: 'session-123',
+                        id: 'cm9abc123def456ghi',
                         sessionNumber: 'SES-20241231-001',
                         tableNumber: 5,
                         status: 'ACTIVE',
+                        startedAt: '2024-12-31T10:00:00.000Z',
                     },
                     order: {
-                        id: 'order-456',
+                        id: 'cm9ord456ghi789jkl',
                         orderNumber: 'ORD-20241231-001',
-                        totalAmount: 40000,
-                        items: [],
+                        status: 'PENDING',
+                        totalAmount: 27000,
+                        items: [
+                            { menuName: '비프 타코', quantity: 2, menuPrice: 9500, options: [] },
+                            { menuName: '콜라', quantity: 2, menuPrice: 4000, options: [] },
+                        ],
                     },
                 },
             },
         },
     })
-    @ApiResponse({ status: 400, description: '잘못된 요청 (유효성 검증 실패)' })
+    @ApiResponse({
+        status: 400,
+        description: '유효성 검증 실패',
+        schema: {
+            example: {
+                statusCode: 400,
+                timestamp: '2024-01-01T12:00:00.000Z',
+                path: '/api/v1/stores/store-1/orders/first',
+                message: ['tableNumber must be an integer'],
+            },
+        },
+    })
     @ApiResponse({ status: 404, description: '매장 또는 메뉴를 찾을 수 없습니다.' })
     async createFirstOrder(
         @Param('storeId') storeId: string,
@@ -146,22 +162,17 @@ export class OrdersController {
         description: '주문 목록 조회 성공',
         schema: {
             example: {
-                success: true,
+                statusCode: 200,
                 data: [
                     {
-                        id: 'order-123',
+                        id: 'cm9ord456ghi789jkl',
                         orderNumber: 'ORD-20240101-001',
                         tableNumber: 5,
                         status: 'PENDING',
                         totalAmount: 36000,
-                        createdAt: '2024-01-01T12:00:00Z',
+                        createdAt: '2024-01-01T12:00:00.000Z',
                     },
                 ],
-                pagination: {
-                    page: 1,
-                    limit: 20,
-                    total: 50,
-                },
             },
         },
     })
@@ -247,11 +258,11 @@ export class OrdersController {
         description: '주문 상태 변경 성공',
         schema: {
             example: {
-                success: true,
+                statusCode: 200,
                 data: {
-                    id: 'order-123',
+                    id: 'cm9ord456ghi789jkl',
                     status: 'CONFIRMED',
-                    updatedAt: '2024-01-01T12:05:00Z',
+                    updatedAt: '2024-01-01T12:05:00.000Z',
                 },
             },
         },
