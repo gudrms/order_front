@@ -6,7 +6,6 @@ import { ValidationPipe } from '@nestjs/common';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { apiReference } from '@scalar/nestjs-api-reference';
 import helmet from 'helmet';
 import * as Sentry from '@sentry/nestjs';
 import { nodeProfilingIntegration } from '@sentry/profiling-node';
@@ -140,23 +139,36 @@ Supabase JWT를 Bearer Token으로 전달합니다.
 
     const document = SwaggerModule.createDocument(app, config);
 
-    // OpenAPI 스펙 JSON 엔드포인트 등록 (/api/docs-json)
+    // Scalar API 문서 UI를 CDN으로 직접 임베딩.
+    // @scalar/nestjs-api-reference 패키지는 ESM/CommonJS 호환성 이슈로 Vercel 서버리스에서 ERR_REQUIRE_ESM 발생.
+    // → HTML에서 CDN 스크립트만 로드하면 서버 측 import 자체가 없어서 문제 회피.
+    const scalarHtml = `<!DOCTYPE html>
+<html>
+  <head>
+    <title>🌮 Taco Mono API Docs</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+  </head>
+  <body>
+    <script
+      id="api-reference"
+      data-url="/api/docs-json"
+      data-configuration='{"theme":"purple","defaultHttpClient":{"targetKey":"javascript","clientKey":"fetch"}}'
+    ></script>
+    <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
+  </body>
+</html>`;
+
+    // SwaggerModule.setup 전에 등록해야 우선 적용됨
+    expressApp.get('/api/docs', (_req, res) => {
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        res.send(scalarHtml);
+    });
+
+    // OpenAPI 스펙 JSON 엔드포인트만 활용 (/api/docs-json)
     SwaggerModule.setup('api/docs', app, document, {
         jsonDocumentUrl: 'api/docs-json',
     });
-
-    // Scalar: Swagger UI 대체 API 문서 UI (CDN 기반, Vercel 서버리스 호환)
-    app.use('/api/docs', apiReference({
-        spec: { url: '/api/docs-json' },
-        theme: 'purple',
-        metaData: {
-            title: '🌮 Taco Mono API Docs',
-        },
-        defaultHttpClient: {
-            targetKey: 'javascript',
-            clientKey: 'fetch',
-        },
-    }));
 
     // CORS 설정 (환경별 분리)
     // 운영 도메인: tacomole.kr (브랜드), www.tacomole.kr, admin.tacomole.kr, delivery.tacomole.kr, order.tacomole.kr
