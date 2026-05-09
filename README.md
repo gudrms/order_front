@@ -263,7 +263,7 @@ pnpm ios
 - 📡 주문 → POS 전송
 - 🔄 Realtime (Supabase)
 - 🔒 보안 (Rate Limiting, Helmet)
-- 📝 Swagger API 문서
+- 📝 API 문서 (Scalar) — `https://api.tacomole.kr/api/docs`
 
 ## ⚠️ 중요: pnpm 필수!
 

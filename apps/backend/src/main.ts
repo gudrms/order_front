@@ -6,6 +6,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { apiReference } from '@scalar/nestjs-api-reference';
 import helmet from 'helmet';
 import * as Sentry from '@sentry/nestjs';
 import { nodeProfilingIntegration } from '@sentry/profiling-node';
@@ -54,16 +55,16 @@ async function bootstrap() {
     );
 
     // Helmet.js 보안 헤더 설정
-    // Swagger UI 정적 자산(CDN)을 허용하도록 CSP 구성
+    // Scalar API 문서 UI가 cdn.jsdelivr.net을 사용하므로 CSP에 허용 추가
     app.use(helmet({
         contentSecurityPolicy: process.env.NODE_ENV === 'production' ? {
             directives: {
                 defaultSrc: ["'self'"],
-                scriptSrc: ["'self'", "'unsafe-inline'", 'cdnjs.cloudflare.com'],
-                styleSrc: ["'self'", "'unsafe-inline'", 'cdnjs.cloudflare.com'],
-                imgSrc: ["'self'", 'data:', 'cdnjs.cloudflare.com'],
+                scriptSrc: ["'self'", "'unsafe-inline'", 'cdn.jsdelivr.net'],
+                styleSrc: ["'self'", "'unsafe-inline'", 'cdn.jsdelivr.net', 'fonts.googleapis.com'],
+                imgSrc: ["'self'", 'data:', 'cdn.jsdelivr.net'],
                 connectSrc: ["'self'"],
-                fontSrc: ["'self'", 'cdnjs.cloudflare.com'],
+                fontSrc: ["'self'", 'cdn.jsdelivr.net', 'fonts.gstatic.com'],
             },
         } : false,
         crossOriginEmbedderPolicy: false,
@@ -138,24 +139,24 @@ Supabase JWT를 Bearer Token으로 전달합니다.
         .build();
 
     const document = SwaggerModule.createDocument(app, config);
-    // Vercel 서버리스에서는 정적 파일 서빙이 불가능하므로 CDN 사용
-    const SWAGGER_UI_VERSION = '5.17.14';
-    const SWAGGER_CDN = `https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/${SWAGGER_UI_VERSION}`;
+
+    // OpenAPI 스펙 JSON 엔드포인트 등록 (/api/docs-json)
     SwaggerModule.setup('api/docs', app, document, {
-        customSiteTitle: 'Order System API Docs',
-        customfavIcon: `${SWAGGER_CDN}/favicon-32x32.png`,
-        customJs: [
-            `${SWAGGER_CDN}/swagger-ui-bundle.min.js`,
-            `${SWAGGER_CDN}/swagger-ui-standalone-preset.min.js`,
-        ],
-        customCssUrl: `${SWAGGER_CDN}/swagger-ui.min.css`,
-        customCss: '.swagger-ui .topbar { display: none }',
-        swaggerOptions: {
-            persistAuthorization: true,
-            tagsSorter: 'alpha',
-            operationsSorter: 'alpha',
-        },
+        jsonDocumentUrl: 'api/docs-json',
     });
+
+    // Scalar: Swagger UI 대체 API 문서 UI (CDN 기반, Vercel 서버리스 호환)
+    app.use('/api/docs', apiReference({
+        spec: { url: '/api/docs-json' },
+        theme: 'purple',
+        metaData: {
+            title: '🌮 Taco Mono API Docs',
+        },
+        defaultHttpClient: {
+            targetKey: 'javascript',
+            clientKey: 'fetch',
+        },
+    }));
 
     // CORS 설정 (환경별 분리)
     // 운영 도메인: tacomole.kr (브랜드), www.tacomole.kr, admin.tacomole.kr, delivery.tacomole.kr, order.tacomole.kr
