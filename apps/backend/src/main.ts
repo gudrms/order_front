@@ -54,8 +54,18 @@ async function bootstrap() {
     );
 
     // Helmet.js 보안 헤더 설정
+    // Swagger UI 정적 자산(CDN)을 허용하도록 CSP 구성
     app.use(helmet({
-        contentSecurityPolicy: process.env.NODE_ENV === 'production' ? undefined : false,
+        contentSecurityPolicy: process.env.NODE_ENV === 'production' ? {
+            directives: {
+                defaultSrc: ["'self'"],
+                scriptSrc: ["'self'", "'unsafe-inline'", 'cdnjs.cloudflare.com'],
+                styleSrc: ["'self'", "'unsafe-inline'", 'cdnjs.cloudflare.com'],
+                imgSrc: ["'self'", 'data:', 'cdnjs.cloudflare.com'],
+                connectSrc: ["'self'"],
+                fontSrc: ["'self'", 'cdnjs.cloudflare.com'],
+            },
+        } : false,
         crossOriginEmbedderPolicy: false,
     }));
 
@@ -128,9 +138,17 @@ Supabase JWT를 Bearer Token으로 전달합니다.
         .build();
 
     const document = SwaggerModule.createDocument(app, config);
+    // Vercel 서버리스에서는 정적 파일 서빙이 불가능하므로 CDN 사용
+    const SWAGGER_UI_VERSION = '5.17.14';
+    const SWAGGER_CDN = `https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/${SWAGGER_UI_VERSION}`;
     SwaggerModule.setup('api/docs', app, document, {
         customSiteTitle: 'Order System API Docs',
-        customfavIcon: 'https://nestjs.com/img/logo_text.svg',
+        customfavIcon: `${SWAGGER_CDN}/favicon-32x32.png`,
+        customJs: [
+            `${SWAGGER_CDN}/swagger-ui-bundle.min.js`,
+            `${SWAGGER_CDN}/swagger-ui-standalone-preset.min.js`,
+        ],
+        customCssUrl: `${SWAGGER_CDN}/swagger-ui.min.css`,
         customCss: '.swagger-ui .topbar { display: none }',
         swaggerOptions: {
             persistAuthorization: true,
