@@ -22,6 +22,91 @@
 
 ---
 
+## 인증 구조 & 테스트 토큰 발급
+
+### 토큰 발급 주체
+
+JWT는 **Supabase Auth가 발급**합니다. 백엔드는 검증만 합니다.
+
+```
+[클라이언트] ─── (email + password) ──→ [Supabase Auth]
+                                              │
+                                              └── access_token (JWT) 발급
+[클라이언트] ─── Bearer <jwt> ──→ [Backend] (SupabaseStrategy로 서명 검증)
+```
+
+백엔드에는 토큰 발급 엔드포인트가 **없습니다**. 보안 분리 원칙상 의도된 설계예요:
+- Auth 책임: Supabase (PKCE, MFA, OAuth, 비밀번호 정책 등)
+- Backend 책임: JWT 검증 + 비즈니스 로직
+
+### 인증이 필요한 vs 필요 없는 엔드포인트
+
+| 인증 불필요 (Public) | 인증 필요 (`@UseGuards(SupabaseGuard)`) |
+|---|---|
+| `GET /stores` (활성 매장 목록) | `GET /stores/me` (내 매장) |
+| `GET /stores/identifier/:type/:branch` | `GET /auth/me` |
+| `GET /stores/:storeId/menus` | `POST /auth/sync` |
+| `GET /stores/:storeId/categories` | `POST /orders` (배달 주문) |
+| `POST /stores/:storeId/orders/first` (테이블오더) | `GET /stores/:storeId/orders` |
+| `POST /payments/toss/confirm` | `PATCH /orders/:orderId/cancel` |
+| `GET /pos/orders/pending` (단, `x-pos-api-key` 헤더 필수) | `POST /coupons` |
+
+> 테이블오더 첫 주문은 인증 없이 가능하지만 결제 승인은 어차피 Toss 흐름이라 별도 인증 불필요.
+
+### 테스트 토큰 발급 방법
+
+**방법 1: Supabase Auth REST API 직접 호출 (가장 빠름)**
+
+```http
+POST https://<project-ref>.supabase.co/auth/v1/token?grant_type=password
+apikey: <SUPABASE_ANON_KEY>
+Content-Type: application/json
+
+{
+  "email": "test@tacomole.kr",
+  "password": "test1234!"
+}
+```
+
+응답:
+```json
+{
+  "access_token": "eyJhbGciOi...(이게 JWT)",
+  "refresh_token": "...",
+  "expires_in": 3600,
+  "user": { "id": "...", "email": "..." }
+}
+```
+
+→ `access_token`을 `Authorization: Bearer <access_token>` 헤더에 넣어 사용.
+
+**방법 2: Supabase Studio에서 사용자 발급**
+
+1. Supabase Dashboard → Authentication → Users
+2. `Add user` → email/password 입력
+3. 생성된 사용자 → `...` → `Send password recovery` 또는 위 방법 1로 로그인하여 토큰 받기
+
+**방법 3: 프론트엔드 로그인 후 토큰 복사 (개발 중 가장 편함)**
+
+1. `localhost:3001` (delivery-customer) 등에서 로그인
+2. DevTools → Application → Local Storage
+3. `sb-<project-ref>-auth-token` 키 안의 `access_token` 복사
+
+### Scalar UI에서 토큰 등록
+
+Scalar UI(`api/docs`) 좌측 사이드바에서:
+1. 자물쇠 아이콘 클릭 (Authorization)
+2. `JWT-auth` 항목에 `Bearer <token>` 입력 (Bearer 자동 prefix되므로 토큰만 넣어도 됨)
+3. 이후 모든 요청에 자동 첨부됨
+
+### 토큰 만료 시
+
+Supabase 기본 만료 시간은 **1시간**. 만료되면:
+- 401 응답 (`WWW-Authenticate` 헤더 포함)
+- 위 방법 1을 다시 호출하거나, refresh token으로 갱신 (`grant_type=refresh_token`)
+
+---
+
 ## 시나리오 1: 테이블오더 주문 플로우
 
 고객이 QR로 테이블에 앉아서 첫 주문 → 추가 주문 → 계산 완료까지의 흐름.
@@ -360,6 +445,11 @@ Content-Type: application/json
 
 ### Step 5-3: 옵션 그룹 생성
 
+`minSelect`/`maxSelect`로 필수/다중 선택을 표현합니다 (별도 `isRequired` 필드 없음).
+- `minSelect: 0` → 선택사항
+- `minSelect: 1, maxSelect: 1` → 단일 필수 선택
+- `minSelect: 1, maxSelect: 3` → 1~3개 필수 선택
+
 ```http
 POST /api/v1/stores/{storeId}/menus/{menuId}/option-groups
 Authorization: Bearer <jwt>
@@ -367,12 +457,12 @@ Content-Type: application/json
 
 {
   "name": "맵기 선택",
-  "isRequired": true,
   "minSelect": 1,
-  "maxSelect": 1
+  "maxSelect": 1,
+  "displayOrder": 0
 }
 ```
-응답: `{ statusCode: 201, data: { id, name, isRequired } }`
+응답: `{ statusCode: 201, data: { id, name, minSelect, maxSelect } }`
 
 ### Step 5-4: 옵션 항목 추가
 
@@ -393,6 +483,10 @@ Content-Type: application/json
 
 ### Step 6-1: 쿠폰 템플릿 생성 (관리자)
 
+- `type`: `PERCENTAGE`(정률) 또는 `FIXED_AMOUNT`(정액)
+- `defaultExpiryDays`: 발급일 기준 며칠 후 만료 (기본 30일). 별도의 `expiresAt`은 사용하지 않음
+- `code`: 프로모 코드. 생략 시 자동 발급 전용 쿠폰
+
 ```http
 POST /api/v1/coupons
 Authorization: Bearer <jwt>
@@ -400,13 +494,17 @@ Content-Type: application/json
 
 {
   "name": "신규 가입 혜택",
-  "discountType": "FIXED",
+  "type": "FIXED_AMOUNT",
   "discountValue": 3000,
   "minOrderAmount": 15000,
-  "expiresAt": "2025-12-31T23:59:59.000Z"
+  "defaultExpiryDays": 30,
+  "code": "WELCOME2026"
 }
 ```
-응답: `{ statusCode: 201, data: { id, name, discountType, discountValue, code } }`
+응답: `{ statusCode: 201, data: { id, name, type, discountValue, code } }`
+
+> 정률 쿠폰 예시: `{ "type": "PERCENTAGE", "discountValue": 10, "maxDiscountAmount": 5000 }`
+> → 10% 할인, 최대 5000원까지
 
 ### Step 6-2: 사용자에게 발급 (관리자)
 
