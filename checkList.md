@@ -1,5 +1,68 @@
 # Taco Mono 루트 체크리스트
-마지막 업데이트: 2026-05-07 (Playwright E2E 안정화 + Vercel 백엔드 배포 안정화 반영)
+마지막 업데이트: 2026-05-12 (env sync 스크립트 도입, 실값 env git untrack 완료)
+
+## 🛠 2026-05-12 프로젝트 평가 기반 개선사항
+
+### 🔴 P0 — Critical (즉시 조치, 보안)
+
+- [x] **[P0] env sync 체계 도입 — `all-in-one-shared.env.local` 단일 소스** (2026-05-12)
+  - `scripts/sync-env.js` 생성: 루트 `all-in-one-shared.env.local` 읽어 앱별 `.env.local` 자동 생성.
+  - `pnpm sync:env` (실행) / `pnpm sync:env:preview` (--dry-run) 스크립트 추가.
+  - `all-in-one-shared.env.example` (빈 값 템플릿) 생성 및 커밋.
+  - Vercel: `all-in-one-shared.env` 그대로 Shared Env Import 유지. 로컬: `.local` 파일에 실값.
+- [ ] **[P0] git에 커밋된 실 운영 시크릿 즉시 폐기 및 재발급(rotate)**
+  - 파일 untrack은 완료 (`git rm --cached`). **히스토리에는 아직 남아 있음** — 아래 히스토리 정리 항목과 함께 진행.
+  - 재발급 대상:
+    - Supabase DB password (`wlgudrms644`), `SUPABASE_SERVICE_KEY` (→ Supabase 대시보드)
+    - `TOSS_ACCESS_KEY`, `TOSS_ACCESS_SECRET` (→ Toss 콘솔)
+    - `INTERNAL_JOB_SECRET=01055408727` → 32자 이상 랜덤값으로 교체
+    - SMTP `EMAIL_PASS` (→ Gmail 앱 비밀번호 재발급)
+  - 재발급 후 `all-in-one-shared.env.local` 에 새 값 반영 → `pnpm sync:env` 재실행.
+  - **⚠️ `SUPABASE_SERVICE_KEY` 는 `all-in-one-shared.env.local` 에 직접 추가 필요** (기존 파일에 누락).
+- [ ] **[P0] git 히스토리에서 시크릿 완전 제거**
+  - `git filter-repo` 또는 `bfg` 로 아래 파일 히스토리 제거 후 force-push:
+    `all-in-one-shared.env`, `backend-env.env`, `apps/backend/.env.direct`, `apps/backend/.env.pooler`
+  - Vercel 환경변수는 이미 대시보드에 설정되어 있으므로 재발급 후 Dashboard에서 값만 갱신.
+- [x] **[P0] `.gitignore` 보강** (2026-05-12)
+  - `all-in-one-shared.env`, `all-in-one-shared.env.local`, `backend-env.env`, `*-env.env`, `*.env.local`, `apps/backend/.env.direct`, `apps/backend/.env.pooler` 추가.
+- [ ] **[P0] CORS 개발 모드 전체 허용 제거**
+  - `apps/backend/src/main.ts:203` 에서 `NODE_ENV === 'development'` 시 모든 origin 허용 + `credentials: true` 조합. 개발도 명시 화이트리스트로 제한.
+
+### 🔴 P0 — Critical (저장소 위생)
+
+- [x] **[P0] 빌드 산출물/임시 스크립트 트래킹 해제** (2026-05-12)
+  - `git rm --cached`: `get-store-id.{js,d.ts,js.map}`, `test-connection.js`, `test-connection-direct.js`, `vitest.config.js`.
+  - `.gitignore`에 해당 패턴 추가 완료.
+- [ ] **[P0] 리포지토리 내 거대 임시 파일 제거**
+  - `tree_output.txt`(96MB), `tree_output_utf8.txt`(48MB) 삭제. (`tree_output*.txt`는 .gitignore에 추가 완료)
+
+### 🟡 P1 — Major (구조/품질)
+
+- [ ] **[P1] 프로덕션 Redis 강제화**
+  - `apps/backend/src/app.module.ts:38` ThrottlerModule이 `REDIS_URL` 미설정 시 in-memory 폴백 → Vercel 다중 인스턴스에서 rate limit 사실상 무력화.
+  - `NODE_ENV === 'production'` && `REDIS_URL` 없으면 부팅 실패하도록 가드.
+- [ ] **[P1] 환경변수 로딩 일원화**
+  - `process.env.*` 직접 사용처(main.ts 등)를 `ConfigService` + Joi/Zod 스키마 검증으로 통일. 누락/오타 시 부팅 단계에서 실패하도록.
+- [ ] **[P1] Optional dependency 패턴 재검토**
+  - `apps/backend/src/modules/orders/orders.service.ts:16-17` `queueService?`, `couponsService?` optional 주입 → 런타임 silent fail 위험. 필수로 바꾸거나 명시적 No-op fallback 주입.
+- [ ] **[P1] Serverless cold start 최적화**
+  - `apps/backend/src/main.ts:43-52` 단일 진입점에서 17개 모듈 일괄 로드. Vercel cold start 부담. 라우트별 함수 분리 또는 lazy module 검토.
+- [ ] **[P1] 문서 통합/정리**
+  - 루트·각 앱에 `.md` 59개 산재 (`checkList.md`, `CHECKLIST.md`, `BACKEND_CHECKLIST.md`, `IMPLEMENTATION_PLAN.md`, `DEPLOYMENT_GUIDE.md`, `BACKEND_TECH_SPEC.md`, `MQ_TECH_SPEC.md`, `LOCAL_TEST_GUIDE.md`, `VERCEL_CRON.md`, `ENV_MANAGEMENT.md`, `PROMPT_RULES.md`, `run.md` 등).
+  - 전부 `docs/` 하위로 모으고 README는 인덱스만 유지. 동기화 안 되는 중복 체크리스트 폐기.
+
+### 🟢 P2 — Quality (점진 개선)
+
+- [ ] **[P2] 백엔드 테스트 커버리지 확대**
+  - 현재 spec 31개, service 위주. 컨트롤러 레벨 spec과 결제/주문/큐 통합 시나리오 E2E 추가.
+- [ ] **[P2] 프론트엔드 단위 테스트 도입**
+  - `apps/admin`, `apps/delivery-customer`, `apps/table-order` 단위 테스트 없음(Playwright E2E만 존재). 핵심 store/hook(`useCartStore`, `useOrderStatus` 등)부터 vitest + RTL 도입.
+- [ ] **[P2] `any` 타입 점진 제거**
+  - `apps/backend/src` 기준 `any` 사용 229건. Prisma JSON 컬럼/DTO 경계 제외하고 비즈니스 로직 내 `any` 제거.
+- [ ] **[P2] 사용하지 않는 root 디렉터리/파일 정리**
+  - `.pnpm-store/`(로컬 캐시), `playwright-report/`, `test-results/`, `dist/` 등 빌드/캐시 산출물 위치 점검.
+
+
 
 ## 🔎 2026-05-07 Vercel 백엔드 배포 안정화 메모
 
@@ -555,3 +618,27 @@
 - [ ] **[P2] `table-order` 로컬 API 레이어 정리**: `apps/table-order/src/lib/api/endpoints/` 디렉토리에 `order.ts`, `menu.ts`, `table.ts` 등 로컬 전용 API 엔드포인트 파일이 존재하며, 일부는 `packages/shared/src/api/endpoints/`와 기능이 중복됨. `shared`에 없는 테이블오더 전용 로직만 남기고 나머지는 `@order/shared`의 API 함수로 교체하여 중복 제거 필요.
 
 - [ ] **[P2] `useCreateOrder` queryKey 무효화 범위 축소**: `apps/table-order/src/hooks/mutations/useCreateOrder.ts`에서 주문 생성 성공 후 `['orders']` 전체를 무효화하고 있음. 테이블 번호와 매장 ID를 포함한 `['orders', 'table', storeId, tableNumber]` 형태로 범위를 좁혀 불필요한 리페치 방지 필요.
+
+---
+
+### G-4. README 문서 정합성 (P2)
+
+- [ ] **[P2] 루트 `README.md` 내용 중복 제거**: 파일 1~41번 줄과 42~86번 줄이 완전히 동일한 내용으로 중복되어 있음. 앞부분 중복 블록 삭제 필요.
+
+- [ ] **[P2] 루트 `README.md` 백엔드 모듈 구조 수정**: 문서에 `table-order/`, `delivery/`, `pos-sync/`, `shared/`, `brand-site/` 모듈 구조로 기술되어 있으나, 실제 `apps/backend/src/modules/`는 `orders/`, `payments/`, `queue/`, `integrations/`, `coupons/`, `sessions/` 등 완전히 다른 구조임. 실제 구조로 교체 필요.
+
+- [ ] **[P2] 루트 `README.md` 누락 항목 추가**: `apps/admin-electron` 앱이 앱 목록에 없음. 추가 필요. `brand-website`를 `Next.js SSG`로 명시했으나 실제로는 `output: 'export'`가 주석 처리된 SSR 모드임. 수정 필요.
+
+- [ ] **[P2] 루트 `README.md` 깨진 링크 제거**: `REFACTORING.md`, `docs/ARCHITECTURE_DECISIONS.md` 두 파일이 존재하지 않음에도 문서 링크로 기재되어 있음. 링크 제거 또는 파일 생성 필요.
+
+- [ ] **[P2] `packages/shared/README.md` 전면 업데이트**: 현재 문서는 초기 설계 시점 내용으로, 실제 패키지 exports의 절반도 반영하지 못함. 추가된 타입(`Coupon`, `Address`, `Payment`, `OrderDelivery`, `Call`, `DeliveryStatus` 등), `src/api/` 레이어(client + 각 endpoint 모듈), `src/stores/cartStore`, 공통 훅(`useMenuSelection`, `useOrderStatus`, `useGeolocation`) 전부 누락 상태. 전면 재작성 필요.
+
+- [ ] **[P2] `packages/ui/README.md` 내용 보강**: 실제 컴포넌트 목록, Shadcn UI 기반 기술 스택, `@order/ui/payment` 서브패스 import 방식 등 핵심 사용 정보 추가 필요.
+
+- [ ] **[P2] `packages/order-core/README.md` 사용 예시 추가**: 현재 export 목록만 있고 사용 예시 코드, 실제 사용처(`delivery-customer` checkout), `@order/shared`와의 책임 경계 설명이 없음. 보강 필요.
+
+- [ ] **[P2] `apps/table-order/src/features/README.md` 재작성**: `admin/` 기능(주문 접수 현황판, 메뉴 관리, 매출 통계)이 구현된 것처럼 기술되어 있으나 실제 디렉토리는 비어 있음. 모듈 구조 예시도 실제 `cart/`, `order/` feature 구조(`components/ + index.ts`)와 다름. 현재 실제 구조 기준으로 재작성 필요.
+
+- [ ] **[P2] `apps/table-order/src/hooks/README.md` 재작성**: 존재하지 않는 `useCart`, `useWebSocket`, `useAuth` 등을 나열하고 있음. 실제 훅 구조(`mutations/useCreateOrder`, `mutations/useCreateCall`, `queries/useMenus`, `queries/useOrders`)로 교체 필요. WebSocket 언급은 현재 아키텍처(Supabase Realtime)와 방향이 다르므로 삭제 필요.
+
+- [ ] **[P2] `apps/table-order/src/lib/README.md` 재작성**: `api/endpoints.ts`, `api/interceptors.ts`, `utils/formatters.ts`, `constants/routes.ts` 등 실제로 존재하지 않는 파일을 기술하고 있음. 예시 코드의 `ENDPOINTS.menus.list`, `API_CONFIG.baseURL`, `ROUTES.customer.menu` 식별자도 실제 코드에 없음. 실제 `api/endpoints/`(디렉토리), `api/client.ts`, `constants/domains.ts` 구조로 재작성 필요.

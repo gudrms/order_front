@@ -1,0 +1,212 @@
+/**
+ * sync-env.js
+ *
+ * 루트의 all-in-one-shared.env.local 파일을 읽어
+ * 각 앱에 필요한 키만 골라 apps/<app>/.env.local 을 생성한다.
+ *
+ * 사용법:
+ *   node scripts/sync-env.js
+ *   node scripts/sync-env.js --dry-run   # 실제 파일 쓰지 않고 미리보기만
+ *
+ * Vercel 흐름과 대칭:
+ *   Vercel  → all-in-one-shared.env 를 Shared Env Variables 로 Import
+ *   로컬    → all-in-one-shared.env.local 에 실값 기입 → 이 스크립트 실행
+ */
+
+const fs = require('fs');
+const path = require('path');
+
+const ROOT = path.resolve(__dirname, '..');
+const SOURCE_FILE = path.join(ROOT, 'all-in-one-shared.env.local');
+const DRY_RUN = process.argv.includes('--dry-run');
+
+// ──────────────────────────────────────────────
+// 앱별 키 화이트리스트
+// 값이 배열이면 그 키들만 복사.
+// 값이 객체 { keys, remap } 이면 remap 으로 키 이름도 변환.
+// ──────────────────────────────────────────────
+const APP_KEYS = {
+  admin: [
+    'NEXT_PUBLIC_API_URL',
+    'NEXT_PUBLIC_SUPABASE_URL',
+    'NEXT_PUBLIC_SUPABASE_ANON_KEY',
+    'NEXT_PUBLIC_STORE_ID',
+    'NEXT_PUBLIC_FIREBASE_API_KEY',
+    'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN',
+    'NEXT_PUBLIC_FIREBASE_PROJECT_ID',
+    'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET',
+    'NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID',
+    'NEXT_PUBLIC_FIREBASE_APP_ID',
+    'NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID',
+    'NEXT_PUBLIC_FIREBASE_VAPID_KEY',
+    'NEXT_PUBLIC_SENTRY_DSN',
+    'NEXT_PUBLIC_APP_VERSION',
+    'NEXT_PUBLIC_ENABLE_QUERY_DEVTOOLS',
+    'SENTRY_ORG',
+    'SENTRY_PROJECT',
+  ],
+
+  backend: {
+    keys: [
+      'DATABASE_URL',
+      'REDIS_URL',
+      'FRONTEND_URL',
+      'FRONTEND_URLS',
+      'PORT',
+      'LOG_LEVEL',
+      'TOSS_ACCESS_KEY',
+      'TOSS_ACCESS_SECRET',
+      'TOSS_MERCHANT_ID',
+      'POS_INTEGRATION_API_KEY',
+      'INTERNAL_JOB_SECRET',
+      'SENTRY_DSN',
+      'BACKEND_QUEUE_NAME',
+      'BACKEND_QUEUE_MAX_ATTEMPTS',
+      'NOTIFICATION_WEBHOOK_URL',
+      'NOTIFICATION_WEBHOOK_SECRET',
+      'NOTIFICATION_EMAIL_WEBHOOK_URL',
+      'NOTIFICATION_SMS_WEBHOOK_URL',
+      'FIREBASE_PROJECT_ID',
+      'FIREBASE_CLIENT_EMAIL',
+      'FIREBASE_PRIVATE_KEY',
+      // Supabase — 백엔드는 NEXT_PUBLIC_ 접두사 없이 사용
+      'SUPABASE_URL',
+      'SUPABASE_ANON_KEY',
+      'SUPABASE_SERVICE_KEY',
+      'DIRECT_URL',
+    ],
+    // NEXT_PUBLIC_SUPABASE_* → SUPABASE_* 로 자동 매핑 (소스에 SUPABASE_* 없을 때 폴백)
+    remap: {
+      NEXT_PUBLIC_SUPABASE_URL: 'SUPABASE_URL',
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: 'SUPABASE_ANON_KEY',
+    },
+  },
+
+  'delivery-customer': [
+    'NEXT_PUBLIC_API_URL',
+    'NEXT_PUBLIC_SUPABASE_URL',
+    'NEXT_PUBLIC_SUPABASE_ANON_KEY',
+    'NEXT_PUBLIC_TOSS_CLIENT_KEY',
+    'NEXT_PUBLIC_STORE_ID',
+    'NEXT_PUBLIC_SENTRY_DSN',
+    'NEXT_PUBLIC_TABLE_ORDER_URL',
+    'NEXT_PUBLIC_STORE_TYPE',
+    'NEXT_PUBLIC_BRANCH_ID',
+    'NEXT_PUBLIC_DEFAULT_STORE_TYPE',
+    'NEXT_PUBLIC_DEFAULT_BRANCH_ID',
+    'CAPACITOR_SERVER_URL',
+    'SENTRY_ORG',
+    'SENTRY_PROJECT',
+  ],
+
+  'table-order': [
+    'NEXT_PUBLIC_API_URL',
+    'NEXT_PUBLIC_SUPABASE_URL',
+    'NEXT_PUBLIC_SUPABASE_ANON_KEY',
+    'NEXT_PUBLIC_TOSS_CLIENT_KEY',
+    'NEXT_PUBLIC_STORE_ID',
+    'NEXT_PUBLIC_SENTRY_DSN',
+    'NEXT_PUBLIC_DEFAULT_STORE_TYPE',
+    'NEXT_PUBLIC_DEFAULT_BRANCH_ID',
+    'NEXT_PUBLIC_ENABLE_QUERY_DEVTOOLS',
+    'CAPACITOR_SERVER_URL',
+    'SENTRY_ORG',
+    'SENTRY_PROJECT',
+  ],
+
+  'brand-website': [
+    'NEXT_PUBLIC_API_URL',
+    'NEXT_PUBLIC_DELIVERY_URL',
+    'NEXT_PUBLIC_KAKAO_MAP_KEY',
+    'NEXT_PUBLIC_SUPABASE_URL',
+    'NEXT_PUBLIC_SUPABASE_ANON_KEY',
+    'NEXT_PUBLIC_SENTRY_DSN',
+    'EMAIL_USER',
+    'EMAIL_PASS',
+    'ADMIN_EMAIL',
+    'SENTRY_ORG',
+    'SENTRY_PROJECT',
+  ],
+};
+
+// ──────────────────────────────────────────────
+// 파서: "KEY=VALUE" 형태의 .env 파일 → Map
+// ──────────────────────────────────────────────
+function parseEnv(content) {
+  const map = new Map();
+  for (const raw of content.split(/\r?\n/)) {
+    const line = raw.trim();
+    if (!line || line.startsWith('#')) continue;
+    const eq = line.indexOf('=');
+    if (eq === -1) continue;
+    const key = line.slice(0, eq).trim();
+    const val = line.slice(eq + 1).trim();
+    map.set(key, val);
+  }
+  return map;
+}
+
+// ──────────────────────────────────────────────
+// 메인
+// ──────────────────────────────────────────────
+if (!fs.existsSync(SOURCE_FILE)) {
+  console.error(`\n[sync-env] 소스 파일을 찾을 수 없습니다: ${SOURCE_FILE}`);
+  console.error(
+    '[sync-env] all-in-one-shared.env.example 을 복사해 all-in-one-shared.env.local 을 만들고 실값을 채워주세요.\n'
+  );
+  process.exit(1);
+}
+
+const source = parseEnv(fs.readFileSync(SOURCE_FILE, 'utf8'));
+
+for (const [appName, config] of Object.entries(APP_KEYS)) {
+  const appDir = path.join(ROOT, 'apps', appName);
+  if (!fs.existsSync(appDir)) {
+    console.warn(`[sync-env] 앱 디렉터리 없음, 건너뜀: ${appName}`);
+    continue;
+  }
+
+  const keys = Array.isArray(config) ? config : config.keys;
+  const remap = Array.isArray(config) ? {} : (config.remap ?? {});
+
+  const lines = [
+    `# 자동 생성 — 수정하지 마세요. 수정은 all-in-one-shared.env.local 에서 하세요.`,
+    `# Generated by: node scripts/sync-env.js (${new Date().toISOString().slice(0, 10)})`,
+    '',
+  ];
+
+  for (const key of keys) {
+    if (source.has(key)) {
+      lines.push(`${key}=${source.get(key)}`);
+    } else {
+      // remap 폴백 (예: SUPABASE_URL → NEXT_PUBLIC_SUPABASE_URL)
+      const fallback = Object.entries(remap).find(([, to]) => to === key)?.[0];
+      if (fallback && source.has(fallback)) {
+        lines.push(`${key}=${source.get(fallback)}`);
+      }
+      // 값이 없으면 항목 자체를 생략 (빈 줄 방지)
+    }
+  }
+
+  // remap: NEXT_PUBLIC_SUPABASE_URL → SUPABASE_URL 형태로 추가 출력
+  for (const [from, to] of Object.entries(remap)) {
+    if (!keys.includes(to) && source.has(from)) {
+      lines.push(`${to}=${source.get(from)}`);
+    }
+  }
+
+  const output = lines.join('\n') + '\n';
+  const dest = path.join(appDir, '.env.local');
+
+  if (DRY_RUN) {
+    console.log(`\n──── [dry-run] ${appName}/.env.local ────`);
+    console.log(output);
+  } else {
+    fs.writeFileSync(dest, output, 'utf8');
+    console.log(`[sync-env] ✅  apps/${appName}/.env.local 생성 완료`);
+  }
+}
+
+if (!DRY_RUN) {
+  console.log('\n[sync-env] 완료. 각 앱에 .env.local 이 생성되었습니다.');
+}
