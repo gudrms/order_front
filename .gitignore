@@ -39,7 +39,8 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Environment Variables (전부 제외, .env.example만 커밋)
+# Environment Variables
+# Next.js 표준 패턴
 .env
 .env.local
 .env*.local
@@ -49,7 +50,24 @@ yarn-error.log*
 .env.test.local
 .env.production.local
 
-# .env.example은 커밋 (예제 템플릿)
+# 모노레포 공유 env (실값 파일 — .example / .local 구분)
+all-in-one-shared.env          # 실값 → gitignore
+all-in-one-shared.env.local    # 실값 → gitignore
+backend-env.env                # 실값 → gitignore
+*.env.local                    # 모든 *.env.local
+*-env.env                      # *-env.env 패턴 전부 차단
+
+# 앱별 로컬 env (sync-env.js 가 생성)
+apps/*/.env.local
+apps/**/.env.local
+
+# Supabase direct / pooler 연결 파일
+apps/backend/.env.direct
+apps/backend/.env.pooler
+
+# 예시 템플릿은 커밋 허용
+!*.env.example
+!all-in-one-shared.env.example
 
 # IDEs
 .idea
@@ -71,6 +89,15 @@ Desktop.ini
 # Sentry
 .sentryclirc
 sentry.properties
+
+# 일회성 스크립트 / 빌드 산출물 (소스는 .ts로 관리)
+apps/backend/get-store-id.js
+apps/backend/get-store-id.d.ts
+apps/backend/get-store-id.js.map
+apps/backend/test-connection.js
+apps/backend/test-connection-direct.js
+apps/backend/vitest.config.js
+tree_output*.txt
 
 # Gemini / local automation artifacts
 .gemini/
