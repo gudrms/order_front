@@ -513,3 +513,45 @@
 - [ ] POS 전송 실패 케이스 생성 후 관리자 MQ 화면에서 실패 조회/재시도 확인
 - [ ] 관리자 브라우저 백그라운드 상태에서 주문/직원 호출 알림 수신 확인
 - [ ] 영수증 출력/자동 소리 재생 한계 확인 및 Electron 래핑 필요성 재평가
+
+---
+
+## 🔧 G. 코드 품질 개선 (Code Review 기반 Tech Debt)
+
+> 2026-05-12 코드베이스 전체 리뷰를 통해 발견된 개선 항목. 우선순위(P0~P2)로 분류.
+
+---
+
+### G-1. 버그 / 잠재적 장애 (P0)
+
+- [ ] **[P0] `updateOrderStatus` localStorage mock 제거**: `packages/shared/src/api/endpoints/order.ts`와 `apps/table-order/src/lib/api/endpoints/order.ts` 두 곳 모두에 `updateOrderStatus` 함수가 실제 API 호출 없이 `localStorage`를 읽고 쓰는 mock 구현으로 남아 있음. 프로덕션에서 이 함수가 호출될 경우 주문 상태 변경이 서버에 반영되지 않는 심각한 버그. 실제 백엔드 API(`PATCH /stores/:storeId/orders/:orderId/status`)와 연동하도록 교체 필요.
+
+- [ ] **[P0] `generateOrderNumber` 동시성 취약점**: `apps/backend/src/modules/orders/orders.service.ts`의 `generateOrderNumber`가 `tx.order.count({ where: { storeId } }) + 1`로 번호를 생성함. 동시에 두 요청이 같은 count를 읽으면 동일한 `orderNumber`가 발급될 수 있음. Prisma schema에 `@@unique([storeId, orderNumber])` 제약이 없으면 중복 주문번호가 실제로 저장될 위험 있음. DB 레벨 unique 제약 추가 또는 DB 시퀀스/UUID 기반 방식으로 교체 필요.
+
+- [ ] **[P0] `updateOrderStatus` 상태 전이 검증 부재**: `apps/backend/src/modules/orders/orders.service.ts`의 `updateOrderStatus`는 `status` 파라미터를 아무 검증 없이 그대로 DB에 저장함. `COMPLETED → PENDING`, `CANCELLED → COOKING` 같은 비정상 역방향 전이가 API 호출 한 번으로 가능한 상태. 허용 가능한 상태 전이 맵(State Machine)을 정의하고 유효하지 않은 전이는 `BadRequestException`으로 차단해야 함.
+
+---
+
+### G-2. 코드 구조 / 아키텍처 (P1)
+
+- [ ] **[P1] `packages/shared`와 `apps/table-order` 타입 불일치 정리**: `apps/table-order/src/types/order.ts`의 `OrderStatus`가 `'PENDING' | 'COOKING' | 'SERVED' | 'CANCELLED'` 4개 값으로 정의되어 있으나, `packages/shared/src/types/order.ts`의 `OrderStatus`는 10개 값으로 정의되어 있어 불일치함. `apps/table-order/src/types/index.ts`에 `@deprecated` 주석이 달려 있음에도 `order.ts` 로컬 파일이 여전히 존재하므로 완전히 삭제하고 `@order/shared`만 사용하도록 정리 필요.
+
+- [ ] **[P1] `packages/shared/src/api/client.ts`와 `apps/table-order/src/lib/api/client.ts` 중복 제거**: 두 파일 모두 Fetch 기반 HTTP 클라이언트로 사실상 중복 구현임. `table-order`가 이미 `@order/shared`를 의존성으로 가지고 있으므로 `apps/table-order/src/lib/api/client.ts`를 삭제하고 `packages/shared/src/api/client.ts`로 단일화 필요.
+
+- [ ] **[P1] `OrdersService` 클래스 분리**: `apps/backend/src/modules/orders/orders.service.ts`가 616라인으로 테이블 주문, 배달 주문, POS 재시도, 상태 변경, 배달 상태 변경 등 서로 다른 책임을 하나의 클래스에서 처리하고 있음. `TableOrderService`, `DeliveryOrderService`, `OrderStatusService` 등으로 분리하거나, Use Case 단위의 Command 클래스로 분해하여 단일 책임 원칙(SRP) 준수 필요.
+
+- [ ] **[P1] `QueueConsumerService` 클래스 분리**: `apps/backend/src/modules/queue/queue-consumer.service.ts`가 583라인으로 결제, POS 전송, 알림, 배달 상태 변경 등 모든 이벤트 처리 로직을 단일 클래스에서 담당하고 있음. 이벤트 타입별로 전용 핸들러 클래스(`PaymentEventHandler`, `PosEventHandler`, `NotificationEventHandler`)로 분리하여 가독성과 테스트 용이성 개선 필요.
+
+- [ ] **[P1] `shared`와 `order-core` 패키지 책임 경계 재정의**: 현재 `packages/shared/src/stores/cartStore.ts`에 장바구니 계산 로직이 존재하고, `packages/order-core`에도 `calculateOrderTotals`, `validateOrder` 등 주문 계산 로직이 존재함. 두 패키지의 책임 경계가 명확하지 않아 어디에 로직을 추가해야 할지 혼란스러운 구조. `shared`는 타입/API 클라이언트/유틸리티, `order-core`는 비즈니스 계산/검증 로직으로 명확히 역할을 분리하고 `cartStore`의 계산 로직을 `order-core`로 이관하는 방향 검토 필요.
+
+---
+
+### G-3. 코드 품질 / 유지보수성 (P2)
+
+- [ ] **[P2] 백엔드 `any` 타입 남용 제거**: `apps/backend/src/modules/orders/orders.service.ts`에서 `prepareOrderItems(tx: any, ...)`, `updateOrderStatus(..., status: any)`, `updateDeliveryStatus(..., deliveryStatus: any)` 등 핵심 비즈니스 로직에 `any` 타입이 다수 사용됨. Prisma 트랜잭션 타입(`Prisma.TransactionClient`)과 Enum 타입을 명시적으로 지정하여 타입 안정성 확보 필요.
+
+- [ ] **[P2] `table-order` 주문 조회 polling 방식 재검토**: `apps/table-order/src/hooks/queries/useOrders.ts`에서 `refetchInterval: 5000`으로 5초마다 주문 목록을 폴링하고 있음. 관리자 앱(`admin`)은 Supabase Realtime으로 실시간 업데이트를 구현했으나, 테이블오더는 여전히 폴링 방식을 사용 중. Supabase Realtime 또는 SSE(Server-Sent Events)로 교체하여 불필요한 API 요청 감소 및 실시간성 개선 검토 필요.
+
+- [ ] **[P2] `table-order` 로컬 API 레이어 정리**: `apps/table-order/src/lib/api/endpoints/` 디렉토리에 `order.ts`, `menu.ts`, `table.ts` 등 로컬 전용 API 엔드포인트 파일이 존재하며, 일부는 `packages/shared/src/api/endpoints/`와 기능이 중복됨. `shared`에 없는 테이블오더 전용 로직만 남기고 나머지는 `@order/shared`의 API 함수로 교체하여 중복 제거 필요.
+
+- [ ] **[P2] `useCreateOrder` queryKey 무효화 범위 축소**: `apps/table-order/src/hooks/mutations/useCreateOrder.ts`에서 주문 생성 성공 후 `['orders']` 전체를 무효화하고 있음. 테이블 번호와 매장 ID를 포함한 `['orders', 'table', storeId, tableNumber]` 형태로 범위를 좁혀 불필요한 리페치 방지 필요.
