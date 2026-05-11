@@ -60,5 +60,20 @@
     }
   ],
   "categories": ["food", "shopping"],
-  "screenshots": []
+  "screenshots": [
+    {
+      "src": "/screenshots/screen-home.png",
+      "sizes": "1080x1920",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "홈 화면 — 메뉴 탐색"
+    },
+    {
+      "src": "/screenshots/screen-order.png",
+      "sizes": "1080x1920",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "주문 내역 확인"
+    }
+  ]
 }

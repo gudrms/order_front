@@ -134,8 +134,25 @@ export async function processOrder(order: BackendOrder) {
         console.log(`Order ${order.orderNumber} synced successfully.`);
     } catch (error) {
         console.error(`Failed to process order ${order.orderNumber}:`, error);
+        // 실패를 백엔드에 기록 → posSyncAttemptCount 증가 & backoff retry 트리거
+        await markOrderSyncFailed(
+            order.id,
+            error instanceof Error ? error.message : 'POS sync failed',
+        );
     } finally {
         processingOrders.delete(order.id);
+    }
+}
+
+async function markOrderSyncFailed(orderId: string, message: string): Promise<void> {
+    try {
+        await fetch(`${API_URL}/pos/orders/${orderId}/sync-failed`, {
+            method: 'PATCH',
+            headers: posApiHeaders({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ message }),
+        });
+    } catch (err) {
+        console.error(`Failed to report sync-failed for order ${orderId}:`, err);
     }
 }
 

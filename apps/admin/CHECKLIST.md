@@ -1,6 +1,6 @@
 # 관리자 체크리스트
 
-마지막 업데이트: 2026-05-06 (체크리스트 문서 정합성 정리)
+마지막 업데이트: 2026-05-07 (루트 체크리스트 기준 동기화)
 
 ## 🚨 1차 런칭 Blocker
 
@@ -103,17 +103,15 @@
 - [x] 관리자 주문 상태 변경/배달 상태 변경 브라우저 E2E (2026-05-06): `e2e/admin/orders.spec.ts` — `PAID -> CONFIRMED`, `PENDING -> ASSIGNED` PATCH 검증.
 - [x] 관리자 Toss 전액/부분 환불 브라우저 E2E (2026-05-06): `e2e/admin/orders.spec.ts` — 전액 취소/부분 환불 payload 검증.
 - [x] 관리자 매장 설정 브라우저 E2E (2026-05-06): `e2e/admin/store.spec.ts` — 기본 정보/배달 설정 수정 후 `PATCH /stores/:storeId` payload 검증.
-- [ ] 관리자 직접 메뉴 등록 브라우저 E2E
-- [ ] Toss 메뉴 동기화 브라우저 E2E
+- [x] 관리자 직접 메뉴 등록 브라우저 E2E (2026-05-07): `e2e/admin/menu.spec.ts` — ADMIN_DIRECT 모드 카테고리+메뉴 생성 payload 검증.
+- [x] Toss 메뉴 동기화 브라우저 E2E (2026-05-07): `e2e/admin/menu.spec.ts` — TOSS_POS 모드 sync 버튼 → sync log 표시 검증.
 - [x] MQ 운영 화면 POS/알림 실패 조회 및 재시도 브라우저 E2E (2026-05-06): `e2e/admin/operations.spec.ts` — Supabase 세션/API mock으로 검증.
 
 ## 다음 순서
 
-1. 백엔드/배달앱 우선순위 작업 이후 MQ 운영 화면 브라우저 E2E 검증
-2. 관리자 주문 상태 변경/배달 상태 변경 브라우저 E2E 검증
-3. 관리자 Toss 전액/부분 환불 브라우저 E2E 검증
-4. 관리자 매장 설정/직접 메뉴/Toss 메뉴 동기화 브라우저 E2E 검증
-5. Playwright 자동화 설정 및 테스트 러너 도입 검토
+1. 관리자 직접 메뉴 등록 브라우저 E2E
+2. Toss 메뉴 동기화 브라우저 E2E
+3. 운영자 인수인계용 운영 매뉴얼/장애 대응 문서 작성
 
 ## 최신 동기화 (2026-05-02)
 

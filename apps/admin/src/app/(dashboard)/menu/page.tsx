@@ -281,7 +281,7 @@ export default function MenuListPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="admin-menu-page">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-2xl font-bold text-gray-800">메뉴 관리</h2>
@@ -337,11 +337,13 @@ export default function MenuListPage() {
                 onChange={(event) => setCategoryName(event.target.value)}
                 className="min-w-0 flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm"
                 placeholder="예: 메인 메뉴"
+                data-testid="admin-category-name-input"
               />
               <button
                 onClick={() => createCategoryMutation.mutate()}
                 disabled={!categoryName.trim() || createCategoryMutation.isPending}
                 className="rounded-lg bg-gray-900 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                data-testid="admin-category-add-button"
               >
                 추가
               </button>

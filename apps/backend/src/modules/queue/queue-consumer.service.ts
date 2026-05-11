@@ -3,6 +3,7 @@ import { mapTossMethod } from '../../common/utils/toss.utils';
 import { MenuManagementMode, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { TossApiService } from '../integrations/toss/toss-api.service';
+import { ResilientPosService } from '../integrations/pos/pos.resilience';
 import { NotificationProviderService } from './notification-provider.service';
 import {
     BackendQueueEvent,
@@ -25,6 +26,7 @@ export class QueueConsumerService {
         private readonly prisma: PrismaService,
         @Optional() private readonly tossApiService?: TossApiService,
         @Optional() private readonly notificationProvider?: NotificationProviderService,
+        @Optional() private readonly resilientPosService?: ResilientPosService,
     ) { }
 
     async processOnce(options: {
@@ -200,8 +202,17 @@ export class QueueConsumerService {
             return;
         }
 
+        // Circuit Breaker: POS 가용성 확인. breaker가 OPEN이면 false를 반환하며,
+        // 이 경우 예외를 던져 queue backoff retry로 위임한다.
+        if (this.resilientPosService) {
+            const available = await this.resilientPosService.sendOrder({ orderNumber: order.orderNumber });
+            if (!available) {
+                throw new Error(`POS unavailable (Circuit Breaker OPEN) — orderId=${orderId} queued for retry`);
+            }
+        }
+
         // 실제 Toss POS 등록은 플러그인이 /pos/orders/pending polling 후 SDK로 수행한다.
-        // 여기서 MockPosService로 SENT 처리하면 플러그인 polling 대상에서 빠져 실단말 전송이 막힌다.
+        // 위 CB 통과 후 PENDING으로 전환하면 플러그인이 다음 폴링 때 픽업한다.
         await this.prisma.order.update({
             where: { id: orderId },
             data: {

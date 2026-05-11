@@ -1,0 +1,47 @@
+{
+  "name": "admin-electron",
+  "version": "1.0.0",
+  "description": "타코 관리자 데스크탑 앱",
+  "main": "dist/main.js",
+  "private": true,
+  "scripts": {
+    "dev": "tsc && electron dist/main.js",
+    "build": "tsc",
+    "dist": "tsc && electron-builder",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "electron-updater": "^6.3.9"
+  },
+  "devDependencies": {
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8",
+    "typescript": "^5.7.2"
+  },
+  "build": {
+    "appId": "kr.tacomole.admin",
+    "productName": "타코 관리자",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "assets/**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "assets/tray-icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerLanguages": ["Korean"],
+      "language": "1042"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "taco-owner",
+      "repo": "order-change"
+    }
+  }
+}

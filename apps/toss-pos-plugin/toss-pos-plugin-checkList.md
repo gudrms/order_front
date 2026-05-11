@@ -1,5 +1,5 @@
 # Toss SDK/POS 앱 체크리스트
-마지막 업데이트: 2026-04-28 (2차 보완)
+마지막 업데이트: 2026-05-07 (루트 체크리스트 기준 동기화)
 
 > SDK 시그니처/이벤트/Rate Limit/사용 금지 패턴은 **README.md 의 "SDK 참고" 섹션**에 박혀 있음.
 > 다음 세션은 거기부터 읽고 부족하면 `node_modules/@tossplace/pos-plugin-sdk/types/index.d.ts` → 공식 문서(`docs.tossplace.com`) 순으로 확인.

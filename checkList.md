@@ -190,7 +190,7 @@
 - [x] **[운영 인프라]** Vercel Shared 환경변수(All-in-one) 셋업 및 오버라이딩 원리 정리 (2026-05-04)
 - [ ] **[인프라 고도화]** 추후 개발(Dev)과 운영(Prod) 환경을 물리적으로 분리하여 안전한 테스트 및 배포 파이프라인 구축
 - [ ] **[MVP 론칭 전략]** 초기 오픈은 '배달앱(고객) ➡️ 관리자웹(점주) ➡️ 영수증 출력' 구조로 한정 (Toss POS 및 테이블오더 연동은 Phase 2로 연기)
-- [ ] **[관리자 아키텍처]** 웹 브라우저의 한계(백그라운드 스로틀링, 자동재생 차단, 인쇄 팝업) 극복을 위해 Admin 웹을 Electron으로 랩핑하여 PC 전용 수신 프로그램으로 구축
+- [x] **[관리자 아키텍처]** Admin 웹을 Electron으로 랩핑 (2026-05-07): `apps/admin-electron/` — BrowserWindow, Tray 알림, 무음 영수증 출력, electron-builder NSIS, electron-updater GitHub Releases. tsc 통과.
 - [ ] **[배달앱 배포 전략]** 스토어 최적화 및 핫 푸시 업데이트를 위해 Capacitor를 활용하여 구글 플레이스토어 및 애플 앱스토어 배포 파이프라인 구축
 - [x] 배달앱: Capacitor 원격 WebView 기준선 설정 (`CAPACITOR_SERVER_URL`, `webDir: 'public'`)
 - [x] 배달앱: Capacitor android/ios 네이티브 프로젝트 생성 + deeplink 훅 구현 (`taco://`, App Links)
@@ -454,7 +454,7 @@
 - [x] Toss POS 플러그인: catalog sync 실패 alert + 백오프 (2026-05-05)
 - [x] Brand website: 창업 문의 저장 API/DB 모델/관리자 조회 화면 연결 (2026-05-06): `FranchiseInquiry` Prisma 모델 + migration, 백엔드 `POST /franchise-inquiries` (공개) + `GET` / `PATCH /:id/read` (관리자), brand-website `actions.ts` 백엔드 API 연결 + 중복 HTML 버그 수정 + nodemailer 제거, 관리자 `/franchise-inquiries` 페이지 (읽음/미읽음 구분, 확인 완료 버튼). 관리자 전용 API 권한 제한, 입력 trim/phone 정규화/길이 제한, 서비스 단위 테스트 추가. `backend tsc`, `admin type-check`, `brand-website type-check`, `franchise-inquiries.service.spec.ts` 5 tests 통과.
 - [ ] Brand website: Kakao Map 실제 연동 및 운영 키 환경변수 정리
-- [ ] Admin E2E 확장: 주문 상태 변경, 배달 상태 변경, 전액/부분 환불, 매장 설정, 직접 메뉴 등록, MQ 실패 재시도
+- [x] Admin E2E 확장: 주문 상태 변경, 배달 상태 변경, 전액/부분 환불, 매장 설정, 직접 메뉴 등록, MQ 실패 재시도, Toss 메뉴 동기화 (2026-05-07)
 - [ ] Table-order E2E 확장: 첫 주문/추가 주문, QR 재진입 세션 유지, MQ 후처리 지연에도 완료 UX 유지
 
 #### E-2. Toss SDK/POS 채널 정책 확정 및 구현

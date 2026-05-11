@@ -210,6 +210,129 @@ this.logger.critical('Toss 오더 연동 심각 오류', {
 
 ---
 
+## 🛡️ 외부 API 장애 대응 - 3중 방어 구조
+
+POS 등 외부 API 통신 장애 시 서비스 전체가 멈추지 않도록 3단계 방어 구조를 적용했습니다.
+
+### 전체 흐름
+
+```
+주문 결제 완료
+  └─▶ [Queue] pos.send_order 이벤트 적재 (pgmq)
+        └─▶ [1단계] Circuit Breaker 가용성 확인 (opossum)
+              ├─ CLOSED(정상) ─▶ posSyncStatus = PENDING
+              │                    └─▶ Toss POS 플러그인이 폴링 후 SDK 전송
+              │                          ├─ 성공 ─▶ posSyncStatus = SENT
+              │                          └─ 실패 ─▶ PATCH /pos/orders/:id/sync-failed
+              │                                        └─▶ [2단계] Backoff retry
+              └─ OPEN(장애) ─▶ throw ─▶ [2단계] Backoff retry
+                                           └─▶ [10s → 30s → 60s → 180s → 300s, 최대 5회]
+                                                 └─▶ 5회 초과 ─▶ posSyncStatus = FAILED + archive
+```
+
+---
+
+### 1단계 - Circuit Breaker (`ResilientPosService`)
+
+**파일**: `src/modules/integrations/pos/pos.resilience.ts`
+
+외부 POS API 호출을 Circuit Breaker로 감쌉니다. 실패율이 임계치를 초과하면 즉시 Fail-fast 처리해 서버 스레드 고갈을 방지합니다.
+
+```typescript
+// 설정값
+{
+  timeout: 3000,                  // 3초 응답 없으면 실패 처리
+  errorThresholdPercentage: 50,   // 실패율 50% 초과 시 OPEN 전환
+  resetTimeout: 10000,            // 10초 후 Half-Open 전환 (재시도 허용)
+}
+```
+
+**상태 전이**:
+
+| 상태 | 동작 |
+|------|------|
+| `CLOSED` | 정상. 모든 요청 통과 |
+| `OPEN` | 차단. 즉시 `false` 반환 → queue retry로 위임 |
+| `HALF-OPEN` | 탐색. 1회 시도 후 성공이면 CLOSED, 실패면 다시 OPEN |
+
+**Queue 연동** (`QueueConsumerService.handlePosSendOrder`):
+
+```typescript
+// Circuit Breaker가 OPEN이면 예외를 던져 backoff retry로 위임
+const available = await this.resilientPosService.sendOrder({ orderNumber });
+if (!available) {
+  throw new Error('POS unavailable (Circuit Breaker OPEN) — queued for retry');
+}
+// CB 통과 시 PENDING으로 전환 → 플러그인이 폴링 후 실제 전송
+```
+
+---
+
+### 2단계 - 비동기 재시도 (pgmq + Exponential Backoff)
+
+**파일**: `src/modules/queue/queue-consumer.service.ts`, `src/modules/queue/queue.service.ts`
+
+실패한 이벤트를 버리지 않고 메시지 큐(pgmq)에 지연 재적재합니다. pgmq는 Supabase의 PostgreSQL 확장으로, 별도 인프라 없이 DB 트랜잭션과 함께 메시지를 처리합니다.
+
+**Backoff 정책**:
+
+| 시도 | 대기 시간 |
+|------|-----------|
+| 1회 | 10초 후 재시도 |
+| 2회 | 30초 후 재시도 |
+| 3회 | 60초 후 재시도 |
+| 4회 | 180초 후 재시도 |
+| 5회 | 300초 후 재시도 |
+| 초과 | FAILED + archive |
+
+**Supabase pgmq 활성화**: `supabase/migrations/202605010001_enable_pgmq_backend_events.sql`
+
+```sql
+create extension if not exists pgmq;
+select pgmq.create('backend_events');
+```
+
+**플러그인 실패 보고 루프**:
+
+Toss POS 플러그인이 SDK 전송에 실패하면 즉시 백엔드에 보고해 attempt count를 올립니다.
+
+```typescript
+// apps/toss-pos-plugin/src/order.ts
+} catch (error) {
+  await markOrderSyncFailed(order.id, error.message);
+  // → PATCH /pos/orders/:id/sync-failed
+  // → posSyncAttemptCount++, backoff retry 트리거
+}
+```
+
+---
+
+### 3단계 - 수동 복구 API
+
+**파일**: `src/modules/queue/queue-operations.controller.ts`
+
+5회 재시도 초과 후 `FAILED` 상태가 된 주문을 관리자가 수동으로 복구할 수 있는 API를 제공합니다.
+
+```
+GET  /stores/:storeId/operations/notifications/failed   # 실패 목록 조회
+PATCH /stores/:storeId/operations/notifications/:id/retry  # 수동 재시도
+```
+
+수동 재시도 시 상태를 `PENDING`으로 되돌리고 큐에 재적재합니다.
+
+---
+
+### 관련 DB 필드 (`Order` 테이블)
+
+| 필드 | 설명 |
+|------|------|
+| `posSyncStatus` | `PENDING` / `SENT` / `FAILED` / `SKIPPED` |
+| `posSyncAttemptCount` | 총 시도 횟수 |
+| `posSyncLastError` | 마지막 실패 사유 |
+| `posSyncUpdatedAt` | 마지막 상태 변경 시각 |
+
+---
+
 ## 📦 배포
 
 **Vercel**: https://order-front-backend.vercel.app

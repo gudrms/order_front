@@ -1,5 +1,5 @@
 # 백엔드 체크리스트
-마지막 업데이트: 2026-05-03 (런칭 준비도 감사 결과 반영)
+마지막 업데이트: 2026-05-07 (루트 체크리스트 기준 동기화)
 
 ## 🚨 1차 런칭 Blocker
 
@@ -10,12 +10,12 @@
 ## ⚠️ High risk
 
 - [ ] 실 Toss 카드결제 자동화 E2E — `payments-e2e.spec.ts`는 서비스 레이어 mock 한정. 실 HTTP 콜백/idempotency/취소 무점검
-- [ ] Throttler in-memory store(`app.module.ts:28-44`) Vercel 다중 인스턴스에서 무력화 → Redis store 검토
+- [x] Throttler in-memory store Vercel 다중 인스턴스에서 무력화 → Redis store 도입 완료 (2026-05-05): `@nest-lab/throttler-storage-redis` + Upstash Redis 적용. REDIS_URL 있으면 Redis, 없으면 in-memory 폴백.
 - [ ] 단일 serverless function 라우팅 (`vercel.json` 모든 메서드 → `src/main.ts`) — cold start/번들 크기 모니터링, queue function 분리 검토 (이미 [ ]로 있음)
 
 ## 🧱 Tech debt
 
-- [ ] `apps/backend/src/modules/orders/orders.controller.ts:11-22` 인라인 OrderStatus enum 제거 (`// Prisma Client 생성 전까지 임시` 주석 — 이미 Prisma 생성됨)
+- [x] `apps/backend/src/modules/orders/orders.controller.ts:11-22` 인라인 OrderStatus enum 제거 (2026-05-05): `@prisma/client`의 `OrderStatus` enum 직접 import로 교체. tsc 통과.
 - [ ] BACKEND_CHECKLIST 131-133라인 HOMEPAGE 항목은 정책 폐기됨 (아래 정책 변경 섹션 참조)
 - [ ] `error-logs`, `sessions`, `integrations/toss`, `menu-detail`, `app.module` 테스트 미작성
 
@@ -134,11 +134,9 @@
 
 ## 다음 순서
 
-1. Swagger 명세 보강: 주문/결제/MQ 운영 endpoint 응답 예시와 인증 헤더 정리
-2. 주요 API 테스트 코드 보강: 주문 생성, 결제 승인/실패, MQ 운영 endpoint 권한 경계 재확인
-3. 최신 전체 `vitest run` 재실행 후 오래된 실패 기록 정리
-4. Vercel Cron 또는 운영 배치에서 `queue/process-once`, `expire-pending`, `reconcile` 호출 방식 문서화
-5. Vercel Queues 전환 검토는 consumer를 별도 Vercel native queue function으로 분리할 때 재평가
+1. 운영 DB `prisma migrate deploy` — `OrderChannel.HOMEPAGE` 제거 migration 적용 (실 환경 작업)
+2. GitHub Actions cron 실제 실행 로그 확인 (`POST /queue/process-once` 응답)
+3. Vercel Production/Preview 환경변수 분리 상태 확인 (REDIS_URL, Firebase, Toss, Sentry)
 
 ## 최신 동기화 (2026-05-02)
 
@@ -160,14 +158,14 @@
 - [x] **결함 식별**: `orders.controller.ts:11-22` 인라인 enum, `any` 99개, `*.spec.ts` 19개로 핵심 도메인은 커버하나 일부 모듈 미테스트
 - [x] **강점 확인**: 도메인 모델(Order/Payment/OrderDelivery 분리, idempotency, posSyncStatus, dedupeKey, retry/backoff), 단위/E2E 142 tests, SupabaseGuard 일관 적용, Sentry beforeSend 헤더 필터링
 - [x] [P0] cron 트리거 도입 방안 결정 후 운영 문서화 (GitHub Actions로 구축 완료)
-- [ ] [P0] CORS allowed origins 환경변수를 콤마 구분 배열로 변경
-- [ ] [P0] `.env.example` 정리 + 운영 secret 누락 항목 보강
+- [x] [P0] CORS allowed origins 환경변수를 콤마 구분 배열로 변경 (2026-05-04)
+- [x] [P0] `.env.example` 정리 + 운영 secret 누락 항목 보강 (2026-05-04)
 
 ## 최신 동기화 (2026-05-04) — 운영 안정화 및 푸시 알림 계획
 
 - [x] Vercel Shared 환경변수(All-in-one) 세팅 완료 및 오버라이드(우선순위) 원리 문서화
 - [x] 구글 앱 비밀번호(App Password) 기반 메일 전송 환경변수 정리
 - [x] **푸시 알림 방향성 확정**: 앱 종료 시에도 동작하는 잠금화면 알림을 위해 **Firebase Cloud Messaging(FCM) 연동 채택 (옵션 A)**
-- [ ] 백엔드 FCM 연동 구현: `UserDevice` 테이블 설계, `firebase-admin` 설정, 토큰 발급/삭제 API 구현
-- [ ] 큐 컨슈머 연동: `notification.send` 수신 시 FCM 발송 로직 추가
+- [x] 백엔드 FCM 연동 구현: `UserDevice` 테이블 설계, `firebase-admin` 설정, 토큰 발급/삭제 API 구현 (2026-05-04)
+- [x] 큐 컨슈머 연동: `notification.send` 수신 시 FCM 발송 로직 추가 (2026-05-04)
 - [ ] **[인프라 고도화]** 개발(Dev)과 운영(Prod) 데이터베이스/환경 변수 물리적 분리 구조 도입 (추후 진행)
