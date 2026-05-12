@@ -215,7 +215,7 @@
 
 - [x] **`payments.service.ts` catch 블록 `any` 타입 3건** (2026-05-12): `catch (err/recordError/compensationError: unknown)` + `instanceof Error` 가드로 전환. `errCode`는 `(err as Record<string, unknown>)?.code`로 안전하게 접근.
 - [ ] **`table-order` 로컬 타입 `Order` 잔존 — 단일화 보류**: 로컬 `Order`와 shared `Order`는 구조 불일치(items.options: `CartSelectedOption[]` vs `SelectedOption[]` 그룹 구조, storeId/orderId 필드 누락). 강제 통합 시 flat→grouped 변환 로직 + admin OrderReceipt 영향 발생. 로컬 타입이 table-order API 응답에 적합하므로 현 구조 유지.
-- [ ] **`useOrders.ts` Supabase Realtime filter 정확도**: `apps/table-order/src/hooks/queries/useOrders.ts:18` — `filter: storeId=eq.${storeId}` 로 매장 전체 주문 변경을 구독 중. 테이블 번호 필터(`tableNumber=eq.N`)가 없어 다른 테이블 주문 변경 시에도 불필요한 쿼리 재실행 발생. `filter: storeId=eq.${storeId}&tableNumber=eq.${tableNumber}` 로 범위 축소 권장.
+- [x] **`useOrders.ts` Supabase Realtime filter 정확도** (2026-05-12): Supabase postgres_changes는 단일 컬럼 필터만 지원해 AND 조건 불가. 대신 storeId 폴백 구간에서 콜백 내 `payload.new?.tableNumber !== tableNumber` 체크로 다른 테이블 변경 시 invalidate 건너뜀.
 
 ### 테스트
 

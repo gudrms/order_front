@@ -30,7 +30,12 @@ export function useOrdersByTable(tableNumber?: number, storeId?: string) {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'Order', filter },
-        () => {
+        (payload) => {
+          // sessionId 폴백 구간(storeId 필터)에서는 다른 테이블 변경 무시
+          if (!sessionId) {
+            const record = (payload.new ?? payload.old) as { tableNumber?: number } | null;
+            if (record?.tableNumber !== tableNumber) return;
+          }
           queryClient.invalidateQueries({ queryKey });
         },
       )
