@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { CartItemCard } from '@order/ui';
-import { useCartStore } from '@order/shared/stores/cartStore';
+import { useCartStore } from '@order/order-core';
 import { cn } from '@/lib/utils';
 import AddressInputBottomSheet from '../order/AddressInputBottomSheet';
 

@@ -7,7 +7,7 @@ import { ChevronLeft, ChevronRight, CreditCard, Tag, X } from 'lucide-react';
 import { calculateOrderTotals, validateOrder, type OrderItemInput as CoreOrderItemInput } from '@order/order-core';
 import { calculateCouponDiscount } from '@order/shared/types';
 import { generateOrderId } from '@order/shared/utils/id';
-import { useCartStore } from '@order/shared/stores/cartStore';
+import { useCartStore } from '@order/order-core';
 
 // SSR에서 window.location 참조로 인한 ReferenceError 방지
 // @order/ui 배럴을 통하면 @tosspayments/payment-widget-sdk 가 SSR 번들에 포함되므로

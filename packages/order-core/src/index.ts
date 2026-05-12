@@ -1,3 +1,5 @@
+export * from './stores/cartStore';
+
 export type OrderFlow = 'DELIVERY' | 'TABLE';
 
 export type OrderValidationCode =

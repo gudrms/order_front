@@ -1,7 +1,7 @@
 'use client';
 
 import { useMenuSelection } from '@order/shared/hooks/useMenuSelection';
-import { useCartStore } from '@order/shared/stores/cartStore';
+import { useCartStore } from '@order/order-core';
 import { MenuOptionList } from '@order/ui';
 import { ChevronDown, Minus, Plus } from 'lucide-react';
 import { useEffect, useState } from 'react';

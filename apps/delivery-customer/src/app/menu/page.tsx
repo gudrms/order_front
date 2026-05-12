@@ -9,7 +9,7 @@ import MenuList from '@/components/menu/MenuList';
 import CartBottomSheet from '@/components/cart/CartBottomSheet';
 import MenuDetailBottomSheet from '@/components/menu/MenuDetailBottomSheet';
 import { useCurrentStore } from '@/contexts/StoreContext';
-import { useCartStore } from '@order/shared/stores/cartStore';
+import { useCartStore } from '@order/order-core';
 
 export default function MenuPage() {
     const router = useRouter();
