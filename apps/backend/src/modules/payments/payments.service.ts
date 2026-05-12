@@ -94,17 +94,17 @@ export class PaymentsService {
                     },
                 }),
             ]);
-        } catch (err: any) {
-            if (err?.code === 'P2002') {
-                // Unique constraint race — another request already completed confirmation.
+        } catch (err: unknown) {
+            const errMsg = err instanceof Error ? err.message : String(err);
+            const errCode = (err as Record<string, unknown>)?.code;
+
+            if (errCode === 'P2002') {
                 return this.getOrderResponse(payment.orderId);
             }
 
-            // 핵심 안전 규칙: Toss 승인은 성공했지만 로컬 DB 확정이 실패한 상태.
-            // 고객의 돈이 빠져나갔으나 주문이 확정되지 않았으므로 즉시 보상 취소를 시도한다.
             this.logger.error(
                 `Local DB commit failed after Toss approval for payment ${payment.id} ` +
-                `(paymentKey: ${dto.paymentKey}). Attempting compensation cancel. Error: ${err.message}`,
+                `(paymentKey: ${dto.paymentKey}). Attempting compensation cancel. Error: ${errMsg}`,
             );
 
             try {
@@ -114,7 +114,6 @@ export class PaymentsService {
                     idempotencyKey: `compensation-${payment.id}-${Date.now()}`,
                 });
 
-                // 보상 취소 성공: Payment를 CANCELLED로 기록 (best-effort)
                 try {
                     await this.prisma.payment.update({
                         where: { id: payment.id },
@@ -122,24 +121,23 @@ export class PaymentsService {
                             status: 'CANCELLED',
                             cancelledAt: new Date(),
                             failureCode: 'LOCAL_DB_COMMIT_FAILED',
-                            failureMessage: `Toss approved but local commit failed: ${err.message}. Auto-cancelled.`,
+                            failureMessage: `Toss approved but local commit failed: ${errMsg}. Auto-cancelled.`,
                         },
                     });
-                } catch (recordError: any) {
+                } catch (recordError: unknown) {
                     this.logger.error(
-                        `Compensation cancel succeeded for payment ${payment.id} but failed to record: ${recordError.message}`,
+                        `Compensation cancel succeeded for payment ${payment.id} but failed to record: ${recordError instanceof Error ? recordError.message : String(recordError)}`,
                     );
                 }
 
                 this.logger.warn(
                     `Compensation cancel succeeded for payment ${payment.id}. Customer will not be charged.`,
                 );
-            } catch (compensationError: any) {
-                // 보상 취소마저 실패 — 최악의 상황. reconciliation job이 복구하도록 한다.
+            } catch (compensationError: unknown) {
                 this.logger.error(
                     `CRITICAL: Compensation cancel FAILED for payment ${payment.id} ` +
                     `(paymentKey: ${dto.paymentKey}). Customer may have been charged without order confirmation. ` +
-                    `Compensation error: ${compensationError.message}. Original error: ${err.message}`,
+                    `Compensation error: ${compensationError instanceof Error ? compensationError.message : String(compensationError)}. Original error: ${errMsg}`,
                 );
             }
 

@@ -213,8 +213,8 @@
 
 ### 코드 품질
 
-- [ ] **`payments.service.ts` catch 블록 `any` 타입 3건**: `apps/backend/src/modules/payments/payments.service.ts` 97, 128, 137번 줄 — `catch (err: any)`, `catch (recordError: any)`, `catch (compensationError: any)`. 결제 서비스의 catch 블록은 `unknown`으로 받고 `instanceof Error` 가드를 적용해야 함. 결제 오류 메시지가 `err.message`로 직접 노출될 경우 내부 정보 유출 위험.
-- [ ] **`table-order` 로컬 타입 `Order` 잔존**: `apps/table-order/src/lib/api/endpoints/order.ts`에 `export type Order = { ... }` 로컬 타입이 여전히 존재. `useOrders.ts`가 `@order/shared`가 아닌 이 로컬 타입을 import 중(`import type { Order } from '@/lib/api/endpoints/order'`). `@order/shared`의 `Order` 타입으로 단일화 필요.
+- [x] **`payments.service.ts` catch 블록 `any` 타입 3건** (2026-05-12): `catch (err/recordError/compensationError: unknown)` + `instanceof Error` 가드로 전환. `errCode`는 `(err as Record<string, unknown>)?.code`로 안전하게 접근.
+- [ ] **`table-order` 로컬 타입 `Order` 잔존 — 단일화 보류**: 로컬 `Order`와 shared `Order`는 구조 불일치(items.options: `CartSelectedOption[]` vs `SelectedOption[]` 그룹 구조, storeId/orderId 필드 누락). 강제 통합 시 flat→grouped 변환 로직 + admin OrderReceipt 영향 발생. 로컬 타입이 table-order API 응답에 적합하므로 현 구조 유지.
 - [ ] **`useOrders.ts` Supabase Realtime filter 정확도**: `apps/table-order/src/hooks/queries/useOrders.ts:18` — `filter: storeId=eq.${storeId}` 로 매장 전체 주문 변경을 구독 중. 테이블 번호 필터(`tableNumber=eq.N`)가 없어 다른 테이블 주문 변경 시에도 불필요한 쿼리 재실행 발생. `filter: storeId=eq.${storeId}&tableNumber=eq.${tableNumber}` 로 범위 축소 권장.
 
 ### 테스트
