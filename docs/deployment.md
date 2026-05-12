@@ -68,11 +68,48 @@ pnpm --filter backend exec prisma migrate deploy
 
 ```bash
 # 백엔드 헬스 체크
-curl https://api.tacomole.kr/health
+curl https://api.tacomole.kr/api/v1/health
 
 # API 문서 (Scalar UI)
 open https://api.tacomole.kr/api/docs
 ```
+
+`admin.tacomole.kr`는 관리자 Next 앱이므로 `/health`가 없다. 헬스체크는 백엔드 도메인 `api.tacomole.kr/api/v1/health`로 확인한다.
+
+---
+
+## GitHub Actions Cron 확인
+
+콜드스타트 완화와 백그라운드 작업 처리는 `.github/workflows/backend-cron.yml`에서 5분마다 실행한다.
+
+필수 GitHub Actions Secrets:
+
+- `API_BASE_URL`: `https://api.tacomole.kr/api/v1`
+- `INTERNAL_JOB_SECRET`: 백엔드 `INTERNAL_JOB_SECRET` 환경변수와 같은 값
+
+실행 작업:
+
+- `GET ${API_BASE_URL}/health`
+- `POST ${API_BASE_URL}/queue/process-once`
+- `POST ${API_BASE_URL}/payments/toss/expire-pending`
+- `POST ${API_BASE_URL}/payments/toss/reconcile`
+
+확인 절차:
+
+1. GitHub 저장소의 `Actions` 탭으로 이동한다.
+2. `Backend Cron Jobs` workflow를 선택한다.
+3. `Run workflow`로 수동 실행한다.
+4. 아래 step이 모두 성공하는지 확인한다.
+
+```text
+Validate cron secrets
+Health check
+Process Queue (MQ Consumer)
+Expire Pending Toss Payments
+Reconcile Toss Payments
+```
+
+`curl --fail-with-body`를 사용하므로 4xx/5xx 응답은 workflow 실패로 표시된다.
 
 ---
 

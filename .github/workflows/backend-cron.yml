@@ -9,21 +9,42 @@ on:
 jobs:
   run-cron-jobs:
     runs-on: ubuntu-latest
+    timeout-minutes: 3
+    env:
+      API_BASE_URL: ${{ secrets.API_BASE_URL }}
+      INTERNAL_JOB_SECRET: ${{ secrets.INTERNAL_JOB_SECRET }}
     steps:
+      - name: Validate cron secrets
+        run: |
+          test -n "$API_BASE_URL"
+          test -n "$INTERNAL_JOB_SECRET"
+
+      - name: Health check
+        run: |
+          curl --fail-with-body --silent --show-error \
+               --retry 3 --retry-delay 5 --connect-timeout 10 --max-time 30 \
+               "${API_BASE_URL}/health"
+
       - name: Process Queue (MQ Consumer)
         run: |
-          curl -X POST "${{ secrets.API_BASE_URL }}/queue/process-once" \
-               -H "x-internal-job-secret: ${{ secrets.INTERNAL_JOB_SECRET }}" \
+          curl --fail-with-body --silent --show-error \
+               --retry 3 --retry-delay 5 --connect-timeout 10 --max-time 30 \
+               -X POST "${API_BASE_URL}/queue/process-once" \
+               -H "x-internal-job-secret: ${INTERNAL_JOB_SECRET}" \
                -H "Content-Type: application/json"
 
       - name: Expire Pending Toss Payments
         run: |
-          curl -X POST "${{ secrets.API_BASE_URL }}/payments/toss/expire-pending" \
-               -H "x-internal-job-secret: ${{ secrets.INTERNAL_JOB_SECRET }}" \
+          curl --fail-with-body --silent --show-error \
+               --retry 3 --retry-delay 5 --connect-timeout 10 --max-time 30 \
+               -X POST "${API_BASE_URL}/payments/toss/expire-pending" \
+               -H "x-internal-job-secret: ${INTERNAL_JOB_SECRET}" \
                -H "Content-Type: application/json"
 
       - name: Reconcile Toss Payments
         run: |
-          curl -X POST "${{ secrets.API_BASE_URL }}/payments/toss/reconcile" \
-               -H "x-internal-job-secret: ${{ secrets.INTERNAL_JOB_SECRET }}" \
+          curl --fail-with-body --silent --show-error \
+               --retry 3 --retry-delay 5 --connect-timeout 10 --max-time 30 \
+               -X POST "${API_BASE_URL}/payments/toss/reconcile" \
+               -H "x-internal-job-secret: ${INTERNAL_JOB_SECRET}" \
                -H "Content-Type: application/json"

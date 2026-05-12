@@ -1,48 +1,95 @@
-# Vercel Cron Jobs 설정
+# Backend Cron / Cold Start
 
-## 현재 상태
-Vercel Hobby 플랜에서는 일일 1회만 cron job 실행 가능하므로 비활성화됨.
+## Current Status
 
-## Pro 플랜으로 업그레이드 시 추가할 설정
+Vercel Cron is not active for this project. Backend warm-up and background jobs are currently handled by GitHub Actions.
 
-`vercel.json` 파일에 다음을 추가:
+Workflow file:
+
+```text
+.github/workflows/backend-cron.yml
+```
+
+Schedule:
+
+```yaml
+cron: '*/5 * * * *'
+```
+
+## Required GitHub Actions Secrets
+
+Configure these in `GitHub repository -> Settings -> Secrets and variables -> Actions`.
+
+```text
+API_BASE_URL=https://api.tacomole.kr/api/v1
+INTERNAL_JOB_SECRET=<same value as backend INTERNAL_JOB_SECRET>
+```
+
+`API_BASE_URL` must include `/api/v1`.
+
+## Cron Jobs
+
+The workflow runs these requests:
+
+```text
+GET  ${API_BASE_URL}/health
+POST ${API_BASE_URL}/queue/process-once
+POST ${API_BASE_URL}/payments/toss/expire-pending
+POST ${API_BASE_URL}/payments/toss/reconcile
+```
+
+Each request uses `curl --fail-with-body`, so 4xx/5xx responses fail the GitHub Actions run.
+
+## How To Verify
+
+1. Open the GitHub repository.
+2. Go to `Actions`.
+3. Select `Backend Cron Jobs`.
+4. Check that scheduled runs are created roughly every 5 minutes.
+5. Click `Run workflow` to trigger a manual run.
+6. Confirm all steps are green:
+
+```text
+Validate cron secrets
+Health check
+Process Queue (MQ Consumer)
+Expire Pending Toss Payments
+Reconcile Toss Payments
+```
+
+## Health Check URL
+
+Use the backend domain:
+
+```text
+https://api.tacomole.kr/api/v1/health
+```
+
+Do not use the admin frontend domain for backend health checks:
+
+```text
+https://admin.tacomole.kr/health
+```
+
+The admin app is a Next.js frontend and does not provide `/health`.
+
+## Additional Options
+
+- Add an external uptime monitor, such as UptimeRobot or Better Stack, against `https://api.tacomole.kr/api/v1/health`.
+- If the Vercel plan supports Cron Jobs, move simple warm-up pings to Vercel Cron.
+- Keep queue and payment maintenance jobs protected by `INTERNAL_JOB_SECRET`.
+
+## Vercel Cron Example
+
+If moving to Vercel Cron later, add a `crons` section to `apps/backend/vercel.json`.
 
 ```json
 {
-    "version": 2,
-    "builds": [
-        {
-            "src": "src/main.ts",
-            "use": "@vercel/node"
-        }
-    ],
-    "routes": [
-        {
-            "src": "/(.*)",
-            "dest": "src/main.ts",
-            "methods": [
-                "GET",
-                "POST",
-                "PUT",
-                "PATCH",
-                "DELETE",
-                "OPTIONS"
-            ]
-        }
-    ],
-    "crons": [
-        {
-            "path": "/api/v1/health",
-            "schedule": "*/10 * * * *"
-        }
-    ]
+  "crons": [
+    {
+      "path": "/api/v1/health",
+      "schedule": "*/10 * * * *"
+    }
+  ]
 }
 ```
-
-## Cron 스케줄 설명
-- `*/10 * * * *`: 10분마다 실행
-- `/api/v1/health` 엔드포인트 호출하여 서버 활성 상태 유지
-
-## 참고
-- Vercel Pro 플랜: https://vercel.com/pricing
-- Cron Jobs 문서: https://vercel.com/docs/cron-jobs
