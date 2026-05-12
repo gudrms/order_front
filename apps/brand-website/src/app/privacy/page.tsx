@@ -64,19 +64,27 @@ export default function PrivacyPage() {
           </ul>
         </section>
 
-        <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-3">6. 이용자의 권리</h2>
+        <section className="mb-8" id="delete">
+          <h2 className="text-xl font-semibold mb-3">6. 이용자의 권리 및 계정 삭제</h2>
           <p className="text-gray-700 leading-relaxed">
             이용자는 언제든지 자신의 개인정보 조회, 수정, 삭제, 처리 정지를 요청할 수 있습니다.
-            요청은 아래 개인정보 보호책임자에게 연락하시기 바랍니다.
           </p>
+          <p className="text-gray-700 leading-relaxed mt-2">
+            계정 및 관련 데이터 삭제를 요청하시려면 아래 이메일로 문의해 주세요.
+            요청 접수 후 7영업일 이내에 처리됩니다.
+          </p>
+          <div className="mt-3 p-4 bg-gray-50 rounded-lg">
+            <p className="text-gray-700 font-medium">계정 삭제 요청</p>
+            <p className="text-gray-600 text-sm mt-1">이메일: tacomole26@gmail.com</p>
+            <p className="text-gray-600 text-sm">제목: [계정 삭제 요청] 가입 이메일 주소</p>
+          </div>
         </section>
 
         <section className="mb-8">
           <h2 className="text-xl font-semibold mb-3">7. 개인정보 보호책임자</h2>
           <div className="text-gray-700 space-y-1">
             <p>담당자: 타코몰리 운영팀</p>
-            <p>이메일: contact@tacomole.kr</p>
+            <p>이메일: tacomole26@gmail.com</p>
           </div>
         </section>
 
