@@ -4,12 +4,13 @@
 import { NestFactory } from '@nestjs/core';
 import { ExpressAdapter } from '@nestjs/platform-express';
 import { ValidationPipe } from '@nestjs/common';
+import type { INestApplication } from '@nestjs/common';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { QueueAppModule } from './queue-app.module';
 import express from 'express';
 
 const expressApp = express();
-let cachedApp: any = null;
+let cachedApp: INestApplication | null = null;
 
 async function bootstrapQueue() {
     if (cachedApp) {
