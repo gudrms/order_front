@@ -15,11 +15,13 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { OrdersService } from '../orders/orders.service';
+import { DeliveryOrderService } from '../orders/delivery-order.service';
 import { PaymentsService } from './payments.service';
 
 describe('Toss 카드결제 E2E Flow', () => {
     let paymentsService: PaymentsService;
     let ordersService: OrdersService;
+    let deliveryOrderService: DeliveryOrderService;
     let prisma: any;
     let tx: any;
     let tossApiService: any;
@@ -145,6 +147,7 @@ describe('Toss 카드결제 E2E Flow', () => {
         };
 
         ordersService = new OrdersService(prisma, {} as any, {} as any, queueService);
+        deliveryOrderService = new DeliveryOrderService(prisma, {} as any);
         paymentsService = new PaymentsService(prisma, tossApiService, queueService);
     });
 
@@ -159,7 +162,7 @@ describe('Toss 카드결제 E2E Flow', () => {
             tx.order.count.mockResolvedValue(0);
             tx.order.create.mockResolvedValue(createdOrder);
 
-            const result = await ordersService.createDeliveryOrder('store-e2e', deliveryOrderDto);
+            const result = await deliveryOrderService.createDeliveryOrder('store-e2e', deliveryOrderDto);
 
             expect(result.status).toBe('PENDING_PAYMENT');
             expect(result.paymentStatus).toBe('READY');

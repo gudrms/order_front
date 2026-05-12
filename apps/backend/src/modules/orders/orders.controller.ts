@@ -1,6 +1,7 @@
 import { Controller, Post, Body, Param, ValidationPipe, UsePipes, Get, Query, Patch, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 import { OrdersService } from './orders.service';
+import { DeliveryOrderService } from './delivery-order.service';
 import { CreateDeliveryOrderDto, CreateOrderDto } from './dto/create-order.dto';
 import { CancelOrderDto } from './dto/cancel-order.dto';
 import { DeliveryStatusDto, UpdateDeliveryStatusDto } from './dto/update-delivery-status.dto';
@@ -306,7 +307,7 @@ export class OrdersController {
 @ApiTags('Orders')
 @Controller('orders')
 export class RootOrdersController {
-    constructor(private readonly ordersService: OrdersService) { }
+    constructor(private readonly deliveryOrderService: DeliveryOrderService) { }
 
     @Get()
     @UseGuards(SupabaseGuard)
@@ -322,7 +323,7 @@ export class RootOrdersController {
         @Query('page') page: number = 1,
         @CurrentUser() user?: { id: string },
     ) {
-        return this.ordersService.getDeliveryOrders({
+        return this.deliveryOrderService.getDeliveryOrders({
             storeId,
             userId: user?.id,
             page: Number(page) || 1,
@@ -341,7 +342,7 @@ export class RootOrdersController {
         @Param('orderId') orderId: string,
         @CurrentUser() user?: { id: string },
     ) {
-        return this.ordersService.getOrderById(orderId, { userId: user?.id });
+        return this.deliveryOrderService.getOrderById(orderId, { userId: user?.id });
     }
 
     @Patch(':orderId/cancel')
@@ -363,7 +364,7 @@ export class RootOrdersController {
         @Body() dto: CancelOrderDto,
         @CurrentUser() user?: { id: string },
     ) {
-        return this.ordersService.cancelDeliveryOrder(orderId, {
+        return this.deliveryOrderService.cancelDeliveryOrder(orderId, {
             userId: user?.id,
             reason: dto.reason,
         });
@@ -388,7 +389,7 @@ export class RootOrdersController {
         @Body() createOrderDto: CreateDeliveryOrderDto,
         @CurrentUser() user?: { id: string },
     ) {
-        return this.ordersService.createDeliveryOrder(createOrderDto.storeId, {
+        return this.deliveryOrderService.createDeliveryOrder(createOrderDto.storeId, {
             ...createOrderDto,
             userId: user?.id,
         });
