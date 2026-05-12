@@ -1,644 +1,201 @@
-# Taco Mono 루트 체크리스트
-마지막 업데이트: 2026-05-12 (env sync 스크립트 도입, 실값 env git untrack 완료)
+# Taco Mono 작업 현황
 
-## 🛠 2026-05-12 프로젝트 평가 기반 개선사항
-
-### 🔴 P0 — Critical (즉시 조치, 보안)
-
-- [x] **[P0] env sync 체계 도입 — `all-in-one-shared.env.local` 단일 소스** (2026-05-12)
-  - `scripts/sync-env.js` 생성: 루트 `all-in-one-shared.env.local` 읽어 앱별 `.env.local` 자동 생성.
-  - `pnpm sync:env` (실행) / `pnpm sync:env:preview` (--dry-run) 스크립트 추가.
-  - `all-in-one-shared.env.example` (빈 값 템플릿) 생성 및 커밋.
-  - Vercel: `all-in-one-shared.env` 그대로 Shared Env Import 유지. 로컬: `.local` 파일에 실값.
-- [ ] **[P0] git에 커밋된 실 운영 시크릿 즉시 폐기 및 재발급(rotate)**
-  - 파일 untrack은 완료 (`git rm --cached`). **히스토리에는 아직 남아 있음** — 아래 히스토리 정리 항목과 함께 진행.
-  - 재발급 대상:
-    - Supabase DB password (`wlgudrms644`), `SUPABASE_SERVICE_KEY` (→ Supabase 대시보드)
-    - `TOSS_ACCESS_KEY`, `TOSS_ACCESS_SECRET` (→ Toss 콘솔)
-    - `INTERNAL_JOB_SECRET=01055408727` → 32자 이상 랜덤값으로 교체
-    - SMTP `EMAIL_PASS` (→ Gmail 앱 비밀번호 재발급)
-  - 재발급 후 `all-in-one-shared.env.local` 에 새 값 반영 → `pnpm sync:env` 재실행.
-  - **⚠️ `SUPABASE_SERVICE_KEY` 는 `all-in-one-shared.env.local` 에 직접 추가 필요** (기존 파일에 누락).
-- [ ] **[P0] git 히스토리에서 시크릿 완전 제거**
-  - `git filter-repo` 또는 `bfg` 로 아래 파일 히스토리 제거 후 force-push:
-    `all-in-one-shared.env`, `backend-env.env`, `apps/backend/.env.direct`, `apps/backend/.env.pooler`
-  - Vercel 환경변수는 이미 대시보드에 설정되어 있으므로 재발급 후 Dashboard에서 값만 갱신.
-- [x] **[P0] `.gitignore` 보강** (2026-05-12)
-  - `all-in-one-shared.env`, `all-in-one-shared.env.local`, `backend-env.env`, `*-env.env`, `*.env.local`, `apps/backend/.env.direct`, `apps/backend/.env.pooler` 추가.
-- [ ] **[P0] CORS 개발 모드 전체 허용 제거**
-  - `apps/backend/src/main.ts:203` 에서 `NODE_ENV === 'development'` 시 모든 origin 허용 + `credentials: true` 조합. 개발도 명시 화이트리스트로 제한.
-
-### 🔴 P0 — Critical (저장소 위생)
-
-- [x] **[P0] 빌드 산출물/임시 스크립트 트래킹 해제** (2026-05-12)
-  - `git rm --cached`: `get-store-id.{js,d.ts,js.map}`, `test-connection.js`, `test-connection-direct.js`, `vitest.config.js`.
-  - `.gitignore`에 해당 패턴 추가 완료.
-- [ ] **[P0] 리포지토리 내 거대 임시 파일 제거**
-  - `tree_output.txt`(96MB), `tree_output_utf8.txt`(48MB) 삭제. (`tree_output*.txt`는 .gitignore에 추가 완료)
-
-### 🟡 P1 — Major (구조/품질)
-
-- [ ] **[P1] 프로덕션 Redis 강제화**
-  - `apps/backend/src/app.module.ts:38` ThrottlerModule이 `REDIS_URL` 미설정 시 in-memory 폴백 → Vercel 다중 인스턴스에서 rate limit 사실상 무력화.
-  - `NODE_ENV === 'production'` && `REDIS_URL` 없으면 부팅 실패하도록 가드.
-- [ ] **[P1] 환경변수 로딩 일원화**
-  - `process.env.*` 직접 사용처(main.ts 등)를 `ConfigService` + Joi/Zod 스키마 검증으로 통일. 누락/오타 시 부팅 단계에서 실패하도록.
-- [ ] **[P1] Optional dependency 패턴 재검토**
-  - `apps/backend/src/modules/orders/orders.service.ts:16-17` `queueService?`, `couponsService?` optional 주입 → 런타임 silent fail 위험. 필수로 바꾸거나 명시적 No-op fallback 주입.
-- [ ] **[P1] Serverless cold start 최적화**
-  - `apps/backend/src/main.ts:43-52` 단일 진입점에서 17개 모듈 일괄 로드. Vercel cold start 부담. 라우트별 함수 분리 또는 lazy module 검토.
-- [ ] **[P1] 문서 통합/정리**
-  - 루트·각 앱에 `.md` 59개 산재 (`checkList.md`, `CHECKLIST.md`, `BACKEND_CHECKLIST.md`, `IMPLEMENTATION_PLAN.md`, `DEPLOYMENT_GUIDE.md`, `BACKEND_TECH_SPEC.md`, `MQ_TECH_SPEC.md`, `LOCAL_TEST_GUIDE.md`, `VERCEL_CRON.md`, `ENV_MANAGEMENT.md`, `PROMPT_RULES.md`, `run.md` 등).
-  - 전부 `docs/` 하위로 모으고 README는 인덱스만 유지. 동기화 안 되는 중복 체크리스트 폐기.
-
-### 🟢 P2 — Quality (점진 개선)
-
-- [ ] **[P2] 백엔드 테스트 커버리지 확대**
-  - 현재 spec 31개, service 위주. 컨트롤러 레벨 spec과 결제/주문/큐 통합 시나리오 E2E 추가.
-- [ ] **[P2] 프론트엔드 단위 테스트 도입**
-  - `apps/admin`, `apps/delivery-customer`, `apps/table-order` 단위 테스트 없음(Playwright E2E만 존재). 핵심 store/hook(`useCartStore`, `useOrderStatus` 등)부터 vitest + RTL 도입.
-- [ ] **[P2] `any` 타입 점진 제거**
-  - `apps/backend/src` 기준 `any` 사용 229건. Prisma JSON 컬럼/DTO 경계 제외하고 비즈니스 로직 내 `any` 제거.
-- [ ] **[P2] 사용하지 않는 root 디렉터리/파일 정리**
-  - `.pnpm-store/`(로컬 캐시), `playwright-report/`, `test-results/`, `dist/` 등 빌드/캐시 산출물 위치 점검.
-
-
-
-## 🔎 2026-05-07 Vercel 백엔드 배포 안정화 메모
-
-- [x] **[P0] 백엔드 Vercel 함수 설정 충돌 해소** (2026-05-07, commit `7068ab6`): `apps/backend/vercel.json`의 `builds`/`functions` 동시 사용 제거. `api/index.ts`, `api/queue.ts` 얇은 entrypoint로 전환하고 일반 API/queue API 함수 분리 및 `maxDuration` 유지.
-- [x] **[P0] 운영 queue consumer PGMQ 타입 불일치 수정** (2026-05-07, commit `76acae3`): Prisma raw query가 `pgmq.read(text,bigint,bigint)`로 호출되던 문제를 `text/integer/integer` 명시 cast로 수정. `archive`/`send`도 `bigint`/`integer` cast 정리. `queue.service.spec.ts` 회귀 테스트 추가.
-- [x] **[P0] Vercel install 단계 husky prepare 실패 제거** (2026-05-07, commit `76acae3`): backend 배포 install 중 workspace `apps/table-order`의 `prepare: husky`가 실행되어 실패하던 문제를 package-local prepare 제거로 해결. `pnpm install --frozen-lockfile` 통과.
-- [x] **[P0] Vercel backend build 명령 정리** (2026-05-07, commit `41eca50`): backend 프로젝트가 devDependencies를 포함해 설치하도록 `installCommand`를 고정하고, 전체 `turbo run build` 대신 `pnpm --filter backend build`만 수행하도록 `buildCommand` 명시. backend build는 `pnpm exec prisma generate && pnpm exec nest build`로 정리, pnpm 버전 힌트 통일, `types: ["node"]`로 `@types/minimatch` 빌드 오염 차단.
-- [x] **운영 배포 확인** (2026-05-07): push 후 Vercel backend 배포 정상 진행 확인.
-
-## 🔎 2026-05-07 Playwright E2E 안정화 메모
-
-- [x] **[P1] Playwright E2E 런타임/fixture 안정화** (2026-05-07, commit `8871a1d`): admin 공통 fixture(`e2e/admin/fixtures.ts`)로 Supabase 세션/localStorage/API mock을 통합하고, delivery fixture(`e2e/delivery-customer/fixtures.ts`)로 매장/메뉴/카테고리/찜 API를 고정 응답 처리. stub backend CORS/매장 응답 보강, CI `maxFailures: 1`, delivery/table-order Chromium 실행, Next dev `--webpack` 고정으로 CI 환경 흔들림 감소.
-- [x] **[P1] `@order/shared` 배럴 import 런타임 undefined 대응** (2026-05-07): delivery-customer/table-order에서 `supabase`, `api`, `apiClient`, `useCartStore`, `useMenuSelection`, `useOrderStatus` 등 실행 값은 `@order/shared/*` 명시 subpath import로 전환. 각 앱 `tsconfig.json`에 `@order/shared/*` path 추가. Next webpack dev에서 배럴 export 일부가 `undefined`로 들어오던 문제 제거.
-- [x] **[P1] 관리자 인증 로딩 race 수정** (2026-05-07): `apps/admin/src/contexts/AuthContext.tsx`에서 Supabase session/profile 동기화가 끝난 뒤 `loading=false`가 되도록 수정해, E2E와 실제 화면에서 profile 로딩 중 보호 라우트가 먼저 redirect되는 문제 완화.
-- [x] **검증 완료** (2026-05-07): `tsc -p e2e/tsconfig.json --noEmit`, `tsc -p apps/delivery-customer/tsconfig.json --noEmit`, `tsc -p apps/table-order/tsconfig.json --noEmit` 통과. `CI=true playwright test --project=admin --project=delivery --project=table-order` 로컬 실행 결과 27 tests 전부 통과.
-
-## 🔎 2026-05-06 코드단 잔여 감사 메모 (다음 세션 우선 확인)
-
-최근 git log 기준으로 `order-core`, Toss POS 플러그인, Queue/FCM/Sentry/E2E가 연속 정리되었으나, 실환경 테스트 전에 코드로 먼저 닫을 수 있는 결함을 추가 식별했다.
-
-- [x] **[P0] 알림 dedupe key 채널 충돌 식별**: `notification.send` idempotency/dedupe key가 `channel`을 포함하지 않아 같은 주문의 `IN_APP`과 `PUSH` 알림이 동일 key로 처리될 수 있음. 결과적으로 먼저 처리된 채널만 `SUCCEEDED`가 되고 다른 채널은 큐에서 archive될 위험이 있음.
-  - [x] 코드 수정: `apps/backend/src/modules/queue/queue.service.ts`, `queue-consumer.service.ts`의 notification dedupe key를 `{recipient}:{type}:{subject}:{channel}` 구조로 변경.
-  - [x] 검증 완료 (2026-05-06): `pnpm --filter backend exec vitest run src/modules/queue/queue-consumer.service.spec.ts src/modules/queue/queue-operations.service.spec.ts src/modules/queue/notification-provider.service.spec.ts src/modules/integrations/pos/pos.controller.spec.ts` — 4 files / 29 tests 통과.
-- [x] **[P0] POS 큐가 실제 Toss POS 플러그인 polling을 막는 흐름 식별**: `pos.send_order` consumer가 백엔드 `MockPosService`를 호출한 뒤 `posSyncStatus=SENT`로 바꾸면, 실제 `toss-pos-plugin`의 `GET /pos/orders/pending` polling 대상(`PAID`, `tossOrderId IS NULL`, `posSyncStatus in PENDING/FAILED`)에서 빠져 실단말 전송이 막힐 수 있음.
-  - [x] 코드 수정: `apps/backend/src/modules/queue/queue-consumer.service.ts`에서 `TOSS_POS` 주문의 `pos.send_order`는 실제 SDK 전송을 하지 않고 `PENDING` 유지. 실제 등록은 `apps/toss-pos-plugin` polling + SDK가 담당.
-  - [x] 코드 수정: `ADMIN_DIRECT` 매장은 `order.paid` 처리 시 `posSyncStatus=SKIPPED`로 명시 처리해 POS plugin polling에 남지 않게 함.
-  - [x] 코드 수정: `apps/backend/src/modules/integrations/pos/pos.controller.ts`의 pending polling 조회에 `store.menuManagementMode = TOSS_POS` 방어 조건 추가.
-  - [x] 코드 정리: `QueueConsumerService`에서 더 이상 사용하지 않는 `ResilientPosService` 주입 제거.
-  - [x] 검증 완료 (2026-05-06): 위 queue/pos/notification 테스트 통과 + `pnpm --filter backend exec tsc --noEmit` 통과.
-- [x] **[P1] 체크리스트 문서 정합성 정리** (2026-05-06): admin CHECKLIST/delivery-customer checkList_delivery/brand-website checkList_website 3개 파일에서 이미 코드/CI 기준 완료된 항목(P0 CORS, Playwright 도입, 직원 호출 Realtime, MQ 운영 E2E, 주문/배달/환불/매장 E2E, console.log 정리, PWA 빌드 검증, OrderChannel HOMEPAGE 제거, payment dead code 삭제, 운영 Capacitor 설정 분리, GitHub Actions cron 등)을 [x]로 일괄 갱신.
-- [x] **[P1] 브라우저 E2E 코드 보강** (2026-05-06): 관리자 MQ 운영/주문/환불/매장 설정 E2E는 2026-05-06 선행 작업으로 추가됨. 테이블오더는 `e2e/table-order/orders.spec.ts` smoke 3 tests(QR 진입 — 무효/0/유효 케이스) 추가. `[storeType]/[branchId]/layout.tsx` SSR fetch 를 받기 위한 stub backend(`e2e/utils/stub-backend.ts` + globalSetup/Teardown)로 mock 세팅. CI workflow 도 webServer timeout 300s 로 cold cache 견디게 보강. 첫 주문/추가 주문 cart-to-order 풀 플로우는 본 smoke 범위 외(별도 잔여).
-- [x] **[P2] 런타임 로그 정리 후보** (2026-05-06): `packages/shared/src/api/client.ts`, `apps/table-order/src/lib/api/client.ts`는 이미 `NODE_ENV === 'development'` 가드가 적용되어 운영 빌드 비노출 확인. `apps/admin/src/hooks/useRealtimeOrders.ts`는 가드 없이 Realtime 업데이트마다 payload(주문 정보)를 찍고 있어 제거. admin은 `compiler.removeConsole`로 prod 빌드에서 자동 제거되지만 dev 노이즈/정합성 차원에서 정리.
-
-## 🚨 1차 런칭 Blocker (admin / brand-website / delivery-customer + backend)
-
-런칭 직전 반드시 해소해야 하는 항목. 도메인 코어와 운영 인프라는 견고하나, 트리거·대시보드·dead code·CORS·env 설정에 결함 있음.
-
-- [x] **[P0] MQ consumer 자동 트리거 부재** (2026-05-04): Vercel Pro 업그레이드 대신 **GitHub Actions**(`.github/workflows/backend-cron.yml`)를 사용하여 무료로 5분 주기로 `POST /queue/process-once` 등을 호출하도록 구축 완료.
-- [x] **[P0] Admin 대시보드 하드코딩 stats 제거** (2026-05-04): 가짜 숫자(45건/₩842,000/3건/2종)를 `—` placeholder로 전환 + "통계 데이터 연동 준비 중" 안내 배너 추가. 운영자에게 가짜 숫자 노출 차단. 후속 작업: 매장별 일일 통계 API 구현 (별도 항목)
-- [x] **[P0] delivery-customer 결제 dead code 삭제** (2026-05-04): `apps/delivery-customer/src/features/payment/` 디렉토리 통째 삭제 (`payment.ts` + `types.ts`). 어디서도 import 안 되던 dead code 확인 후 제거. tsc 통과.
-- [x] **[P0] CORS 다중 origin 화이트리스트** (2026-05-04): `apps/backend/src/main.ts` 운영 기본값에 tacomole.kr 5개 도메인(`tacomole.kr`, `www`, `admin`, `delivery`, `order`) + Capacitor scheme(`capacitor://localhost`, `http://localhost`, `https://localhost`) 자동 허용. `FRONTEND_URLS` 콤마 구분 환경변수로 추가 origin override 가능. 기존 `FRONTEND_URL` 단일 값 호환 유지
-- [x] **[P0] 백엔드 `.env.example` 정리** (2026-05-04): 중복 복붙 제거 + `INTERNAL_JOB_SECRET`, `FRONTEND_URLS` 추가, 섹션별 주석 정리
-
-## ⚠️ High risk (런칭 후 곧 터질 가능성)
-
-- [ ] 실 Toss 카드결제 자동화 E2E 도입 (`payments-e2e.spec.ts`는 서비스 레이어 mock만)
-- [ ] 푸시 알림 구현: **Firebase Cloud Messaging(FCM) 기반 잠금화면 푸시 연동**
-  - [x] 백엔드: 토큰 DB 저장, Firebase Admin 발송 API, 큐 연동 완료 (2026-05-04)
-  - [x] 배달앱(고객): Capacitor 푸시 알림 프론트 완성 (2026-05-05). `packages/shared/api/endpoints/devices.ts` 추가. `hooks/usePushNotifications.ts` — 권한 요청/토큰 등록/포어그라운드 표시/탭 라우팅. `AuthContext.signOut` 로그아웃 시 토큰 삭제. tsc 통과. 실기기 FCM 토큰 발급 E2E 검증 필요.
-  - [x] 관리자웹(사장): PWA Service Worker 기반 웹 푸시 연동, `ADMIN_WEB` 토큰 백엔드 등록/로그아웃 삭제, 포그라운드 표시 연결 (2026-05-05). 운영 Firebase env/VAPID 입력 후 브라우저 수신 E2E 필요.
-- [x] Throttler in-memory store가 Vercel 다중 인스턴스에서 무력화 → Redis store 도입 완료 (2026-05-05): B-4 — `@nest-lab/throttler-storage-redis` + Upstash Redis 적용.
-- [x] `useDeliveryTracking.ts` mock 데이터 처리 (2026-05-04): import 사용처 0건 확인 후 `features/delivery-tracking/` 디렉토리 통째 삭제 (payment dead code와 동일 패턴). 실 배달 추적은 `app/orders/[id]/OrderDetailClient.tsx` + `@order/shared` `DeliveryStatus`로 이미 정상 동작
-- [x] `apps/delivery-customer/src/components/menu/MenuDetail.tsx` menuId 미연결 (2026-05-04): import 사용처 0건 확인 후 dead code 삭제. 실 메뉴 상세는 `MenuDetailBottomSheet.tsx`에서 `useMenuDetail` hook + Zustand `useUIStore.selectedMenuId`로 정상 동작
-- [x] Capacitor `allowMixedContent` 운영 빌드 차단 (2026-05-04): 기존 `cleartext` 분기 패턴(`serverUrl?.startsWith('http://')`)을 `allowMixedContent`에도 적용. 운영(HTTPS / unset)에서 false, 로컬 HTTP dev 서버에서만 true. MITM 공격면 감소
-- [x] AndroidManifest App Links host 정정 (2026-05-04): `delivery.taco.com` → `delivery.tacomole.kr` (manifest 1건 + 코드 주석 useDeepLink/app.ts 3건 + CAPACITOR_DEEPLINK_TEST.md 4건). 코드 로직은 host 무관(`parsed.pathname` 사용)이라 동작 영향 없음
-- [x] **후속**: `apps/delivery-customer/public/.well-known/assetlinks.json` 파일 생성 + Next.js headers 설정 완료 (2026-05-05). SHA-256 지문 placeholder(`AA:BB:...`) — 실 키스토어 생성 후 교체 필요. Content-Type: application/json 헤더 자동 적용.
-- [x] **후속**: `apps/delivery-customer/public/.well-known/apple-app-site-association` 파일 생성 완료 (2026-05-05). TEAM_ID placeholder — Xcode 팀 ID 확인 후 교체 필요. Associated Domains capability는 Xcode에서 별도 추가.
-
-## 🧱 Tech debt (누적 시 문제)
-
-- [x] 프론트 자동화 테스트 도입 완료 (2026-05-05): E-3 — Playwright 18 tests (admin 7 + delivery 11), CI 재작성.
-- [x] `apps/backend/src/modules/orders/orders.controller.ts` 인라인 OrderStatus enum 제거 (Prisma enum 사용) (2026-05-05)
-- [x] 백엔드 단일 serverless function 라우팅 개선 (2026-05-05): `/api/v1/queue/*`를 `src/queue.ts` 전용 Vercel function으로 분리, 일반 API 30s/queue 60s timeout 설정.
-- [x] delivery-customer console.log 정리 완료 (2026-05-05): B-3 — 잔여 6개 제거/변환 + `next.config.ts` `compiler.removeConsole` 프로덕션 적용.
-- [ ] `apps/admin/CHECKLIST.md`, `apps/delivery-customer/checkList_delivery.md` 등 분기된 미완료 항목 통합
-
-## 큰 그림
-
-하나의 백엔드 주문 코어 위에 배달앱, 테이블오더, 홈페이지, 관리자 페이지, Toss SDK/POS 앱을 붙이는 구조로 간다.
-
-- [x] `apps/backend`: 공통 API, 매장, 메뉴, 주문, 결제, 세션, Toss 연동
-- [x] `apps/delivery-customer`: 고객 배달 주문 앱
-- [x] `apps/table-order`: QR 기반 테이블오더
-- [x] `apps/brand-website`: 홈페이지와 주문 진입
-- [x] `apps/admin`: 매장/주문/메뉴 관리자
-- [x] `apps/toss-pos-plugin`: Toss SDK/POS 연동 앱
-- [x] `packages/shared`: 프론트 공통 타입/API/스토어
-- [ ] `packages/order-core`: 공통 주문 비즈니스 로직 패키지로 실제 구현 확장
-
-## 확정 정책
-
-- [x] 배달앱 결제는 Toss Payments 선결제만 허용
-- [x] 배달앱 현금/만나서 결제는 MVP 범위에서 제외
-- [x] 배달 주문 생성 시 `PENDING_PAYMENT`로 생성
-- [x] Toss 결제 승인 성공 시 `PAID`로 확정
-- [x] 결제 승인 전 배달 주문은 고객이 앱에서 직접 취소 가능
-- [x] 결제 완료 후 취소/환불은 관리자 환불 승인 흐름에서 처리
-- [x] POS 전송 기준은 `Order.status === 'PAID' && tossOrderId IS NULL`
-- [x] `PENDING_PAYMENT` 주문은 POS 전송 제외
-- [x] 엽떡앱 모티브에 맞춰 배달 주문/주문내역/주문상세는 로그인 필수
-- [x] 카카오/Supabase OAuth 사용자는 로그인 후 앱 DB `User`와 자동 동기화
-- [x] `okpos*` 명칭은 개발 부산물로 보고 신규 설계에서 제외
-- [x] 매장별 운영 모드(Toss 포스 모드 / 일반 관리자 모드) 분리 정책 확정: 둘 다 지원, 매장이 등록 시 운영 모드 선택. 일반 모드는 백엔드 DB가 메뉴 SSOT, Toss 모드는 POS가 SSOT
-
-## 공통 도메인
-
-- [x] 모든 주문은 `Order`를 중심으로 저장
-- [x] 결제 시도/승인/실패/취소 기록은 `Payment`로 분리
-- [x] 배달 주소/수령자/배송 상태는 `OrderDelivery`로 분리
-- [x] 주문 채널은 `OrderChannel`로 구분
-- [x] 주문 타입은 `OrderType`으로 구분
-- [x] 테이블 주문은 `Order.type = TABLE`, `Order.source = TABLE_ORDER`
-- [x] 배달앱 주문은 `Order.type = DELIVERY`, `Order.source = DELIVERY_APP`
-- [x] 결제 상태는 `PaymentStatus`, 주문 상태는 `OrderStatus`, 배달 상태는 `DeliveryStatus`로 분리
-- [x] 주문번호는 매장별 유니크 제약으로 변경
-- [~] ~~홈페이지 직접 주문 시 `Order.source = HOMEPAGE` 적용~~ → **정책 전환(2026-05-02)**: 홈페이지 직접 주문 폐기, 배달앱 리다이렉트로 단일화. `HOMEPAGE` source/공개 주문 API는 사용 중단
-- [~] ~~홈페이지 직접 주문 후처리 (MQ → POS/알림)~~ → 위 정책 전환에 따라 적용 대상 없음
-- [ ] Toss SDK/POS 직접 주문 시 채널 정책 확정
-- [~] ~~관리자 수기 주문 시 `Order.source = ADMIN` 적용~~ → **영역 밖**: 수기 주문은 해당 매장 POS에서 처리 (백엔드/관리자 웹은 미구현)
-
-## 백엔드 완료
-
-- [x] Prisma schema validate 통과
-- [x] Prisma client generate 통과
-- [x] 백엔드 TypeScript 타입체크 통과
-- [x] 최신 queue/POS migration 개발 DB 적용 완료
-- [x] `Payment`, `OrderDelivery`, delivery/payment enum 추가
-- [x] Store 배달 운영 필드 추가
-- [x] `User.role` 기본값을 `USER`로 변경
-- [x] 초대코드 기반 매장 소유자 등록 흐름 추가
-- [x] 매장 생성/수정/내 매장 조회 API 추가
-- [x] 매장 초대코드 재발급 API 추가
-- [x] 매장 테이블 일괄 생성 API 추가
-- [x] 배달 주문 생성 시 매장 활성 상태, 배달 가능 여부, 최소 주문금액 검증
-- [x] 배달 현금/만나서 결제 거부
-- [x] Toss 결제 승인 API `POST /payments/toss/confirm`
-- [x] Toss 결제 실패 API `POST /payments/toss/fail`
-- [x] 관리자 Toss 결제 취소/환불 API `POST /payments/orders/:orderId/toss/cancel`
-- [x] 배달 주문 목록 API 추가
-- [x] 주문 상세 API 추가
-- [x] 결제 timeout/pending 만료 처리 추가
-- [x] 배달 주문 생성/목록/상세 Supabase JWT 인증과 사용자 소유권 검증 추가
-- [x] 인증 사용자 동기화 API `POST /auth/sync` 추가
-- [x] 결제 승인 전 고객 주문 취소 API `PATCH /orders/:orderId/cancel` 추가
-- [x] 배달 상태 변경 API `PATCH /stores/:storeId/orders/:orderId/delivery-status` 추가
-- [x] 주문 서비스 단위 테스트에 고객 취소 정책 추가
-- [x] 주문 서비스 단위 테스트에 배달 상태 변경 정책 추가
-- [x] 결제 완료 후 관리자 환불/취소 API 추가
-- [x] POS pending orders API를 새 정책 기준으로 확장
-- [x] 백엔드 기술 스펙 문서 분리: `apps/backend/BACKEND_TECH_SPEC.md`
-- [x] MQ 기술 스펙 문서 분리: `apps/backend/MQ_TECH_SPEC.md`
-- [x] MQ 도입 설계 확정: Supabase Queues/`pgmq` 우선, backend worker에서 POS 전송/알림/재시도 처리
-- [x] MQ 1차 적용: `order.paid`, `payment.refunded`, `pos.send_order`, `notification.send` 이벤트 정의
-- [x] MQ 안전장치: idempotency key, retry/backoff, 실패 상태 기록, 관리자 재처리 흐름 정의
-- [x] POS 전송 worker가 queue consumer에서 실제 `ResilientPosService.sendOrder()` 호출
-- [x] Queue/POS 운영 상태 migration 추가: `pgmq`, `backend_events`, `QueueEventLog`, `NotificationLog`, `posSync*`
-- [x] 결제 만료/불일치 복구 운영 endpoint에 내부 secret 검증 추가
-- [x] 실제 운영 DB에 최신 queue/POS migration 적용
-- [x] 알림 provider 연결로 `notification.send` 실제 발송 처리
-- [x] Toss 승인 성공 후 로컬 DB 저장 실패 시 즉시 보상 취소/환불 처리
-- [x] `delivery.status_changed` 이벤트 발행/consumer 처리
-- [x] `QueueModule`을 `AppModule`에 등록 (MQ 전체 프로덕션 동작 보장)
-- [x] Toss 카드결제 E2E 통합 테스트 추가: 성공/실패/보상취소/전액환불/부분환불/타임아웃 6개 시나리오
-- [x] 쿠폰 시스템 구현: `Coupon` / `UserCoupon` Prisma 모델 + migration
-- [x] 쿠폰 모듈: `CouponsService` / `CouponsController` / `UserCouponsController` (PERCENTAGE·FIXED_AMOUNT, 프로모코드 등록, 관리자 발급)
-- [x] 쿠폰 적용 연동: `CreateDeliveryOrderDto.userCouponId`, `OrdersService.createDeliveryOrder` 내 할인 계산 + `markAsUsed` 호출
-- [x] 쿠폰 단위 테스트 추가: 15 tests (할인 계산, 만료/사용/한도 검증, 정률cap, 정액min 등)
-- [x] 배달앱 쿠폰 UI: shared 쿠폰 타입/API, 체크아웃 쿠폰 선택 바텀시트, /mypage/coupons 페이지, 마이페이지 쿠폰 개수 실시간 표시
-
-## 배달앱 상태
-
-- [x] Store Context 기반 실제 매장 조회
-- [x] `store-1` 하드코딩 제거
-- [x] 매장별 배달비/무료배달/최소 주문금액 반영
-- [x] 주문내역/주문상세 실제 API 전환
-- [x] 주문 생성 응답 mapper 정리
-- [x] Toss 선결제 전용 체크아웃으로 정리
-- [x] Toss 결제 성공/실패/중단 화면과 사용자 안내 정리
-- [x] Toss 결제 E2E 실행 점검표 추가
-- [x] 결제 timeout/pending 만료 처리
-- [x] 주문 상태 tracker 실제 상태 연결
-- [x] 로그인 필수 주문 조회 정책 보강
-- [x] 카카오 로그인과 Supabase user, 백엔드 User 자동 동기화
-- [x] 주문상세에서 결제 승인 전 고객 취소 UI 연결
-- [x] 주문상세에서 배달 상태와 라이더 메모 표시
-- [x] 주문상세를 `/orders/[id]` 동적 라우트로 전환
-- [x] `output: 'export'` 제거 후 Next 서버/Capacitor 원격 WebView 기준으로 빌드 구조 정리
-- [x] Toss 카드결제 성공/실패/보상취소/환불/타임아웃 E2E 통합 테스트 (백엔드 서비스 레이어)
-- [x] 주문내역 카드에 취소/환불 상태 배지 표시
-- [x] 주소 조회/추가/삭제를 실제 사용자 기준으로 동작
-- [x] 찜 조회/추가/삭제를 실제 사용자 기준으로 동작
-- [x] 쿠폰 데이터 정책 결정 및 구현 (PERCENTAGE·FIXED_AMOUNT, 1장/주문, 30일 기본 만료, 5000원 정률 상한)
-- [x] PWA 빌드/설치 검증 — 아이콘 8종 생성, manifest 정합성 수정, layout.tsx 메타 완비, next build 19/19 페이지 정상
-
-## 단계별 남은 일
-
-- [ ] **[작업 우선순위]** 진행 순서는 백엔드 ➡️ 배달앱 ➡️ 관리자 ➡️ 홈페이지로 고정한다.
-- [x] **[운영 인프라]** Vercel Shared 환경변수(All-in-one) 셋업 및 오버라이딩 원리 정리 (2026-05-04)
-- [ ] **[인프라 고도화]** 추후 개발(Dev)과 운영(Prod) 환경을 물리적으로 분리하여 안전한 테스트 및 배포 파이프라인 구축
-- [ ] **[MVP 론칭 전략]** 초기 오픈은 '배달앱(고객) ➡️ 관리자웹(점주) ➡️ 영수증 출력' 구조로 한정 (Toss POS 및 테이블오더 연동은 Phase 2로 연기)
-- [x] **[관리자 아키텍처]** Admin 웹을 Electron으로 랩핑 (2026-05-07): `apps/admin-electron/` — BrowserWindow, Tray 알림, 무음 영수증 출력, electron-builder NSIS, electron-updater GitHub Releases. tsc 통과.
-- [ ] **[배달앱 배포 전략]** 스토어 최적화 및 핫 푸시 업데이트를 위해 Capacitor를 활용하여 구글 플레이스토어 및 애플 앱스토어 배포 파이프라인 구축
-- [x] 배달앱: Capacitor 원격 WebView 기준선 설정 (`CAPACITOR_SERVER_URL`, `webDir: 'public'`)
-- [x] 배달앱: Capacitor android/ios 네이티브 프로젝트 생성 + deeplink 훅 구현 (`taco://`, App Links)
-- [x] 관리자: 매장 등록/운영 설정 화면을 백엔드 API에 연결
-- [x] 관리자: 주문 목록에서 `type`, `source`, `paymentStatus`, 배달 상태 표시
-- [x] 관리자: 배달 상태 변경 버튼/운영 화면 구현
-- [x] 관리자: 결제 완료 주문 전액 취소/부분 환불 버튼 구현
-- [x] 관리자: MQ 운영 화면에서 POS/알림 실패 조회와 수동 재시도 연결
-- [x] **[P1]** 운영 모드 분기 코드 구현: `MenuManagementMode` enum(`TOSS_POS` | `ADMIN_DIRECT`) — 메뉴 SSOT 분기(menus.service), POS 워커 분기(queue-consumer: ADMIN_DIRECT skip + SKIPPED 처리), 관리자 매장 등록 운영 모드 선택 UI, ADMIN_DIRECT에서만 메뉴 CRUD 허용 — 전부 구현 완료
-- [x] 테이블오더: 실제 Store UUID/tableNumber 연결과 첫 주문/추가 주문 API 분기 연결
-- [ ] 테이블오더: 첫 주문/추가 주문 브라우저·백엔드 E2E
-- [x] 테이블오더: 주문 상태 API 연결 (current-session polling + 상태 배지)
-- [x] 테이블오더: 직원 호출 실제 API 연결 (`stores/:storeId/tables/:tableNumber/calls`)
-- [x] 테이블오더: 런타임 mock 데이터/MSW 제거
-- [x] 홈페이지: 매장/메뉴 API 연결 (GET /stores 퍼블릭 엔드포인트, 배달 정보 표시, 카테고리/메뉴 fetch)
-- [x] 홈페이지: 직접 주문 정책 확정 — **폐기, 배달앱 리다이렉트로 단일화** (2026-05-02)
-- [x] 홈페이지: Hero/매장 카드 CTA → `OrderCTAButton` (배달앱 URL + 모바일 `taco://` 딥링크 fallback)
-- [x] 홈페이지: `/order`, `/order/success`, `/order/fail` 라우트 제거
-- [x] 백엔드: `POST /orders/homepage` 엔드포인트 + `CreateDeliveryOrderDto.source` HOMEPAGE 분기 제거
-- [ ] Toss SDK/POS 앱: 실기기 E2E와 Claude 진행분 기준 최종 충돌 점검
-- [x] 공통: Swagger 명세 보강 (누락 태그 11개 등록, users/menus 어드민 엔드포인트 ApiOperation 완비, 설명 최신화)
-- [x] 공통: 주요 API 테스트 코드 보강 (17 files / 127 tests — stores/menus 어드민 CRUD, Sentry transport, AppController 추가)
-
-## 검증 기록
-
-- [x] `apps/backend`: `tsc --noEmit`
-- [x] `apps/backend`: 최신 전체 `vitest run` **18 files / 142 tests** 통과 (2026-05-01)
-- [x] `apps/backend`: `vitest run src/modules/orders/orders.service.spec.ts` 21 tests 통과 (`HOMEPAGE` 주문 출처 지원 포함)
-- [x] `apps/backend`: `vitest run src/modules/payments/payments.service.spec.ts` 12 tests 통과
-- [x] `apps/backend`: `vitest run src/modules/payments/payments-e2e.spec.ts` 7 tests 통과 (Toss E2E 통합)
-- [x] `apps/admin`: `tsc --noEmit`
-- [x] `apps/admin`: `pnpm --filter admin build` 통과 및 `/operations` 라우트 생성 확인
-- [x] `apps/admin`: `/operations` 미인증 접근 시 로그인 화면 리다이렉트 브라우저 확인
-- [x] `apps/delivery-customer`: `tsc --noEmit`
-- [x] `apps/delivery-customer`: `next build` 통과 및 `/orders/[id]` 동적 라우트 확인
-- [x] `packages/shared`: `tsc --noEmit`
-- [x] 개발 DB `prisma migrate deploy`: 최신 queue/POS migration 적용 완료
-- [x] 개발 DB `prisma migrate status`: 최신 queue/POS migration 적용 후 최신 상태 확인
-- [x] 배달 카드결제 주문 생성/승인/실패/환불 E2E 통합 테스트 통과
-- [x] Toss 결제 성공/실패/timeout/보상취소 E2E 통합 테스트 통과
-- [x] Sentry 이벤트 수신 E2E (SentryTransport unit test 완비, GET /sentry/error 엔드포인트 검증 — Sentry 대시보드 수동 확인 필요)
-- [ ] Toss SDK/POS 실제 기기 E2E
-
-## 다음 개발 순서
-
-1. 백엔드: Swagger 명세 보강, 주요 API 테스트 코드 보강, 최신 전체 테스트 상태 재확인
-2. 배달앱: Toss 테스트 카드결제 성공/실패/환불 E2E와 결제 후 POS/알림 중복 노출 검증
-3. 배달앱: Capacitor 원격 WebView 실기기 실행, `/orders/[id]` 딥링크, PWA/Sentry 검증
-4. 관리자: MQ 운영 화면 POS/알림 실패 조회 및 재시도 브라우저 E2E
-5. 테이블오더: 첫 주문/추가 주문 브라우저 E2E, 직원 호출 Realtime/관리자 수신 화면 연결
-6. 홈페이지: `/order` 라우트/결제 페이지 제거 + Hero/매장 CTA를 배달앱 URL로 전환 (모바일 딥링크 fallback 포함), 백엔드 공개 HOMEPAGE 주문 API 비활성화
-
-## 체크리스트 위치
-
-- [배달앱](apps/delivery-customer/checkList_delivery.md)
-- [백엔드](apps/backend/BACKEND_CHECKLIST.md)
-- [테이블오더 Front](apps/table-order/FRONT_CHECKLIST.md)
-- [테이블오더 PWA](apps/table-order/PWA_CHECKLIST.md)
-- [관리자](apps/admin/CHECKLIST.md)
-- [홈페이지](apps/brand-website/checkList_website.md)
-- [Toss SDK/POS 앱](apps/toss-pos-plugin/toss-pos-plugin-checkList.md)
-
-## 최신 동기화 (2026-05-02)
-
-- [x] 테이블오더 실제 Store UUID/tableNumber 진입, 첫 주문/추가 주문 API 분기, 주문 상태 polling, 직원 호출 API 연결 완료
-- [x] 테이블오더 런타임 mock/MSW/하드코딩 fallback 제거 완료 및 `tsc --noEmit`, `next build` 통과
-- [x] 관리자 MQ 운영 화면 연결 및 실패 재시도 흐름 구현 완료
-- [x] 홈페이지 매장/메뉴 조회는 실제 API 기반으로 전환 완료
-- [x] **정책 전환**: 홈페이지 직접 주문 폐기, 배달앱 리다이렉트로 단일화 — 코드 롤백 완료 (a1d6366/4e00a74 부분 무효화)
-- [x] 홈페이지 `/order` 라우트/결제 페이지 제거 + Hero/매장 CTA를 배달앱 URL로 전환 (`OrderCTAButton` + 모바일 `taco://` 딥링크 fallback)
-- [x] 백엔드 공개 HOMEPAGE 주문 API 제거 (`POST /orders/homepage`, DTO source 필드, HOMEPAGE 분기)
-
-## 최신 동기화 (2026-05-03) — 런칭 준비도 감사
-
-- [x] 코드 직접 점검 기반 평가: 백엔드 도메인 코어/MQ/Sentry/인증은 상위권, **트리거·dashboard·dead code·CORS·env 5개 결함**으로 즉시 오픈 비추천
-- [x] Launch blocker 5개 / High risk 5개 / Tech debt 5개 / Strength 5개 식별 (위 섹션)
-- [x] 현실적 런칭 시나리오: Week 1 blocker 1~3,5 + closed beta → Week 2 blocker 4 + 실 카드 E2E → Week 3 일반 오픈
-- [x] 가장 위험한 착시: 체크리스트 `[x]` 비율 높음 vs 실 안정성(자동 cron 0 / 실 결제 E2E 0 / 프론트 자동화 0)
-- [ ] 본 평가 항목들이 각 앱 체크리스트에 반영되었는지 1주일 내 재확인
-- [ ] 테이블오더 첫 주문/추가 주문 브라우저-백엔드 E2E
-- [x] 관리자 MQ 운영 화면 브라우저 E2E (2026-05-06): `e2e/admin/operations.spec.ts` 추가. Supabase 세션/API route mock 기반으로 `/operations` 실패 목록 렌더링, POS 재시도, 알림 재시도 요청 검증. `playwright --list` 확인, admin tsc 통과. 로컬 실제 실행은 Playwright Chromium 설치 필요.
-- [ ] Toss SDK/POS 실제 기기 E2E
+마지막 업데이트: 2026-05-12
 
 ---
 
-## 📋 전체 잔여 작업 마스터 목록 (2026-05-05 기준)
+## 🔴 P0 — 즉시 조치 (보안/치명 버그)
 
-> 코드 작업과 비코드 작업(인프라·실기기·정책) 모두 포함.
-> 완료 시 `[ ]` → `[x]` 로 변경하고 날짜 기재.
+### 보안
 
----
+- [x] **env sync 체계 도입** (2026-05-12): `scripts/sync-env.js` + `pnpm sync:env`. 루트 `all-in-one-shared.env.local` 단일 소스 → 앱별 `.env.local` 자동 생성.
+- [x] **실값 env 파일 git untrack** (2026-05-12): `all-in-one-shared.env`, `backend-env.env`, `.env.direct`, `.env.pooler` `git rm --cached` 완료. `.gitignore` 보강.
+- [ ] **실 운영 시크릿 rotate**: git 히스토리에 노출된 아래 키들 즉시 재발급 후 `all-in-one-shared.env.local` + Vercel 대시보드 갱신.
+  - Supabase DB 비밀번호 + `SUPABASE_SERVICE_KEY` (Supabase 대시보드)
+  - `TOSS_ACCESS_KEY` / `TOSS_ACCESS_SECRET` (Toss 콘솔)
+  - `INTERNAL_JOB_SECRET` → 32자 이상 랜덤값으로 교체
+  - Gmail 앱 비밀번호 `EMAIL_PASS` (Google 계정 설정)
+  - **`SUPABASE_SERVICE_KEY`는 `all-in-one-shared.env.local`에 별도 추가 필요** (기존 파일에 누락)
+- [ ] **git 히스토리에서 시크릿 완전 제거**: `git filter-repo` 또는 `bfg`로 아래 파일 히스토리 제거 후 force-push.
+  - `all-in-one-shared.env`, `backend-env.env`, `apps/backend/.env.direct`, `apps/backend/.env.pooler`
+- [ ] **CORS 개발 모드 전체 허용 제거**: `apps/backend/src/main.ts:203` — `NODE_ENV=development` 시 모든 origin 허용 + `credentials:true` 조합. 개발도 localhost 화이트리스트로 제한.
 
-### 🔴 A. 런칭 직결 코드 작업
+### 치명 버그
 
-#### A-1. 관리자 대시보드 통계 API 연결
-- [x] 백엔드: `GET /stores/:storeId/stats/daily` 구현 (2026-05-05): Prisma aggregate로 오늘 주문 수(취소/미결제 제외), 오늘 매출(approvedAmount 합산), 처리 중인 주문 수(PAID~DELIVERING), 품절 활성 메뉴 수 반환. SupabaseGuard + assertCanManageStore 소유권 검증. tsc 통과.
-- [x] 관리자 대시보드 4개 카드를 실제 API useQuery로 연결 (2026-05-05): 60초 자동 갱신, 로딩 중 `...` 표시, 매장 미선택 시 안내 배너. `—` placeholder 안내 배너 제거. tsc 통과.
-
-#### A-2. 관리자 직원 호출 수신 화면 연결
-- [x] 백엔드 `GET /stores/:storeId/calls` + `PATCH /stores/:storeId/calls/:callId/complete` 추가 (2026-05-05). SupabaseGuard + 소유권 검증.
-- [x] `useStaffCalls` 훅: Realtime INSERT 구독 + 30초 폴링 + `admin:new-staff-call` 이벤트 발행 (2026-05-05)
-- [x] `StaffCallNotification`: 토스트 알림 (테이블 번호 + 호출 유형 + 2회 알림음) 8초 자동 닫기 (2026-05-05)
-- [x] `/calls` 페이지: 대기 호출 카드 목록 + 처리 완료 버튼 (2026-05-05)
-- [x] 사이드바 '직원 호출' 메뉴 추가, DashboardLayout에 전역 Realtime 구독 마운트. tsc 통과.
-
-#### A-3. 관리자 웹(사장) FCM 웹 푸시 연동
-- [x] `apps/admin`에 Service Worker 등록 (API Route `/api/firebase-sw`로 동적 제공 — 환경변수 주입) (2026-05-05)
-- [x] Firebase SDK 초기화 + `getToken()` 호출 (`lib/firebase.ts`, `hooks/useWebPush.ts`) (2026-05-05)
-- [x] 로그인 후 `POST /api/v1/devices` 토큰 전송 (deviceType: 'WEB') (2026-05-05)
-- [x] 로그아웃 시 `DELETE /api/v1/devices/:token` (`AuthContext.signOut` 연동) (2026-05-05)
-- [x] 백그라운드 메시지 수신 처리 (SW 핸들러 `onBackgroundMessage` + notificationclick) (2026-05-05)
-
-#### A-4. 테이블오더 오류 UI 정리
-- [x] 주문 실패(재고 부족/매장 비활성) 오류 화면 구현 (2026-05-05): `OrderConfirmModal` — `parseOrderError()`로 `ApiClientError` 메시지 파싱 → 품절/비활성/서버오류 한국어 안내. ⚠️/❌ 구분 UI.
-- [x] 테이블 없음 오류 → "QR을 다시 스캔해주세요" 안내 화면 (2026-05-05): `[tableId]/page.tsx` 유효하지 않은 tableId 오류 풀스크린 UI. `OrderConfirmModal` `'Table not found'` 한국어 처리.
-- [x] 예약 테이블 차단 오류 → "이 테이블은 예약석입니다" 안내 화면 (2026-05-05): `OrderConfirmModal` `'Table is reserved'` → 한국어 안내.
-- [x] POS 후처리 실패가 고객 주문 완료 화면을 막지 않는지 에러 핸들링 검토 (2026-05-05): `orders.service.ts` `createOrder` 확인 — 테이블 주문 생성 시 POS 큐 호출 없음, 비동기 분리 확인. 안전.
+- [ ] **`updateOrderStatus` localStorage mock 제거**: `packages/shared/src/api/endpoints/order.ts` + `apps/table-order/src/lib/api/endpoints/order.ts` 두 곳의 `updateOrderStatus`가 실제 API 호출 없이 localStorage를 읽고 쓰는 mock 구현. 프로덕션에서 주문 상태 변경이 서버에 반영 안 됨. `PATCH /stores/:storeId/orders/:orderId/status`로 교체 필요.
+- [ ] **`generateOrderNumber` 동시성 취약점**: `apps/backend/src/modules/orders/orders.service.ts`의 `generateOrderNumber`가 `tx.order.count() + 1` 방식. 동시 요청 시 중복 주문번호 발급 위험. DB 레벨 `@@unique([storeId, orderNumber])` 제약 추가 또는 시퀀스/UUID 방식으로 교체.
+- [ ] **`updateOrderStatus` 상태 전이 검증 부재**: `apps/backend/src/modules/orders/orders.service.ts`의 `updateOrderStatus`가 `status` 파라미터를 검증 없이 DB 저장. `COMPLETED → PENDING` 같은 역방향 전이가 가능. 허용 전이 맵(State Machine) 정의 + 유효하지 않은 전이는 `BadRequestException`.
 
 ---
 
-### 🟡 B. 기술 부채 코드 작업
+## 🔴 P0 — 저장소 위생
 
-#### B-1. 백엔드 인라인 enum 제거
-- [x] `apps/backend/src/modules/orders/orders.controller.ts:11-22` 인라인 `OrderStatus` 상수 제거 (2026-05-05)
-- [x] `@prisma/client`의 `OrderStatus` enum 직접 import로 교체 (2026-05-05)
-- [x] `tsc --noEmit` 통과 (2026-05-05)
-
-#### B-2. DB schema OrderChannel HOMEPAGE 값 정리
-- [x] `prisma/schema.prisma` `OrderChannel` enum에서 `HOMEPAGE` 값 제거 (2026-05-05)
-- [x] migration 파일 생성 (`20260505000000_remove_homepage_order_channel`) — 운영 DB 적용 시 HOMEPAGE source 주문 없음 확인 후 `prisma migrate deploy` 실행 필요 (2026-05-05)
-- [x] `createHomepageOrder` 함수 제거 (packages/shared, api/index.ts) (2026-05-05)
-- [x] `packages/shared/src/types/payment.ts` `OrderChannel` 타입에서 HOMEPAGE 제거 (2026-05-05)
-- [x] `apps/admin` orders 페이지 sourceLabel에서 HOMEPAGE 제거 (2026-05-05)
-- [x] `prisma generate` 후 tsc 통과 (2026-05-05)
-- [ ] 운영 DB `prisma migrate deploy` 적용 (실기기/운영 환경 작업)
-
-#### B-3. 배달앱 console.log 정리 (56개 → 0개)
-- [x] 잔여 6개 console.log 전수 제거/변환 (2026-05-05): MenuDetailBottomSheet 1, PWAInstaller 4개 제거/error 변환, toast.ts 1개 무음 처리
-- [x] `next.config.ts` `compiler.removeConsole` 프로덕션 빌드 적용 (error/warn 제외) (2026-05-05)
-- [x] tsc 통과 (2026-05-05)
-
-#### B-4. Throttler Redis store 도입
-- [x] `@nest-lab/throttler-storage-redis` + `ioredis` 설치 (2026-05-05)
-- [x] `AppModule` ThrottlerModule.forRootAsync로 전환 — REDIS_URL 있으면 Redis 저장소, 없으면 in-memory 폴백 (2026-05-05)
-- [x] `.env.example`에 `REDIS_URL` 항목 및 Upstash 연결 방법 주석 추가 (2026-05-05)
-- [x] tsc --noEmit 통과 (2026-05-05)
-- [x] Upstash Redis 무료 인스턴스 생성 후 `REDIS_URL` Vercel 공유 환경변수에 등록 (2026-05-05)
-
-#### B-5. Toss POS 플러그인 4xx 재시도 제거
-- [x] `apps/toss-pos-plugin/src/order.ts` `updateOrderStatus`에서 4xx 응답은 즉시 실패 처리하고, 5xx/네트워크 오류만 재시도 (2026-05-05)
-- [x] `apps/toss-pos-plugin/toss-pos-plugin-checkList.md` #15 완료 반영 (2026-05-05)
-- [x] `pnpm --filter toss-pos-plugin build` 통과 (2026-05-05)
+- [ ] **거대 임시 파일 삭제**: `tree_output.txt`(96MB), `tree_output_utf8.txt`(48MB) 삭제. (`.gitignore`에 `tree_output*.txt` 추가 완료)
 
 ---
 
-### 🟠 C. 실기기·환경 필요 검증
+## 🟡 P1 — 주요 개선
 
-#### C-1. Toss 실 카드결제 E2E (테스트 카드)
-- [ ] Toss 테스트 카드로 배달앱 결제 성공 플로우 전체 확인
-  - 주문 생성(`PENDING_PAYMENT`) → 위젯 → 승인 → `PAID` → 주문상세 갱신
-- [ ] 결제 실패/취소 플로우 확인 (fail 페이지 → 재시도 안내)
-- [ ] 결제 완료 후 관리자 전액 취소 → 배달앱 상태 갱신 확인
-- [ ] 결제 완료 후 관리자 부분 환불 확인
-- [ ] 결제 후 POS 전송 큐 처리 + 알림 발송 E2E (cron 수동 trigger로)
-- [ ] GitHub Actions cron 실제 동작 확인 (`POST /queue/process-once` 응답 로그)
+### 코드 품질
 
-#### C-2. 배달앱 Capacitor 실기기 E2E (Android)
-- [ ] Android Studio에서 `.aab`/`.apk` 빌드 성공
-- [ ] 실기기 USB 디버깅 연결 후 `npx cap run android` 실행
-- [ ] 원격 WebView 로드 확인 (`CAPACITOR_SERVER_URL` 로컬 IP 기반)
-- [ ] FCM 토큰 발급 확인 (`POST /devices` 실제 등록 로그)
-- [ ] `adb shell am start -d "taco://orders/TEST_ID"` 딥링크 진입 확인
-- [ ] 앱 종료 후 백엔드 FCM 발송 → 잠금화면 푸시 수신 확인
-- [ ] 푸시 탭 → `/orders/:id` 페이지 라우팅 확인
+- [ ] **`OrdersService` 분리**: `apps/backend/src/modules/orders/orders.service.ts` 616줄. 테이블 주문·배달 주문·POS 재시도·상태 변경 등 책임 혼재. `TableOrderService` / `DeliveryOrderService` / `OrderStatusService`로 분리 검토.
+- [ ] **`QueueConsumerService` 분리**: `apps/backend/src/modules/queue/queue-consumer.service.ts` 583줄. 결제·POS·알림·배달 상태 이벤트 모두 단일 클래스 처리. 이벤트 타입별 핸들러 클래스(`PaymentEventHandler`, `PosEventHandler`, `NotificationEventHandler`)로 분리.
+- [ ] **`optional` 의존성 패턴 재검토**: `apps/backend/src/modules/orders/orders.service.ts:16-17` — `queueService?`, `couponsService?` optional 주입. 런타임 silent fail 위험. 필수 주입 or 명시적 No-op fallback.
+- [ ] **`shared` / `table-order` 타입 불일치 정리**: `apps/table-order/src/types/order.ts`의 `OrderStatus`가 4개 값, `packages/shared/src/types/order.ts`는 10개 값. `apps/table-order/src/types/index.ts`에 `@deprecated`지만 파일 잔존. 로컬 파일 삭제 후 `@order/shared` 단일 사용.
+- [ ] **API 클라이언트 중복 제거**: `packages/shared/src/api/client.ts`와 `apps/table-order/src/lib/api/client.ts` 사실상 중복. `table-order`의 로컬 클라이언트 삭제 후 shared로 단일화.
+- [ ] **`shared`와 `order-core` 책임 경계 재정의**: `packages/shared/src/stores/cartStore.ts`에 장바구니 계산 로직 존재, `packages/order-core`에도 `calculateOrderTotals` 존재. `shared`는 타입/API/유틸, `order-core`는 비즈니스 계산/검증으로 명확히 역할 분리 후 `cartStore` 계산 로직 `order-core`로 이관.
 
-#### C-3. Android 앱 서명 및 assetlinks.json 배포
-- [ ] Android 릴리즈 키스토어 생성 (`keytool -genkey`)
-- [ ] SHA-256 인증서 지문 추출 (`keytool -list -v`)
-- [x] `apps/delivery-customer/public/.well-known/assetlinks.json` 파일 생성 (2026-05-05) — SHA-256 placeholder, 키스토어 생성 후 교체 필요. Next.js headers `Content-Type: application/json` 자동 적용.
-- [ ] 키스토어 SHA-256 확정 후 `assetlinks.json` 업데이트 및 운영 배포 확인
-- [ ] `adb shell pm get-app-links com.taco.delivery` 로 App Links 검증
+### 인프라/설정
 
-#### C-4. iOS Universal Links 구현 (macOS + Xcode 필요)
-- [ ] Xcode → Signing & Capabilities → Associated Domains 추가 (`applinks:delivery.tacomole.kr`)
-- [ ] `Info.plist`에 `taco://` custom scheme 확인 (이미 등록됨)
-- [x] `apps/delivery-customer/public/.well-known/apple-app-site-association` 파일 생성 (2026-05-05) — TEAM_ID placeholder, Xcode 팀 ID 확인 후 교체 필요.
-- [ ] TEAM_ID 확정 후 `apple-app-site-association` 업데이트 및 운영 배포 확인
-- [ ] 시뮬레이터 `xcrun simctl openurl booted "taco://orders/TEST_ID"` 확인
-- [ ] TestFlight 빌드 후 Universal Link 실기기 확인
+- [ ] **프로덕션 Redis 강제화**: `apps/backend/src/app.module.ts:38` — `REDIS_URL` 미설정 시 in-memory 폴백. Vercel 다중 인스턴스에서 rate limit 무력화. `NODE_ENV=production` && `REDIS_URL` 없으면 부팅 실패하도록 가드.
+- [ ] **환경변수 ConfigService 일원화**: `process.env.*` 직접 사용처(main.ts 등)를 `ConfigService` + Joi/Zod 스키마 검증으로 통일. 누락/오타 시 부팅 단계에서 실패.
+- [ ] **Serverless cold start 최적화**: `apps/backend/src/main.ts:43-52` — 단일 진입점에서 17개 모듈 일괄 로드. cold start 부담. 라우트별 함수 분리 또는 lazy module 검토.
 
-#### C-5. Toss SDK/POS 플러그인 실기기 E2E
-- [ ] Toss POS 단말기 연결 후 플러그인 앱 실행
-- [ ] 백엔드 `POST /queue/process-once` → POS 전송 → 단말 수신 확인
-- [ ] POS 전송 실패 시 관리자 화면 재시도 플로우 확인
-- [ ] `toss-pos-plugin` 최신 코드 기준 충돌 점검
+### 테스트
+
+- [ ] **실 Toss 카드결제 E2E**: `payments-e2e.spec.ts`는 서비스 레이어 mock 한정. 실 HTTP 콜백 / idempotency / 취소 무점검. 실 환경 필요.
+- [ ] **테이블오더 첫 주문/추가 주문 E2E**: 브라우저-백엔드 통합 E2E 미작성.
+- [ ] **백엔드 미작성 모듈 테스트**: `error-logs`, `sessions`, `integrations/toss`, `menu-detail`, `app.module`.
+- [ ] **DB schema `OrderSource.HOMEPAGE` 제거**: migration 영향 검토 후 별도 작업.
 
 ---
 
-### 🟣 D. 인프라·배포 파이프라인
+## 🟢 P2 — 점진 개선
 
-#### D-1. 배달앱 Google Play 스토어 배포
-- [ ] Google Play Console 계정 등록 (개발자 계정 25달러)
+### 코드 품질
+
+- [ ] **`any` 타입 제거**: `apps/backend/src` 기준 229건. Prisma 트랜잭션 타입(`Prisma.TransactionClient`)과 Enum 타입 명시. 특히 `prepareOrderItems(tx: any)`, `updateOrderStatus(..., status: any)`.
+- [ ] **`table-order` 폴링 → Realtime 교체**: `apps/table-order/src/hooks/queries/useOrders.ts` `refetchInterval: 5000`. admin은 Supabase Realtime 사용 중. `table-order`도 Realtime 또는 SSE 교체 검토.
+- [ ] **`table-order` 로컬 API 레이어 정리**: `apps/table-order/src/lib/api/endpoints/`에 `shared`와 중복 구현 파일 다수. `shared`에 없는 전용 로직만 남기고 나머지 삭제.
+- [ ] **`useCreateOrder` queryKey 범위 축소**: `apps/table-order/src/hooks/mutations/useCreateOrder.ts` 주문 생성 후 `['orders']` 전체 무효화 → `['orders', 'table', storeId, tableNumber]`로 축소.
+- [ ] **프론트엔드 단위 테스트 도입**: `apps/admin`, `apps/delivery-customer`, `apps/table-order` 단위 테스트 없음. 핵심 store/hook(`useCartStore`, `useOrderStatus` 등)부터 vitest + RTL.
+- [ ] **`packages/order-core` 비즈니스 로직 실제 구현 확장**: 배달앱/테이블오더 기존 계산/검증 로직을 단계적 이관.
+
+### 문서 (README/내부)
+
+- [ ] **`packages/shared/README.md` 전면 업데이트**: 추가된 타입(`Coupon`, `Address`, `Payment`, `OrderDelivery`, `Call`, `DeliveryStatus`), `src/api/` 레이어, `cartStore`, 공통 훅 전부 누락. 전면 재작성.
+- [ ] **`packages/ui/README.md` 내용 보강**: 실제 컴포넌트 목록, Shadcn UI 기반 기술 스택, `@order/ui/payment` 서브패스 import 방식 추가.
+- [ ] **`packages/order-core/README.md` 사용 예시 추가**: 사용 예시 코드, 실제 사용처, `@order/shared`와의 책임 경계 설명 추가.
+- [ ] **`apps/table-order/src/` 내부 README 재작성**: `features/`, `hooks/`, `lib/`, `stores/`, `types/` 내 README들이 존재하지 않는 파일/훅 기술. 실제 구조 기준으로 교체.
+- [ ] **운영자 인수인계 문서 작성**: 장애 대응, 주요 운영 엔드포인트, cron 실행 확인 방법 등.
+
+---
+
+## 📱 앱 배포 (출시 전 완료)
+
+### Android (배달앱)
+
+- [ ] 릴리즈 키스토어 생성 (`keytool -genkey`) + SHA-256 지문 추출
+- [ ] `assetlinks.json` SHA-256 교체 후 `https://delivery.tacomole.kr/.well-known/assetlinks.json` 운영 배포
+- [ ] `adb shell pm get-app-links com.taco.delivery` App Links 검증
 - [ ] `capacitor.config.ts` appId `com.taco.delivery` 확정
 - [ ] `android/app/build.gradle` versionCode/versionName 설정
 - [ ] 릴리즈 `.aab` 빌드: `./gradlew bundleRelease`
+- [ ] USB 실기기 `npx cap run android` 실행 + FCM 토큰 발급 확인
+- [ ] 앱 종료 후 잠금화면 FCM 푸시 수신 확인
+- [ ] PWA `manifest.screenshots` 추가 (Play Store 등록 시 필요)
+- [ ] Google Play Console 계정 등록 (개발자 계정 25달러)
 - [ ] Play Console 내부 테스트 트랙 업로드 → 심사
-- [ ] Vercel 배포 → Capacitor 원격 WebView 핫 업데이트 파이프라인 검증 (심사 없이 업데이트)
+- [ ] Vercel 원격 WebView 핫 업데이트 파이프라인 검증
 
-#### D-2. 배달앱 Apple App Store 배포 (macOS 필요)
+### iOS (배달앱)
+
+- [ ] Xcode → Signing & Capabilities → Associated Domains 추가 (`applinks:delivery.tacomole.kr`)
+- [ ] `apple-app-site-association` TEAM_ID 확정 후 운영 배포
+- [ ] 시뮬레이터 Universal Link 확인: `xcrun simctl openurl booted "taco://orders/TEST_ID"`
 - [ ] Apple Developer Program 등록 (연 129달러)
-- [ ] Xcode에서 Archive 빌드 (`Product → Archive`)
-- [ ] App Store Connect 앱 등록 + 메타데이터 작성
-- [ ] TestFlight 베타 배포 → 내부 테스터 검증
-- [ ] App Store 심사 제출
-
-#### D-3. 관리자 Electron 래핑 (PC 전용 수신 프로그램)
-- [ ] Electron 프로젝트 초기화 (`apps/admin-electron/`)
-- [ ] `BrowserWindow`에 기존 admin 웹 URL 로드
-- [ ] 백그라운드 주문 알림: Tray 아이콘 + OS 네이티브 알림
-- [ ] 자동 소리 재생 (웹 브라우저 자동재생 차단 우회)
-- [ ] 영수증 무음 자동 출력 브리지 (`win.webContents.print()`)
-- [ ] Windows `.exe` 인스톨러 빌드 (`electron-builder`)
-- [ ] 자동 업데이트 (`electron-updater` + GitHub Releases)
-
-#### D-4. Dev/Prod 환경 분리
-- [ ] Supabase 프로젝트 Dev 인스턴스 별도 생성
-- [ ] Vercel Preview 배포에 Dev DB/env 자동 연결
-- [ ] Production 배포는 main 브랜치 merge 시에만 Prod DB 사용
-- [ ] GitHub Actions cron을 Dev/Prod 각각 별도 워크플로우로 분리
-- [ ] `.env.development` / `.env.production` 분리 정책 문서화
-
-#### D-5. 운영 모니터링 고도화
-- [ ] Sentry Releases 연동: 배포 시 `sentry-cli releases` 자동 실행 (GitHub Actions)
-- [x] Sentry Source Map 업로드 설정 완료 (2026-05-05): 배달앱/관리자/홈페이지 `next.config.ts` 모두 `withSentryConfig({ widenClientFileUpload: true, hideSourceMaps: true })` 적용 완료. Vercel 빌드 시 `SENTRY_AUTH_TOKEN` 환경변수 추가하면 자동 업로드.
-- [x] Sentry Next.js instrumentation 최신화 (2026-05-05): admin/delivery-customer/table-order `onRequestError` hook 추가, `sentry.client.config.ts`를 `instrumentation-client.ts`로 통합해 빌드 경고 정리.
-- [x] `apps/admin/next.config.ts` `compiler.removeConsole` 프로덕션 적용 (2026-05-05) — delivery-customer와 동일 패턴.
-- [ ] Vercel Analytics 또는 PostHog 기본 이벤트 트래킹 설정
-- [ ] Uptime 모니터링: Better Uptime / UptimeRobot으로 주요 endpoint 감시
-- [ ] 백엔드 에러율 알림: Sentry → Slack/Discord 웹훅 연결
+- [ ] Xcode Archive 빌드 → App Store Connect 앱 등록
+- [ ] TestFlight 베타 배포 → 내부 테스터 검증 → App Store 심사 제출
 
 ---
 
-### ⚪ E. Phase 2 기능 확장
+## 🔭 인프라 고도화 (추후)
 
-#### E-1. packages/order-core 실제 구현 확장
-- [x] 현재 빈 패키지 상태 해소 — 공통 주문 비즈니스 로직 1차 추출 (2026-05-05)
-- [x] 주문 유효성 검증 로직 구현: 최소 주문금액, 배달 가능 여부, 매장 활성 상태, 품절/판매중/재고성 검증 (2026-05-05)
-- [x] 배달앱/테이블오더 공통 사용 가능한 순수 함수 형태로 구현 (2026-05-05)
-- [x] 주문 금액 계산 함수 구현: 상품 합계, 옵션 합계, 배달비, 할인, 최종 결제금액 (2026-05-05)
-- [x] 주문 가능 여부 검증 함수 구현: 빈 장바구니, 수량, 메뉴 판매중/품절, 최소 주문금액, 배달 가능 매장 (2026-05-05)
-- [x] 순수 함수 타입 export 후 `@order/order-core` 타입 검증 통과 (2026-05-05)
-- [ ] 배달앱/테이블오더 기존 계산/검증 로직을 `@order/order-core`로 단계적 이관
-  - [x] 배달앱 checkout 금액/최소주문/매장 배달 가능 검증을 `@order/order-core` 계산/검증으로 1차 연결 (2026-05-05)
-  - [x] 테이블오더 장바구니/주문확정 금액 계산을 `@order/order-core`로 이관 (2026-05-05)
+- [ ] **Dev/Prod DB 물리적 분리**: Supabase Dev 인스턴스 별도 생성. Vercel Preview → Dev DB, main branch → Prod DB. GitHub Actions cron도 Dev/Prod 워크플로우 분리.
+- [ ] **Vercel Queues 재검토**: consumer를 Vercel 네이티브 queue function으로 분리할 때 재검토.
+- [ ] **Sentry Releases 연동**: 배포 시 `sentry-cli releases` GitHub Actions 자동 실행.
+- [ ] **Uptime 모니터링**: Better Uptime / UptimeRobot으로 주요 엔드포인트 감시.
+- [ ] **Vercel Analytics / PostHog**: 기본 이벤트 트래킹 설정.
+- [ ] **Sentry → Slack/Discord 에러율 알림**: 웹훅 연결.
 
-#### E-1-1. 남은 코드 작업 후보
-- [x] Toss POS 플러그인: `catalogId/categoryId` Number 변환 NaN 가드 (2026-05-05)
-- [x] Toss POS 플러그인: `removeChannel` 안전화(channel 객체 모듈 변수 보관) (2026-05-05)
-- [x] Toss POS 플러그인: polling 명칭을 reconciliation으로 정리 (2026-05-05)
-- [x] Toss POS 플러그인: `processOrder` 함수 분해(`buildPluginOrderDto`, `confirmOrCleanup` 등) (2026-05-05)
-- [x] Toss POS 플러그인: catalog sync 실패 alert + 백오프 (2026-05-05)
-- [x] Brand website: 창업 문의 저장 API/DB 모델/관리자 조회 화면 연결 (2026-05-06): `FranchiseInquiry` Prisma 모델 + migration, 백엔드 `POST /franchise-inquiries` (공개) + `GET` / `PATCH /:id/read` (관리자), brand-website `actions.ts` 백엔드 API 연결 + 중복 HTML 버그 수정 + nodemailer 제거, 관리자 `/franchise-inquiries` 페이지 (읽음/미읽음 구분, 확인 완료 버튼). 관리자 전용 API 권한 제한, 입력 trim/phone 정규화/길이 제한, 서비스 단위 테스트 추가. `backend tsc`, `admin type-check`, `brand-website type-check`, `franchise-inquiries.service.spec.ts` 5 tests 통과.
-- [ ] Brand website: Kakao Map 실제 연동 및 운영 키 환경변수 정리
-- [x] Admin E2E 확장: 주문 상태 변경, 배달 상태 변경, 전액/부분 환불, 매장 설정, 직접 메뉴 등록, MQ 실패 재시도, Toss 메뉴 동기화 (2026-05-07)
-- [ ] Table-order E2E 확장: 첫 주문/추가 주문, QR 재진입 세션 유지, MQ 후처리 지연에도 완료 UX 유지
+---
 
-#### E-2. Toss SDK/POS 채널 정책 확정 및 구현
-- [ ] `Order.source = TOSS_POS` 처리 정책 확정
-- [ ] Toss POS 직접 주문 시 백엔드 수신 → DB 저장 흐름 구현
+## 🔌 Toss POS 플러그인 (실기기 검증)
+
+- [ ] Toss POS 단말기 연결 후 플러그인 앱 실행 + 최신 코드 충돌 점검
+- [ ] `POST /queue/process-once` 수동 trigger → POS 주문 수신 확인
+- [ ] POS 전송 실패 케이스 생성 → 관리자 MQ 화면 실패 조회/재시도 확인
+- [ ] magic number / 로그 레벨 / 파일 분할 코드 품질 정리 (이슈 #11~17)
+- [ ] `Order.source = TOSS_POS` 처리 정책 확정 + 백엔드 수신 → DB 저장 흐름 구현
 - [ ] 관리자에서 Toss POS 주문과 배달앱 주문 구분 표시
 
-#### E-3. 프론트 자동화 테스트 도입
-- [x] Playwright 설치 및 기본 설정 (2026-05-05): 루트 `playwright.config.ts` — admin(Desktop Chrome / :3003) + delivery(iPhone 14 / :3001) 두 프로젝트. `webServer` 자동 기동 + 환경변수 폴백 처리. `pnpm test:e2e` / `test:e2e:ui` 스크립트 추가.
-- [x] 관리자 E2E 기본 플로우 확장 (2026-05-06): `e2e/admin/auth.spec.ts` — 로그인 폼 렌더링, required 검증, 잘못된 자격증명 에러 표시, 미인증 보호 라우트 7개(/, /orders, /menu, /store, /calls, /operations, /franchise-inquiries) → /login 리다이렉트. 총 10개 테스트.
-- [x] 관리자 MQ 운영 화면 E2E (2026-05-06): `e2e/admin/operations.spec.ts` — 인증 세션/API mock으로 POS 실패 1건 + 알림 실패 1건 표시, 각 재시도 PATCH 요청 검증. playwright --list 1 test 확인, admin tsc 통과.
-- [x] 관리자 주문/배달 상태/환불 E2E (2026-05-06): `e2e/admin/orders.spec.ts` — 인증 세션/API mock으로 `/orders` 주문 목록 렌더링, 주문 상태 `PAID -> CONFIRMED` PATCH, 배달 상태 `PENDING -> ASSIGNED` PATCH, 전액 취소/부분 환불 payload 검증. 실제 Playwright Chromium 실행 2 tests 통과, admin tsc 통과.
-- [x] 관리자 매장 설정 E2E (2026-05-06): `e2e/admin/store.spec.ts` — 인증 세션/API mock으로 `/store` 기본 정보/배달 설정 수정 후 `PATCH /stores/:storeId` payload 검증. 실제 Playwright Chromium 실행 1 test 통과, admin tsc 통과.
-- [x] 배달앱 E2E 기본 플로우 (2026-05-05): `e2e/delivery-customer/pages.spec.ts` — 홈 로드, 로그인 페이지 OAuth 버튼, 미인증 주문내역 안내, 메뉴 접근. 총 11개 테스트. playwright --list 18 tests 확인.
-- [x] CI GitHub Actions에 Playwright 추가 (2026-05-05): `.github/workflows/ci.yml` 전면 재작성 — pnpm 기반, backend(vitest) + frontend-typecheck(matrix: admin/delivery-customer/brand-website) + e2e(Playwright) 3개 job. 깨진 `apps/frontend` 참조 완전 제거. 실패 시 `playwright-report` artifact 7일 보관.
-- [x] Playwright E2E 안정화 완료 (2026-05-07): `e2e/admin/fixtures.ts`, `e2e/delivery-customer/fixtures.ts`, `e2e/utils/stub-backend.ts`, `playwright.config.ts` 정리. admin/delivery/table-order 27 tests 로컬 CI 모드 전체 통과. commit `8871a1d`.
-- [ ] 배달앱 결제 플로우 E2E (Toss 테스트 카드): 주문 생성 → 위젯 → 승인 → PAID (실 환경 필요)
+---
 
-#### E-4. 홈페이지 SEO 및 성능 최적화
-- [x] `sitemap.xml` 자동 생성 (2026-05-05): `apps/brand-website/src/app/sitemap.ts` — 5개 주요 URL 등록, Next.js `MetadataRoute.Sitemap` 기반.
-- [x] `robots.txt` 설정 (2026-05-05): `apps/brand-website/src/app/robots.ts` — `Allow: /`, sitemap URL 등록.
-- [x] Open Graph / Twitter Card 메타태그 완비 (2026-05-05): `layout.tsx` — `metadataBase`, `openGraph`(type/locale/url/siteName), `twitter`(summary_large_image), `robots`(index/follow/googleBot), `opengraph-image.tsx` OG 이미지 자동 생성.
-- [ ] Lighthouse 점수 90+ 목표 (LCP, CLS, FID 최적화)
-- [ ] 매장/메뉴 정적 생성(ISR) 적용으로 초기 로드 성능 개선
+## 🎨 Brand Website
+
+- [ ] Kakao Map 실제 연동 + 운영 키 환경변수 정리
+- [ ] 결제 콜백/리다이렉트 URL 환경변수에서 brand-website 경로 정리 (운영 배포 직전 점검)
+- [ ] 배포 후 매장 지도 동작 검증
 
 ---
 
-### 🧪 F. 운영 테스트 작업 백로그
+## 📊 운영 검증 (1차 런칭 전)
 
-#### F-1. 운영 배포/DB 검증
-- [x] Vercel backend Production 배포 안정화 확인 (2026-05-07): `functions`/`builds` 충돌, PGMQ 타입 캐스팅, workspace husky prepare, backend build command 문제 순차 해결 후 push 배포 정상 확인.
-- [ ] 운영 DB `prisma migrate deploy` 실행 전 백업/마이그레이션 diff 확인
-- [ ] 운영 DB `OrderChannel.HOMEPAGE` 제거 migration 적용 후 주문 조회/관리자 화면 smoke 검증
-- [ ] Vercel Production/Preview 환경변수 분리 상태 확인 (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `FRONTEND_URLS`, `REDIS_URL`, Firebase, Toss, Sentry)
-- [ ] GitHub Actions cron `POST /queue/process-once` 실제 실행 로그 확인
-- [ ] Queue backlog/failed event가 관리자 `/operations`에서 조회·재시도되는지 운영 데이터로 확인
-
-#### F-2. 결제/환불 운영 테스트
 - [ ] Toss 테스트 카드 결제 성공: 주문 생성 → 결제 승인 → `PAID` → 주문 상세 갱신
 - [ ] Toss 결제 실패/취소: fail 페이지 안내와 재시도 UX 확인
-- [ ] 관리자 전액 취소 후 배달앱 주문 상태/결제 상태 갱신 확인
-- [ ] 관리자 부분 환불 후 남은 금액/환불 배지/주문 상세 표시 확인
-- [ ] 결제 후 POS 전송 큐 처리와 알림 발송이 중복 발생하지 않는지 확인
-
-#### F-3. 배달앱 실기기/스토어 테스트
-- [ ] Android `.apk`/`.aab` 릴리즈 빌드 및 USB 실기기 실행
-- [ ] Android FCM 토큰 발급, 잠금화면 푸시 수신, 푸시 탭 라우팅 확인
-- [ ] Android App Links `assetlinks.json` SHA-256 교체 후 `adb shell pm get-app-links com.taco.delivery` 검증
-- [ ] iOS Associated Domains 추가 후 Universal Link/TestFlight 실기기 확인
-- [ ] Vercel 원격 WebView 핫 업데이트 파이프라인 검증
-- [ ] PWA 설치, Service Worker 캐싱, 오프라인/불안정 네트워크 안내 확인
-
-#### F-4. POS/관리자 운영 테스트
-- [ ] Toss POS 단말기에서 플러그인 앱 실행 및 최신 코드 충돌 점검
-- [ ] `POST /queue/process-once` 수동 trigger → POS 주문 수신 확인
-- [ ] POS 전송 실패 케이스 생성 후 관리자 MQ 화면에서 실패 조회/재시도 확인
-- [ ] 관리자 브라우저 백그라운드 상태에서 주문/직원 호출 알림 수신 확인
-- [ ] 영수증 출력/자동 소리 재생 한계 확인 및 Electron 래핑 필요성 재평가
+- [ ] 관리자 전액 취소 후 배달앱 주문 상태 갱신 확인
+- [ ] 관리자 부분 환불 후 남은 금액/환불 배지 표시 확인
+- [ ] 결제 후 POS 전송 큐 처리 + 알림 발송 중복 없는지 확인
+- [ ] GitHub Actions cron `POST /queue/process-once` 실제 실행 로그 확인
+- [ ] Queue backlog/failed event가 관리자 `/operations`에서 조회·재시도되는지 운영 데이터로 확인
+- [ ] Vercel Production/Preview 환경변수 분리 상태 확인 (`REDIS_URL`, Firebase, Toss, Sentry)
+- [ ] Lighthouse 점수 90+ 목표 (LCP, CLS, FID 최적화)
 
 ---
 
-## 🔧 G. 코드 품질 개선 (Code Review 기반 Tech Debt)
+## 🗓 완료 이력 (마일스톤 요약)
 
-> 2026-05-12 코드베이스 전체 리뷰를 통해 발견된 개선 항목. 우선순위(P0~P2)로 분류.
+### 2026-05-12
+- env sync 스크립트 도입 (`scripts/sync-env.js`, `pnpm sync:env`)
+- 실값 env 파일 git untrack + `.gitignore` 보강
+- 전체 프로젝트 객관적 평가 및 개선 항목 정리
 
----
+### 2026-05-07
+- Vercel 백엔드 배포 안정화: `vercel.json` 설정 충돌 해소, api/queue 엔트리포인트 분리
+- pgmq 타입 불일치(`bigint`→`integer`) 수정, `vitest run` 통과
+- Playwright E2E 안정화: admin/delivery/table-order 27 tests 통과
+- `@order/shared` 배럴 import 런타임 undefined 대응 (subpath import 전환)
+- admin 인증 로딩 race 수정 (profile 동기화 후 loading=false)
 
-### G-1. 버그 / 잠재적 장애 (P0)
+### 2026-05-06
+- 알림 dedupe key 채널 충돌 수정: `{recipient}:{type}:{subject}:{channel}`
+- POS 큐 consumer 흐름 수정: `TOSS_POS`는 polling 유지, `ADMIN_DIRECT`는 `SKIPPED`
+- admin E2E 확장: menu.spec, store.spec, operations.spec, orders.spec
+- Playwright E2E runner CI 통합
 
-- [ ] **[P0] `updateOrderStatus` localStorage mock 제거**: `packages/shared/src/api/endpoints/order.ts`와 `apps/table-order/src/lib/api/endpoints/order.ts` 두 곳 모두에 `updateOrderStatus` 함수가 실제 API 호출 없이 `localStorage`를 읽고 쓰는 mock 구현으로 남아 있음. 프로덕션에서 이 함수가 호출될 경우 주문 상태 변경이 서버에 반영되지 않는 심각한 버그. 실제 백엔드 API(`PATCH /stores/:storeId/orders/:orderId/status`)와 연동하도록 교체 필요.
+### 2026-05-05
+- FCM 푸시 알림 프론트 연동 (배달앱 + 관리자웹)
+- Throttler Redis store 도입 (Upstash, 다중 인스턴스 대응)
+- admin 직원 호출 Realtime 구독 + `/calls` 페이지
+- 매장별 일일 통계 API (`GET /stores/:storeId/stats/daily`) + admin 연결
+- Electron admin 앱 초기 구조 (`apps/admin-electron`)
 
-- [ ] **[P0] `generateOrderNumber` 동시성 취약점**: `apps/backend/src/modules/orders/orders.service.ts`의 `generateOrderNumber`가 `tx.order.count({ where: { storeId } }) + 1`로 번호를 생성함. 동시에 두 요청이 같은 count를 읽으면 동일한 `orderNumber`가 발급될 수 있음. Prisma schema에 `@@unique([storeId, orderNumber])` 제약이 없으면 중복 주문번호가 실제로 저장될 위험 있음. DB 레벨 unique 제약 추가 또는 DB 시퀀스/UUID 기반 방식으로 교체 필요.
+### 2026-05-04
+- MQ consumer cron 트리거: GitHub Actions `backend-cron.yml` 5분 주기
+- CORS 다중 origin 환경변수 지원 (`FRONTEND_URLS`)
+- Capacitor `allowMixedContent` 운영 빌드 차단
+- Firebase 백엔드 연동: `UserDevice` 테이블 + `firebase-admin` + FCM 발송
 
-- [ ] **[P0] `updateOrderStatus` 상태 전이 검증 부재**: `apps/backend/src/modules/orders/orders.service.ts`의 `updateOrderStatus`는 `status` 파라미터를 아무 검증 없이 그대로 DB에 저장함. `COMPLETED → PENDING`, `CANCELLED → COOKING` 같은 비정상 역방향 전이가 API 호출 한 번으로 가능한 상태. 허용 가능한 상태 전이 맵(State Machine)을 정의하고 유효하지 않은 전이는 `BadRequestException`으로 차단해야 함.
+### 2026-05-01 ~ 05-03
+- MQ 전체 구현: `pgmq` 큐, `QueueModule`, producer/consumer, retry/backoff, 운영 endpoint
+- Toss 카드결제 E2E 통합 테스트: 7 tests (payments-e2e.spec.ts)
+- POS 전송 실패 상태 관리 + 관리자 MQ 운영 화면
+- `pos.send_order` → POS SDK 전송, 알림 dedupe, `delivery.status_changed` 이벤트
+- 런칭 준비도 감사: 주요 결함 6건 식별 및 수정
 
----
-
-### G-2. 코드 구조 / 아키텍처 (P1)
-
-- [ ] **[P1] `packages/shared`와 `apps/table-order` 타입 불일치 정리**: `apps/table-order/src/types/order.ts`의 `OrderStatus`가 `'PENDING' | 'COOKING' | 'SERVED' | 'CANCELLED'` 4개 값으로 정의되어 있으나, `packages/shared/src/types/order.ts`의 `OrderStatus`는 10개 값으로 정의되어 있어 불일치함. `apps/table-order/src/types/index.ts`에 `@deprecated` 주석이 달려 있음에도 `order.ts` 로컬 파일이 여전히 존재하므로 완전히 삭제하고 `@order/shared`만 사용하도록 정리 필요.
-
-- [ ] **[P1] `packages/shared/src/api/client.ts`와 `apps/table-order/src/lib/api/client.ts` 중복 제거**: 두 파일 모두 Fetch 기반 HTTP 클라이언트로 사실상 중복 구현임. `table-order`가 이미 `@order/shared`를 의존성으로 가지고 있으므로 `apps/table-order/src/lib/api/client.ts`를 삭제하고 `packages/shared/src/api/client.ts`로 단일화 필요.
-
-- [ ] **[P1] `OrdersService` 클래스 분리**: `apps/backend/src/modules/orders/orders.service.ts`가 616라인으로 테이블 주문, 배달 주문, POS 재시도, 상태 변경, 배달 상태 변경 등 서로 다른 책임을 하나의 클래스에서 처리하고 있음. `TableOrderService`, `DeliveryOrderService`, `OrderStatusService` 등으로 분리하거나, Use Case 단위의 Command 클래스로 분해하여 단일 책임 원칙(SRP) 준수 필요.
-
-- [ ] **[P1] `QueueConsumerService` 클래스 분리**: `apps/backend/src/modules/queue/queue-consumer.service.ts`가 583라인으로 결제, POS 전송, 알림, 배달 상태 변경 등 모든 이벤트 처리 로직을 단일 클래스에서 담당하고 있음. 이벤트 타입별로 전용 핸들러 클래스(`PaymentEventHandler`, `PosEventHandler`, `NotificationEventHandler`)로 분리하여 가독성과 테스트 용이성 개선 필요.
-
-- [ ] **[P1] `shared`와 `order-core` 패키지 책임 경계 재정의**: 현재 `packages/shared/src/stores/cartStore.ts`에 장바구니 계산 로직이 존재하고, `packages/order-core`에도 `calculateOrderTotals`, `validateOrder` 등 주문 계산 로직이 존재함. 두 패키지의 책임 경계가 명확하지 않아 어디에 로직을 추가해야 할지 혼란스러운 구조. `shared`는 타입/API 클라이언트/유틸리티, `order-core`는 비즈니스 계산/검증 로직으로 명확히 역할을 분리하고 `cartStore`의 계산 로직을 `order-core`로 이관하는 방향 검토 필요.
-
----
-
-### G-3. 코드 품질 / 유지보수성 (P2)
-
-- [ ] **[P2] 백엔드 `any` 타입 남용 제거**: `apps/backend/src/modules/orders/orders.service.ts`에서 `prepareOrderItems(tx: any, ...)`, `updateOrderStatus(..., status: any)`, `updateDeliveryStatus(..., deliveryStatus: any)` 등 핵심 비즈니스 로직에 `any` 타입이 다수 사용됨. Prisma 트랜잭션 타입(`Prisma.TransactionClient`)과 Enum 타입을 명시적으로 지정하여 타입 안정성 확보 필요.
-
-- [ ] **[P2] `table-order` 주문 조회 polling 방식 재검토**: `apps/table-order/src/hooks/queries/useOrders.ts`에서 `refetchInterval: 5000`으로 5초마다 주문 목록을 폴링하고 있음. 관리자 앱(`admin`)은 Supabase Realtime으로 실시간 업데이트를 구현했으나, 테이블오더는 여전히 폴링 방식을 사용 중. Supabase Realtime 또는 SSE(Server-Sent Events)로 교체하여 불필요한 API 요청 감소 및 실시간성 개선 검토 필요.
-
-- [ ] **[P2] `table-order` 로컬 API 레이어 정리**: `apps/table-order/src/lib/api/endpoints/` 디렉토리에 `order.ts`, `menu.ts`, `table.ts` 등 로컬 전용 API 엔드포인트 파일이 존재하며, 일부는 `packages/shared/src/api/endpoints/`와 기능이 중복됨. `shared`에 없는 테이블오더 전용 로직만 남기고 나머지는 `@order/shared`의 API 함수로 교체하여 중복 제거 필요.
-
-- [ ] **[P2] `useCreateOrder` queryKey 무효화 범위 축소**: `apps/table-order/src/hooks/mutations/useCreateOrder.ts`에서 주문 생성 성공 후 `['orders']` 전체를 무효화하고 있음. 테이블 번호와 매장 ID를 포함한 `['orders', 'table', storeId, tableNumber]` 형태로 범위를 좁혀 불필요한 리페치 방지 필요.
-
----
-
-### G-4. README 문서 정합성 (P2)
-
-- [ ] **[P2] 루트 `README.md` 내용 중복 제거**: 파일 1~41번 줄과 42~86번 줄이 완전히 동일한 내용으로 중복되어 있음. 앞부분 중복 블록 삭제 필요.
-
-- [ ] **[P2] 루트 `README.md` 백엔드 모듈 구조 수정**: 문서에 `table-order/`, `delivery/`, `pos-sync/`, `shared/`, `brand-site/` 모듈 구조로 기술되어 있으나, 실제 `apps/backend/src/modules/`는 `orders/`, `payments/`, `queue/`, `integrations/`, `coupons/`, `sessions/` 등 완전히 다른 구조임. 실제 구조로 교체 필요.
-
-- [ ] **[P2] 루트 `README.md` 누락 항목 추가**: `apps/admin-electron` 앱이 앱 목록에 없음. 추가 필요. `brand-website`를 `Next.js SSG`로 명시했으나 실제로는 `output: 'export'`가 주석 처리된 SSR 모드임. 수정 필요.
-
-- [ ] **[P2] 루트 `README.md` 깨진 링크 제거**: `REFACTORING.md`, `docs/ARCHITECTURE_DECISIONS.md` 두 파일이 존재하지 않음에도 문서 링크로 기재되어 있음. 링크 제거 또는 파일 생성 필요.
-
-- [ ] **[P2] `packages/shared/README.md` 전면 업데이트**: 현재 문서는 초기 설계 시점 내용으로, 실제 패키지 exports의 절반도 반영하지 못함. 추가된 타입(`Coupon`, `Address`, `Payment`, `OrderDelivery`, `Call`, `DeliveryStatus` 등), `src/api/` 레이어(client + 각 endpoint 모듈), `src/stores/cartStore`, 공통 훅(`useMenuSelection`, `useOrderStatus`, `useGeolocation`) 전부 누락 상태. 전면 재작성 필요.
-
-- [ ] **[P2] `packages/ui/README.md` 내용 보강**: 실제 컴포넌트 목록, Shadcn UI 기반 기술 스택, `@order/ui/payment` 서브패스 import 방식 등 핵심 사용 정보 추가 필요.
-
-- [ ] **[P2] `packages/order-core/README.md` 사용 예시 추가**: 현재 export 목록만 있고 사용 예시 코드, 실제 사용처(`delivery-customer` checkout), `@order/shared`와의 책임 경계 설명이 없음. 보강 필요.
-
-- [ ] **[P2] `apps/table-order/src/features/README.md` 재작성**: `admin/` 기능(주문 접수 현황판, 메뉴 관리, 매출 통계)이 구현된 것처럼 기술되어 있으나 실제 디렉토리는 비어 있음. 모듈 구조 예시도 실제 `cart/`, `order/` feature 구조(`components/ + index.ts`)와 다름. 현재 실제 구조 기준으로 재작성 필요.
-
-- [ ] **[P2] `apps/table-order/src/hooks/README.md` 재작성**: 존재하지 않는 `useCart`, `useWebSocket`, `useAuth` 등을 나열하고 있음. 실제 훅 구조(`mutations/useCreateOrder`, `mutations/useCreateCall`, `queries/useMenus`, `queries/useOrders`)로 교체 필요. WebSocket 언급은 현재 아키텍처(Supabase Realtime)와 방향이 다르므로 삭제 필요.
-
-- [ ] **[P2] `apps/table-order/src/lib/README.md` 재작성**: `api/endpoints.ts`, `api/interceptors.ts`, `utils/formatters.ts`, `constants/routes.ts` 등 실제로 존재하지 않는 파일을 기술하고 있음. 예시 코드의 `ENDPOINTS.menus.list`, `API_CONFIG.baseURL`, `ROUTES.customer.menu` 식별자도 실제 코드에 없음. 실제 `api/endpoints/`(디렉토리), `api/client.ts`, `constants/domains.ts` 구조로 재작성 필요.
+### ~2026-04-30
+- 기본 도메인 구현 완료: 매장/메뉴/주문/결제/세션/인증/테이블오더/배달앱/관리자
+- Supabase Auth + JWT, SupabaseGuard, Prisma ORM, Sentry, Helmet, ValidationPipe
+- TanStack Query + Zustand, admin 대시보드/주문/메뉴/매장 UI
+- Toss Payments 선결제 흐름, 환불/취소 API
+- Playwright 도입, table-order/delivery-customer/admin E2E 기반 구축
