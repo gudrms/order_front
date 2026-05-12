@@ -21,12 +21,9 @@ export function useCreateOrder() {
   return useMutation<CreateOrderResponse, Error, CreateOrderRequest>({
     mutationFn: (data) => api.order.createOrder(data, storeId),
 
-    // 성공 시 주문 목록 쿼리 무효화
-    onSuccess: (data) => {
-      // 해당 테이블의 주문 목록 쿼리 무효화
-      // Note: CreateOrderResponse에는 tableId가 없으므로 모든 주문 무효화
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({
-        queryKey: ['orders'],
+        queryKey: ['orders', 'table', storeId, variables.tableNumber],
       });
     },
   });
