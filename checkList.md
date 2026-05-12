@@ -39,7 +39,7 @@
 ### 코드 품질
 
 - [x] **`OrdersService` 분리** (2026-05-12): 616줄 → `orders.service.ts`(302줄) + `delivery-order.service.ts`(245줄) + `order-helpers.ts`(103줄)으로 분리. RootOrdersController는 DeliveryOrderService 직접 주입. 테스트도 분리.
-- [ ] **`QueueConsumerService` 분리**: `apps/backend/src/modules/queue/queue-consumer.service.ts` 583줄. 결제·POS·알림·배달 상태 이벤트 모두 단일 클래스 처리. 이벤트 타입별 핸들러 클래스(`PaymentEventHandler`, `PosEventHandler`, `NotificationEventHandler`)로 분리.
+- [x] **`QueueConsumerService` 분리** (2026-05-12): 584줄 → `PaymentEventHandler`(153줄) + `PosEventHandler`(78줄) + `NotificationEventHandler`(131줄) + thin dispatcher `QueueConsumerService`(211줄). `@Optional()` 의존성 전부 required로 전환. 150개 테스트 통과.
 - [x] **`optional` 의존성 패턴 재검토** (2026-05-12): `orders.service.ts` — `queueService?`, `couponsService?` → 필수 주입으로 변경. `?.` optional chaining 2곳, `&& this.couponsService` 가드 2곳 제거. `OrdersModule`에 두 모듈 모두 import되어 있어 항상 주입 보장됨.
 - [x] **`shared` / `table-order` 타입 불일치 정리** (2026-05-12): `apps/table-order/src/types/` 하위 6개 파일(order.ts·call.ts·api.ts·table.ts·menu.ts·index.ts) 전부 삭제. grep으로 실제 사용처 없음 확인. 모든 코드 이미 `@order/shared` 직접 사용 중.
 - [ ] **API 클라이언트 중복 제거**: `packages/shared/src/api/client.ts`와 `apps/table-order/src/lib/api/client.ts` 사실상 중복. `table-order`의 로컬 클라이언트 삭제 후 shared로 단일화.
