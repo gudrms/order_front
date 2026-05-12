@@ -30,7 +30,7 @@
 
 ## 🔴 P0 — 저장소 위생
 
-- [ ] **거대 임시 파일 삭제**: `tree_output.txt`(96MB), `tree_output_utf8.txt`(48MB) 삭제. (`.gitignore`에 `tree_output*.txt` 추가 완료)
+- [x] **거대 임시 파일 삭제** (2026-05-12): `tree_output.txt`, `tree_output_utf8.txt` 이미 없음 확인. `.gitignore`에 `tree_output*.txt` 패턴 추가 완료.
 
 ---
 
