@@ -255,6 +255,10 @@ export class OrdersService {
     }
 
     private async generateOrderNumber(tx: any, storeId: string): Promise<string> {
+        // count 기반 번호 생성은 동시 요청 시 중복 발급 가능.
+        // schema에 @@unique([storeId, orderNumber])가 있으므로 충돌 시 Prisma가
+        // P2002 에러를 던지고 트랜잭션이 롤백됨 — 중복 저장은 방지됨.
+        // 번호 순서 보장이 필요하면 DB 시퀀스로 교체 가능.
         const count = await tx.order.count({
             where: { storeId },
         });
@@ -487,6 +491,19 @@ export class OrdersService {
         });
     }
 
+    private static readonly ALLOWED_TRANSITIONS: Record<string, string[]> = {
+        PENDING:          ['CONFIRMED', 'CANCELLED'],
+        PENDING_PAYMENT:  ['PAID', 'CANCELLED'],
+        PAID:             ['CONFIRMED', 'CANCELLED'],
+        CONFIRMED:        ['COOKING', 'PREPARING', 'CANCELLED'],
+        COOKING:          ['READY', 'COMPLETED', 'CANCELLED'],
+        PREPARING:        ['READY', 'COMPLETED', 'CANCELLED'],
+        READY:            ['COMPLETED', 'DELIVERING', 'CANCELLED'],
+        DELIVERING:       ['COMPLETED', 'CANCELLED'],
+        COMPLETED:        [],
+        CANCELLED:        [],
+    };
+
     async updateOrderStatus(storeId: string, orderId: string, status: any) {
         const order = await this.prisma.order.findUnique({
             where: { id: orderId },
@@ -498,6 +515,13 @@ export class OrdersService {
 
         if (order.storeId !== storeId) {
             throw new BadRequestException('Order does not belong to this store');
+        }
+
+        const allowed = OrdersService.ALLOWED_TRANSITIONS[order.status] ?? [];
+        if (!allowed.includes(status)) {
+            throw new BadRequestException(
+                `Invalid status transition: ${order.status} → ${status}`,
+            );
         }
 
         return this.prisma.order.update({

@@ -22,9 +22,9 @@
 
 ### 치명 버그
 
-- [ ] **`updateOrderStatus` localStorage mock 제거**: `packages/shared/src/api/endpoints/order.ts` + `apps/table-order/src/lib/api/endpoints/order.ts` 두 곳의 `updateOrderStatus`가 실제 API 호출 없이 localStorage를 읽고 쓰는 mock 구현. 프로덕션에서 주문 상태 변경이 서버에 반영 안 됨. `PATCH /stores/:storeId/orders/:orderId/status`로 교체 필요.
-- [ ] **`generateOrderNumber` 동시성 취약점**: `apps/backend/src/modules/orders/orders.service.ts`의 `generateOrderNumber`가 `tx.order.count() + 1` 방식. 동시 요청 시 중복 주문번호 발급 위험. DB 레벨 `@@unique([storeId, orderNumber])` 제약 추가 또는 시퀀스/UUID 방식으로 교체.
-- [ ] **`updateOrderStatus` 상태 전이 검증 부재**: `apps/backend/src/modules/orders/orders.service.ts`의 `updateOrderStatus`가 `status` 파라미터를 검증 없이 DB 저장. `COMPLETED → PENDING` 같은 역방향 전이가 가능. 허용 전이 맵(State Machine) 정의 + 유효하지 않은 전이는 `BadRequestException`.
+- [x] **`updateOrderStatus` localStorage mock 제거** (2026-05-12): `packages/shared/src/api/endpoints/order.ts` + `apps/table-order/src/lib/api/endpoints/order.ts` — localStorage mock → `PATCH /stores/:storeId/orders/:orderId/status` 실 API 호출로 교체. 시그니처 `(orderNumber, status)` → `(storeId, orderId, status)` 변경.
+- [x] **`generateOrderNumber` 동시성 취약점** (2026-05-12): DB 레벨 `@@unique([storeId, orderNumber])` 제약이 이미 스키마에 존재 확인. `count() + 1` 중복 발급 시 Prisma P2002 → 트랜잭션 롤백으로 안전. 주석 추가. (진짜 해법은 DB 시퀀스이나 현재 구조로 안전성 확인됨)
+- [x] **`updateOrderStatus` 상태 전이 검증 부재** (2026-05-12): `apps/backend/src/modules/orders/orders.service.ts` — `ALLOWED_TRANSITIONS` static 맵 10개 상태 전체 정의 + 허용되지 않은 전이 `BadRequestException` 처리 추가.
 
 ---
 

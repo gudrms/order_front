@@ -188,20 +188,13 @@ export async function getOrdersByTable(
 }
 
 export async function updateOrderStatus(
-  orderNumber: string,
+  storeId: string,
+  orderId: string,
   status: OrderStatus
-): Promise<Order | null> {
-  await new Promise((resolve) => setTimeout(resolve, 300));
-
-  const stored = localStorage.getItem(`order_${orderNumber}`);
-  if (!stored) {
-    return null;
-  }
-
-  const order: Order = JSON.parse(stored);
-  order.status = status;
-
-  localStorage.setItem(`order_${orderNumber}`, JSON.stringify(order));
-
-  return order;
+): Promise<Order> {
+  const response = await apiClient.patch<Order>(
+    `/stores/${storeId}/orders/${orderId}/status`,
+    { status }
+  );
+  return response;
 }
