@@ -26,6 +26,7 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src'),
       '@order/shared': path.resolve(__dirname, '../../packages/shared/src'),
+      '@order/order-core': path.resolve(__dirname, '../../packages/order-core/src'),
     },
   },
 });

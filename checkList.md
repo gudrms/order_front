@@ -63,11 +63,11 @@
 
 ### 코드 품질
 
-- [ ] **`any` 타입 제거**: `apps/backend/src` 기준 103건 남음(2026-05-12 확인). Prisma 트랜잭션 타입(`Prisma.TransactionClient`)과 Enum 타입 명시. 특히 `prepareOrderItems(tx: any)`, `updateOrderStatus(..., status: any)`.
-- [ ] **`table-order` 폴링 → Realtime 교체**: `apps/table-order/src/hooks/queries/useOrders.ts` `refetchInterval: 5000`. admin은 Supabase Realtime 사용 중. `table-order`도 Realtime 또는 SSE 교체 검토.
+- [x] **`any` 타입 제거** (2026-05-12): order-helpers(tx→Prisma.TransactionClient), orders.service(status→OrderStatus, deliveryStatus→DeliveryStatus, where→Prisma.OrderWhereInput), payments.service(orderUpdateData→Prisma.OrderUpdateInput), stores.service/delivery-order.service(JSON→Prisma.InputJsonValue), toss-api.service(error.data→Record<string,unknown>), pos.controller(toPosPaymentDto 파라미터 명시). 150개 테스트 통과.
+- [x] **`table-order` 폴링 → Realtime 교체** (2026-05-12): refetchInterval 제거. Supabase postgres_changes 구독으로 교체. getOrdersByTable이 sessionId도 반환하도록 리팩터링 — sessionId 확정 후 정밀 필터(sessionId=eq.${id})로 재구독, 미확정 시 storeId 폴백.
 - [x] **`table-order` 로컬 API 레이어 정리** (2026-05-12): `apps/table-order/src/lib/api/index.ts`에서 `@order/shared` API를 기본으로 사용하고, table-order 전용 주문 분기만 `lib/api/endpoints/order.ts`에 유지.
 - [x] **`useCreateOrder` queryKey 범위 축소** (2026-05-12): 주문 생성 후 `['orders', 'table', storeId, variables.tableNumber]`만 무효화하도록 반영.
-- [ ] **프론트엔드 단위 테스트 도입**: `apps/admin`, `apps/delivery-customer`, `apps/table-order` 단위 테스트 없음. 핵심 store/hook(`useCartStore`, `useOrderStatus` 등)부터 vitest + RTL.
+- [ ] **프론트엔드 단위 테스트 도입**: 화면 미확정으로 추후 진행. cartStore(순수 로직)는 우선순위 높음.
 - [x] **`packages/order-core` 비즈니스 로직 실제 구현 확장** (2026-05-12): 주문 합계, 배달비, 할인, 매장 정책, 품절/재고/옵션 검증과 `useCartStore` 책임을 `@order/order-core`에 정리.
 
 ### 문서 (README/내부)
@@ -199,3 +199,25 @@
 - TanStack Query + Zustand, admin 대시보드/주문/메뉴/매장 UI
 - Toss Payments 선결제 흐름, 환불/취소 API
 - Playwright 도입, table-order/delivery-customer/admin E2E 기반 구축
+
+---
+
+## 🔴 P0 — 보안 (2차 점검, 2026-05-12)
+
+- [ ] **CORS 개발 모드 전체 허용 제거**: `apps/backend/src/main.ts:203` — `NODE_ENV === 'development'` 조건에서 모든 origin을 무조건 허용 중. 개발 환경도 `localhost:3000~3003` 화이트리스트로 제한해야 함. 현재 코드는 개발 서버가 실수로 프로덕션 DB에 연결될 경우 임의 origin에서 인증 쿠키 포함 요청이 가능한 구조.
+- [ ] **`queue.ts` bootstrap의 `cachedApp: any` 타입**: `apps/backend/src/queue.ts:10` — `let cachedApp: any = null`. Vercel Serverless 진입점 파일이라 타입 안전성이 특히 중요. `InstanceType<typeof NestFactory.create>` 또는 `INestApplication | null`로 교체.
+
+---
+
+## 🟡 P1 — 주요 개선 (2차 점검, 2026-05-12)
+
+### 코드 품질
+
+- [ ] **`payments.service.ts` catch 블록 `any` 타입 3건**: `apps/backend/src/modules/payments/payments.service.ts` 97, 128, 137번 줄 — `catch (err: any)`, `catch (recordError: any)`, `catch (compensationError: any)`. 결제 서비스의 catch 블록은 `unknown`으로 받고 `instanceof Error` 가드를 적용해야 함. 결제 오류 메시지가 `err.message`로 직접 노출될 경우 내부 정보 유출 위험.
+- [ ] **`table-order` 로컬 타입 `Order` 잔존**: `apps/table-order/src/lib/api/endpoints/order.ts`에 `export type Order = { ... }` 로컬 타입이 여전히 존재. `useOrders.ts`가 `@order/shared`가 아닌 이 로컬 타입을 import 중(`import type { Order } from '@/lib/api/endpoints/order'`). `@order/shared`의 `Order` 타입으로 단일화 필요.
+- [ ] **`useOrders.ts` Supabase Realtime filter 정확도**: `apps/table-order/src/hooks/queries/useOrders.ts:18` — `filter: storeId=eq.${storeId}` 로 매장 전체 주문 변경을 구독 중. 테이블 번호 필터(`tableNumber=eq.N`)가 없어 다른 테이블 주문 변경 시에도 불필요한 쿼리 재실행 발생. `filter: storeId=eq.${storeId}&tableNumber=eq.${tableNumber}` 로 범위 축소 권장.
+
+### 테스트
+
+- [ ] **`table-order` 로컬 타입 제거 후 tsc 통과 확인**: `useOrders.ts`의 `Order` import를 `@order/shared`로 교체한 뒤 `pnpm --filter table-order tsc --noEmit` 통과 확인.
+- [ ] **`payments.service.ts` 에러 핸들링 단위 테스트 보강**: catch 블록 `unknown` 전환 후, 결제 실패 / 보상 트랜잭션 실패 케이스 spec 추가.
