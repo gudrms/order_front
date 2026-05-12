@@ -1,21 +1,35 @@
-/**
- * 주문 관련 Query 훅
- */
-
-import { useQuery } from '@tanstack/react-query';
+import { useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { supabase } from '@/lib/supabase';
 import type { Order } from '@/lib/api/endpoints/order';
 
-/**
- * 테이블별 주문 내역 조회 훅
- * Mock API는 tableNumber(number)를 사용
- */
 export function useOrdersByTable(tableNumber?: number, storeId?: string) {
+  const queryClient = useQueryClient();
+  const queryKey = ['orders', 'table', storeId, tableNumber];
+
+  useEffect(() => {
+    if (!tableNumber || !storeId) return;
+
+    const channel = supabase
+      .channel(`orders:${storeId}:${tableNumber}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'Order', filter: `storeId=eq.${storeId}` },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['orders', 'table', storeId, tableNumber] });
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [tableNumber, storeId, queryClient]);
+
   return useQuery<Order[]>({
-    queryKey: ['orders', 'table', storeId, tableNumber],
+    queryKey,
     queryFn: () => api.order.getOrdersByTable(tableNumber!, storeId!),
     enabled: !!tableNumber && !!storeId,
-    refetchInterval: 5000,
-    refetchIntervalInBackground: true,
   });
 }
