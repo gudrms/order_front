@@ -41,10 +41,10 @@ test.describe('admin menu page — ADMIN_DIRECT mode', () => {
     });
 
     await page.route(`${API_URL}/stores/${storeDirectId}/admin/menus`, async (route) => {
-      if (route.request().method() === 'GET') {
-        await fulfillJson(route, { data: [] });
-        return;
-      }
+      await fulfillJson(route, { data: [] });
+    });
+
+    await page.route(`${API_URL}/stores/${storeDirectId}/menus`, async (route) => {
       menuPayload = route.request().postDataJSON();
       await fulfillJson(route, {
         data: {
