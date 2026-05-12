@@ -10,7 +10,7 @@ import * as tableApi from './endpoints/table';
 import * as callApi from './endpoints/call';
 import * as adminApi from './endpoints/admin';
 
-export { apiClient, ApiClientError } from './client';
+export { apiClient, ApiClientError } from '@order/shared';
 
 /**
  * 통합 API 객체

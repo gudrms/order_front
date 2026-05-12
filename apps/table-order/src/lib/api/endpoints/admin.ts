@@ -3,7 +3,7 @@
  */
 
 import type { Order, OrderStatus } from '@order/shared';
-import { apiClient } from '../client';
+import { apiClient } from '@order/shared';
 
 /**
  * 관리자 주문 목록 조회

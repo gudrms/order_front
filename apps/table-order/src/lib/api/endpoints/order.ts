@@ -1,5 +1,5 @@
 import type { CartSelectedOption } from '@order/shared';
-import { apiClient } from '../client';
+import { apiClient } from '@order/shared';
 
 export type OrderStatus =
   | 'PENDING'

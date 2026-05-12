@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { calculateOrderTotals, type OrderItemInput as CoreOrderItemInput } from '@order/order-core';
 import { useCartStore, useTableStore } from '@/stores';
 import { useCreateOrder } from '@/hooks/mutations/useCreateOrder';
-import { ApiClientError } from '@/lib/api/client';
+import { ApiClientError } from '@order/shared';
 import type {
   CreateOrderRequest,
   OrderItemInput,

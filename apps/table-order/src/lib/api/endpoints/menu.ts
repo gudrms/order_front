@@ -3,7 +3,7 @@
  */
 
 import type { Menu, MenuCategory, MenuDetail } from '@order/shared';
-import { apiClient } from '../client';
+import { apiClient } from '@order/shared';
 
 /**
  * 카테고리 목록 조회

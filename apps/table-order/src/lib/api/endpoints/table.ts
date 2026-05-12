@@ -3,7 +3,7 @@
  */
 
 import type { Table } from '@order/shared';
-import { apiClient } from '../client';
+import { apiClient } from '@order/shared';
 
 /**
  * 테이블 목록 조회

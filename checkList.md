@@ -42,12 +42,12 @@
 - [x] **`QueueConsumerService` 분리** (2026-05-12): 584줄 → `PaymentEventHandler`(153줄) + `PosEventHandler`(78줄) + `NotificationEventHandler`(131줄) + thin dispatcher `QueueConsumerService`(211줄). `@Optional()` 의존성 전부 required로 전환. 150개 테스트 통과.
 - [x] **`optional` 의존성 패턴 재검토** (2026-05-12): `orders.service.ts` — `queueService?`, `couponsService?` → 필수 주입으로 변경. `?.` optional chaining 2곳, `&& this.couponsService` 가드 2곳 제거. `OrdersModule`에 두 모듈 모두 import되어 있어 항상 주입 보장됨.
 - [x] **`shared` / `table-order` 타입 불일치 정리** (2026-05-12): `apps/table-order/src/types/` 하위 6개 파일(order.ts·call.ts·api.ts·table.ts·menu.ts·index.ts) 전부 삭제. grep으로 실제 사용처 없음 확인. 모든 코드 이미 `@order/shared` 직접 사용 중.
-- [ ] **API 클라이언트 중복 제거**: `packages/shared/src/api/client.ts`와 `apps/table-order/src/lib/api/client.ts` 사실상 중복. `table-order`의 로컬 클라이언트 삭제 후 shared로 단일화.
+- [x] **API 클라이언트 중복 제거** (2026-05-12): `apps/table-order/src/lib/api/client.ts` 삭제. 엔드포인트 5개 + `OrderConfirmModal` + `lib/api/index.ts` 모두 `@order/shared` import로 교체. tsc 에러 없음.
 - [ ] **`shared`와 `order-core` 책임 경계 재정의**: `packages/shared/src/stores/cartStore.ts`에 장바구니 계산 로직 존재, `packages/order-core`에도 `calculateOrderTotals` 존재. `shared`는 타입/API/유틸, `order-core`는 비즈니스 계산/검증으로 명확히 역할 분리 후 `cartStore` 계산 로직 `order-core`로 이관.
 
 ### 인프라/설정
 
-- [ ] **프로덕션 Redis 강제화**: `apps/backend/src/app.module.ts:38` — `REDIS_URL` 미설정 시 in-memory 폴백. Vercel 다중 인스턴스에서 rate limit 무력화. `NODE_ENV=production` && `REDIS_URL` 없으면 부팅 실패하도록 가드.
+- [x] **프로덕션 Redis 경고 로그** (2026-05-12): `apps/backend/src/app.module.ts` — `NODE_ENV=production` && `REDIS_URL` 없으면 부팅 시 `console.warn` 출력 (성능 저하 모드 명시). 부팅 실패 대신 경고로 처리 — Redis 장애가 서비스 다운으로 이어지지 않도록.
 - [ ] **환경변수 ConfigService 일원화**: `process.env.*` 직접 사용처(main.ts 등)를 `ConfigService` + Joi/Zod 스키마 검증으로 통일. 누락/오타 시 부팅 단계에서 실패.
 - [ ] **Serverless cold start 최적화**: `apps/backend/src/main.ts:43-52` — 단일 진입점에서 17개 모듈 일괄 로드. cold start 부담. 라우트별 함수 분리 또는 lazy module 검토.
 

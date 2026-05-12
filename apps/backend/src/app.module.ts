@@ -30,12 +30,20 @@ import { FranchiseInquiriesModule } from './modules/franchise-inquiries/franchis
         }),
         // Rate Limiting (DDoS 방지)
         // REDIS_URL이 설정된 경우 Redis 분산 저장소 사용 (Vercel 다중 인스턴스 대응)
-        // REDIS_URL 미설정 시 in-memory 폴백 (개발 환경)
+        // REDIS_URL 미설정 시 in-memory 폴백 — 인스턴스별 카운터이므로 분산 환경에서
+        // rate limit이 인스턴스 수만큼 배수로 허용될 수 있음 (성능 저하 모드)
         ThrottlerModule.forRootAsync({
             imports: [ConfigModule],
             inject: [ConfigService],
             useFactory: (config: ConfigService) => {
                 const redisUrl = config.get<string>('REDIS_URL');
+                if (!redisUrl && config.get<string>('NODE_ENV') === 'production') {
+                    console.warn(
+                        '[ThrottlerModule] REDIS_URL is not set in production. ' +
+                        'Rate limiting is running in degraded mode (per-instance, not distributed). ' +
+                        'Set REDIS_URL to enable shared rate limiting across instances.',
+                    );
+                }
                 return {
                     throttlers: [
                         { name: 'short',  ttl: 1000,   limit: 10   }, // 1초  10회

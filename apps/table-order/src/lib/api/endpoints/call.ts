@@ -3,7 +3,7 @@
  */
 
 import type { Call, CreateCallRequest } from '@order/shared';
-import { apiClient } from '../client';
+import { apiClient } from '@order/shared';
 
 /**
  * 직원 호출 생성
