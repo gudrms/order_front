@@ -84,18 +84,21 @@
 
 ### Android (배달앱)
 
-- [ ] 릴리즈 keystore 신규 발급: 현재 keystore 파일이 없는 상태이므로 새 release keystore 생성 후 안전한 저장소에 백업. key password/store password 분리 보관.
-- [x] 기존 전달 SHA-256 지문 참고값 기록 (2026-05-12): `6D:AC:8F:5E:5D:A7:AF:F6:80:01:16:6D:78:17:B6:29:62:F2:DC:82:5F:DC:3D:7C:B7:B3:4B:61:B9:04:F2:80`. 지문은 공개 식별자라 문서 기록 가능. 단, keystore가 없으면 이 지문으로 앱 서명 불가.
-- [ ] 신규 keystore 또는 Play App Signing 기준 SHA-256 확정 후 `assetlinks.json` 교체 및 `https://delivery.tacomole.kr/.well-known/assetlinks.json` 운영 배포
+- [x] 릴리즈 keystore 생성 (2026-05-12): `android/app/taco-release-key.keystore` (alias: taco-key). `android/key.properties`에 비밀번호 기록. `.gitignore`에 keystore + key.properties 추가.
+- [x] `android/app/build.gradle` 서명 설정 (2026-05-12): `signingConfigs.release` 블록 추가. key.properties에서 자동 로드.
+- [x] `capacitor.config.ts` appId `com.taco.delivery` 확정 (2026-05-12)
+- [x] `android/app/build.gradle` versionCode 1 / versionName "1.0.0" 설정 (2026-05-12)
+- [x] 운영 URL cap sync (2026-05-12): `CAPACITOR_SERVER_URL=https://delivery.tacomole.kr npx cap sync android`. Remote WebView 방식으로 Vercel 배포 앱을 WebView로 로드.
+- [x] 릴리즈 `.aab` 빌드 완료 (2026-05-12): Android Studio → Generate Signed Bundle → release. `android/app/release/app-release.aab` 생성.
+- [x] Google Play Console 개발자 계정 등록 완료 (2026-05-12)
+- [x] 기존 전달 SHA-256 지문 참고값 기록 (2026-05-12): `6D:AC:8F:5E:5D:A7:AF:F6:80:01:16:6D:78:17:B6:29:62:F2:DC:82:5F:DC:3D:7C:B7:B3:4B:61:B9:04:F2:80`
+- [x] 개인정보처리방침 페이지 생성 (2026-05-12): `apps/brand-website/src/app/privacy/page.tsx` → `https://www.tacomole.kr/privacy`
+- [ ] brand-website push → Vercel 배포 후 `https://www.tacomole.kr/privacy` 접근 확인
+- [ ] Play Console 앱 정보 입력: 개인정보처리방침 URL(`https://www.tacomole.kr/privacy`), 앱 아이콘(512x512), 스크린샷(최소 2장), 짧은/긴 설명, 카테고리(음식 및 음료), 콘텐츠 등급 설문
+- [ ] Play App Signing SHA-256 확정 후 `assetlinks.json` 교체 및 `https://delivery.tacomole.kr/.well-known/assetlinks.json` 운영 배포
 - [ ] `adb shell pm get-app-links com.taco.delivery` App Links 검증
-- [ ] `capacitor.config.ts` appId `com.taco.delivery` 확정
-- [ ] `android/app/build.gradle` versionCode/versionName 설정
-- [ ] 릴리즈 `.aab` 빌드: `./gradlew bundleRelease`
-- [ ] USB 실기기 `npx cap run android` 실행 + FCM 토큰 발급 확인
-- [ ] 앱 종료 후 잠금화면 FCM 푸시 수신 확인
-- [ ] PWA `manifest.screenshots` 추가 (Play Store 등록 시 필요)
-- [ ] Google Play Console 계정 등록 (개발자 계정 25달러)
-- [ ] Play Console 내부 테스트 트랙 업로드 → 심사
+- [ ] Play Console 내부 테스트 트랙 AAB 업로드 → 심사 제출
+- [ ] USB 실기기 테스트: FCM 토큰 발급 확인, 잠금화면 푸시 수신 확인
 - [ ] Vercel 원격 WebView 핫 업데이트 파이프라인 검증
 
 ### iOS (배달앱)
