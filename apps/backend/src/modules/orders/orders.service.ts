@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma, OrderStatus, DeliveryStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { ResilientPosService } from '../integrations/pos/pos.resilience';
@@ -63,11 +64,11 @@ export class OrdersService {
         return order;
     }
 
-    async getOrders(storeId: string, status?: any, page: number = 1) {
+    async getOrders(storeId: string, status?: OrderStatus, page: number = 1) {
         const take = 20;
         const skip = (page - 1) * take;
 
-        const where: any = { storeId };
+        const where: Prisma.OrderWhereInput = { storeId };
         if (status) {
             where.status = status;
         }
@@ -100,7 +101,7 @@ export class OrdersService {
 
         const take = 20;
         const skip = (page - 1) * take;
-        const where: any = {
+        const where: Prisma.OrderWhereInput = {
             storeId,
             posSyncStatus: 'FAILED',
         };
@@ -178,7 +179,7 @@ export class OrdersService {
         CANCELLED:        [],
     };
 
-    async updateOrderStatus(storeId: string, orderId: string, status: any) {
+    async updateOrderStatus(storeId: string, orderId: string, status: OrderStatus) {
         const order = await this.prisma.order.findUnique({
             where: { id: orderId },
         });
@@ -211,7 +212,7 @@ export class OrdersService {
     async updateDeliveryStatus(
         storeId: string,
         orderId: string,
-        deliveryStatus: any,
+        deliveryStatus: DeliveryStatus,
         options: { riderMemo?: string } = {},
     ) {
         const order = await this.prisma.order.findUnique({
@@ -236,11 +237,11 @@ export class OrdersService {
         }
 
         const now = new Date();
-        const deliveryUpdateData: any = {
+        const deliveryUpdateData: Prisma.OrderDeliveryUpdateInput = {
             status: deliveryStatus,
             riderMemo: options.riderMemo?.trim() || undefined,
         };
-        const orderUpdateData: any = {
+        const orderUpdateData: Prisma.OrderUpdateInput = {
             delivery: { update: deliveryUpdateData },
         };
 

@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateDeliveryOrderDto } from './dto/create-order.dto';
 import { CouponsService } from '../coupons/coupons.service';
@@ -110,7 +111,7 @@ export class DeliveryOrderService {
                             paymentKey: dto.payment.paymentKey,
                             providerOrderId: dto.payment.orderId,
                             idempotencyKey: dto.payment.orderId,
-                            rawPayload: dto.payment as any,
+                            rawPayload: dto.payment as unknown as Prisma.InputJsonValue,
                         },
                     },
                 },
@@ -133,7 +134,7 @@ export class DeliveryOrderService {
         const take = 20;
         const page = params.page || 1;
         const skip = (page - 1) * take;
-        const where: any = {
+        const where: Prisma.OrderWhereInput = {
             type: 'DELIVERY',
         };
 

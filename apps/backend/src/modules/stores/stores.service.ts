@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
+import { Prisma } from '@prisma/client';
 import { assertCanCreateStore, assertCanManageStore } from '../../common/auth/permissions';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateStoreDto, CreateTablesDto, UpdateStoreDto } from './dto/store-admin.dto';
@@ -61,8 +62,8 @@ export class StoresService {
         return this.prisma.store.create({
             data: {
                 ...dto,
-                businessHours: dto.businessHours as any,
-                theme: dto.theme as any,
+                businessHours: dto.businessHours as Prisma.InputJsonValue,
+                theme: dto.theme as Prisma.InputJsonValue,
                 inviteCode: dto.inviteCode || this.generateInviteCode(dto.storeType, dto.branchId),
             },
         });
@@ -75,8 +76,8 @@ export class StoresService {
             where: { id: storeId },
             data: {
                 ...dto,
-                businessHours: dto.businessHours as any,
-                theme: dto.theme as any,
+                businessHours: dto.businessHours as Prisma.InputJsonValue,
+                theme: dto.theme as Prisma.InputJsonValue,
             },
         });
     }

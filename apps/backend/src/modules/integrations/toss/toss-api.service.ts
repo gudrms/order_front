@@ -95,7 +95,7 @@ export class TossApiService {
         } catch (error) {
             if (axios.isAxiosError(error)) {
                 const status = error.response?.status || 502;
-                const message = (error.response?.data as any)?.message || error.message;
+                const message = (error.response?.data as Record<string, unknown>)?.message as string | undefined || error.message;
                 throw new BadRequestException({
                     code: 'TOSS_CONFIRM_FAILED',
                     status,
@@ -132,7 +132,7 @@ export class TossApiService {
         } catch (error) {
             if (axios.isAxiosError(error)) {
                 const status = error.response?.status || 502;
-                const message = (error.response?.data as any)?.message || error.message;
+                const message = (error.response?.data as Record<string, unknown>)?.message as string | undefined || error.message;
                 throw new BadRequestException({
                     code: 'TOSS_CANCEL_FAILED',
                     status,
@@ -163,7 +163,7 @@ export class TossApiService {
         } catch (error) {
             if (axios.isAxiosError(error)) {
                 const status = error.response?.status || 502;
-                const message = (error.response?.data as any)?.message || error.message;
+                const message = (error.response?.data as Record<string, unknown>)?.message as string | undefined || error.message;
                 throw new BadRequestException({
                     code: 'TOSS_FETCH_PAYMENT_FAILED',
                     status,

@@ -1,4 +1,5 @@
 import { Controller, Get, Post, Patch, Param, Body, Query, Headers, ConflictException, Logger, NotFoundException, UseGuards } from '@nestjs/common';
+import { Prisma, OrderStatus } from '@prisma/client';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody, ApiQuery, ApiHeader } from '@nestjs/swagger';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PosIntegrationGuard } from './pos-integration.guard';
@@ -152,10 +153,16 @@ export class PosController {
         });
     }
 
-    private toPosPaymentDto(payment: any) {
+    private toPosPaymentDto(payment: {
+        rawPayload: Prisma.JsonValue | null;
+        approvedAmount: number | null;
+        amount: number;
+        approvedAt: Date | null;
+        paymentKey: string | null;
+    }) {
         // 토스 PluginPaymentDto(EXTERNAL) 매핑.
         // raw payload 우선, 없으면 한국 부가가치세 10% 기준 분할.
-        const raw = (payment.rawPayload ?? {}) as Record<string, any>;
+        const raw = (payment.rawPayload ?? {}) as Record<string, unknown>;
         const amount = payment.approvedAmount ?? payment.amount;
         const supplyMoney = typeof raw.suppliedAmount === 'number'
             ? raw.suppliedAmount
@@ -166,7 +173,7 @@ export class PosController {
             : (payment.approvedAt ?? new Date().toISOString());
         return {
             paymentKey: payment.paymentKey ?? '',
-            approvedNo: raw.approveNo ?? raw.approvalNumber ?? payment.paymentKey ?? '',
+            approvedNo: (raw.approveNo as string | undefined) ?? (raw.approvalNumber as string | undefined) ?? payment.paymentKey ?? '',
             approvedAt,
             amountMoney: amount,
             supplyMoney,
@@ -246,8 +253,8 @@ export class PosController {
             );
         }
 
-        const data: any = {
-            status: status as any,
+        const data: Prisma.OrderUpdateInput = {
+            status: status as OrderStatus,
             tossOrderId: tossOrderId ?? order.tossOrderId,
         };
 

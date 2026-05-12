@@ -1,4 +1,11 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
+
+interface OrderItemDto {
+    menuId: string;
+    quantity: number;
+    options?: { optionId?: string }[];
+}
 
 export function orderInclude() {
     return {
@@ -12,7 +19,7 @@ export function orderInclude() {
     };
 }
 
-export async function prepareOrderItems(tx: any, storeId: string, items: any[]) {
+export async function prepareOrderItems(tx: Prisma.TransactionClient, storeId: string, items: OrderItemDto[]) {
     if (!items?.length) {
         throw new BadRequestException('Order must include at least one item');
     }
@@ -91,7 +98,7 @@ export async function prepareOrderItems(tx: any, storeId: string, items: any[]) 
     return { totalPrice, orderItemsData };
 }
 
-export async function generateOrderNumber(tx: any, storeId: string): Promise<string> {
+export async function generateOrderNumber(tx: Prisma.TransactionClient, storeId: string): Promise<string> {
     // count 기반 번호 생성은 동시 요청 시 중복 발급 가능.
     // schema에 @@unique([storeId, orderNumber])가 있으므로 충돌 시 Prisma가
     // P2002 에러를 던지고 트랜잭션이 롤백됨 — 중복 저장은 방지됨.

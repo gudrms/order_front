@@ -1,4 +1,5 @@
 import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException, Optional } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { mapTossMethod } from '../../common/utils/toss.utils';
 import { assertCanManageStore } from '../../common/auth/permissions';
 import { PrismaService } from '../prisma/prisma.service';
@@ -190,21 +191,15 @@ export class PaymentsService {
             return this.getOrderResponse(payment.orderId);
         }
 
-        const orderUpdateData: any = {
+        const orderUpdateData: Prisma.OrderUpdateInput = {
             status: 'CANCELLED',
             paymentStatus: 'FAILED',
             cancelledAt: new Date(),
             cancelReason: dto.message || dto.code || 'Toss payment failed',
+            ...(payment.order.delivery ? {
+                delivery: { update: { status: 'CANCELLED', cancelledAt: new Date() } },
+            } : {}),
         };
-
-        if (payment.order.delivery) {
-            orderUpdateData.delivery = {
-                update: {
-                    status: 'CANCELLED',
-                    cancelledAt: new Date(),
-                },
-            };
-        }
 
         await this.prisma.$transaction([
             this.prisma.payment.update({
@@ -214,7 +209,7 @@ export class PaymentsService {
                     failedAt: new Date(),
                     failureCode: dto.code,
                     failureMessage: dto.message,
-                    rawPayload: dto as any,
+                    rawPayload: dto as unknown as Prisma.InputJsonValue,
                 },
             }),
             this.prisma.order.update({
@@ -252,21 +247,15 @@ export class PaymentsService {
         });
 
         const operations = expiredPayments.flatMap((payment) => {
-            const orderUpdateData: any = {
+            const orderUpdateData: Prisma.OrderUpdateInput = {
                 status: 'CANCELLED',
                 paymentStatus: 'FAILED',
                 cancelledAt: new Date(),
                 cancelReason: 'Payment timed out before approval',
+                ...(payment.order.delivery ? {
+                    delivery: { update: { status: 'CANCELLED', cancelledAt: new Date() } },
+                } : {}),
             };
-
-            if (payment.order.delivery) {
-                orderUpdateData.delivery = {
-                    update: {
-                        status: 'CANCELLED',
-                        cancelledAt: new Date(),
-                    },
-                };
-            }
 
             return [
                 this.prisma.payment.update({
@@ -372,23 +361,17 @@ export class PaymentsService {
         const now = new Date();
         const nextCancelledAmount = alreadyCancelledAmount + cancelAmount;
         const nextPaymentStatus = nextCancelledAmount >= paidAmount ? 'REFUNDED' : 'PARTIAL_REFUNDED';
-        const orderUpdateData: any = {
+        const orderUpdateData: Prisma.OrderUpdateInput = {
             paymentStatus: nextPaymentStatus,
+            ...(nextPaymentStatus === 'REFUNDED' ? {
+                status: 'CANCELLED',
+                cancelledAt: now,
+                cancelReason: cancelReason,
+                ...(payment.order.delivery ? {
+                    delivery: { update: { status: 'CANCELLED', cancelledAt: now } },
+                } : {}),
+            } : {}),
         };
-
-        if (nextPaymentStatus === 'REFUNDED') {
-            orderUpdateData.status = 'CANCELLED';
-            orderUpdateData.cancelledAt = now;
-            orderUpdateData.cancelReason = cancelReason;
-            if (payment.order.delivery) {
-                orderUpdateData.delivery = {
-                    update: {
-                        status: 'CANCELLED',
-                        cancelledAt: now,
-                    },
-                };
-            }
-        }
 
         await this.prisma.$transaction([
             this.prisma.payment.update({
