@@ -84,9 +84,9 @@
 
 ### Android (배달앱)
 
-- [ ] 릴리즈 키스토어 확인/보관: 기존 앱 업데이트라면 기존 release keystore 유지. 분실/신규 앱/보안 사고일 때만 새 key 발급.
-- [x] SHA-256 지문 기록 (2026-05-12): `6D:AC:8F:5E:5D:A7:AF:F6:80:01:16:6D:78:17:B6:29:62:F2:DC:82:5F:DC:3D:7C:B7:B3:4B:61:B9:04:F2:80`
-- [ ] `assetlinks.json` SHA-256 교체 후 `https://delivery.tacomole.kr/.well-known/assetlinks.json` 운영 배포
+- [ ] 릴리즈 keystore 신규 발급: 현재 keystore 파일이 없는 상태이므로 새 release keystore 생성 후 안전한 저장소에 백업. key password/store password 분리 보관.
+- [x] 기존 전달 SHA-256 지문 참고값 기록 (2026-05-12): `6D:AC:8F:5E:5D:A7:AF:F6:80:01:16:6D:78:17:B6:29:62:F2:DC:82:5F:DC:3D:7C:B7:B3:4B:61:B9:04:F2:80`. 지문은 공개 식별자라 문서 기록 가능. 단, keystore가 없으면 이 지문으로 앱 서명 불가.
+- [ ] 신규 keystore 또는 Play App Signing 기준 SHA-256 확정 후 `assetlinks.json` 교체 및 `https://delivery.tacomole.kr/.well-known/assetlinks.json` 운영 배포
 - [ ] `adb shell pm get-app-links com.taco.delivery` App Links 검증
 - [ ] `capacitor.config.ts` appId `com.taco.delivery` 확정
 - [ ] `android/app/build.gradle` versionCode/versionName 설정
