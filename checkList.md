@@ -41,7 +41,7 @@
 - [ ] **`OrdersService` 분리**: `apps/backend/src/modules/orders/orders.service.ts` 616줄. 테이블 주문·배달 주문·POS 재시도·상태 변경 등 책임 혼재. `TableOrderService` / `DeliveryOrderService` / `OrderStatusService`로 분리 검토.
 - [ ] **`QueueConsumerService` 분리**: `apps/backend/src/modules/queue/queue-consumer.service.ts` 583줄. 결제·POS·알림·배달 상태 이벤트 모두 단일 클래스 처리. 이벤트 타입별 핸들러 클래스(`PaymentEventHandler`, `PosEventHandler`, `NotificationEventHandler`)로 분리.
 - [ ] **`optional` 의존성 패턴 재검토**: `apps/backend/src/modules/orders/orders.service.ts:16-17` — `queueService?`, `couponsService?` optional 주입. 런타임 silent fail 위험. 필수 주입 or 명시적 No-op fallback.
-- [ ] **`shared` / `table-order` 타입 불일치 정리**: `apps/table-order/src/types/order.ts`의 `OrderStatus`가 4개 값, `packages/shared/src/types/order.ts`는 10개 값. `apps/table-order/src/types/index.ts`에 `@deprecated`지만 파일 잔존. 로컬 파일 삭제 후 `@order/shared` 단일 사용.
+- [x] **`shared` / `table-order` 타입 불일치 정리** (2026-05-12): `apps/table-order/src/types/` 하위 6개 파일(order.ts·call.ts·api.ts·table.ts·menu.ts·index.ts) 전부 삭제. grep으로 실제 사용처 없음 확인. 모든 코드 이미 `@order/shared` 직접 사용 중.
 - [ ] **API 클라이언트 중복 제거**: `packages/shared/src/api/client.ts`와 `apps/table-order/src/lib/api/client.ts` 사실상 중복. `table-order`의 로컬 클라이언트 삭제 후 shared로 단일화.
 - [ ] **`shared`와 `order-core` 책임 경계 재정의**: `packages/shared/src/stores/cartStore.ts`에 장바구니 계산 로직 존재, `packages/order-core`에도 `calculateOrderTotals` 존재. `shared`는 타입/API/유틸, `order-core`는 비즈니스 계산/검증으로 명확히 역할 분리 후 `cartStore` 계산 로직 `order-core`로 이관.
 
