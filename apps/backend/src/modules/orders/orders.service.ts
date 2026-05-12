@@ -13,8 +13,8 @@ export class OrdersService {
         private readonly prisma: PrismaService,
         private readonly posService: ResilientPosService,
         private readonly sessionsService: SessionsService,
-        private readonly queueService?: QueueService,
-        private readonly couponsService?: CouponsService,
+        private readonly queueService: QueueService,
+        private readonly couponsService: CouponsService,
     ) { }
 
     async createFirstOrder(storeId: string, tableNumber: number, dto: CreateOrderDto) {
@@ -101,7 +101,7 @@ export class OrdersService {
             if (dto.userCouponId && !dto.userId) {
                 throw new BadRequestException('Coupons require an authenticated user');
             }
-            if (dto.userCouponId && dto.userId && this.couponsService) {
+            if (dto.userCouponId && dto.userId) {
                 const result = await this.couponsService.validateAndCalculateDiscount(
                     dto.userId,
                     dto.userCouponId,
@@ -167,7 +167,7 @@ export class OrdersService {
                 include: this.orderInclude(),
             });
 
-            if (dto.userCouponId && this.couponsService) {
+            if (dto.userCouponId) {
                 await this.couponsService.markAsUsed(tx, dto.userCouponId, order.id);
             }
 
@@ -359,7 +359,7 @@ export class OrdersService {
             },
         });
 
-        await this.queueService?.publishPosSendOrder({
+        await this.queueService.publishPosSendOrder({
             orderId,
             storeId,
         });
@@ -602,7 +602,7 @@ export class OrdersService {
         });
 
         // DB commit 후 delivery.status_changed 이벤트 발행
-        await this.queueService?.publishDeliveryStatusChanged({
+        await this.queueService.publishDeliveryStatusChanged({
             orderId,
             storeId,
             userId: order.userId || undefined,
