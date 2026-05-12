@@ -1,24 +1,15 @@
 /**
  * API 통합 export
- * 사용 예: import { api } from '@/lib/api';
- *         api.menu.getCategories(1);
+ * table-order 전용 order 로직(첫 주문/추가 주문 세션 분기)만 로컬 유지.
+ * 나머지(menu, table, call, admin 등)는 @order/shared의 api 객체 그대로 사용.
  */
 
-import * as menuApi from './endpoints/menu';
 import * as orderApi from './endpoints/order';
-import * as tableApi from './endpoints/table';
-import * as callApi from './endpoints/call';
-import * as adminApi from './endpoints/admin';
+import { api as sharedApi } from '@order/shared';
 
 export { apiClient, ApiClientError } from '@order/shared';
 
-/**
- * 통합 API 객체
- */
 export const api = {
-  menu: menuApi,
+  ...sharedApi,
   order: orderApi,
-  table: tableApi,
-  call: callApi,
-  admin: adminApi,
 };
