@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import {
@@ -18,9 +19,14 @@ import {
 @Injectable()
 export class QueueService {
     private readonly logger = new Logger(QueueService.name);
-    private readonly defaultQueueName = process.env.BACKEND_QUEUE_NAME || 'backend_events';
+    private readonly defaultQueueName: string;
 
-    constructor(private readonly prisma: PrismaService) { }
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly config: ConfigService,
+    ) {
+        this.defaultQueueName = config.get<string>('BACKEND_QUEUE_NAME', 'backend_events');
+    }
 
     async publish<TPayload extends QueueEventPayload>(
         eventType: QueueEventType,

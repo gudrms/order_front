@@ -1,4 +1,5 @@
 import { Injectable, Optional } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { NotificationSendEventPayload } from './queue-event.types';
 import { FirebaseService } from '../notifications/firebase.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -11,6 +12,7 @@ export interface NotificationProviderResult {
 @Injectable()
 export class NotificationProviderService {
     constructor(
+        private readonly config: ConfigService,
         @Optional() private readonly firebaseService?: FirebaseService,
         @Optional() private readonly prisma?: PrismaService,
     ) {}
@@ -87,8 +89,8 @@ export class NotificationProviderService {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                ...(process.env.NOTIFICATION_WEBHOOK_SECRET
-                    ? { Authorization: `Bearer ${process.env.NOTIFICATION_WEBHOOK_SECRET}` }
+                ...(this.config.get<string>('NOTIFICATION_WEBHOOK_SECRET')
+                    ? { Authorization: `Bearer ${this.config.get<string>('NOTIFICATION_WEBHOOK_SECRET')}` }
                     : {}),
             },
             body: JSON.stringify({
@@ -117,7 +119,7 @@ export class NotificationProviderService {
 
     private getWebhookUrl(channel: string): string | undefined {
         const channelKey = `NOTIFICATION_${channel}_WEBHOOK_URL`;
-        return process.env[channelKey] || process.env.NOTIFICATION_WEBHOOK_URL;
+        return this.config.get<string>(channelKey) || this.config.get<string>('NOTIFICATION_WEBHOOK_URL');
     }
 
     private async parseJson(response: Response): Promise<any> {

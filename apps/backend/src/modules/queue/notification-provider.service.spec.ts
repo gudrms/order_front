@@ -1,21 +1,18 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { NotificationProviderService } from './notification-provider.service';
+
+function makeConfig(env: Record<string, string> = {}) {
+    return { get: (key: string) => env[key] } as any;
+}
 
 describe('NotificationProviderService', () => {
     let service: NotificationProviderService;
     const originalFetch = global.fetch;
-    const originalEnv = process.env;
 
     beforeEach(() => {
-        service = new NotificationProviderService();
-        process.env = { ...originalEnv };
+        service = new NotificationProviderService(makeConfig());
         global.fetch = originalFetch;
         vi.restoreAllMocks();
-    });
-
-    afterEach(() => {
-        process.env = originalEnv;
-        global.fetch = originalFetch;
     });
 
     it('treats in-app notifications as sent without external calls', async () => {
@@ -35,8 +32,10 @@ describe('NotificationProviderService', () => {
     });
 
     it('sends webhook-backed notifications through the configured webhook', async () => {
-        process.env.NOTIFICATION_WEBHOOK_URL = 'https://notify.example/send';
-        process.env.NOTIFICATION_WEBHOOK_SECRET = 'secret';
+        service = new NotificationProviderService(makeConfig({
+            NOTIFICATION_WEBHOOK_URL: 'https://notify.example/send',
+            NOTIFICATION_WEBHOOK_SECRET: 'secret',
+        }));
         const fetchMock = vi.fn().mockResolvedValue({
             ok: true,
             json: vi.fn().mockResolvedValue({ messageId: 'message-1' }),
@@ -79,7 +78,7 @@ describe('NotificationProviderService', () => {
                 deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
             },
         };
-        service = new NotificationProviderService(firebaseService as any, prisma as any);
+        service = new NotificationProviderService(makeConfig(), firebaseService as any, prisma as any);
 
         const result = await service.send({
             recipientType: 'CUSTOMER',

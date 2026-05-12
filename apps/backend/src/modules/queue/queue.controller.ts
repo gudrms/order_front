@@ -1,11 +1,15 @@
 import { Body, Controller, Headers, Post, UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { ApiBody, ApiHeader, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { QueueConsumerService } from './queue-consumer.service';
 
 @ApiTags('Queue')
 @Controller('queue')
 export class QueueController {
-    constructor(private readonly queueConsumerService: QueueConsumerService) { }
+    constructor(
+        private readonly queueConsumerService: QueueConsumerService,
+        private readonly config: ConfigService,
+    ) { }
 
     @Post('process-once')
     @ApiOperation({
@@ -43,7 +47,7 @@ export class QueueController {
     }
 
     private assertInternalSecret(secret: string | undefined) {
-        const expected = process.env.INTERNAL_JOB_SECRET;
+        const expected = this.config.get<string>('INTERNAL_JOB_SECRET');
         if (!expected || secret !== expected) {
             throw new UnauthorizedException('Invalid internal job secret');
         }

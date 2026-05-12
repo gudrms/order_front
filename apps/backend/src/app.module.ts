@@ -1,3 +1,4 @@
+import * as Joi from 'joi';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
@@ -27,6 +28,20 @@ import { FranchiseInquiriesModule } from './modules/franchise-inquiries/franchis
     imports: [
         ConfigModule.forRoot({
             isGlobal: true,
+            validationSchema: Joi.object({
+                DATABASE_URL: Joi.string().required(),
+                SUPABASE_URL: Joi.string().required(),
+                SUPABASE_SERVICE_KEY: Joi.string().required(),
+                TOSS_ACCESS_KEY: Joi.string().required(),
+                TOSS_SECRET: Joi.string().required(),
+                INTERNAL_JOB_SECRET: Joi.string().min(16).required(),
+                REDIS_URL: Joi.string().optional(),
+                NODE_ENV: Joi.string().valid('development', 'production', 'test').default('development'),
+                PORT: Joi.number().default(4000),
+                LOG_LEVEL: Joi.string().default('info'),
+                BACKEND_QUEUE_NAME: Joi.string().default('backend_events'),
+            }),
+            validationOptions: { allowUnknown: true, abortEarly: false },
         }),
         // Rate Limiting (DDoS 방지)
         // REDIS_URL이 설정된 경우 Redis 분산 저장소 사용 (Vercel 다중 인스턴스 대응)

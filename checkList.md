@@ -48,7 +48,7 @@
 ### 인프라/설정
 
 - [x] **프로덕션 Redis 경고 로그** (2026-05-12): `apps/backend/src/app.module.ts` — `NODE_ENV=production` && `REDIS_URL` 없으면 부팅 시 `console.warn` 출력 (성능 저하 모드 명시). 부팅 실패 대신 경고로 처리 — Redis 장애가 서비스 다운으로 이어지지 않도록.
-- [ ] **환경변수 ConfigService 일원화**: `process.env.*` 직접 사용처(main.ts 등)를 `ConfigService` + Joi/Zod 스키마 검증으로 통일. 누락/오타 시 부팅 단계에서 실패.
+- [x] **환경변수 ConfigService 일원화** (2026-05-12): `joi` 설치 후 `ConfigModule`에 `validationSchema` 추가 (DATABASE_URL, SUPABASE_*, TOSS_*, INTERNAL_JOB_SECRET 필수 검증). `queue.service`, `queue.controller`, `payments.controller`, `notification-provider.service` 4곳 `process.env.*` → `ConfigService.get()` 교체. main.ts·logger는 bootstrap 컨텍스트로 그대로 유지. 150개 테스트 통과.
 - [ ] **Serverless cold start 최적화**: `apps/backend/src/main.ts:43-52` — 단일 진입점에서 17개 모듈 일괄 로드. cold start 부담. 라우트별 함수 분리 또는 lazy module 검토.
 
 ### 테스트

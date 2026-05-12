@@ -1,22 +1,17 @@
 import { UnauthorizedException } from '@nestjs/common';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { QueueController } from './queue.controller';
 
 describe('QueueController', () => {
     let controller: QueueController;
     let consumerService: any;
-    const originalSecret = process.env.INTERNAL_JOB_SECRET;
 
     beforeEach(() => {
-        process.env.INTERNAL_JOB_SECRET = 'job-secret';
         consumerService = {
             processOnce: vi.fn(),
         };
-        controller = new QueueController(consumerService);
-    });
-
-    afterEach(() => {
-        process.env.INTERNAL_JOB_SECRET = originalSecret;
+        const config = { get: () => 'job-secret' } as any;
+        controller = new QueueController(consumerService, config);
     });
 
     it('processes the queue when the internal secret matches', async () => {

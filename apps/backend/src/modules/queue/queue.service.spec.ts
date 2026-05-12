@@ -12,7 +12,8 @@ describe('QueueService', () => {
                 upsert: vi.fn(),
             },
         };
-        service = new QueueService(prisma);
+        const config = { get: (key: string, def?: any) => def } as any;
+        service = new QueueService(prisma, config);
     });
 
     it('casts pgmq.read arguments to the extension signature', async () => {

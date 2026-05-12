@@ -1,4 +1,5 @@
 import { Body, Controller, Headers, Param, Post, UnauthorizedException, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ConfirmTossPaymentDto, ExpirePendingTossPaymentsDto, FailTossPaymentDto, CancelTossPaymentDto, ReconcileTossPaymentsDto } from './dto/confirm-toss-payment.dto';
 import { PaymentsService } from './payments.service';
@@ -8,7 +9,10 @@ import { CurrentUser } from '../../common/decorators/user.decorator';
 @ApiTags('Payments')
 @Controller('payments')
 export class PaymentsController {
-    constructor(private readonly paymentsService: PaymentsService) { }
+    constructor(
+        private readonly paymentsService: PaymentsService,
+        private readonly config: ConfigService,
+    ) { }
 
     @Post('toss/confirm')
     @UsePipes(new ValidationPipe({ transform: true }))
@@ -122,7 +126,7 @@ export class PaymentsController {
     }
 
     private assertInternalSecret(secret: string | undefined) {
-        const expected = process.env.INTERNAL_JOB_SECRET;
+        const expected = this.config.get<string>('INTERNAL_JOB_SECRET');
         if (!expected || secret !== expected) {
             throw new UnauthorizedException('Invalid internal job secret');
         }

@@ -12,7 +12,7 @@
     "@tosspayments/payment-sdk": "^1.9.2",
     "@types/nodemailer": "^7.0.5",
     "nodemailer": "^7.0.12",
-    "react": "^19.0.0",
+    "react": "^19.0.0"
   },
   "devDependencies": {
     "@types/react": "^19.0.0",
