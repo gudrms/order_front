@@ -176,15 +176,23 @@ export async function createOrder(
   };
 }
 
+export interface OrdersByTableResult {
+  orders: Order[];
+  sessionId: string | null;
+}
+
 export async function getOrdersByTable(
   tableNumber: number,
   storeId: string
-): Promise<Order[]> {
+): Promise<OrdersByTableResult> {
   const session = await apiClient.get<CurrentSessionResponse | null>(
     `/stores/${storeId}/tables/${tableNumber}/current-session`
   );
 
-  return (session?.orders || []).map(mapOrder);
+  return {
+    orders: (session?.orders || []).map(mapOrder),
+    sessionId: session?.id ?? null,
+  };
 }
 
 export async function updateOrderStatus(

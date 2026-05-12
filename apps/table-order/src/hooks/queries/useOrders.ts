@@ -8,16 +8,30 @@ export function useOrdersByTable(tableNumber?: number, storeId?: string) {
   const queryClient = useQueryClient();
   const queryKey = ['orders', 'table', storeId, tableNumber];
 
+  const query = useQuery({
+    queryKey,
+    queryFn: () => api.order.getOrdersByTable(tableNumber!, storeId!),
+    enabled: !!tableNumber && !!storeId,
+  });
+
+  // 첫 조회 후 sessionId를 알게 되면 정확한 필터로 재구독
+  const sessionId = query.data?.sessionId ?? null;
+
   useEffect(() => {
     if (!tableNumber || !storeId) return;
+
+    // sessionId 확정 전엔 storeId로 폴백, 확정 후엔 정확한 세션만 구독
+    const filter = sessionId
+      ? `sessionId=eq.${sessionId}`
+      : `storeId=eq.${storeId}`;
 
     const channel = supabase
       .channel(`orders:${storeId}:${tableNumber}`)
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'Order', filter: `storeId=eq.${storeId}` },
+        { event: '*', schema: 'public', table: 'Order', filter },
         () => {
-          queryClient.invalidateQueries({ queryKey: ['orders', 'table', storeId, tableNumber] });
+          queryClient.invalidateQueries({ queryKey });
         },
       )
       .subscribe();
@@ -25,11 +39,10 @@ export function useOrdersByTable(tableNumber?: number, storeId?: string) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [tableNumber, storeId, queryClient]);
+  }, [tableNumber, storeId, sessionId, queryClient]);
 
-  return useQuery<Order[]>({
-    queryKey,
-    queryFn: () => api.order.getOrdersByTable(tableNumber!, storeId!),
-    enabled: !!tableNumber && !!storeId,
-  });
+  return {
+    ...query,
+    data: query.data?.orders as Order[] | undefined,
+  };
 }
