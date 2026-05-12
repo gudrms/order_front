@@ -36,6 +36,12 @@ export class DeliveryOrderService {
 
             const { totalPrice, orderItemsData } = await prepareOrderItems(tx, storeId, dto.items);
 
+            if (store.minimumOrderAmount && totalPrice < store.minimumOrderAmount) {
+                throw new BadRequestException(
+                    `Order amount is below the store minimum of ${store.minimumOrderAmount}`,
+                );
+            }
+
             const deliveryFee = store.freeDeliveryThreshold && totalPrice >= store.freeDeliveryThreshold
                 ? 0
                 : store.deliveryFee;

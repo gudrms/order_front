@@ -1,10 +1,6 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
-import { mapTossMethod } from '../../common/utils/toss.utils';
-import { MenuManagementMode, Prisma } from '@prisma/client';
+import { Injectable, Logger } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { TossApiService } from '../integrations/toss/toss-api.service';
-import { ResilientPosService } from '../integrations/pos/pos.resilience';
-import { NotificationProviderService } from './notification-provider.service';
 import {
     BackendQueueEvent,
     DeliveryStatusChangedEventPayload,
@@ -14,6 +10,9 @@ import {
     QueueMessageRecord,
 } from './queue-event.types';
 import { QueueService } from './queue.service';
+import { PaymentEventHandler } from './payment-event.handler';
+import { PosEventHandler } from './pos-event.handler';
+import { NotificationEventHandler } from './notification-event.handler';
 
 @Injectable()
 export class QueueConsumerService {
@@ -24,9 +23,9 @@ export class QueueConsumerService {
     constructor(
         private readonly queueService: QueueService,
         private readonly prisma: PrismaService,
-        @Optional() private readonly tossApiService?: TossApiService,
-        @Optional() private readonly notificationProvider?: NotificationProviderService,
-        @Optional() private readonly resilientPosService?: ResilientPosService,
+        private readonly paymentEventHandler: PaymentEventHandler,
+        private readonly posEventHandler: PosEventHandler,
+        private readonly notificationEventHandler: NotificationEventHandler,
     ) { }
 
     async processOnce(options: {
@@ -83,292 +82,34 @@ export class QueueConsumerService {
         this.logger.log(`Queue event received: ${event.eventType} (${event.idempotencyKey})`);
 
         if (event.eventType === 'order.paid') {
-            await this.handleOrderPaid(event);
+            await this.paymentEventHandler.handleOrderPaid(event);
             return;
         }
 
         if (event.eventType === 'pos.send_order') {
-            await this.handlePosSendOrder(event);
+            await this.posEventHandler.handlePosSendOrder(event);
             return;
         }
 
         if (event.eventType === 'notification.send') {
-            await this.handleNotificationSend(event as BackendQueueEvent<NotificationSendEventPayload>);
+            await this.notificationEventHandler.handleNotificationSend(
+                event as BackendQueueEvent<NotificationSendEventPayload>,
+            );
             return;
         }
 
         if (event.eventType === 'payment.reconcile') {
-            await this.handlePaymentReconcile(event as BackendQueueEvent<PaymentReconcileEventPayload>);
+            await this.paymentEventHandler.handlePaymentReconcile(
+                event as BackendQueueEvent<PaymentReconcileEventPayload>,
+            );
             return;
         }
 
         if (event.eventType === 'delivery.status_changed') {
-            await this.handleDeliveryStatusChanged(event as BackendQueueEvent<DeliveryStatusChangedEventPayload>);
-        }
-    }
-
-    private async handleOrderPaid(event: BackendQueueEvent<QueueEventPayload>) {
-        const orderId = String(event.payload.orderId || '');
-        if (!orderId) {
-            throw new Error('order.paid payload requires orderId');
-        }
-
-        const storeId = typeof event.payload.storeId === 'string' ? event.payload.storeId : undefined;
-
-        // TOSS_POS 모드 매장만 POS 전송 큐 발행. ADMIN_DIRECT 매장은 POS 기기가 없으므로 skip.
-        if (storeId) {
-            const store = await this.prisma.store.findUnique({
-                where: { id: storeId },
-                select: { menuManagementMode: true },
-            });
-            if (store?.menuManagementMode === MenuManagementMode.TOSS_POS) {
-                await this.queueService.publishPosSendOrder({ orderId, storeId });
-            } else {
-                this.logger.log(
-                    `[order.paid] storeId=${storeId} is ADMIN_DIRECT — skipping pos.send_order for orderId=${orderId}`,
-                );
-                await this.prisma.order.update({
-                    where: { id: orderId },
-                    data: { posSyncStatus: 'SKIPPED', posSyncUpdatedAt: new Date() },
-                });
-            }
-        } else {
-            // storeId 없으면 안전하게 POS 전송 시도
-            await this.queueService.publishPosSendOrder({ orderId });
-        }
-
-        if (storeId) {
-            // 앱 안의 IN_APP 알림
-            await this.queueService.publishNotificationSend({
-                recipientType: 'STORE',
-                recipientId: storeId,
-                notificationType: 'ORDER_PAID',
-                orderId,
-                storeId,
-                channel: 'IN_APP',
-            });
-            // 푸시 알림 (PWA/Native)
-            await this.queueService.publishNotificationSend({
-                recipientType: 'STORE',
-                recipientId: storeId,
-                notificationType: 'ORDER_PAID',
-                orderId,
-                storeId,
-                channel: 'PUSH',
-                title: '🌮 새로운 주문 접수!',
-                body: '새로운 배달 주문이 들어왔습니다. 확인해주세요.',
-            });
-        }
-    }
-
-    private async handlePosSendOrder(event: BackendQueueEvent<QueueEventPayload>) {
-        const orderId = String(event.payload.orderId || '');
-        if (!orderId) {
-            throw new Error('pos.send_order payload requires orderId');
-        }
-
-        const order = await this.prisma.order.findFirst({
-            where: {
-                id: orderId,
-                status: 'PAID',
-                tossOrderId: null,
-                posSyncStatus: { in: ['PENDING', 'FAILED'] },
-            },
-            include: {
-                store: true,
-                items: {
-                    include: {
-                        selectedOptions: true,
-                    },
-                },
-                delivery: true,
-                payments: true,
-            },
-        });
-
-        if (!order) {
-            return;
-        }
-
-        // ADMIN_DIRECT 모드 매장은 POS 기기가 없으므로 전송하지 않고 SKIPPED 처리
-        if (order.store?.menuManagementMode !== MenuManagementMode.TOSS_POS) {
-            this.logger.log(
-                `[pos.send_order] store ${order.storeId} is ADMIN_DIRECT — skipping POS send for orderId=${orderId}`,
+            await this.notificationEventHandler.handleDeliveryStatusChanged(
+                event as BackendQueueEvent<DeliveryStatusChangedEventPayload>,
             );
-            await this.prisma.order.update({
-                where: { id: orderId },
-                data: { posSyncStatus: 'SKIPPED', posSyncUpdatedAt: new Date() },
-            });
-            return;
         }
-
-        // Circuit Breaker: POS 가용성 확인. breaker가 OPEN이면 false를 반환하며,
-        // 이 경우 예외를 던져 queue backoff retry로 위임한다.
-        if (this.resilientPosService) {
-            const available = await this.resilientPosService.sendOrder({ orderNumber: order.orderNumber });
-            if (!available) {
-                throw new Error(`POS unavailable (Circuit Breaker OPEN) — orderId=${orderId} queued for retry`);
-            }
-        }
-
-        // 실제 Toss POS 등록은 플러그인이 /pos/orders/pending polling 후 SDK로 수행한다.
-        // 위 CB 통과 후 PENDING으로 전환하면 플러그인이 다음 폴링 때 픽업한다.
-        await this.prisma.order.update({
-            where: { id: orderId },
-            data: {
-                posSyncStatus: 'PENDING',
-                posSyncLastError: null,
-                posSyncUpdatedAt: new Date(),
-            },
-        });
-    }
-
-    private async handleNotificationSend(event: BackendQueueEvent<NotificationSendEventPayload>) {
-        const payload = event.payload;
-        const dedupeKey = this.buildNotificationDedupeKey(payload);
-
-        if (!payload.recipientType || !payload.notificationType) {
-            throw new Error('notification.send payload requires recipientType and notificationType');
-        }
-
-        const existing = await this.prisma.notificationLog.findUnique({
-            where: { dedupeKey },
-        });
-
-        if (existing?.status === 'SENT') {
-            return;
-        }
-
-        await this.prisma.notificationLog.upsert({
-            where: { dedupeKey },
-            create: {
-                recipientType: payload.recipientType,
-                recipientId: payload.recipientId,
-                notificationType: payload.notificationType,
-                orderId: payload.orderId,
-                storeId: payload.storeId,
-                channel: payload.channel || 'IN_APP',
-                dedupeKey,
-                status: 'PENDING',
-                payload: this.toJsonPayload(payload),
-                lastError: null,
-            },
-            update: {
-                recipientType: payload.recipientType,
-                recipientId: payload.recipientId,
-                notificationType: payload.notificationType,
-                orderId: payload.orderId,
-                storeId: payload.storeId,
-                channel: payload.channel || 'IN_APP',
-                status: 'PENDING',
-                payload: this.toJsonPayload(payload),
-                lastError: null,
-            },
-        });
-
-        if (!this.notificationProvider) {
-            throw new Error('Notification provider is not configured');
-        }
-
-        try {
-            const result = await this.notificationProvider.send(payload);
-            await this.prisma.notificationLog.update({
-                where: { dedupeKey },
-                data: {
-                    status: 'SENT',
-                    sentAt: new Date(),
-                    lastError: result.messageId
-                        ? `${result.provider}:${result.messageId}`
-                        : result.provider,
-                },
-            });
-        } catch (error) {
-            await this.prisma.notificationLog.update({
-                where: { dedupeKey },
-                data: {
-                    status: 'FAILED',
-                    lastError: (error as Error).message,
-                },
-            });
-            throw error;
-        }
-    }
-
-    private async handlePaymentReconcile(event: BackendQueueEvent<PaymentReconcileEventPayload>) {
-        if (!this.tossApiService) {
-            throw new Error('Toss API service is not configured');
-        }
-        if (!event.payload.paymentId && !event.payload.providerOrderId) {
-            throw new Error('payment.reconcile requires paymentId or providerOrderId');
-        }
-
-        const payment = await this.prisma.payment.findFirst({
-            where: {
-                provider: 'TOSS_PAYMENTS',
-                OR: [
-                    ...(event.payload.paymentId ? [{ id: event.payload.paymentId }] : []),
-                    ...(event.payload.providerOrderId ? [{ providerOrderId: event.payload.providerOrderId }] : []),
-                ],
-            },
-            include: {
-                order: true,
-            },
-        });
-
-        if (!payment) {
-            throw new Error('payment.reconcile target payment not found');
-        }
-        if (!payment.providerOrderId) {
-            throw new Error('payment.reconcile requires providerOrderId');
-        }
-        if (payment.status === 'PAID' && payment.order.paymentStatus === 'PAID') {
-            return;
-        }
-
-        const tossPayment = await this.tossApiService.fetchPaymentByOrderId(payment.providerOrderId);
-        if (tossPayment?.status !== 'DONE') {
-            return;
-        }
-
-        const approvedAmount = tossPayment?.totalAmount || tossPayment?.balanceAmount || payment.amount;
-
-        await this.prisma.$transaction([
-            this.prisma.payment.update({
-                where: { id: payment.id },
-                data: {
-                    status: 'PAID',
-                    paymentKey: tossPayment?.paymentKey || payment.paymentKey,
-                    method: mapTossMethod(tossPayment?.method),
-                    approvedAmount,
-                    approvedAt: tossPayment?.approvedAt ? new Date(tossPayment.approvedAt) : new Date(),
-                    receiptUrl: tossPayment?.receipt?.url,
-                    rawPayload: tossPayment,
-                },
-            }),
-            this.prisma.order.update({
-                where: { id: payment.orderId },
-                data: {
-                    status: 'PAID',
-                    paymentStatus: 'PAID',
-                },
-            }),
-        ]);
-
-        await this.queueService.publishPaymentPaid({
-            orderId: payment.orderId,
-            storeId: payment.order.storeId,
-            paymentId: payment.id,
-            providerOrderId: payment.providerOrderId,
-            amount: approvedAmount,
-        });
-
-        await this.queueService.publishOrderPaid({
-            orderId: payment.orderId,
-            storeId: payment.order.storeId,
-            paymentId: payment.id,
-            providerOrderId: payment.providerOrderId,
-            amount: approvedAmount,
-        });
     }
 
     private async startProcessing(
@@ -501,83 +242,7 @@ export class QueueConsumerService {
         return message as Prisma.InputJsonValue;
     }
 
-    private buildNotificationDedupeKey(payload: NotificationSendEventPayload): string {
-        const recipientId = payload.recipientId || payload.storeId || payload.recipientType;
-        const subjectId = payload.orderId || payload.storeId || 'global';
-        const channel = payload.channel || 'IN_APP';
-
-        return `${recipientId}:${payload.notificationType}:${subjectId}:${channel}`;
-    }
-
     private getBackoffSeconds(attemptCount: number): number {
         return this.backoffSeconds[Math.min(attemptCount - 1, this.backoffSeconds.length - 1)];
-    }
-
-    private async handleDeliveryStatusChanged(event: BackendQueueEvent<DeliveryStatusChangedEventPayload>) {
-        const payload = event.payload;
-        if (!payload.orderId || !payload.storeId || !payload.newStatus) {
-            throw new Error('delivery.status_changed payload requires orderId, storeId, and newStatus');
-        }
-
-        // 배달 완료/취소 등 고객에게 알림이 필요한 상태 변경에 대해 알림 발행.
-        const notifiableStatuses = ['ASSIGNED', 'PICKED_UP', 'DELIVERING', 'DELIVERED', 'CANCELLED'];
-        if (notifiableStatuses.includes(payload.newStatus)) {
-            const notificationType = payload.newStatus === 'DELIVERED'
-                ? 'ORDER_CONFIRMED' as const
-                : 'DELIVERY_STATUS_CHANGED' as const;
-
-            // 고객 알림 (배달 상태 변경 시)
-            if (payload.userId) {
-                const messageMap: Record<string, string> = {
-                    'ASSIGNED': '라이더가 배정되었습니다.',
-                    'PICKED_UP': '메뉴가 픽업되어 배달을 시작합니다.',
-                    'DELIVERING': '배달 중입니다.',
-                    'DELIVERED': '배달이 완료되었습니다. 맛있게 드세요!',
-                    'CANCELLED': '주문이 취소되었습니다.',
-                };
-                const body = messageMap[payload.newStatus] || '배달 상태가 변경되었습니다.';
-
-                await this.queueService.publishNotificationSend({
-                    recipientType: 'CUSTOMER',
-                    recipientId: payload.userId,
-                    notificationType,
-                    orderId: payload.orderId,
-                    storeId: payload.storeId,
-                    channel: 'IN_APP',
-                });
-                await this.queueService.publishNotificationSend({
-                    recipientType: 'CUSTOMER',
-                    recipientId: payload.userId,
-                    notificationType,
-                    orderId: payload.orderId,
-                    storeId: payload.storeId,
-                    channel: 'PUSH',
-                    title: '🌮 타코몰리 배달 알림',
-                    body,
-                });
-            }
-
-            // 매장 알림 (배달 취소 시)
-            if (payload.newStatus === 'CANCELLED') {
-                await this.queueService.publishNotificationSend({
-                    recipientType: 'STORE',
-                    recipientId: payload.storeId,
-                    notificationType: 'DELIVERY_STATUS_CHANGED',
-                    orderId: payload.orderId,
-                    storeId: payload.storeId,
-                    channel: 'IN_APP',
-                });
-                await this.queueService.publishNotificationSend({
-                    recipientType: 'STORE',
-                    recipientId: payload.storeId,
-                    notificationType: 'DELIVERY_STATUS_CHANGED',
-                    orderId: payload.orderId,
-                    storeId: payload.storeId,
-                    channel: 'PUSH',
-                    title: '⚠️ 배달 취소 알림',
-                    body: '고객님의 주문이 취소되었습니다.',
-                });
-            }
-        }
     }
 }

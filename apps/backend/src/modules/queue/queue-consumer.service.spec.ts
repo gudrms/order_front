@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { QueueConsumerService } from './queue-consumer.service';
+import { PaymentEventHandler } from './payment-event.handler';
+import { PosEventHandler } from './pos-event.handler';
+import { NotificationEventHandler } from './notification-event.handler';
 
 describe('QueueConsumerService', () => {
     let service: QueueConsumerService;
@@ -48,11 +51,17 @@ describe('QueueConsumerService', () => {
         notificationProvider = {
             send: vi.fn(),
         };
+
+        const paymentEventHandler = new PaymentEventHandler(queueService, prisma, tossApiService);
+        const posEventHandler = new PosEventHandler(prisma);
+        const notificationEventHandler = new NotificationEventHandler(prisma, notificationProvider, queueService);
+
         service = new QueueConsumerService(
             queueService,
             prisma,
-            tossApiService,
-            notificationProvider,
+            paymentEventHandler,
+            posEventHandler,
+            notificationEventHandler,
         );
     });
 
