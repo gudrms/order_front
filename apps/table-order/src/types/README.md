@@ -1,87 +1,17 @@
-# 📐 Types
+# table-order types
 
-TypeScript 타입 정의 폴더입니다.
+이 폴더에는 현재 로컬 타입 파일을 두지 않습니다.
 
-## 📁 예정된 타입 파일들
+테이블오더 앱은 공통 타입을 직접 사용합니다.
 
-- `menu.ts` - 메뉴 관련 타입
-- `order.ts` - 주문 관련 타입
-- `cart.ts` - 장바구니 관련 타입
-- `api.ts` - API 응답 타입
-- `common.ts` - 공통 타입
-
-## 💡 사용 예시
-
-### menu.ts
-```tsx
-export interface Menu {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  imageUrl: string;
-  categoryId: string;
-  isSoldOut: boolean;
-  options?: MenuOption[];
-}
-
-export interface MenuOption {
-  id: string;
-  name: string;
-  price: number;
-  isRequired: boolean;
-}
-
-export interface Category {
-  id: string;
-  name: string;
-  order: number;
-}
+```ts
+import type { Menu, Order, Table, Call } from '@order/shared';
+import type { CartItem } from '@order/order-core';
 ```
 
-### order.ts
-```tsx
-export type OrderStatus = 'PENDING' | 'COOKING' | 'SERVED' | 'CANCELLED';
+## 기준
 
-export interface Order {
-  id: string;
-  tableId: string;
-  items: OrderItem[];
-  totalPrice: number;
-  status: OrderStatus;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface OrderItem {
-  menuId: string;
-  menuName: string;
-  quantity: number;
-  price: number;
-  options?: string[];
-}
-```
-
-### api.ts
-```tsx
-export interface ApiResponse<T> {
-  data: T;
-  message: string;
-  status: number;
-}
-
-export interface PaginatedResponse<T> {
-  items: T[];
-  total: number;
-  page: number;
-  pageSize: number;
-}
-```
-
-## 📝 작성 규칙
-
-1. **네이밍**: PascalCase (예: `Menu`, `OrderStatus`)
-2. **인터페이스 vs 타입**: 인터페이스 우선 사용
-3. **Export**: 모든 타입 export
-4. **재사용**: 공통 타입은 `common.ts`에
-5. **주석**: 복잡한 타입에는 JSDoc 주석 추가
+- 여러 앱에서 공유되는 타입은 `packages/shared/src/types`에 추가합니다.
+- 주문 계산/장바구니 관련 타입은 `packages/order-core`에 둡니다.
+- table-order 앱에만 필요한 좁은 타입은 해당 feature나 hook 파일 가까이에 둡니다.
+- 과거 `menu.ts`, `order.ts`, `api.ts`, `table.ts`, `call.ts` 같은 로컬 중복 타입은 제거되었습니다.

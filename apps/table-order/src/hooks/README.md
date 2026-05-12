@@ -1,39 +1,29 @@
-# 🪝 Hooks
+# table-order hooks
 
-재사용 가능한 커스텀 React 훅 폴더입니다.
+테이블오더 앱 전용 React Query hook을 관리합니다.
 
-## 📁 예정된 훅들
+## 현재 hook
 
-- `useCart.ts` - 장바구니 상태 관리
-- `useWebSocket.ts` - WebSocket 연결 관리
-- `useAuth.ts` - 인증 상태 관리
-- `useDebounce.ts` - 디바운스 처리
-- `useLocalStorage.ts` - 로컬 스토리지 관리
-- `useMediaQuery.ts` - 반응형 처리
+| 경로 | 역할 |
+|---|---|
+| `queries/useMenus.ts` | 매장 메뉴 조회 |
+| `queries/useOrders.ts` | 테이블별 주문 내역 조회 |
+| `mutations/useCreateOrder.ts` | 첫 주문/추가 주문 생성 |
+| `mutations/useCreateCall.ts` | 직원 호출 생성 |
 
-## 💡 사용 예시
+## 기준
+
+- 서버 상태는 TanStack Query를 사용합니다.
+- 주문 생성 후에는 `['orders', 'table', storeId, tableNumber]` 범위만 무효화합니다.
+- 장바구니 상태는 이 폴더에 만들지 않고 `@order/order-core`의 `useCartStore`를 사용합니다.
+- 인증 상태는 테이블오더 앱의 책임이 아니며 관리자 인증은 `apps/admin`에서 관리합니다.
+
+## 사용 예시
 
 ```tsx
-import { useCart } from '@/hooks/useCart';
-import { useWebSocket } from '@/hooks/useWebSocket';
+import { useMenus } from '@/hooks/queries/useMenus';
+import { useCreateOrder } from '@/hooks/mutations/useCreateOrder';
 
-export default function OrderPage() {
-  const { items, addItem, removeItem } = useCart();
-  const { connected, sendMessage } = useWebSocket('/topic/orders');
-  
-  return (
-    <div>
-      <p>장바구니 아이템: {items.length}개</p>
-      <p>WebSocket 상태: {connected ? '연결됨' : '끊김'}</p>
-    </div>
-  );
-}
+const { data: menus } = useMenus(storeId);
+const createOrder = useCreateOrder();
 ```
-
-## 📝 작성 규칙
-
-1. **네이밍**: `use` 접두사 필수 (예: `useCart`)
-2. **단일 책임**: 하나의 훅은 하나의 기능만
-3. **재사용성**: 여러 컴포넌트에서 사용 가능해야 함
-4. **타입**: TypeScript 타입 정의 필수
-5. **의존성 배열**: useEffect, useMemo 등의 deps 정확히 지정

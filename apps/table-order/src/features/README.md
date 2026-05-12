@@ -1,72 +1,30 @@
-# 🎯 Features
+# table-order features
 
-기능별 모듈 폴더입니다. 각 기능은 독립적인 모듈로 관리됩니다.
+테이블오더 화면을 기능 단위로 나눈 영역입니다. 각 feature는 화면 컴포넌트, feature 전용 hook, public export를 함께 관리합니다.
 
-## 📁 폴더 구조
+## 현재 구조
 
-### `menu/`
-메뉴 관련 기능
-- 메뉴 리스트 컴포넌트
-- 메뉴 상세 모달
-- 카테고리 필터링
+| 경로 | 역할 |
+|---|---|
+| `menu/` | 메뉴 목록, 카테고리, 메뉴 상세, 호출 UI |
+| `cart/` | 장바구니 패널, 장바구니 아이템, 주문 요약 |
+| `order/` | 주문 확인, 주문 성공, 주문 내역 |
 
-### `cart/`
-장바구니 기능
-- 장바구니 드로어
-- 장바구니 아이템 컴포넌트
-- 주문 확인 모달
+관리자 기능은 `apps/admin`에서 관리합니다. `apps/table-order` 안에 `admin/` feature를 만들지 않습니다.
 
-### `order/`
-주문 관련 기능
-- 주문 내역 조회
-- 주문 상태 표시
-- 직원 호출
+## feature별 기준
 
-### `admin/`
-관리자 기능
-- 주문 접수 현황판
-- 메뉴 관리
-- 매출 통계
+- `components/`: feature 전용 UI 컴포넌트
+- `hooks/`: feature 내부에서만 쓰는 hook
+- `layout/`: 메뉴 화면처럼 큰 화면 구조를 나누는 컴포넌트
+- `index.ts`: 외부에서 사용할 public export
 
-## 📂 모듈 구조 예시
-
-```
-features/menu/
-├── components/          # 메뉴 관련 컴포넌트
-│   ├── MenuCard.tsx
-│   ├── MenuDetail.tsx
-│   └── CategoryList.tsx
-├── hooks/              # 메뉴 관련 훅
-│   └── useMenu.ts
-├── api/                # 메뉴 API 함수
-│   └── menuApi.ts
-├── types/              # 메뉴 타입 정의
-│   └── menu.types.ts
-└── index.ts            # Public exports
-```
-
-## 💡 사용 예시
+## 사용 예시
 
 ```tsx
-// features/menu/index.ts에서 export
-import { MenuCard, useMenu } from '@/features/menu';
-
-export default function MenuPage() {
-  const { menus, isLoading } = useMenu();
-  
-  return (
-    <div>
-      {menus.map(menu => (
-        <MenuCard key={menu.id} menu={menu} />
-      ))}
-    </div>
-  );
-}
+import { MenuGrid } from '@/features/menu/components';
+import { CartPanel } from '@/features/cart/components';
+import { OrderHistoryPanel } from '@/features/order/components/OrderHistoryPanel';
 ```
 
-## 📝 작성 규칙
-
-1. **독립성**: 각 feature는 독립적으로 동작해야 함
-2. **응집도**: 관련 있는 기능끼리만 묶기
-3. **Export**: `index.ts`를 통해 외부에 공개
-4. **의존성**: 다른 feature에 직접 의존하지 않기 (공통 컴포넌트 사용)
+공통 타입은 `@order/shared`, 장바구니 상태는 `@order/order-core`, 공통 UI는 `@order/ui`에서 가져옵니다.

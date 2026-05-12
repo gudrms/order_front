@@ -1,86 +1,11 @@
-# 🗄️ Stores
+# stores_backup
 
-Zustand 상태 관리 스토어 폴더입니다.
+이 폴더는 과거 store 구조를 임시 보관하기 위해 남아 있는 백업 영역입니다. 신규 코드는 이 폴더를 import하지 않습니다.
 
-## 📁 예정된 스토어들
+현재 활성 store는 `apps/table-order/src/stores`를 기준으로 확인합니다.
 
-- `cartStore.ts` - 장바구니 상태 (items, totalPrice, totalQuantity)
-- `uiStore.ts` - UI 상태 (모달, 드로어 열림/닫힘)
-- `authStore.ts` - 인증 상태 (사용자 정보, 로그인 여부)
+- 앱 UI/table/error 상태: `apps/table-order/src/stores`
+- 장바구니 상태: `@order/order-core`의 `useCartStore`
+- 서버 상태: `apps/table-order/src/hooks`의 TanStack Query hook
 
-## 💡 사용 예시
-
-### cartStore.ts
-
-```tsx
-import { create } from 'zustand';
-
-interface CartItem {
-  id: string;
-  name: string;
-  price: number;
-  quantity: number;
-}
-
-interface CartStore {
-  items: CartItem[];
-  totalPrice: number;
-  totalQuantity: number;
-  addItem: (item: CartItem) => void;
-  removeItem: (id: string) => void;
-  updateQuantity: (id: string, quantity: number) => void;
-  clearCart: () => void;
-}
-
-export const useCartStore = create<CartStore>((set, get) => ({
-  items: [],
-  totalPrice: 0,
-  totalQuantity: 0,
-
-  addItem: (item) =>
-    set((state) => ({
-      items: [...state.items, item],
-    })),
-
-  removeItem: (id) =>
-    set((state) => ({
-      items: state.items.filter((item) => item.id !== id),
-    })),
-
-  updateQuantity: (id, quantity) =>
-    set((state) => ({
-      items: state.items.map((item) =>
-        item.id === id ? { ...item, quantity } : item
-      ),
-    })),
-
-  clearCart: () => set({ items: [], totalPrice: 0, totalQuantity: 0 }),
-}));
-```
-
-### 컴포넌트에서 사용
-
-```tsx
-import { useCartStore } from '@/stores/cartStore';
-
-export default function CartPage() {
-  const items = useCartStore((state) => state.items);
-  const addItem = useCartStore((state) => state.addItem);
-  const clearCart = useCartStore((state) => state.clearCart);
-
-  return (
-    <div>
-      <p>장바구니 아이템: {items.length}개</p>
-      <button onClick={clearCart}>비우기</button>
-    </div>
-  );
-}
-```
-
-## 📝 작성 규칙
-
-1. **네이밍**: `use` + 이름 + `Store` (예: `useCartStore`)
-2. **인터페이스**: 스토어 타입 정의 필수
-3. **선택자**: 필요한 상태만 구독 (성능 최적화)
-4. **불변성**: 상태 업데이트 시 불변성 유지
-5. **Persist**: 필요시 `persist` 미들웨어 사용 (로컬 스토리지 저장)
+백업 코드가 더 이상 필요 없다는 판단이 서면 별도 정리 커밋에서 폴더를 제거합니다.

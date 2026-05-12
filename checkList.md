@@ -16,8 +16,7 @@
   - `INTERNAL_JOB_SECRET` → 32자 이상 랜덤값으로 교체
   - Gmail 앱 비밀번호 `EMAIL_PASS` (Google 계정 설정)
   - **`SUPABASE_SERVICE_KEY`는 `all-in-one-shared.env.local`에 별도 추가 필요** (기존 파일에 누락)
-- [ ] **git 히스토리에서 시크릿 완전 제거**: `git filter-repo` 또는 `bfg`로 아래 파일 히스토리 제거 후 force-push.
-  - `all-in-one-shared.env`, `backend-env.env`, `apps/backend/.env.direct`, `apps/backend/.env.pooler`
+- [x] **git 히스토리에서 시크릿 완전 제거** (2026-05-12): `python3 -m git_filter_repo`로 4개 env 파일 히스토리 완전 제거 (304개 커밋 재작성). `git push --force origin master` 완료.
 - [ ] **CORS 개발 모드 전체 허용 제거**: `apps/backend/src/main.ts:203` — `NODE_ENV=development` 시 모든 origin 허용 + `credentials:true` 조합. 개발도 localhost 화이트리스트로 제한.
 
 ### 치명 버그
@@ -49,7 +48,7 @@
 
 - [x] **프로덕션 Redis 경고 로그** (2026-05-12): `apps/backend/src/app.module.ts` — `NODE_ENV=production` && `REDIS_URL` 없으면 부팅 시 `console.warn` 출력 (성능 저하 모드 명시). 부팅 실패 대신 경고로 처리 — Redis 장애가 서비스 다운으로 이어지지 않도록.
 - [x] **환경변수 ConfigService 일원화** (2026-05-12): `joi` 설치 후 `ConfigModule`에 `validationSchema` 추가 (DATABASE_URL, SUPABASE_*, TOSS_*, INTERNAL_JOB_SECRET 필수 검증). `queue.service`, `queue.controller`, `payments.controller`, `notification-provider.service` 4곳 `process.env.*` → `ConfigService.get()` 교체. main.ts·logger는 bootstrap 컨텍스트로 그대로 유지. 150개 테스트 통과.
-- [ ] **Serverless cold start 최적화**: `apps/backend/src/main.ts:43-52` — 단일 진입점에서 17개 모듈 일괄 로드. cold start 부담. 라우트별 함수 분리 또는 lazy module 검토.
+- [x] **Serverless cold start 최적화** (2026-05-12): `queue-app.module.ts` 슬림 모듈 도입. `api/queue.ts`가 17개 전체 모듈 대신 ConfigModule + QueueModule + NotificationsModule만 로드. HTTP 전용 11개 모듈(Auth, Menus, Orders, Stores 등) 제외. `queue.ts` 독립 부트스트랩으로 분리(Swagger/CORS/Throttler 제외).
 
 ### 테스트
 
@@ -64,20 +63,20 @@
 
 ### 코드 품질
 
-- [ ] **`any` 타입 제거**: `apps/backend/src` 기준 229건. Prisma 트랜잭션 타입(`Prisma.TransactionClient`)과 Enum 타입 명시. 특히 `prepareOrderItems(tx: any)`, `updateOrderStatus(..., status: any)`.
+- [ ] **`any` 타입 제거**: `apps/backend/src` 기준 103건 남음(2026-05-12 확인). Prisma 트랜잭션 타입(`Prisma.TransactionClient`)과 Enum 타입 명시. 특히 `prepareOrderItems(tx: any)`, `updateOrderStatus(..., status: any)`.
 - [ ] **`table-order` 폴링 → Realtime 교체**: `apps/table-order/src/hooks/queries/useOrders.ts` `refetchInterval: 5000`. admin은 Supabase Realtime 사용 중. `table-order`도 Realtime 또는 SSE 교체 검토.
-- [ ] **`table-order` 로컬 API 레이어 정리**: `apps/table-order/src/lib/api/endpoints/`에 `shared`와 중복 구현 파일 다수. `shared`에 없는 전용 로직만 남기고 나머지 삭제.
-- [ ] **`useCreateOrder` queryKey 범위 축소**: `apps/table-order/src/hooks/mutations/useCreateOrder.ts` 주문 생성 후 `['orders']` 전체 무효화 → `['orders', 'table', storeId, tableNumber]`로 축소.
+- [x] **`table-order` 로컬 API 레이어 정리** (2026-05-12): `apps/table-order/src/lib/api/index.ts`에서 `@order/shared` API를 기본으로 사용하고, table-order 전용 주문 분기만 `lib/api/endpoints/order.ts`에 유지.
+- [x] **`useCreateOrder` queryKey 범위 축소** (2026-05-12): 주문 생성 후 `['orders', 'table', storeId, variables.tableNumber]`만 무효화하도록 반영.
 - [ ] **프론트엔드 단위 테스트 도입**: `apps/admin`, `apps/delivery-customer`, `apps/table-order` 단위 테스트 없음. 핵심 store/hook(`useCartStore`, `useOrderStatus` 등)부터 vitest + RTL.
-- [ ] **`packages/order-core` 비즈니스 로직 실제 구현 확장**: 배달앱/테이블오더 기존 계산/검증 로직을 단계적 이관.
+- [x] **`packages/order-core` 비즈니스 로직 실제 구현 확장** (2026-05-12): 주문 합계, 배달비, 할인, 매장 정책, 품절/재고/옵션 검증과 `useCartStore` 책임을 `@order/order-core`에 정리.
 
 ### 문서 (README/내부)
 
-- [ ] **`packages/shared/README.md` 전면 업데이트**: 추가된 타입(`Coupon`, `Address`, `Payment`, `OrderDelivery`, `Call`, `DeliveryStatus`), `src/api/` 레이어, `cartStore`, 공통 훅 전부 누락. 전면 재작성.
-- [ ] **`packages/ui/README.md` 내용 보강**: 실제 컴포넌트 목록, Shadcn UI 기반 기술 스택, `@order/ui/payment` 서브패스 import 방식 추가.
-- [ ] **`packages/order-core/README.md` 사용 예시 추가**: 사용 예시 코드, 실제 사용처, `@order/shared`와의 책임 경계 설명 추가.
-- [ ] **`apps/table-order/src/` 내부 README 재작성**: `features/`, `hooks/`, `lib/`, `stores/`, `types/` 내 README들이 존재하지 않는 파일/훅 기술. 실제 구조 기준으로 교체.
-- [ ] **운영자 인수인계 문서 작성**: 장애 대응, 주요 운영 엔드포인트, cron 실행 확인 방법 등.
+- [x] **`packages/shared/README.md` 전면 업데이트** (2026-05-12): 공통 타입/API/hook/util과 `@order/order-core` 책임 경계를 실제 구조 기준으로 재작성.
+- [x] **`packages/ui/README.md` 내용 보강** (2026-05-12): 실제 컴포넌트 목록, UI 기술 스택, `@order/ui/payment` 서브패스 dynamic import 방식을 추가.
+- [x] **`packages/order-core/README.md` 사용 예시 추가** (2026-05-12): 주문 합계/검증, `useCartStore` 예시와 `@order/shared` 책임 경계를 추가.
+- [x] **`apps/table-order/src/` 내부 README 재작성** (2026-05-12): `features/`, `hooks/`, `lib/`, `stores/`, `types/` README를 실제 파일 구조 기준으로 교체.
+- [x] **운영자 인수인계 문서 작성** (2026-05-12): `docs/operator-handoff.md`에 장애 대응, 운영 엔드포인트, cron 확인, Android 앱 지문/키 기준을 정리.
 
 ---
 
@@ -85,7 +84,8 @@
 
 ### Android (배달앱)
 
-- [ ] 릴리즈 키스토어 생성 (`keytool -genkey`) + SHA-256 지문 추출
+- [ ] 릴리즈 키스토어 확인/보관: 기존 앱 업데이트라면 기존 release keystore 유지. 분실/신규 앱/보안 사고일 때만 새 key 발급.
+- [x] SHA-256 지문 기록 (2026-05-12): `6D:AC:8F:5E:5D:A7:AF:F6:80:01:16:6D:78:17:B6:29:62:F2:DC:82:5F:DC:3D:7C:B7:B3:4B:61:B9:04:F2:80`
 - [ ] `assetlinks.json` SHA-256 교체 후 `https://delivery.tacomole.kr/.well-known/assetlinks.json` 운영 배포
 - [ ] `adb shell pm get-app-links com.taco.delivery` App Links 검증
 - [ ] `capacitor.config.ts` appId `com.taco.delivery` 확정
