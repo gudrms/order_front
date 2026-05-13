@@ -1,7 +1,7 @@
 import * as Joi from 'joi';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
 import { Redis } from 'ioredis';
 import { APP_GUARD } from '@nestjs/core';
@@ -23,6 +23,7 @@ import { CouponsModule } from './modules/coupons/coupons.module';
 import { CallsModule } from './modules/calls/calls.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { FranchiseInquiriesModule } from './modules/franchise-inquiries/franchise-inquiries.module';
+import { CustomThrottlerGuard } from './common/guards/throttler.guard';
 
 @Module({
     imports: [
@@ -93,7 +94,7 @@ import { FranchiseInquiriesModule } from './modules/franchise-inquiries/franchis
         // Global Rate Limiting Guard
         {
             provide: APP_GUARD,
-            useClass: ThrottlerGuard,
+            useClass: CustomThrottlerGuard,
         },
     ],
 })

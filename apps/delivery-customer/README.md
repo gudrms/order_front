@@ -19,6 +19,7 @@ pnpm --filter delivery-customer dev
 - Toss Payments 결제 모듈 진입
 - 주문 생성과 결제 승인 결과 처리
 - Capacitor 기반 Android/iOS 앱 빌드
+- FCM/Web Push 디바이스 등록과 푸시 알림 수신
 
 Toss POS 연동이 없어도 Toss Payments 결제 모듈을 통한 배달 결제는 가능합니다. 현금 결제는 현재 운영 기준에서 제외합니다.
 
@@ -31,6 +32,8 @@ pnpm --filter delivery-customer android
 ```
 
 iOS 빌드는 macOS/Xcode 환경에서 진행합니다.
+
+운영 WebView 빌드는 `CAPACITOR_SERVER_URL=https://delivery.tacomole.kr` 기준으로 `cap sync`를 수행합니다. 로컬 HTTP 개발 서버를 붙일 때만 cleartext/allowMixedContent가 허용됩니다.
 
 ## Android 서명 지문
 

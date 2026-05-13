@@ -20,6 +20,7 @@ pnpm --filter table-order dev
 - 첫 주문/추가 주문 생성
 - 주문 내역 확인
 - 직원 호출
+- Supabase Realtime 기반 주문 내역 갱신
 
 ## 구조
 
@@ -39,6 +40,14 @@ pnpm --filter table-order dev
 - 공통 API/타입: `@order/shared`
 - 주문 계산/장바구니: `@order/order-core`
 - 공통 UI: `@order/ui`
+
+## Realtime
+
+`src/hooks/queries/useOrders.ts`에서 Supabase `postgres_changes`를 구독합니다.
+
+- 첫 조회 전에는 `storeId` 기준으로 폴백 구독
+- 세션이 확정되면 `sessionId` 기준으로 재구독
+- Supabase 단일 컬럼 필터 제약 때문에 storeId 폴백 구간에서는 콜백에서 `tableNumber`를 한 번 더 확인합니다.
 
 ## 확인
 

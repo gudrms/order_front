@@ -8,7 +8,7 @@
 |---|---|---:|---|
 | `apps/backend` | NestJS API 서버 | 4000 | Vercel Serverless |
 | `apps/admin` | 점주/관리자 대시보드 | 3003 | Vercel |
-| `apps/delivery-customer` | 배달 주문 앱 | 3001 | Vercel, Android 앱 |
+| `apps/delivery-customer` | 배달 주문 앱 | 3001 | Vercel, Android/iOS 앱 |
 | `apps/table-order` | 매장 테이블 주문 앱 | 3000 | Vercel |
 | `apps/brand-website` | 브랜드 웹사이트 | 3002 | Vercel |
 | `apps/admin-electron` | 관리자 데스크톱 앱 | - | GitHub Releases |
@@ -49,7 +49,7 @@ pnpm --filter toss-pos-plugin dev
 | [로컬 환경 설정](docs/setup.md) | env 동기화, Supabase, 로컬 실행 |
 | [배포 가이드](docs/deployment.md) | Vercel, GitHub Actions, 선택 배포 |
 | [운영자 인수인계](docs/operator-handoff.md) | 장애 대응, 운영 엔드포인트, cron 확인 |
-| [테스트 시나리오](docs/test-scenarios.md) | 관리자/배달/테이블오더 수동 테스트 흐름 |
+| [테스트 시나리오](docs/test-scenarios) | 관리자/배달/테이블오더 수동 테스트 흐름 |
 | [시스템 아키텍처](docs/architecture.md) | 주문 흐름, 인증, 큐 구조 |
 | [작업 체크리스트](checkList.md) | 출시 전 진행 상태 |
 | [API 문서](https://api.tacomole.kr/api/docs) | 운영 API Scalar UI |
@@ -59,8 +59,8 @@ pnpm --filter toss-pos-plugin dev
 ## 기술 스택
 
 - Frontend: Next.js 16, React 19, TypeScript, Tailwind CSS, TanStack Query, Zustand
-- Backend: NestJS 10, Prisma 5, Supabase(PostgreSQL/Auth/Realtime), pgmq
+- Backend: NestJS 10, Prisma 5, Supabase(PostgreSQL/Auth/Realtime), pgmq, Redis-backed rate limiting
 - Payment: Toss Payments, Toss POS 연동
 - Notification: Firebase Cloud Messaging
-- Monitoring: Sentry, Vercel Logs, GitHub Actions
+- Monitoring: Sentry, Winston/Supabase error logs, Vercel Logs, GitHub Actions
 - Deploy: Vercel, GitHub Actions

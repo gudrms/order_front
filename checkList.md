@@ -1,6 +1,6 @@
 # Taco Mono 작업 현황
 
-마지막 업데이트: 2026-05-12
+마지막 업데이트: 2026-05-13
 
 ---
 
@@ -18,6 +18,9 @@
   - **`SUPABASE_SERVICE_KEY`는 `all-in-one-shared.env.local`에 별도 추가 필요** (기존 파일에 누락)
 - [x] **git 히스토리에서 시크릿 완전 제거** (2026-05-12): `python3 -m git_filter_repo`로 4개 env 파일 히스토리 완전 제거 (304개 커밋 재작성). `git push --force origin master` 완료.
 - [ ] **CORS 개발 모드 전체 허용 제거**: `apps/backend/src/main.ts:203` — `NODE_ENV=development` 시 모든 origin 허용 + `credentials:true` 조합. 개발도 localhost 화이트리스트로 제한.
+- [x] **Vercel 클라이언트 IP 기반 Rate Limiting 연결** (2026-05-13): `CustomThrottlerGuard`를 전역 `APP_GUARD`로 연결. `x-forwarded-for` 첫 IP → `req.ip` → `remoteAddress` 순서로 tracker를 산정하고, 제한 초과 시 `ThrottlerException(429)`을 반환하도록 정리. `tsc -p apps/backend/tsconfig.json --noEmit` 통과.
+- [ ] **Rate Limiting tracker 신뢰 경계 테스트 보강**: `x-forwarded-for` 단일/복수 IP, 빈 헤더, 로컬 fallback, 제한 초과 429 응답을 `CustomThrottlerGuard` 단위 테스트로 고정.
+- [ ] **프록시 헤더 신뢰 정책 문서화**: Vercel/Edge 뒤에서만 `x-forwarded-for`를 신뢰한다는 전제를 `docs/architecture.md` 또는 운영자 문서에 명시. 직접 서버 노출 시 `trust proxy`/WAF 정책 재검토.
 
 ### 치명 버그
 
@@ -77,6 +80,10 @@
 - [x] **`packages/order-core/README.md` 사용 예시 추가** (2026-05-12): 주문 합계/검증, `useCartStore` 예시와 `@order/shared` 책임 경계를 추가.
 - [x] **`apps/table-order/src/` 내부 README 재작성** (2026-05-12): `features/`, `hooks/`, `lib/`, `stores/`, `types/` README를 실제 파일 구조 기준으로 교체.
 - [x] **운영자 인수인계 문서 작성** (2026-05-12): `docs/operator-handoff.md`에 장애 대응, 운영 엔드포인트, cron 확인, Android 앱 지문/키 기준을 정리.
+- [x] **README/architecture 최신화** (2026-05-13): 루트 README, `docs/architecture.md`, `apps/table-order/README.md`, `apps/delivery-customer/README.md`, `apps/brand-website/README.md`를 실제 코드 기준으로 갱신. table-order Realtime, 배달 주문 `/orders`, 내부 배치 secret, Redis-backed rate limiting, Sentry/Winston/Vercel Logs 기준 반영.
+- [x] **포트폴리오용 Notion 초안 작성** (2026-05-13): 루트 `notion.md` 생성. README/architecture와 실제 코드 확인 결과를 기준으로 기술 스택, 운영 안정성/보안, 큐, 비용 절감, 테스트 성과를 정리.
+- [ ] **API 경로 문서 자동화**: `docs/architecture.md`의 주요 API 라우트가 컨트롤러와 어긋나지 않도록 OpenAPI/Swagger JSON에서 라우트 목록을 생성하는 스크립트 추가 검토.
+- [ ] **문서 인코딩/콘솔 출력 가이드**: Windows PowerShell에서 한글 README가 깨져 보일 수 있으므로 UTF-8 확인 방법(`Get-Content -Encoding UTF8`, 에디터 UTF-8)을 `docs/setup.md`에 짧게 추가.
 
 ---
 
@@ -208,7 +215,7 @@
 ## 🔴 P0 — 보안 (2차 점검, 2026-05-12)
 
 - [ ] **CORS 개발 모드 전체 허용 제거**: `apps/backend/src/main.ts:203` — `NODE_ENV === 'development'` 조건에서 모든 origin을 무조건 허용 중. 개발 환경도 `localhost:3000~3003` 화이트리스트로 제한해야 함. 현재 코드는 개발 서버가 실수로 프로덕션 DB에 연결될 경우 임의 origin에서 인증 쿠키 포함 요청이 가능한 구조.
-- [ ] **`queue.ts` bootstrap의 `cachedApp: any` 타입**: `apps/backend/src/queue.ts:10` — `let cachedApp: any = null`. Vercel Serverless 진입점 파일이라 타입 안전성이 특히 중요. `InstanceType<typeof NestFactory.create>` 또는 `INestApplication | null`로 교체.
+- [x] **`queue.ts` bootstrap의 `cachedApp: any` 타입 제거** (2026-05-13): `apps/backend/src/queue.ts`에서 `INestApplication | null`로 정리된 상태 확인.
 
 ---
 
