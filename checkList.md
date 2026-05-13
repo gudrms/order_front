@@ -19,6 +19,8 @@
 - [x] **git 히스토리에서 시크릿 완전 제거** (2026-05-12): `python3 -m git_filter_repo`로 4개 env 파일 히스토리 완전 제거 (304개 커밋 재작성). `git push --force origin master` 완료.
 - [ ] **CORS 개발 모드 전체 허용 제거**: `apps/backend/src/main.ts:203` — `NODE_ENV=development` 시 모든 origin 허용 + `credentials:true` 조합. 개발도 localhost 화이트리스트로 제한.
 - [x] **Vercel 클라이언트 IP 기반 Rate Limiting 연결** (2026-05-13): `CustomThrottlerGuard`를 전역 `APP_GUARD`로 연결. `x-forwarded-for` 첫 IP → `req.ip` → `remoteAddress` 순서로 tracker를 산정하고, 제한 초과 시 `ThrottlerException(429)`을 반환하도록 정리. `tsc -p apps/backend/tsconfig.json --noEmit` 통과.
+- [x] **Backend Cron 헬스체크 타임아웃 원인 수정** (2026-05-13): Vercel `/api/v1/health`가 전체 `AppModule` 정적 import/부팅 전에 fast path로 응답하도록 `src/main.ts`를 동적 import 구조로 변경. Config validation 전에 liveness 응답 가능. `TOSS_SECRET` 필수 검증도 실제 env 이름인 `TOSS_ACCESS_SECRET` 기준으로 수정. `tsc -p apps/backend/tsconfig.json --noEmit` 통과.
+- [ ] **Vercel backend 운영 env 누락 보정**: Production/Preview에 `SUPABASE_SERVICE_KEY`, `TOSS_ACCESS_SECRET` 또는 `TOSS_PAYMENTS_SECRET_KEY`, `INTERNAL_JOB_SECRET(16자 이상)` 설정 확인. GitHub Actions `INTERNAL_JOB_SECRET`와 Vercel backend 값 일치 필요.
 - [ ] **Rate Limiting tracker 신뢰 경계 테스트 보강**: `x-forwarded-for` 단일/복수 IP, 빈 헤더, 로컬 fallback, 제한 초과 429 응답을 `CustomThrottlerGuard` 단위 테스트로 고정.
 - [ ] **프록시 헤더 신뢰 정책 문서화**: Vercel/Edge 뒤에서만 `x-forwarded-for`를 신뢰한다는 전제를 `docs/architecture.md` 또는 운영자 문서에 명시. 직접 서버 노출 시 `trust proxy`/WAF 정책 재검토.
 
@@ -84,6 +86,9 @@
 - [x] **포트폴리오용 Notion 초안 작성** (2026-05-13): 루트 `notion.md` 생성. README/architecture와 실제 코드 확인 결과를 기준으로 기술 스택, 운영 안정성/보안, 큐, 비용 절감, 테스트 성과를 정리.
 - [ ] **API 경로 문서 자동화**: `docs/architecture.md`의 주요 API 라우트가 컨트롤러와 어긋나지 않도록 OpenAPI/Swagger JSON에서 라우트 목록을 생성하는 스크립트 추가 검토.
 - [ ] **문서 인코딩/콘솔 출력 가이드**: Windows PowerShell에서 한글 README가 깨져 보일 수 있으므로 UTF-8 확인 방법(`Get-Content -Encoding UTF8`, 에디터 UTF-8)을 `docs/setup.md`에 짧게 추가.
+- [ ] **ADR 문서 추가**: `docs/adr/`에 주요 기술 의사결정 기록. 우선순위: pgmq 선택 이유, Vercel Serverless 선택 이유, Redis-backed Throttler 도입 이유, Capacitor Remote WebView 방식 선택 이유.
+- [ ] **비용 산정 근거 문서 작성**: `docs/cost-model.md`에 NCP 서버/DB 월 비용과 Vercel/Supabase 초기 운영 비용 비교, 무료 Tier 한계, 유료 전환 기준 정리.
+- [ ] **체크리스트 문서 분리**: 현재 `checkList.md`가 커지고 있으므로 출시 검증은 `docs/launch-checklist.md`, 운영 점검은 `docs/operations-checklist.md`, 개발 작업은 `checkList.md`로 분리 검토.
 
 ---
 
@@ -125,8 +130,11 @@
 - [ ] **Vercel Queues 재검토**: consumer를 Vercel 네이티브 queue function으로 분리할 때 재검토.
 - [ ] **Sentry Releases 연동**: 배포 시 `sentry-cli releases` GitHub Actions 자동 실행.
 - [ ] **Uptime 모니터링**: Better Uptime / UptimeRobot으로 주요 엔드포인트 감시.
-- [ ] **Vercel Analytics / PostHog**: 기본 이벤트 트래킹 설정.
+- [ ] **Vercel Web Analytics / Speed Insights 도입**: Sentry는 장애·예외 추적용으로 유지하고, `brand-website`, `delivery-customer`, `table-order`에 Vercel Analytics와 Speed Insights를 추가해 페이지뷰, Web Vitals, 배포 후 성능 변화를 수집.
+- [ ] **제품 퍼널 분석 도구 검토(PostHog 등)**: 주문 퍼널(QR 진입 → 장바구니 → 주문 완료), 배달 결제 이탈, 창업 문의 전환처럼 이벤트 기반 분석이 필요해질 때 PostHog 도입 여부 검토.
 - [ ] **Sentry → Slack/Discord 에러율 알림**: 웹훅 연결.
+- [ ] **Queue 실패/백로그 운영 알림**: `QueueEventLog` 기준 FAILED 누적, retry 초과, 오래된 PROCESSING, POS sync 실패 급증 시 Slack/Discord 또는 Sentry alert로 통지.
+- [ ] **결제 운영 알림**: Toss 승인 후 로컬 DB 확정 실패, reconcile 실패, pending payment 만료 급증, 관리자 환불 실패를 별도 alert 조건으로 분리.
 
 ---
 

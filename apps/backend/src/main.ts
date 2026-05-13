@@ -1,8 +1,8 @@
 import { NestFactory } from '@nestjs/core';
 import { ExpressAdapter } from '@nestjs/platform-express';
-import { AppModule } from './app.module';
 import express from 'express';
 import { ValidationPipe } from '@nestjs/common';
+import type { INestApplication } from '@nestjs/common';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
@@ -40,12 +40,14 @@ Sentry.init({
 const expressApp = express();
 
 // NestJS 앱 생성 및 초기화
-let cachedApp: any = null;
+let cachedApp: INestApplication | null = null;
 
 async function bootstrap() {
     if (cachedApp) {
         return cachedApp;
     }
+
+    const { AppModule } = await import('./app.module');
 
     const app = await NestFactory.create(
         AppModule,
@@ -231,6 +233,17 @@ Supabase JWT를 Bearer Token으로 전달합니다.
 
 // Vercel Serverless Functions용 export
 export default async (req: any, res: any) => {
+    if (req.url === '/health' || req.url === '/api/v1/health') {
+        res.setHeader('Content-Type', 'application/json; charset=utf-8');
+        res.status(200).json({
+            status: 'ok',
+            timestamp: new Date().toISOString(),
+            version: '0.0.2',
+            runtime: 'vercel-fast-path',
+        });
+        return;
+    }
+
     await bootstrap();
     return expressApp(req, res);
 };
