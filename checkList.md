@@ -21,6 +21,7 @@
 - [x] **Vercel 클라이언트 IP 기반 Rate Limiting 연결** (2026-05-13): `CustomThrottlerGuard`를 전역 `APP_GUARD`로 연결. `x-forwarded-for` 첫 IP → `req.ip` → `remoteAddress` 순서로 tracker를 산정하고, 제한 초과 시 `ThrottlerException(429)`을 반환하도록 정리. `tsc -p apps/backend/tsconfig.json --noEmit` 통과.
 - [x] **Backend Cron 헬스체크 타임아웃 원인 수정** (2026-05-13): Vercel `/api/v1/health`가 전체 `AppModule` 정적 import/부팅 전에 fast path로 응답하도록 `src/main.ts`를 동적 import 구조로 변경. Config validation 전에 liveness 응답 가능. `TOSS_SECRET` 필수 검증도 실제 env 이름인 `TOSS_ACCESS_SECRET` 기준으로 수정. `tsc -p apps/backend/tsconfig.json --noEmit` 통과.
 - [x] **all-in-one env 키 목록 보정** (2026-05-13): `all-in-one-shared.env.example`과 로컬 `all-in-one-shared.env`에 `SUPABASE_SERVICE_KEY`, `TOSS_PAYMENTS_SECRET_KEY` 키 추가. 실제 secret 값은 사용자가 채운 뒤 Vercel Shared Env로 import 필요.
+- [x] **Backend Cron queue 처리 타임아웃 완화** (2026-05-14): GitHub Actions `Process Queue` curl 제한이 30초라 Vercel queue 함수(maxDuration 60s) cold start/pgmq 처리 중 exit 28 발생. `--max-time 75`, `quantity:3`, retry 제거로 조정해 한 run 내 중복 consumer 기동 가능성을 낮춤.
 - [ ] **Vercel backend 운영 env 누락 보정**: Production/Preview에 `SUPABASE_SERVICE_KEY`, `TOSS_ACCESS_SECRET` 또는 `TOSS_PAYMENTS_SECRET_KEY`, `INTERNAL_JOB_SECRET(16자 이상)` 설정 확인. GitHub Actions `INTERNAL_JOB_SECRET`와 Vercel backend 값 일치 필요.
 - [ ] **Rate Limiting tracker 신뢰 경계 테스트 보강**: `x-forwarded-for` 단일/복수 IP, 빈 헤더, 로컬 fallback, 제한 초과 429 응답을 `CustomThrottlerGuard` 단위 테스트로 고정.
 - [ ] **프록시 헤더 신뢰 정책 문서화**: Vercel/Edge 뒤에서만 `x-forwarded-for`를 신뢰한다는 전제를 `docs/architecture.md` 또는 운영자 문서에 명시. 직접 서버 노출 시 `trust proxy`/WAF 정책 재검토.
