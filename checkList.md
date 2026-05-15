@@ -13,7 +13,7 @@
 - [ ] **실 운영 시크릿 rotate**: git 히스토리에 노출된 아래 키들 즉시 재발급 후 `all-in-one-shared.env.local` + Vercel 대시보드 갱신.
   - Supabase DB 비밀번호 + `SUPABASE_SERVICE_KEY` (Supabase 대시보드)
   - `TOSS_ACCESS_KEY` / `TOSS_ACCESS_SECRET` (Toss 콘솔)
-  - `INTERNAL_JOB_SECRET` → 32자 이상 랜덤값으로 교체
+  - `INTERNAL_JOB_SECRET` → 11자 이상 값으로 교체
   - Gmail 앱 비밀번호 `EMAIL_PASS` (Google 계정 설정)
   - **`SUPABASE_SERVICE_KEY`는 `all-in-one-shared.env.local`에 별도 추가 필요** (기존 파일에 누락)
 - [x] **git 히스토리에서 시크릿 완전 제거** (2026-05-12): `python3 -m git_filter_repo`로 4개 env 파일 히스토리 완전 제거 (304개 커밋 재작성). `git push --force origin master` 완료.
@@ -22,7 +22,7 @@
 - [x] **Backend Cron 헬스체크 타임아웃 원인 수정** (2026-05-13): Vercel `/api/v1/health`가 전체 `AppModule` 정적 import/부팅 전에 fast path로 응답하도록 `src/main.ts`를 동적 import 구조로 변경. Config validation 전에 liveness 응답 가능. `TOSS_SECRET` 필수 검증도 실제 env 이름인 `TOSS_ACCESS_SECRET` 기준으로 수정. `tsc -p apps/backend/tsconfig.json --noEmit` 통과.
 - [x] **all-in-one env 키 목록 보정** (2026-05-13): `all-in-one-shared.env.example`과 로컬 `all-in-one-shared.env`에 `SUPABASE_SERVICE_KEY`, `TOSS_PAYMENTS_SECRET_KEY` 키 추가. 실제 secret 값은 사용자가 채운 뒤 Vercel Shared Env로 import 필요.
 - [x] **Backend Cron queue 처리 타임아웃 완화** (2026-05-14): GitHub Actions `Process Queue` curl 제한이 30초라 Vercel queue 함수(maxDuration 60s) cold start/pgmq 처리 중 exit 28 발생. `--max-time 75`, `quantity:3`, retry 제거로 조정해 한 run 내 중복 consumer 기동 가능성을 낮춤.
-- [ ] **Vercel backend 운영 env 누락 보정**: Production/Preview에 `SUPABASE_SERVICE_KEY`, `TOSS_ACCESS_SECRET` 또는 `TOSS_PAYMENTS_SECRET_KEY`, `INTERNAL_JOB_SECRET(16자 이상)` 설정 확인. GitHub Actions `INTERNAL_JOB_SECRET`와 Vercel backend 값 일치 필요.
+- [ ] **Vercel backend 운영 env 누락 보정**: Production/Preview에 `SUPABASE_SERVICE_KEY`, `TOSS_ACCESS_SECRET` 또는 `TOSS_PAYMENTS_SECRET_KEY`, `INTERNAL_JOB_SECRET(11자 이상)` 설정 확인. GitHub Actions `INTERNAL_JOB_SECRET`와 Vercel backend 값 일치 필요.
 - [ ] **Rate Limiting tracker 신뢰 경계 테스트 보강**: `x-forwarded-for` 단일/복수 IP, 빈 헤더, 로컬 fallback, 제한 초과 429 응답을 `CustomThrottlerGuard` 단위 테스트로 고정.
 - [ ] **프록시 헤더 신뢰 정책 문서화**: Vercel/Edge 뒤에서만 `x-forwarded-for`를 신뢰한다는 전제를 `docs/architecture.md` 또는 운영자 문서에 명시. 직접 서버 노출 시 `trust proxy`/WAF 정책 재검토.
 

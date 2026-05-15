@@ -25,7 +25,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
                 TOSS_ACCESS_SECRET: Joi.string().required(),
                 TOSS_PAYMENTS_SECRET_KEY: Joi.string().optional(),
                 TOSS_SECRET_KEY: Joi.string().optional(),
-                INTERNAL_JOB_SECRET: Joi.string().min(16).required(),
+                INTERNAL_JOB_SECRET: Joi.string().min(11).required(),
                 REDIS_URL: Joi.string().optional(),
                 NODE_ENV: Joi.string().valid('development', 'production', 'test').default('development'),
                 BACKEND_QUEUE_NAME: Joi.string().default('backend_events'),

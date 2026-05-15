@@ -37,7 +37,7 @@ import { CustomThrottlerGuard } from './common/guards/throttler.guard';
                 TOSS_ACCESS_SECRET: Joi.string().required(),
                 TOSS_PAYMENTS_SECRET_KEY: Joi.string().optional(),
                 TOSS_SECRET_KEY: Joi.string().optional(),
-                INTERNAL_JOB_SECRET: Joi.string().min(16).required(),
+                INTERNAL_JOB_SECRET: Joi.string().min(11).required(),
                 REDIS_URL: Joi.string().optional(),
                 NODE_ENV: Joi.string().valid('development', 'production', 'test').default('development'),
                 PORT: Joi.number().default(4000),
