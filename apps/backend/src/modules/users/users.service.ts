@@ -191,4 +191,26 @@ export class UsersService {
             },
         });
     }
+
+    async getFavoriteStores(userId: string) {
+        return this.prisma.userFavoriteStore.findMany({
+            where: { userId },
+            include: { store: true },
+            orderBy: { createdAt: 'desc' },
+        });
+    }
+
+    async toggleFavoriteStore(userId: string, storeId: string): Promise<{ isFavorite: boolean }> {
+        const existing = await this.prisma.userFavoriteStore.findUnique({
+            where: { userId_storeId: { userId, storeId } },
+        });
+
+        if (existing) {
+            await this.prisma.userFavoriteStore.delete({ where: { id: existing.id } });
+            return { isFavorite: false };
+        }
+
+        await this.prisma.userFavoriteStore.create({ data: { userId, storeId } });
+        return { isFavorite: true };
+    }
 }

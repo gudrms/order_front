@@ -136,4 +136,24 @@ export class UsersController {
     ) {
         return this.usersService.removeFavorite(user.id, menuId);
     }
+
+    @Get('me/favorite-stores')
+    @ApiOperation({ summary: '즐겨찾기 매장 목록 조회', description: '로그인 사용자가 즐겨찾기한 매장 목록을 반환합니다.' })
+    @ApiResponse({ status: 200, description: '즐겨찾기 매장 목록 조회 성공' })
+    @ApiResponse({ status: 401, description: '인증 실패' })
+    async getFavoriteStores(@CurrentUser() user: { id: string }) {
+        return this.usersService.getFavoriteStores(user.id);
+    }
+
+    @Post('me/favorite-stores/:storeId/toggle')
+    @ApiOperation({ summary: '매장 즐겨찾기 토글', description: '매장을 즐겨찾기에 추가하거나 제거합니다.' })
+    @ApiParam({ name: 'storeId', description: '매장 ID' })
+    @ApiResponse({ status: 201, description: '토글 성공', schema: { example: { isFavorite: true } } })
+    @ApiResponse({ status: 401, description: '인증 실패' })
+    async toggleFavoriteStore(
+        @CurrentUser() user: { id: string },
+        @Param('storeId') storeId: string,
+    ) {
+        return this.usersService.toggleFavoriteStore(user.id, storeId);
+    }
 }
