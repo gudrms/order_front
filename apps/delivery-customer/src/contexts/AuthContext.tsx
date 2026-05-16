@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { api } from '@order/shared/api';
 import { supabase } from '@order/shared/lib/supabase';
 import type { Session, User } from '@supabase/supabase-js';
@@ -26,6 +27,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [session, setSession] = useState<Session | null>(null);
     const [loading, setLoading] = useState(true);
     const syncedSessionKeyRef = useRef<string | null>(null);
+    const queryClient = useQueryClient();
 
     const syncSessionUser = async (nextSession: Session | null) => {
         if (!nextSession?.user) {
@@ -45,6 +47,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 phoneNumber: metadata.phone_number || metadata.phone,
             });
             syncedSessionKeyRef.current = sessionKey;
+            // sync 완료 후 favorites 재시도 — cold start로 인해 sync 전에 발생한 401을 해소
+            void queryClient.invalidateQueries({ queryKey: ['favorite-stores'] });
         } catch (error) {
             console.error('사용자 동기화 실패:', error);
         }
