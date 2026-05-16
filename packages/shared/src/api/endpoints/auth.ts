@@ -14,5 +14,6 @@ export interface SyncedUser {
 }
 
 export async function syncCurrentUser(data: SyncCurrentUserRequest = {}): Promise<SyncedUser> {
-    return apiClient.post<SyncedUser>('/auth/sync', data);
+    // Vercel cold start가 10-15초 걸릴 수 있어 기본 10초 타임아웃보다 넉넉하게 설정
+    return apiClient.post<SyncedUser>('/auth/sync', data, { timeout: 25000 });
 }

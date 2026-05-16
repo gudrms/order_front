@@ -59,12 +59,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     useEffect(() => {
-        supabase.auth.getSession().then(async ({ data: { session } }) => {
-            await syncSessionUser(session);
+        supabase.auth.getSession().then(({ data: { session } }) => {
             setAuthCookie(!!session);
             setSession(session);
             setUser(session?.user ?? null);
             setLoading(false);
+            // sync는 백그라운드에서 처리 — cold start 타임아웃이 loading을 블로킹하지 않도록
+            // onAuthStateChange와 동일한 fire-and-forget 패턴
+            void syncSessionUser(session);
         });
 
         const {
