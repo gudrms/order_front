@@ -200,8 +200,15 @@ Supabase JWT를 Bearer Token으로 전달합니다.
         ? Array.from(new Set([...PRODUCTION_DEFAULT_ORIGINS, ...envOrigins]))
         : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003'];
 
-    // Vary: Origin을 모든 응답에 강제 추가 — ETag 기반 304 응답에서도 브라우저/CDN이
-    // origin별로 캐시를 분리하도록 보장 (cors 패키지는 허용된 origin에만 자동 추가)
+    // API 응답은 브라우저 캐시 금지 — 캐시된 ACAO 헤더가 다른 origin에서 재사용되어
+    // CORS 차단이 발생하는 것을 원천 차단한다. (ETag 비활성화의 보완책)
+    expressApp.use((_req, res, next) => {
+        res.setHeader('Cache-Control', 'no-store');
+        next();
+    });
+
+    // Vary: Origin을 모든 응답에 강제 추가 — CDN이 origin별로 캐시를 분리하도록 보장
+    // (cors 패키지는 허용된 origin에만 자동 추가)
     expressApp.use((_req, res, next) => {
         res.vary('Origin');
         next();
