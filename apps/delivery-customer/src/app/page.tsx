@@ -3,17 +3,19 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { Search, MapPin, Clock, ChevronRight, Bike } from 'lucide-react';
+import { Search, MapPin, Clock, ChevronRight, Bike, Heart } from 'lucide-react';
 import { getAllStores } from '@order/shared/api';
 import type { Store } from '@order/shared';
 import { useCurrentStore } from '@/contexts/StoreContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useFavoriteStores } from '@/hooks/useFavoriteStores';
 import BottomNav from '@/components/BottomNav';
 
 export default function Home() {
     const router = useRouter();
     const { selectStore, store: selectedStore } = useCurrentStore();
     const { user } = useAuth();
+    const { favoriteStoreIds, toggle: toggleFavorite, isLoggedIn } = useFavoriteStores();
     const [searchQuery, setSearchQuery] = useState('');
 
     const { data: stores = [], isLoading } = useQuery({
@@ -31,6 +33,8 @@ export default function Home() {
                 s.branchName?.includes(searchQuery)
         )
         : deliveryStores;
+
+    const favoriteStores = deliveryStores.filter((s) => favoriteStoreIds.has(s.id));
 
     const handleSelectStore = (store: Store) => {
         selectStore(store);
@@ -86,6 +90,24 @@ export default function Home() {
                     </div>
                 )}
 
+                {isLoggedIn && !searchQuery && favoriteStores.length > 0 && (
+                    <>
+                        <h2 className="text-base font-bold text-gray-700 mb-3">즐겨찾기 매장</h2>
+                        <div className="space-y-3 mb-6">
+                            {favoriteStores.map((store) => (
+                                <StoreCard
+                                    key={store.id}
+                                    store={store}
+                                    isSelected={selectedStore?.id === store.id}
+                                    isFavorite={true}
+                                    onSelect={() => handleSelectStore(store)}
+                                    onToggleFavorite={() => toggleFavorite(store.id)}
+                                />
+                            ))}
+                        </div>
+                    </>
+                )}
+
                 <h2 className="text-base font-bold text-gray-700 mb-3">
                     배달 가능 매장{!isLoading && ` (${filteredStores.length})`}
                 </h2>
@@ -108,7 +130,9 @@ export default function Home() {
                                 key={store.id}
                                 store={store}
                                 isSelected={selectedStore?.id === store.id}
+                                isFavorite={favoriteStoreIds.has(store.id)}
                                 onSelect={() => handleSelectStore(store)}
+                                onToggleFavorite={isLoggedIn ? () => toggleFavorite(store.id) : undefined}
                             />
                         ))}
                     </div>
@@ -123,65 +147,83 @@ export default function Home() {
 function StoreCard({
     store,
     isSelected,
+    isFavorite,
     onSelect,
+    onToggleFavorite,
 }: {
     store: Store;
     isSelected: boolean;
+    isFavorite: boolean;
     onSelect: () => void;
+    onToggleFavorite?: () => void;
 }) {
     return (
-        <button
-            onClick={onSelect}
-            className={`w-full text-left bg-white rounded-xl p-4 shadow-sm border-2 transition-all ${
+        <div
+            className={`relative bg-white rounded-xl shadow-sm border-2 transition-all ${
                 isSelected ? 'border-brand-yellow shadow-brand-yellow/20' : 'border-transparent'
             }`}
         >
-            <div className="flex items-start justify-between gap-3">
-                <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-bold text-base text-brand-black truncate">{store.name}</h3>
-                        {isSelected && (
-                            <span className="flex-shrink-0 text-xs font-bold text-brand-yellow border border-brand-yellow rounded-full px-2 py-0.5">
-                                선택
-                            </span>
-                        )}
-                    </div>
-
-                    {store.address && (
-                        <p className="flex items-center gap-1 text-sm text-gray-500 mb-2">
-                            <MapPin size={13} className="flex-shrink-0" />
-                            <span className="truncate">{store.address}</span>
-                        </p>
-                    )}
-
-                    <div className="flex items-center gap-3 text-xs text-gray-600 flex-wrap">
-                        <span className="font-medium">
-                            배달비{' '}
-                            {store.deliveryFee
-                                ? `${store.deliveryFee.toLocaleString()}원`
-                                : '무료'}
-                        </span>
-                        {store.freeDeliveryThreshold && (
-                            <span className="text-green-600">
-                                {store.freeDeliveryThreshold.toLocaleString()}원 이상 무료
-                            </span>
-                        )}
-                        <span>·</span>
-                        <span>최소 {(store.minimumOrderAmount || 0).toLocaleString()}원</span>
-                        {store.estimatedDeliveryMinutes && (
-                            <>
-                                <span>·</span>
-                                <span className="flex items-center gap-0.5">
-                                    <Clock size={11} />
-                                    약 {store.estimatedDeliveryMinutes}분
+            <button onClick={onSelect} className="w-full text-left p-4">
+                <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-bold text-base text-brand-black truncate">{store.name}</h3>
+                            {isSelected && (
+                                <span className="flex-shrink-0 text-xs font-bold text-brand-yellow border border-brand-yellow rounded-full px-2 py-0.5">
+                                    선택
                                 </span>
-                            </>
-                        )}
-                    </div>
-                </div>
+                            )}
+                        </div>
 
-                <ChevronRight size={20} className="text-gray-300 flex-shrink-0 mt-1" />
-            </div>
-        </button>
+                        {store.address && (
+                            <p className="flex items-center gap-1 text-sm text-gray-500 mb-2">
+                                <MapPin size={13} className="flex-shrink-0" />
+                                <span className="truncate">{store.address}</span>
+                            </p>
+                        )}
+
+                        <div className="flex items-center gap-3 text-xs text-gray-600 flex-wrap">
+                            <span className="font-medium">
+                                배달비{' '}
+                                {store.deliveryFee
+                                    ? `${store.deliveryFee.toLocaleString()}원`
+                                    : '무료'}
+                            </span>
+                            {store.freeDeliveryThreshold && (
+                                <span className="text-green-600">
+                                    {store.freeDeliveryThreshold.toLocaleString()}원 이상 무료
+                                </span>
+                            )}
+                            <span>·</span>
+                            <span>최소 {(store.minimumOrderAmount || 0).toLocaleString()}원</span>
+                            {store.estimatedDeliveryMinutes && (
+                                <>
+                                    <span>·</span>
+                                    <span className="flex items-center gap-0.5">
+                                        <Clock size={11} />
+                                        약 {store.estimatedDeliveryMinutes}분
+                                    </span>
+                                </>
+                            )}
+                        </div>
+                    </div>
+
+                    <ChevronRight size={20} className="text-gray-300 flex-shrink-0 mt-1" />
+                </div>
+            </button>
+
+            {onToggleFavorite && (
+                <button
+                    onClick={(e) => { e.stopPropagation(); onToggleFavorite(); }}
+                    className="absolute top-3 right-10 p-1"
+                    aria-label={isFavorite ? '즐겨찾기 해제' : '즐겨찾기 추가'}
+                >
+                    <Heart
+                        size={18}
+                        className={isFavorite ? 'fill-red-500 text-red-500' : 'text-gray-300'}
+                    />
+                </button>
+            )}
+        </div>
     );
 }
