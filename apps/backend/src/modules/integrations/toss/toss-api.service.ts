@@ -176,6 +176,37 @@ export class TossApiService {
         }
     }
 
+    async fetchPaymentByPaymentKey(paymentKey: string) {
+        const authorization = this.getPaymentsAuthorization();
+
+        try {
+            const response = await axios.get(
+                `https://api.tosspayments.com/v1/payments/${encodeURIComponent(paymentKey)}`,
+                {
+                    headers: {
+                        Authorization: `Basic ${authorization}`,
+                    },
+                    timeout: 8000,
+                },
+            );
+
+            return response.data;
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                const status = error.response?.status || 502;
+                const message = (error.response?.data as Record<string, unknown>)?.message as string | undefined || error.message;
+                throw new BadRequestException({
+                    code: 'TOSS_FETCH_PAYMENT_FAILED',
+                    status,
+                    message,
+                    details: error.response?.data,
+                });
+            }
+
+            throw error;
+        }
+    }
+
     async fetchMenuData(storeId: string): Promise<TossMenuData> {
         // 프로덕션에서는 Mock 데이터 반환을 차단. 실제 Toss API 연동이 필요.
         if (process.env.NODE_ENV === 'production') {

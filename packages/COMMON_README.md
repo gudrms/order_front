@@ -348,8 +348,8 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 NEXT_PUBLIC_API_URL=http://localhost:3000/api/v1
 NEXT_PUBLIC_STORE_ID=store-1
 
-# 토스페이먼츠
-NEXT_PUBLIC_TOSS_CLIENT_KEY=test_ck_xxx
+# 토스페이먼츠 결제위젯
+NEXT_PUBLIC_TOSS_CLIENT_KEY=test_gck_xxx
 
 # Mock 데이터 사용 여부
 NEXT_PUBLIC_USE_MOCK=true

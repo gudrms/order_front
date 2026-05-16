@@ -6,14 +6,20 @@ import { loadTossPayments, type TossPaymentsInstance } from '@tosspayments/payme
 
 /**
  * 토스페이먼츠 클라이언트 키
- * 실제 운영에서는 환경 변수로 관리 필요
+ * 실제 운영에서는 환경 변수로 관리 필요.
+ * 이 유틸은 @tosspayments/payment-sdk 기반의 기존 결제창용입니다.
+ * 결제위젯은 apps/delivery-customer checkout에서 @tosspayments/payment-widget-sdk를 사용합니다.
  */
-const CLIENT_KEY = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY || 'test_ck_D5GePWvyJnrK0W0k6q8gLzN97Eoq';
+const CLIENT_KEY = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY;
 
 /**
  * 토스페이먼츠 초기화
  */
 export async function initTossPayments(): Promise<TossPaymentsInstance> {
+    if (!CLIENT_KEY) {
+        throw new Error('NEXT_PUBLIC_TOSS_CLIENT_KEY is required to initialize Toss Payments');
+    }
+
     return await loadTossPayments(CLIENT_KEY);
 }
 

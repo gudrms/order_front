@@ -73,6 +73,16 @@
 ### 테스트
 
 - [ ] **실 Toss 카드결제 E2E**: `payments-e2e.spec.ts`는 서비스 레이어 mock 한정. 실 HTTP 콜백 / idempotency / 취소 무점검. 운영 테스트 매장은 배달 주문 ON, 최소주문금액 0원, `E2E 테스트 타코` 10원으로 세팅 완료. `496603e` 배포 후 장바구니 → 주소 입력 → Toss 결제창 진입 재검증 필요.
+- [ ] **Toss Payments 결제위젯 이용 신청 대기**: Toss Payments `API 키` 화면 상단의 "결제위젯 연동 키" 영역이 현재 `전자결제 신청하고 확인할 수 있어요` 상태. 신청 승인/활성화 후 `test_gck_...`(클라이언트 키), `test_gsk_...`(시크릿 키)가 노출되어야 실 결제위젯 테스트 가능.
+  - 신청 주체: 1호점 실제 운영 사업자/대표자 정보 기준.
+  - 정산 계좌: 1호점 사업자 또는 대표자 명의 계좌.
+  - 결제수단: 초기 오픈은 카드, 토스페이, 카카오페이, 네이버페이 중심. 삼성페이는 카드 수수료 +0.30%p라 초기 제외 가능. 계좌이체/가상계좌/에스크로는 배달앱 즉시 주문 UX와 운영 복잡도 때문에 보류.
+  - 가맹 확장 시: 매장별 MID 분리 또는 Toss 하위몰/정산대행 구조 문의.
+- [ ] **Toss Payments 결제위젯 키 세팅**: 결제위젯 SDK는 일반 API 키(`test_ck_...`/`test_sk_...`)가 아니라 결제위젯 연동 키(`test_gck_...`/`test_gsk_...`) 사용. `delivery-customer` Vercel `NEXT_PUBLIC_TOSS_CLIENT_KEY=test_gck_...`, backend Vercel `TOSS_PAYMENTS_SECRET_KEY=test_gsk_...`로 같은 상점 키 세트인지 확인 후 재배포. Toss 콘솔의 "API 개별 연동 키"(`ck`/`sk`, 기존 결제창·자동결제·정산지급대행용)는 이번 결제위젯 연동에 사용하지 않음.
+- [ ] **Toss 리다이렉트 URL 등록**: 운영 도메인 기준 `https://delivery.tacomolly.kr/store/*/order/success`, `https://delivery.tacomolly.kr/store/*/order/fail` 등록. Vercel preview 결제 테스트가 필요할 때만 `https://*.vercel.app/store/*/order/success|fail` 추가.
+- [x] **Toss 웹훅 백엔드 구현** (2026-05-16): `POST /api/v1/payments/toss/webhook` 추가. `PAYMENT_STATUS_CHANGED`, `CANCEL_STATUS_CHANGED` 이벤트를 받고, 웹훅 body를 그대로 신뢰하지 않고 Toss API `fetchPaymentByOrderId`로 재조회한 뒤 로컬 Payment/Order 상태를 idempotent하게 보정. 결제 완료(`DONE`)는 `PAID` 처리 및 POS/알림 큐 발행, 취소(`CANCELED`/`PARTIAL_CANCELED`)는 `REFUNDED`/`PARTIAL_REFUNDED` 보정, 만료/중단(`EXPIRED`/`ABORTED`)은 대기 결제 실패 처리. `payments.service.spec.ts` 웹훅 성공/취소 케이스 추가.
+- [ ] **Toss 웹훅 콘솔 등록**: Toss 콘솔 웹훅 메뉴에 이름 `Tacomolly Delivery Payments`, URL `https://api.tacomolly.kr/api/v1/payments/toss/webhook`, 이벤트 `PAYMENT_STATUS_CHANGED`, `CANCEL_STATUS_CHANGED` 등록. Toss 문서 기준 10초 안에 200 응답 필요, 실패 시 재전송됨.
+- [ ] **Toss 승인 대기 중 가능한 사전 검증**: 결제위젯 키가 없을 때 checkout이 `test_ck_...` fallback으로 401을 내지 않고 "결제 설정 미준비" 상태로 막히는지 확인. 주문 생성 API, 주소 입력, 장바구니 금액 계산, 최소주문금액 0원 테스트 매장 세팅은 결제위젯 승인 전에도 검증 가능.
 - [ ] **테이블오더 첫 주문/추가 주문 E2E**: 브라우저-백엔드 통합 E2E 미작성.
 - [ ] **백엔드 미작성 모듈 테스트**: `error-logs`, `sessions`, `integrations/toss`, `menu-detail`, `app.module`.
 - [ ] **DB schema `OrderSource.HOMEPAGE` 제거**: migration 영향 검토 후 별도 작업.

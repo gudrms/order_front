@@ -23,7 +23,8 @@ import { useFailTossPayment } from '@/hooks/mutations/useFailTossPayment';
 import { useAddresses } from '@/hooks/queries/useAddresses';
 import { useAvailableCoupons } from '@/hooks/queries/useCoupons';
 
-const TOSS_CLIENT_KEY = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY || 'test_ck_D5GePWvyJnrK0W0k6q8gLzN97Eoq';
+const TOSS_CLIENT_KEY = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY;
+const isTossWidgetClientKey = (key?: string): key is string => !!key && (key.startsWith('test_gck_') || key.startsWith('live_gck_'));
 const PENDING_TOSS_ORDER_ID_KEY = 'delivery.pendingTossOrderId';
 
 export default function CheckoutPage() {
@@ -64,12 +65,14 @@ export default function CheckoutPage() {
     const discountAmount = selectedCoupon ? calculateCouponDiscount(selectedCoupon.coupon, totalAmount) : 0;
     const paymentAmount = totalAmount - discountAmount;
     const isBelowMinimum = orderValidation.issues.some((issue) => issue.code === 'BELOW_MINIMUM_ORDER');
+    const isPaymentKeyConfigured = isTossWidgetClientKey(TOSS_CLIENT_KEY);
     const canOrder = !!user
         && orderValidation.valid
         && !!deliveryInfo.customerName
         && !!deliveryInfo.customerPhone
         && !!deliveryInfo.address?.address
         && items.length > 0
+        && isPaymentKeyConfigured
         && !isProcessing;
     const isPaymentButtonDisabled = user ? !canOrder : isAuthLoading || isProcessing;
 
@@ -190,6 +193,7 @@ export default function CheckoutPage() {
         if (!user) return '배달 주문은 로그인 후 이용할 수 있습니다.';
         if (!store.isActive) return '현재 운영하지 않는 매장입니다.';
         if (!store.isDeliveryEnabled) return '현재 배달 주문을 받지 않는 매장입니다.';
+        if (!isPaymentKeyConfigured) return '결제 설정을 확인하는 중입니다.';
         if (isBelowMinimum) return `최소 주문금액은 ${store.minimumOrderAmount.toLocaleString()}원입니다.`;
         if (!deliveryInfo.address?.address) return '배달 주소를 입력해 주세요.';
         if (!deliveryInfo.customerName || !deliveryInfo.customerPhone) return '주문자 정보를 입력해 주세요.';
@@ -270,12 +274,18 @@ export default function CheckoutPage() {
                         <CreditCard size={24} />
                         <span className="font-medium">토스페이먼츠 카드 결제</span>
                     </div>
-                    <TossPaymentWidget
-                        clientKey={TOSS_CLIENT_KEY}
-                        customerKey={user?.id || 'ANONYMOUS'}
-                        amount={paymentAmount}
-                        onWidgetReady={(widget) => { paymentWidgetRef.current = widget; }}
-                    />
+                    {isPaymentKeyConfigured ? (
+                        <TossPaymentWidget
+                            clientKey={TOSS_CLIENT_KEY}
+                            customerKey={user?.id || 'ANONYMOUS'}
+                            amount={paymentAmount}
+                            onWidgetReady={(widget) => { paymentWidgetRef.current = widget; }}
+                        />
+                    ) : (
+                        <p className="text-sm text-red-500">
+                            결제 설정이 준비되지 않았습니다. 관리자에게 문의해 주세요.
+                        </p>
+                    )}
                 </section>
 
                 <section className="bg-white rounded-xl p-4">

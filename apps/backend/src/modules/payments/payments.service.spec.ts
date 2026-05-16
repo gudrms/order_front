@@ -52,6 +52,8 @@ describe('PaymentsService', () => {
         tossApiService = {
             confirmPayment: vi.fn(),
             cancelPayment: vi.fn(),
+            fetchPaymentByOrderId: vi.fn(),
+            fetchPaymentByPaymentKey: vi.fn(),
         };
 
         queueService = {
@@ -325,6 +327,118 @@ describe('PaymentsService', () => {
         expect(queueService.publishPaymentReconcile).toHaveBeenCalledWith({
             paymentId: 'payment-2',
             providerOrderId: 'ORDER_2',
+        });
+    });
+
+    it('syncs a paid Toss webhook by refetching the payment and marking the order as paid', async () => {
+        prisma.payment.findFirst.mockResolvedValue({
+            ...pendingPayment,
+            order: {
+                id: 'order-1',
+                storeId: 'store-1',
+                totalAmount: 24000,
+                delivery: { id: 'delivery-1' },
+            },
+        });
+        tossApiService.fetchPaymentByOrderId.mockResolvedValue({
+            orderId: 'ORDER_1',
+            paymentKey: 'payment-key',
+            status: 'DONE',
+            totalAmount: 24000,
+            method: '카드',
+            approvedAt: '2026-05-16T12:00:00+09:00',
+            receipt: { url: 'https://receipt.example/webhook' },
+        });
+
+        const result = await service.handleTossWebhook({
+            eventType: 'PAYMENT_STATUS_CHANGED',
+            data: { orderId: 'ORDER_1' },
+        });
+
+        expect(result).toEqual({ handled: true, action: 'MARKED_PAID', orderId: 'order-1' });
+        expect(tossApiService.fetchPaymentByOrderId).toHaveBeenCalledWith('ORDER_1');
+        expect(prisma.payment.update).toHaveBeenCalledWith(expect.objectContaining({
+            where: { id: 'payment-1' },
+            data: expect.objectContaining({
+                status: 'PAID',
+                paymentKey: 'payment-key',
+                method: 'CARD',
+                approvedAmount: 24000,
+                receiptUrl: 'https://receipt.example/webhook',
+            }),
+        }));
+        expect(prisma.order.update).toHaveBeenCalledWith({
+            where: { id: 'order-1' },
+            data: {
+                status: 'PAID',
+                paymentStatus: 'PAID',
+            },
+        });
+        expect(queueService.publishPaymentPaid).toHaveBeenCalledWith({
+            orderId: 'order-1',
+            storeId: 'store-1',
+            paymentId: 'payment-1',
+            providerOrderId: 'ORDER_1',
+            amount: 24000,
+        });
+    });
+
+    it('syncs a cancelled Toss webhook as a full refund', async () => {
+        prisma.payment.findFirst.mockResolvedValue({
+            ...pendingPayment,
+            status: 'PAID',
+            paymentKey: 'payment-key',
+            approvedAmount: 24000,
+            cancelledAmount: 0,
+            order: {
+                id: 'order-1',
+                storeId: 'store-1',
+                totalAmount: 24000,
+                delivery: { id: 'delivery-1' },
+            },
+        });
+        tossApiService.fetchPaymentByOrderId.mockResolvedValue({
+            orderId: 'ORDER_1',
+            paymentKey: 'payment-key',
+            status: 'CANCELED',
+            totalAmount: 24000,
+            cancels: [{ cancelAmount: 24000, canceledAt: '2026-05-16T12:10:00+09:00' }],
+        });
+
+        const result = await service.handleTossWebhook({
+            eventType: 'CANCEL_STATUS_CHANGED',
+            data: { orderId: 'ORDER_1' },
+        });
+
+        expect(result).toEqual({ handled: true, action: 'MARKED_REFUNDED', orderId: 'order-1' });
+        expect(prisma.payment.update).toHaveBeenCalledWith(expect.objectContaining({
+            where: { id: 'payment-1' },
+            data: expect.objectContaining({
+                status: 'REFUNDED',
+                cancelledAmount: 24000,
+                cancelledAt: expect.any(Date),
+            }),
+        }));
+        expect(prisma.order.update).toHaveBeenCalledWith(expect.objectContaining({
+            where: { id: 'order-1' },
+            data: expect.objectContaining({
+                status: 'CANCELLED',
+                paymentStatus: 'REFUNDED',
+                delivery: expect.objectContaining({
+                    update: expect.objectContaining({
+                        status: 'CANCELLED',
+                    }),
+                }),
+            }),
+        }));
+        expect(queueService.publishPaymentRefunded).toHaveBeenCalledWith({
+            paymentId: 'payment-1',
+            orderId: 'order-1',
+            storeId: 'store-1',
+            providerOrderId: 'ORDER_1',
+            refundedAmount: 24000,
+            totalCancelledAmount: 24000,
+            isFullRefund: true,
         });
     });
 

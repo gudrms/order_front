@@ -1,7 +1,7 @@
-import { Body, Controller, Headers, Param, Post, UnauthorizedException, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Body, Controller, Headers, HttpCode, Param, Post, UnauthorizedException, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { ConfirmTossPaymentDto, ExpirePendingTossPaymentsDto, FailTossPaymentDto, CancelTossPaymentDto, ReconcileTossPaymentsDto } from './dto/confirm-toss-payment.dto';
+import { ConfirmTossPaymentDto, ExpirePendingTossPaymentsDto, FailTossPaymentDto, CancelTossPaymentDto, ReconcileTossPaymentsDto, TossWebhookDto } from './dto/confirm-toss-payment.dto';
 import { PaymentsService } from './payments.service';
 import { SupabaseGuard } from '../auth/guards/supabase.guard';
 import { CurrentUser } from '../../common/decorators/user.decorator';
@@ -55,6 +55,19 @@ export class PaymentsController {
     @ApiResponse({ status: 404, description: '대기 중인 결제 정보를 찾을 수 없음' })
     async failTossPayment(@Body() dto: FailTossPaymentDto) {
         return this.paymentsService.failTossPayment(dto);
+    }
+
+    @Post('toss/webhook')
+    @HttpCode(200)
+    @UsePipes(new ValidationPipe({ transform: true }))
+    @ApiOperation({
+        summary: 'Toss Payments 웹훅 수신',
+        description: 'PAYMENT_STATUS_CHANGED, CANCEL_STATUS_CHANGED 이벤트를 받아 Toss API 재조회 후 로컬 결제/주문 상태를 보정합니다.',
+    })
+    @ApiBody({ type: TossWebhookDto })
+    @ApiResponse({ status: 200, description: '웹훅 처리 완료' })
+    async handleTossWebhook(@Body() dto: TossWebhookDto) {
+        return this.paymentsService.handleTossWebhook(dto);
     }
 
     @Post('toss/expire-pending')

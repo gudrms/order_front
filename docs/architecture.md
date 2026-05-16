@@ -95,6 +95,7 @@ POST   /stores/:storeId/tables/:tableNumber/reset            테이블 초기화
 
 POST   /payments/toss/confirm   결제 승인
 POST   /payments/toss/fail      결제 실패
+POST   /payments/toss/webhook   Toss Payments 상태 변경 웹훅 보정
 
 GET    /stores/:storeId/categories
 GET    /stores/:storeId/menus          (공개)

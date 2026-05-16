@@ -4,8 +4,9 @@
 
 ## 전제 조건
 
-- `NEXT_PUBLIC_TOSS_CLIENT_KEY`는 테스트용 클라이언트 키를 사용한다.
-- 백엔드 `TOSS_SECRET_KEY`는 같은 상점의 테스트용 시크릿 키를 사용한다.
+- `NEXT_PUBLIC_TOSS_CLIENT_KEY`는 결제위젯 테스트용 클라이언트 키(`test_gck_...`)를 사용한다.
+- 백엔드 `TOSS_PAYMENTS_SECRET_KEY`는 같은 상점의 결제위젯 테스트용 시크릿 키(`test_gsk_...`)를 사용한다.
+- Toss 콘솔의 API 개별 연동 키(`test_ck_...`/`test_sk_...`)는 기존 결제창·자동결제·정산지급대행용이므로 결제위젯 E2E에 사용하지 않는다.
 - `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`가 배달앱 실행 환경에 잡혀 있다.
 - 카카오 로그인 또는 Supabase OAuth 로그인 후 `/auth/sync`가 성공해 앱 DB `User`가 생성되어야 한다.
 - 테스트 환경의 결제 승인은 가상 승인이라 실제 결제수단에서 출금되지 않는다.
@@ -36,8 +37,19 @@
 ## 확인할 로그
 
 - 브라우저 Network: `/orders`, `/payments/toss/confirm`, `/payments/toss/fail`
-- 백엔드 로그: Toss confirm/fail 요청과 에러 응답
+- 백엔드 로그: Toss confirm/fail 요청과 에러 응답, `/payments/toss/webhook` 수신 여부
 - DB: `Order.status`, `Order.paymentStatus`, `Payment.status`, `Payment.paymentKey`, `Payment.approvedAt`, `Payment.failedAt`
+
+## Toss 콘솔 등록값
+
+- 웹훅 이름: `Tacomolly Delivery Payments`
+- 웹훅 URL: `https://api.tacomolly.kr/api/v1/payments/toss/webhook`
+- 등록 이벤트:
+  - `PAYMENT_STATUS_CHANGED`
+  - `CANCEL_STATUS_CHANGED`
+- 리다이렉트 URL:
+  - `https://delivery.tacomolly.kr/store/*/order/success`
+  - `https://delivery.tacomolly.kr/store/*/order/fail`
 
 ## 공식 문서 기준
 

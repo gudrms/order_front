@@ -5,7 +5,19 @@ import { assertCanManageStore } from '../../common/auth/permissions';
 import { PrismaService } from '../prisma/prisma.service';
 import { TossApiService } from '../integrations/toss/toss-api.service';
 import { QueueService } from '../queue';
-import { ConfirmTossPaymentDto, ExpirePendingTossPaymentsDto, FailTossPaymentDto, CancelTossPaymentDto, ReconcileTossPaymentsDto } from './dto/confirm-toss-payment.dto';
+import { ConfirmTossPaymentDto, ExpirePendingTossPaymentsDto, FailTossPaymentDto, CancelTossPaymentDto, ReconcileTossPaymentsDto, TossWebhookDto } from './dto/confirm-toss-payment.dto';
+
+interface TossPaymentSnapshot {
+    orderId?: string;
+    paymentKey?: string;
+    status?: string;
+    totalAmount?: number;
+    balanceAmount?: number;
+    method?: string;
+    approvedAt?: string;
+    receipt?: { url?: string };
+    cancels?: Array<{ cancelAmount?: number; canceledAt?: string }>;
+}
 
 @Injectable()
 export class PaymentsService {
@@ -223,6 +235,50 @@ export class PaymentsService {
         return this.failTossPayment({ orderId, code, message });
     }
 
+    async handleTossWebhook(dto: TossWebhookDto) {
+        if (dto.eventType !== 'PAYMENT_STATUS_CHANGED' && dto.eventType !== 'CANCEL_STATUS_CHANGED') {
+            return {
+                handled: false,
+                eventType: dto.eventType,
+                reason: 'UNSUPPORTED_EVENT_TYPE',
+            };
+        }
+
+        const eventPayment = dto.data as TossPaymentSnapshot;
+        if (!eventPayment.orderId && !eventPayment.paymentKey) {
+            this.logger.warn(`Toss webhook ${dto.eventType} skipped: missing orderId and paymentKey`);
+            return {
+                handled: false,
+                eventType: dto.eventType,
+                reason: 'MISSING_PAYMENT_IDENTIFIER',
+            };
+        }
+
+        const tossPayment = eventPayment.orderId
+            ? await this.tossApiService.fetchPaymentByOrderId(eventPayment.orderId) as TossPaymentSnapshot
+            : await this.tossApiService.fetchPaymentByPaymentKey(eventPayment.paymentKey!) as TossPaymentSnapshot;
+        if (tossPayment.status === 'DONE') {
+            return this.applyWebhookPaidPayment(tossPayment);
+        }
+
+        if (tossPayment.status === 'CANCELED' || tossPayment.status === 'PARTIAL_CANCELED') {
+            return this.applyWebhookCancelledPayment(tossPayment);
+        }
+
+        if (tossPayment.status === 'ABORTED' || tossPayment.status === 'EXPIRED') {
+            return this.applyWebhookFailedPayment(tossPayment);
+        }
+
+        return {
+            handled: false,
+            eventType: dto.eventType,
+            orderId: tossPayment.orderId,
+            paymentKey: tossPayment.paymentKey,
+            tossStatus: tossPayment.status,
+            reason: 'NO_LOCAL_STATE_CHANGE',
+        };
+    }
+
     async expirePendingTossPayments(dto: ExpirePendingTossPaymentsDto = {}) {
         const olderThanMinutes = dto.olderThanMinutes || 15;
         const cutoff = new Date(Date.now() - olderThanMinutes * 60 * 1000);
@@ -421,6 +477,202 @@ export class PaymentsService {
         }
 
         return order;
+    }
+
+    private async findTossPayment(tossPayment: TossPaymentSnapshot) {
+        return this.prisma.payment.findFirst({
+            where: {
+                provider: 'TOSS_PAYMENTS',
+                OR: [
+                    ...(tossPayment.orderId ? [{ providerOrderId: tossPayment.orderId }] : []),
+                    ...(tossPayment.paymentKey ? [{ paymentKey: tossPayment.paymentKey }] : []),
+                ],
+            },
+            include: {
+                order: {
+                    include: {
+                        delivery: true,
+                    },
+                },
+            },
+        });
+    }
+
+    private async applyWebhookPaidPayment(tossPayment: TossPaymentSnapshot) {
+        const payment = await this.findTossPayment(tossPayment);
+        if (!payment) {
+            this.logger.warn(`Toss paid webhook skipped: local payment not found for orderId=${tossPayment.orderId}`);
+            return { handled: false, reason: 'LOCAL_PAYMENT_NOT_FOUND', orderId: tossPayment.orderId };
+        }
+
+        const amount = tossPayment.totalAmount;
+        if (typeof amount !== 'number' || payment.amount !== amount || payment.order.totalAmount !== amount) {
+            throw new BadRequestException('Webhook payment amount does not match the local order amount');
+        }
+
+        if (payment.status === 'PAID') {
+            return { handled: true, action: 'ALREADY_PAID', orderId: payment.orderId };
+        }
+        if (payment.status !== 'READY' && payment.status !== 'PENDING') {
+            return { handled: false, reason: 'PAYMENT_NOT_PAYABLE', orderId: payment.orderId, status: payment.status };
+        }
+
+        await this.prisma.$transaction([
+            this.prisma.payment.update({
+                where: { id: payment.id },
+                data: {
+                    status: 'PAID',
+                    method: mapTossMethod(tossPayment.method),
+                    paymentKey: tossPayment.paymentKey || payment.paymentKey,
+                    approvedAmount: amount,
+                    approvedAt: tossPayment.approvedAt ? new Date(tossPayment.approvedAt) : new Date(),
+                    receiptUrl: tossPayment.receipt?.url,
+                    rawPayload: tossPayment as unknown as Prisma.InputJsonValue,
+                },
+            }),
+            this.prisma.order.update({
+                where: { id: payment.orderId },
+                data: {
+                    status: 'PAID',
+                    paymentStatus: 'PAID',
+                },
+            }),
+        ]);
+
+        await this.queueService?.publishPaymentPaid({
+            orderId: payment.orderId,
+            storeId: payment.order.storeId,
+            paymentId: payment.id,
+            providerOrderId: payment.providerOrderId || undefined,
+            amount,
+        });
+
+        await this.queueService?.publishOrderPaid({
+            orderId: payment.orderId,
+            storeId: payment.order.storeId,
+            paymentId: payment.id,
+            providerOrderId: payment.providerOrderId || undefined,
+            amount,
+        });
+
+        return { handled: true, action: 'MARKED_PAID', orderId: payment.orderId };
+    }
+
+    private async applyWebhookCancelledPayment(tossPayment: TossPaymentSnapshot) {
+        const payment = await this.findTossPayment(tossPayment);
+        if (!payment) {
+            this.logger.warn(`Toss cancel webhook skipped: local payment not found for orderId=${tossPayment.orderId}`);
+            return { handled: false, reason: 'LOCAL_PAYMENT_NOT_FOUND', orderId: tossPayment.orderId };
+        }
+
+        const paidAmount = payment.approvedAmount || tossPayment.totalAmount || payment.amount;
+        const totalCancelledAmount = this.sumTossCancelledAmount(tossPayment);
+        const previousCancelledAmount = payment.cancelledAmount || 0;
+        const refundedAmount = Math.max(0, totalCancelledAmount - previousCancelledAmount);
+        const isFullRefund = totalCancelledAmount >= paidAmount;
+        const nextPaymentStatus = isFullRefund ? 'REFUNDED' : 'PARTIAL_REFUNDED';
+        const lastCanceledAt = this.getLastTossCanceledAt(tossPayment);
+        const now = new Date();
+
+        if (refundedAmount === 0 && payment.status === nextPaymentStatus) {
+            return { handled: true, action: 'ALREADY_SYNCED_CANCEL', orderId: payment.orderId };
+        }
+
+        const orderUpdateData: Prisma.OrderUpdateInput = {
+            paymentStatus: nextPaymentStatus,
+            ...(isFullRefund ? {
+                status: 'CANCELLED',
+                cancelledAt: lastCanceledAt || now,
+                cancelReason: 'Toss payment was cancelled',
+                ...(payment.order.delivery ? {
+                    delivery: { update: { status: 'CANCELLED', cancelledAt: lastCanceledAt || now } },
+                } : {}),
+            } : {}),
+        };
+
+        await this.prisma.$transaction([
+            this.prisma.payment.update({
+                where: { id: payment.id },
+                data: {
+                    status: nextPaymentStatus,
+                    cancelledAmount: totalCancelledAmount,
+                    cancelledAt: isFullRefund ? (lastCanceledAt || now) : payment.cancelledAt,
+                    rawPayload: tossPayment as unknown as Prisma.InputJsonValue,
+                },
+            }),
+            this.prisma.order.update({
+                where: { id: payment.orderId },
+                data: orderUpdateData,
+            }),
+        ]);
+
+        if (refundedAmount > 0) {
+            await this.queueService?.publishPaymentRefunded({
+                paymentId: payment.id,
+                orderId: payment.orderId,
+                storeId: payment.order.storeId,
+                providerOrderId: payment.providerOrderId || undefined,
+                refundedAmount,
+                totalCancelledAmount,
+                isFullRefund,
+            });
+        }
+
+        return { handled: true, action: isFullRefund ? 'MARKED_REFUNDED' : 'MARKED_PARTIAL_REFUNDED', orderId: payment.orderId };
+    }
+
+    private async applyWebhookFailedPayment(tossPayment: TossPaymentSnapshot) {
+        const payment = await this.findTossPayment(tossPayment);
+        if (!payment) {
+            this.logger.warn(`Toss failed webhook skipped: local payment not found for orderId=${tossPayment.orderId}`);
+            return { handled: false, reason: 'LOCAL_PAYMENT_NOT_FOUND', orderId: tossPayment.orderId };
+        }
+
+        if (payment.status !== 'READY' && payment.status !== 'PENDING') {
+            return { handled: false, reason: 'PAYMENT_NOT_PENDING', orderId: payment.orderId, status: payment.status };
+        }
+
+        const now = new Date();
+        await this.prisma.$transaction([
+            this.prisma.payment.update({
+                where: { id: payment.id },
+                data: {
+                    status: 'FAILED',
+                    failedAt: now,
+                    failureCode: `TOSS_${tossPayment.status || 'FAILED'}`,
+                    failureMessage: `Toss payment status changed to ${tossPayment.status || 'failed'}`,
+                    rawPayload: tossPayment as unknown as Prisma.InputJsonValue,
+                },
+            }),
+            this.prisma.order.update({
+                where: { id: payment.orderId },
+                data: {
+                    status: 'CANCELLED',
+                    paymentStatus: 'FAILED',
+                    cancelledAt: now,
+                    cancelReason: `Toss payment status changed to ${tossPayment.status || 'failed'}`,
+                    ...(payment.order.delivery ? {
+                        delivery: { update: { status: 'CANCELLED', cancelledAt: now } },
+                    } : {}),
+                },
+            }),
+        ]);
+
+        return { handled: true, action: 'MARKED_FAILED', orderId: payment.orderId };
+    }
+
+    private sumTossCancelledAmount(tossPayment: TossPaymentSnapshot) {
+        return (tossPayment.cancels || []).reduce((sum, cancel) => sum + (cancel.cancelAmount || 0), 0);
+    }
+
+    private getLastTossCanceledAt(tossPayment: TossPaymentSnapshot) {
+        const latest = (tossPayment.cancels || [])
+            .map((cancel) => cancel.canceledAt)
+            .filter((value): value is string => !!value)
+            .sort()
+            .at(-1);
+
+        return latest ? new Date(latest) : undefined;
     }
 
     private async assertCanManageStore(userId: string, storeId: string) {

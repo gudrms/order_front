@@ -1,4 +1,4 @@
-import { IsInt, IsNotEmpty, IsOptional, IsString, Min } from 'class-validator';
+import { IsInt, IsNotEmpty, IsObject, IsOptional, IsString, Min } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class ConfirmTossPaymentDto {
@@ -96,4 +96,29 @@ export class CancelTossPaymentDto {
     @Min(1)
     @IsOptional()
     cancelAmount?: number;
+}
+
+export class TossWebhookDto {
+    @ApiProperty({
+        description: 'Toss Payments 웹훅 이벤트 타입',
+        example: 'PAYMENT_STATUS_CHANGED',
+    })
+    @IsString()
+    @IsNotEmpty()
+    eventType: string;
+
+    @ApiPropertyOptional({
+        description: 'Toss Payments 웹훅 생성 시각',
+        example: '2026-05-16T12:41:54.000000',
+    })
+    @IsString()
+    @IsOptional()
+    createdAt?: string;
+
+    @ApiProperty({
+        description: '상태가 변경된 Toss Payment 또는 Cancel 객체',
+        type: Object,
+    })
+    @IsObject()
+    data: Record<string, unknown>;
 }
