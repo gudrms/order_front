@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronRight, Coins, Heart, LogOut, MapPin, Receipt, Ticket, User as UserIcon } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Coins, Heart, LogOut, MapPin, Receipt, Ticket, User as UserIcon } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { MypageSkeleton } from '@/components/ui/Skeleton';
 import { useAvailableCoupons } from '@/hooks/queries/useCoupons';
@@ -63,8 +63,21 @@ export default function MyPage() {
 
     return (
         <main className="min-h-screen bg-gray-50 pb-24">
-            <header className="bg-white px-4 h-14 flex items-center border-b border-gray-100 sticky top-0 z-50">
+            <header className="bg-white px-4 h-14 flex items-center justify-between border-b border-gray-100 sticky top-0 z-50">
+                <button
+                    onClick={() => router.push('/')}
+                    className="p-2 -ml-2 text-brand-black"
+                    aria-label="홈으로"
+                >
+                    <ChevronLeft size={24} />
+                </button>
                 <h1 className="font-bold text-lg">마이페이지</h1>
+                <button
+                    onClick={() => router.push('/')}
+                    className="text-sm font-medium text-brand-yellow"
+                >
+                    주문하기
+                </button>
             </header>
 
             <div className="max-w-[568px] mx-auto">
