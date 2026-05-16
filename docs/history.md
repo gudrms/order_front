@@ -57,7 +57,9 @@
 
 **메뉴 이미지 업로드**: 어드민에서 메뉴 이미지를 직접 올릴 수 있도록 `browser-image-compression` + Supabase Storage 조합으로 구현했다. 업로드 전 클라이언트 측 압축으로 스토리지 비용과 로딩 속도를 동시에 잡았다.
 
-**매장 선택 흐름**: 배달앱 홈에서 매장을 고를 수 있는 흐름(`StoreContext`, localStorage 유지)을 추가했다. 향후 즐겨찾기 기능으로 확장할 수 있도록 Context 구조를 열어두었다.
+**매장 선택 흐름**: 처음엔 `StoreContext` + localStorage 방식으로 구현했으나, URL에 매장 정보가 없어 공유·북마크가 불가능하다는 구조적 문제를 발견해 곧바로 **URL 기반 라우팅**으로 재설계했다. 라우트를 `/store/[storeId]/menu`, `/store/[storeId]/order/*` 계층으로 재구성하고, 해당 레이아웃(`/store/[storeId]/layout.tsx`)에서 API로 매장 데이터를 fetch해 하위 페이지에 제공한다. localStorage 의존성을 완전히 제거함으로써 탭 간 상태 충돌, hydration mismatch 위험도 함께 해소했다.
+
+**매장 즐겨찾기**: `UserFavoriteStore` DB 테이블을 추가하고 `GET /users/me/favorite-stores`, `POST /users/me/favorite-stores/:storeId/toggle` 엔드포인트를 구현했다. 프론트에서는 optimistic update로 즉각 반응하고, 로그인 사용자에게만 하트 버튼을 노출한다.
 
 ---
 
@@ -71,3 +73,5 @@
 | 네이티브 앱 | Capacitor Remote WebView | 기존 Next.js 코드 재사용, 단일 코드베이스 유지 |
 | 모노레포 | Turborepo | 앱 간 코드 공유, 빌드 캐싱, 일관된 린트·테스트 |
 | 보안 처리 | git filter-repo | git 히스토리에서 시크릿 완전 제거 (rewrite 필요) |
+| 배달앱 매장 라우팅 | URL 기반 `/store/[storeId]/menu` | localStorage는 공유·북마크 불가, URL이 정확한 상태 표현 |
+| 매장 즐겨찾기 | DB 테이블 (`UserFavoriteStore`) | 기기 간 동기화 필요, localStorage로는 로그인 연동 불가 |
