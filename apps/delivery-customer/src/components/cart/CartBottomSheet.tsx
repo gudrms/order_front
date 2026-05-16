@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { CartItemCard } from '@order/ui';
 import { useCartStore } from '@order/order-core';
+import { useCurrentStore } from '@/contexts/StoreContext';
 import { cn } from '@/lib/utils';
 import AddressInputBottomSheet from '../order/AddressInputBottomSheet';
 
@@ -13,12 +14,12 @@ interface CartBottomSheetProps {
     onProceedToOrder: () => void;
 }
 
-const MINIMUM_ORDER_AMOUNT = 15000;
-
 export default function CartBottomSheet({ isOpen, onClose, onProceedToOrder }: CartBottomSheetProps) {
     const { items, totalPrice, updateQuantity, removeItem } = useCartStore();
+    const { store } = useCurrentStore();
     const [isClosing, setIsClosing] = useState(false);
     const [isAddressSheetOpen, setIsAddressSheetOpen] = useState(false);
+    const minimumOrderAmount = store.minimumOrderAmount ?? 0;
 
     useEffect(() => {
         if (isOpen) {
@@ -41,8 +42,8 @@ export default function CartBottomSheet({ isOpen, onClose, onProceedToOrder }: C
     };
 
     const handleOrder = () => {
-        if (totalPrice < MINIMUM_ORDER_AMOUNT) {
-            alert(`최소 주문 금액은 ${MINIMUM_ORDER_AMOUNT.toLocaleString()}원입니다.`);
+        if (totalPrice < minimumOrderAmount) {
+            alert(`최소 주문 금액은 ${minimumOrderAmount.toLocaleString()}원입니다.`);
             return;
         }
 
@@ -112,11 +113,11 @@ export default function CartBottomSheet({ isOpen, onClose, onProceedToOrder }: C
                 </div>
 
                 <div className="p-4 border-t border-gray-100 bg-white pb-8">
-                    {totalPrice < MINIMUM_ORDER_AMOUNT && items.length > 0 && (
+                    {totalPrice < minimumOrderAmount && items.length > 0 && (
                         <p className="text-sm text-red-500 mb-2 text-center">
-                            최소 주문 금액 {MINIMUM_ORDER_AMOUNT.toLocaleString()}원 미만입니다.
+                            최소 주문 금액 {minimumOrderAmount.toLocaleString()}원 미만입니다.
                             {' '}
-                            ({(MINIMUM_ORDER_AMOUNT - totalPrice).toLocaleString()}원 부족)
+                            ({(minimumOrderAmount - totalPrice).toLocaleString()}원 부족)
                         </p>
                     )}
                     <button

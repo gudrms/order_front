@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { Search, MapPin, Clock, ChevronRight, Heart } from 'lucide-react';
+import { Search, MapPin, Clock, ChevronRight, Heart, Bike } from 'lucide-react';
 import { getAllStores } from '@order/shared/api';
 import type { Store } from '@order/shared';
 import { useAuth } from '@/contexts/AuthContext';

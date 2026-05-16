@@ -35,3 +35,7 @@ export function useCurrentStore() {
     if (!ctx) throw new Error('useCurrentStore must be used within StoreProvider');
     return ctx;
 }
+
+export function useOptionalCurrentStore() {
+    return useContext(StoreContext);
+}

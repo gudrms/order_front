@@ -4,7 +4,7 @@ import { CheckCircle, ChevronLeft, Clock, Loader, LockKeyhole, XCircle } from 'l
 import { OrdersPageSkeleton } from '@/components/ui/Skeleton';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { useCurrentStore } from '@/contexts/StoreContext';
+import { useOptionalCurrentStore } from '@/contexts/StoreContext';
 import { useOrders } from '@/hooks/queries/useOrders';
 import type { OrderStatus } from '@order/shared';
 
@@ -30,7 +30,8 @@ const paymentStatusBadge: Record<string, { label: string; className: string }> =
 export default function OrdersPage() {
     const router = useRouter();
     const { user, loading: isAuthLoading } = useAuth();
-    const { storeId } = useCurrentStore();
+    const currentStore = useOptionalCurrentStore();
+    const storeId = currentStore?.storeId ?? null;
     const { data, isLoading, isError } = useOrders({ storeId, userId: user?.id });
     const orders = data?.orders || [];
 
@@ -79,6 +80,19 @@ export default function OrdersPage() {
                             className="mt-3 w-full border-2 border-gray-200 px-6 py-3 rounded-xl font-bold"
                         >
                             메뉴 먼저 둘러보기
+                        </button>
+                    </div>
+                ) : !storeId ? (
+                    <div className="bg-white rounded-xl p-8 text-center shadow-sm border border-gray-100">
+                        <h2 className="text-lg font-bold mb-2">매장을 먼저 선택해주세요</h2>
+                        <p className="text-gray-500 mb-6">
+                            주문 내역은 선택한 매장 기준으로 조회됩니다.
+                        </p>
+                        <button
+                            onClick={() => router.push('/')}
+                            className="bg-brand-black text-white px-6 py-3 rounded-xl font-bold"
+                        >
+                            매장 선택하기
                         </button>
                     </div>
                 ) : isLoading ? (
