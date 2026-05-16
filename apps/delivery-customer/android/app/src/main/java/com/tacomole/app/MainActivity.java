@@ -1,4 +1,4 @@
-package com.taco.delivery;
+package com.tacomole.app;
 
 import com.getcapacitor.BridgeActivity;
 

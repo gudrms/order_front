@@ -7,7 +7,7 @@ const serverUrl = process.env.CAPACITOR_SERVER_URL;
 const isLocalDevServer = serverUrl?.startsWith('http://') ?? false;
 
 const config: CapacitorConfig = {
-  appId: 'com.taco.delivery',
+  appId: 'com.tacomole.app',
   appName: '타코 배달',
   webDir: 'public',
 

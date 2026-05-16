@@ -11,6 +11,8 @@ pnpm --filter delivery-customer dev
 로컬 주소: `http://localhost:3001`
 운영 주소: `https://delivery.tacomole.kr`
 
+Android 패키지명: `com.tacomole.app`
+
 ## 주요 역할
 
 - 배달 가능 매장/메뉴 조회
@@ -35,15 +37,17 @@ iOS 빌드는 macOS/Xcode 환경에서 진행합니다.
 
 운영 WebView 빌드는 `CAPACITOR_SERVER_URL=https://delivery.tacomole.kr` 기준으로 `cap sync`를 수행합니다. 로컬 HTTP 개발 서버를 붙일 때만 cleartext/allowMixedContent가 허용됩니다.
 
+Google Play Console 앱은 `com.tacomole.app` 패키지명으로 생성되어 있으므로 `capacitor.config.ts`의 `appId`와 Android `applicationId`를 다른 값으로 바꾸면 기존 Play Console 앱에 AAB를 업로드할 수 없습니다.
+
 ## Android 서명 지문
 
-현재 운영 지문:
+현재 참고 지문:
 
 ```text
 6D:AC:8F:5E:5D:A7:AF:F6:80:01:16:6D:78:17:B6:29:62:F2:DC:82:5F:DC:3D:7C:B7:B3:4B:61:B9:04:F2:80
 ```
 
-기존 앱 업데이트가 목적이면 기존 release keystore를 유지해야 합니다. keystore를 새로 만들면 기존 앱의 업데이트로 인식되지 않을 수 있습니다. Google Play App Signing 사용 여부는 Play Console에서 확인합니다.
+기존 앱 업데이트가 목적이면 기존 release keystore를 유지해야 합니다. keystore를 새로 만들면 기존 앱의 업데이트로 인식되지 않을 수 있습니다. Google Play App Signing을 사용하는 경우 App Links의 `assetlinks.json`에는 업로드 키가 아니라 Play Console의 앱 서명 키 SHA-256을 넣습니다.
 
 ## 확인
 

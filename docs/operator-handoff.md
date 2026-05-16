@@ -89,7 +89,9 @@ POST ${API_BASE_URL}/payments/toss/reconcile
 
 ## Android 앱 서명 지문
 
-현재 전달된 앱 지문:
+Android 패키지명은 Play Console 기준 `com.tacomole.app`입니다. `capacitor.config.ts`의 `appId`, Android `applicationId`, App Links `assetlinks.json`의 `package_name`이 모두 이 값과 일치해야 합니다.
+
+현재 참고 지문:
 
 ```text
 6D:AC:8F:5E:5D:A7:AF:F6:80:01:16:6D:78:17:B6:29:62:F2:DC:82:5F:DC:3D:7C:B7:B3:4B:61:B9:04:F2:80
@@ -101,7 +103,7 @@ POST ${API_BASE_URL}/payments/toss/reconcile
 - 앱 배포 채널을 새로 만들고 기존 앱 업데이트 호환성이 필요 없을 때
 - 보안 사고로 서명키 교체가 필요할 때
 
-기존 앱을 업데이트해야 하고 release keystore가 보관되어 있다면 새 key를 만들면 안 됩니다. 같은 keystore로 서명해야 기존 앱의 업데이트로 인식됩니다. Google Play App Signing을 사용하는 경우에는 업로드 키와 앱 서명 키가 분리될 수 있으므로 Play Console 기준으로 확인합니다.
+기존 앱을 업데이트해야 하고 release keystore가 보관되어 있다면 새 key를 만들면 안 됩니다. 같은 keystore로 서명해야 기존 앱의 업데이트로 인식됩니다. Google Play App Signing을 사용하는 경우에는 업로드 키와 앱 서명 키가 분리됩니다. App Links 검증용 `assetlinks.json`에는 Play Console의 앱 서명 키 SHA-256을 사용합니다.
 
 ## 보안/비밀값 관리
 

@@ -2,7 +2,7 @@
   "applinks": {
     "details": [
       {
-        "appID": "TEAM_ID.com.taco.delivery",
+        "appID": "TEAM_ID.com.tacomole.app",
         "paths": ["/orders/*", "/mypage/*"]
       }
     ]

@@ -60,7 +60,7 @@ npx cap run android
 adb shell am start \
   -W -a android.intent.action.VIEW \
   -d "taco://orders/TEST_ORDER_ID" \
-  com.taco.delivery
+  com.tacomole.app
 
 # 기대 결과: 앱이 열리고 /orders/TEST_ORDER_ID 페이지로 이동
 ```
@@ -71,7 +71,7 @@ adb shell am start \
 adb shell am start \
   -W -a android.intent.action.VIEW \
   -d "https://delivery.tacomole.kr/orders/TEST_ORDER_ID" \
-  com.taco.delivery
+  com.tacomole.app
 ```
 
 > ⚠️ HTTPS App Links 는 `assetlinks.json` 을 서버에 등록해야 최종 동작.
@@ -118,7 +118,7 @@ xcrun simctl openurl booted "taco://orders/TEST_ORDER_ID"
   "relation": ["delegate_permission/common.handle_all_urls"],
   "target": {
     "namespace": "android_app",
-    "package_name": "com.taco.delivery",
+    "package_name": "com.tacomole.app",
     "sha256_cert_fingerprints": ["YOUR_SIGNING_CERT_SHA256"]
   }
 }]
@@ -131,7 +131,7 @@ xcrun simctl openurl booted "taco://orders/TEST_ORDER_ID"
   "applinks": {
     "apps": [],
     "details": [{
-      "appID": "TEAM_ID.com.taco.delivery",
+      "appID": "TEAM_ID.com.tacomole.app",
       "paths": ["/orders/*", "/mypage/*"]
     }]
   }
