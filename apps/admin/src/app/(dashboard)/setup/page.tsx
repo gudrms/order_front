@@ -16,10 +16,14 @@ export default function SetupProfilePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // 이미 프로필이 있으면 메인으로 리다이렉트
+  // 프로필이 있으면 역할에 따라 분기
   useEffect(() => {
     if (profile?.name && profile?.phoneNumber) {
-      router.push('/');
+      if (profile.role === 'ADMIN' || profile.role === 'OWNER') {
+        router.push('/');
+      } else {
+        router.push('/pending');
+      }
     }
   }, [profile, router]);
 

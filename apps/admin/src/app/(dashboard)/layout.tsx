@@ -42,7 +42,7 @@ export default function DashboardLayout({
     }
 
     if (!loading && user && profile && !canAccessAdmin(profile)) {
-      router.push('/login');
+      if (pathname !== '/pending') router.push('/pending');
       return;
     }
 
@@ -62,8 +62,7 @@ export default function DashboardLayout({
   if (!user) return null;
   if (profile && !canAccessPath(profile, pathname)) return null;
 
-  // 온보딩 중일 때는 사이드바 없이 전체 화면 사용 가능 (선택 사항)
-  const isSetupPage = pathname === '/setup';
+  const isSetupPage = pathname === '/setup' || pathname === '/pending';
 
   return (
     <div className="flex h-screen bg-gray-50">

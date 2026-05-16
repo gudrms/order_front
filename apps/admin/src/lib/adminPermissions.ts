@@ -56,8 +56,13 @@ export function canCreateStore(profile: AdminProfile) {
   return isPlatformAdmin(profile);
 }
 
+export function isPendingUser(profile: AdminProfile) {
+  return getAdminRole(profile) === 'USER';
+}
+
 export function canAccessPath(profile: AdminProfile, pathname: string) {
   if (pathname === '/setup') return true;
+  if (pathname === '/pending') return true;
   if (!canAccessAdmin(profile)) return false;
 
   const navItem = adminNavItems
