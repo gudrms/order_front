@@ -42,6 +42,11 @@ const STUB_MENUS = [
 
 export const test = base.extend({
   page: async ({ page }, use) => {
+    // StoreContext reads from localStorage — inject before any navigation
+    await page.addInitScript((store) => {
+      localStorage.setItem('delivery.selectedStore', JSON.stringify(store));
+    }, STUB_STORE);
+
     await page.route('**/api/v1/stores/identifier/**', async (route) => {
       await route.fulfill({ json: { data: STUB_STORE } });
     });
@@ -60,6 +65,10 @@ export const test = base.extend({
 
     await page.route('**/api/v1/users/me/favorites**', async (route) => {
       await route.fulfill({ json: [] });
+    });
+
+    await page.route('**/api/v1/stores', async (route) => {
+      await route.fulfill({ json: { data: [STUB_STORE] } });
     });
 
     await use(page);
