@@ -10,7 +10,7 @@ import { supabase } from '../lib/supabase';
  * API 기본 URL
  */
 const API_BASE_URL =
-    process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
+    process.env.NEXT_PUBLIC_API_URL || 'https://api.tacomole.kr/api/v1';
 
 /**
  * 요청 타임아웃 (10초)
