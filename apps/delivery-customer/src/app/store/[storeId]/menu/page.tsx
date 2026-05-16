@@ -13,26 +13,13 @@ import { useCartStore } from '@order/order-core';
 
 export default function MenuPage() {
     const router = useRouter();
-    const { store, isLoading } = useCurrentStore();
+    const { store } = useCurrentStore();
     const { totalQuantity, totalPrice } = useCartStore();
     const [isCartOpen, setIsCartOpen] = useState(false);
 
     const handleProceedToOrder = () => {
-        router.push('/order/checkout');
+        router.push('order/checkout');
     };
-
-    if (isLoading) {
-        return (
-            <main className="min-h-screen bg-white flex items-center justify-center text-gray-500">
-                매장 정보를 불러오는 중...
-            </main>
-        );
-    }
-
-    if (!store) {
-        router.replace('/');
-        return null;
-    }
 
     return (
         <main className="min-h-screen bg-white">

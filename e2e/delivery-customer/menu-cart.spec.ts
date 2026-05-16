@@ -1,5 +1,7 @@
 import { expect, test } from './fixtures';
 
+const STUB_STORE_ID = 'store-e2e-1';
+
 /**
  * 메뉴 → 장바구니 → 결제하기 E2E 플로우
  *
@@ -13,7 +15,7 @@ import { expect, test } from './fixtures';
 
 // 공통 헬퍼: 메뉴 페이지에서 E2E Taco 수량 2개를 장바구니에 담는다
 async function addTacoToCart(page: import('@playwright/test').Page) {
-    await page.goto('/menu');
+    await page.goto(`/store/${STUB_STORE_ID}/menu`);
     await expect(page.getByText('E2E Taco')).toBeVisible({ timeout: 10_000 });
 
     // 메뉴 카드 클릭 → 상세 시트 오픈
@@ -34,12 +36,12 @@ async function addTacoToCart(page: import('@playwright/test').Page) {
 
 test.describe('메뉴 목록', () => {
     test('stub 메뉴(E2E Taco)가 화면에 표시된다', async ({ page }) => {
-        await page.goto('/menu');
+        await page.goto(`/store/${STUB_STORE_ID}/menu`);
         await expect(page.getByText('E2E Taco')).toBeVisible({ timeout: 10_000 });
     });
 
     test('메뉴 클릭 시 상세 시트가 열린다', async ({ page }) => {
-        await page.goto('/menu');
+        await page.goto(`/store/${STUB_STORE_ID}/menu`);
         await page.getByText('E2E Taco').first().click();
         await expect(page.getByText('메뉴 상세')).toBeVisible({ timeout: 8_000 });
         await expect(
@@ -48,7 +50,7 @@ test.describe('메뉴 목록', () => {
     });
 
     test('상세 시트에서 수량을 늘릴 수 있다', async ({ page }) => {
-        await page.goto('/menu');
+        await page.goto(`/store/${STUB_STORE_ID}/menu`);
         await page.getByText('E2E Taco').first().click();
         await expect(page.getByText('메뉴 상세')).toBeVisible({ timeout: 8_000 });
 
@@ -65,7 +67,7 @@ test.describe('메뉴 목록', () => {
     });
 
     test('시트 닫기 버튼으로 상세 시트를 닫을 수 있다', async ({ page }) => {
-        await page.goto('/menu');
+        await page.goto(`/store/${STUB_STORE_ID}/menu`);
         await page.getByText('E2E Taco').first().click();
         await expect(page.getByText('메뉴 상세')).toBeVisible({ timeout: 8_000 });
 
@@ -99,7 +101,7 @@ test.describe('장바구니 담기', () => {
         page,
     }) => {
         // 수량 1개만 담기 (9,000원 < 15,000원 최소)
-        await page.goto('/menu');
+        await page.goto(`/store/${STUB_STORE_ID}/menu`);
         await page.getByText('E2E Taco').first().click();
         await expect(page.getByText('메뉴 상세')).toBeVisible({ timeout: 8_000 });
         await page.getByRole('button', { name: /장바구니 담기/ }).click();
@@ -161,7 +163,7 @@ test.describe('결제하기 페이지 이동', () => {
 
         // 다음 → /order/checkout (클라이언트 라우팅 → Zustand 카트 상태 유지)
         await page.getByRole('button', { name: '다음' }).click();
-        await expect(page).toHaveURL(/\/order\/checkout/, { timeout: 10_000 });
+        await expect(page).toHaveURL(/\/store\/.+\/order\/checkout/, { timeout: 10_000 });
         await expect(
             page.getByRole('heading', { name: '결제하기' })
         ).toBeVisible({ timeout: 8_000 });
@@ -183,7 +185,7 @@ test.describe('결제하기 페이지 이동', () => {
         await page.getByPlaceholder('이름 입력').fill('홍길동');
         await page.getByPlaceholder('010-1234-5678').fill('010-1234-5678');
         await page.getByRole('button', { name: '다음' }).click();
-        await expect(page).toHaveURL(/\/order\/checkout/, { timeout: 10_000 });
+        await expect(page).toHaveURL(/\/store\/.+\/order\/checkout/, { timeout: 10_000 });
 
         // 주문 내역 섹션에 E2E Taco가 표시됨
         await expect(page.getByText('주문 내역')).toBeVisible({ timeout: 8_000 });

@@ -3,17 +3,15 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { Search, MapPin, Clock, ChevronRight, Bike, Heart } from 'lucide-react';
+import { Search, MapPin, Clock, ChevronRight, Heart } from 'lucide-react';
 import { getAllStores } from '@order/shared/api';
 import type { Store } from '@order/shared';
-import { useCurrentStore } from '@/contexts/StoreContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFavoriteStores } from '@/hooks/useFavoriteStores';
 import BottomNav from '@/components/BottomNav';
 
 export default function Home() {
     const router = useRouter();
-    const { selectStore, store: selectedStore } = useCurrentStore();
     const { user } = useAuth();
     const { favoriteStoreIds, toggle: toggleFavorite, isLoggedIn } = useFavoriteStores();
     const [searchQuery, setSearchQuery] = useState('');
@@ -37,8 +35,7 @@ export default function Home() {
     const favoriteStores = deliveryStores.filter((s) => favoriteStoreIds.has(s.id));
 
     const handleSelectStore = (store: Store) => {
-        selectStore(store);
-        router.push('/menu');
+        router.push(`/store/${store.id}/menu`);
     };
 
     return (
@@ -72,24 +69,6 @@ export default function Home() {
             </header>
 
             <div className="px-4 py-4">
-                {/* 현재 선택된 매장 */}
-                {selectedStore && (
-                    <div className="mb-4 p-3 bg-brand-yellow/10 border border-brand-yellow rounded-xl flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <Bike size={18} className="text-brand-yellow" />
-                            <span className="text-sm font-bold text-brand-black">
-                                {selectedStore.name} 선택 중
-                            </span>
-                        </div>
-                        <button
-                            onClick={() => router.push('/menu')}
-                            className="text-xs font-bold text-brand-yellow flex items-center gap-0.5"
-                        >
-                            메뉴 보기 <ChevronRight size={14} />
-                        </button>
-                    </div>
-                )}
-
                 {isLoggedIn && !searchQuery && favoriteStores.length > 0 && (
                     <>
                         <h2 className="text-base font-bold text-gray-700 mb-3">즐겨찾기 매장</h2>
@@ -98,7 +77,6 @@ export default function Home() {
                                 <StoreCard
                                     key={store.id}
                                     store={store}
-                                    isSelected={selectedStore?.id === store.id}
                                     isFavorite={true}
                                     onSelect={() => handleSelectStore(store)}
                                     onToggleFavorite={() => toggleFavorite(store.id)}
@@ -129,7 +107,6 @@ export default function Home() {
                             <StoreCard
                                 key={store.id}
                                 store={store}
-                                isSelected={selectedStore?.id === store.id}
                                 isFavorite={favoriteStoreIds.has(store.id)}
                                 onSelect={() => handleSelectStore(store)}
                                 onToggleFavorite={isLoggedIn ? () => toggleFavorite(store.id) : undefined}
@@ -146,33 +123,22 @@ export default function Home() {
 
 function StoreCard({
     store,
-    isSelected,
     isFavorite,
     onSelect,
     onToggleFavorite,
 }: {
     store: Store;
-    isSelected: boolean;
     isFavorite: boolean;
     onSelect: () => void;
     onToggleFavorite?: () => void;
 }) {
     return (
-        <div
-            className={`relative bg-white rounded-xl shadow-sm border-2 transition-all ${
-                isSelected ? 'border-brand-yellow shadow-brand-yellow/20' : 'border-transparent'
-            }`}
-        >
+        <div className="relative bg-white rounded-xl shadow-sm border border-transparent transition-all">
             <button onClick={onSelect} className="w-full text-left p-4">
                 <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                             <h3 className="font-bold text-base text-brand-black truncate">{store.name}</h3>
-                            {isSelected && (
-                                <span className="flex-shrink-0 text-xs font-bold text-brand-yellow border border-brand-yellow rounded-full px-2 py-0.5">
-                                    선택
-                                </span>
-                            )}
                         </div>
 
                         {store.address && (

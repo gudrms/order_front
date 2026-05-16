@@ -2,16 +2,13 @@
 
 import { useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight, CreditCard, Tag, X } from 'lucide-react';
 import { calculateOrderTotals, validateOrder, type OrderItemInput as CoreOrderItemInput } from '@order/order-core';
 import { calculateCouponDiscount } from '@order/shared/types';
 import { generateOrderId } from '@order/shared/utils/id';
 import { useCartStore } from '@order/order-core';
 
-// SSR에서 window.location 참조로 인한 ReferenceError 방지
-// @order/ui 배럴을 통하면 @tosspayments/payment-widget-sdk 가 SSR 번들에 포함되므로
-// payment 서브패스로 직접 import
 const TossPaymentWidget = dynamic(
     () => import('@order/ui/payment').then((m) => ({ default: m.TossPaymentWidget })),
     { ssr: false },
@@ -31,7 +28,8 @@ const PENDING_TOSS_ORDER_ID_KEY = 'delivery.pendingTossOrderId';
 
 export default function CheckoutPage() {
     const router = useRouter();
-    const { store, storeId, isLoading: isStoreLoading } = useCurrentStore();
+    const { storeId } = useParams<{ storeId: string }>();
+    const { store } = useCurrentStore();
     const { user, loading: isAuthLoading } = useAuth();
     const { items, totalPrice } = useCartStore();
     const { deliveryInfo, setAddress, setCustomerInfo, setDeliveryRequest } = useDeliveryStore();
@@ -52,33 +50,21 @@ export default function CheckoutPage() {
         unitPrice: item.unitPrice,
         quantity: item.quantity,
     }));
-    const storePolicy = store
-        ? {
-            isActive: store.isActive,
-            isDeliveryEnabled: store.isDeliveryEnabled,
-            minimumOrderAmount: store.minimumOrderAmount,
-            deliveryFee: store.deliveryFee,
-            freeDeliveryThreshold: store.freeDeliveryThreshold,
-        }
-        : undefined;
-    const orderTotals = calculateOrderTotals({
-        items: coreOrderItems,
-        storePolicy,
-    });
-    const orderValidation = validateOrder({
-        flow: 'DELIVERY',
-        items: coreOrderItems,
-        storePolicy,
-    });
+    const storePolicy = {
+        isActive: store.isActive,
+        isDeliveryEnabled: store.isDeliveryEnabled,
+        minimumOrderAmount: store.minimumOrderAmount,
+        deliveryFee: store.deliveryFee,
+        freeDeliveryThreshold: store.freeDeliveryThreshold,
+    };
+    const orderTotals = calculateOrderTotals({ items: coreOrderItems, storePolicy });
+    const orderValidation = validateOrder({ flow: 'DELIVERY', items: coreOrderItems, storePolicy });
     const totalAmount = orderTotals.totalAmount;
     const deliveryFee = orderTotals.deliveryFee;
-    const discountAmount = selectedCoupon
-        ? calculateCouponDiscount(selectedCoupon.coupon, totalAmount)
-        : 0;
+    const discountAmount = selectedCoupon ? calculateCouponDiscount(selectedCoupon.coupon, totalAmount) : 0;
     const paymentAmount = totalAmount - discountAmount;
     const isBelowMinimum = orderValidation.issues.some((issue) => issue.code === 'BELOW_MINIMUM_ORDER');
-    const canOrder = !!storeId
-        && !!user
+    const canOrder = !!user
         && orderValidation.valid
         && !!deliveryInfo.customerName
         && !!deliveryInfo.customerPhone
@@ -89,8 +75,7 @@ export default function CheckoutPage() {
 
     useEffect(() => {
         if (deliveryInfo.address?.address || addresses.length === 0) return;
-
-        const defaultAddress = addresses.find((address) => address.isDefault) || addresses[0];
+        const defaultAddress = addresses.find((a) => a.isDefault) || addresses[0];
         setAddress({
             id: defaultAddress.id,
             name: defaultAddress.name,
@@ -101,20 +86,14 @@ export default function CheckoutPage() {
         if (defaultAddress.recipientName || defaultAddress.recipientPhone) {
             setCustomerInfo(defaultAddress.recipientName || '', defaultAddress.recipientPhone || '');
         }
-        if (defaultAddress.deliveryMemo) {
-            setDeliveryRequest(defaultAddress.deliveryMemo);
-        }
+        if (defaultAddress.deliveryMemo) setDeliveryRequest(defaultAddress.deliveryMemo);
     }, [addresses, deliveryInfo.address?.address, setAddress, setCustomerInfo, setDeliveryRequest]);
 
     useEffect(() => {
-        if (items.length === 0) {
-            router.replace('/menu');
-        }
-    }, [items.length, router]);
+        if (items.length === 0) router.replace(`/store/${storeId}/menu`);
+    }, [items.length, router, storeId]);
 
-    if (items.length === 0) {
-        return null;
-    }
+    if (items.length === 0) return null;
 
     const buildOrderRequest = (orderId: string): CreateOrderRequest => {
         const orderItems: PaymentOrderItemInput[] = items.map((item) => ({
@@ -130,7 +109,7 @@ export default function CheckoutPage() {
         }));
 
         return {
-            storeId: storeId!,
+            storeId,
             userId: user?.id,
             delivery: {
                 recipientName: deliveryInfo.customerName || '',
@@ -142,11 +121,11 @@ export default function CheckoutPage() {
                 addressId: deliveryInfo.address?.id,
             },
             items: orderItems,
-            totalAmount,           // 쿠폰 적용 전 금액 (백엔드 메뉴 금액 검증용)
+            totalAmount,
             userCouponId: selectedCoupon?.id,
             payment: {
                 orderId,
-                amount: paymentAmount, // 쿠폰 할인 후 실결제 금액
+                amount: paymentAmount,
                 paymentType: 'NORMAL',
                 method: 'TOSS',
             },
@@ -185,15 +164,14 @@ export default function CheckoutPage() {
             pendingTossOrderId = orderId;
             sessionStorage.setItem(PENDING_TOSS_ORDER_ID_KEY, orderId);
 
+            const origin = typeof window !== 'undefined' ? window.location.origin : '';
             await paymentWidget.requestPayment({
                 orderId,
-                orderName: items.length > 1
-                    ? `${items[0].menuName} 외 ${items.length - 1}건`
-                    : items[0].menuName,
+                orderName: items.length > 1 ? `${items[0].menuName} 외 ${items.length - 1}건` : items[0].menuName,
                 customerName: deliveryInfo.customerName,
                 customerEmail: user?.email || undefined,
-                successUrl: `${typeof window !== 'undefined' ? window.location.origin : ''}/order/success`,
-                failUrl: `${typeof window !== 'undefined' ? window.location.origin : ''}/order/fail`,
+                successUrl: `${origin}/store/${storeId}/order/success`,
+                failUrl: `${origin}/store/${storeId}/order/fail`,
             });
         } catch (error) {
             console.error('결제 요청 오류:', error);
@@ -208,10 +186,8 @@ export default function CheckoutPage() {
     };
 
     const disabledReason = (() => {
-        if (isStoreLoading) return '매장 정보를 불러오는 중입니다.';
         if (isAuthLoading) return '로그인 상태를 확인하는 중입니다.';
         if (!user) return '배달 주문은 로그인 후 이용할 수 있습니다.';
-        if (!store) return '매장 정보를 찾을 수 없습니다.';
         if (!store.isActive) return '현재 운영하지 않는 매장입니다.';
         if (!store.isDeliveryEnabled) return '현재 배달 주문을 받지 않는 매장입니다.';
         if (isBelowMinimum) return `최소 주문금액은 ${store.minimumOrderAmount.toLocaleString()}원입니다.`;
@@ -224,11 +200,7 @@ export default function CheckoutPage() {
         <main className="min-h-screen bg-gray-50">
             <header className="sticky top-0 z-50 bg-white border-b border-gray-100">
                 <div className="flex items-center justify-between px-4 h-14">
-                    <button
-                        onClick={() => router.back()}
-                        className="p-2 -ml-2 text-brand-black"
-                        aria-label="이전 페이지"
-                    >
+                    <button onClick={() => router.back()} className="p-2 -ml-2 text-brand-black" aria-label="이전 페이지">
                         <ChevronLeft size={24} />
                     </button>
                     <h1 className="font-bold text-lg">결제하기</h1>
@@ -239,10 +211,8 @@ export default function CheckoutPage() {
             <div className="max-w-[568px] mx-auto p-4 space-y-4 pb-36">
                 <section className="bg-white rounded-xl p-4 space-y-2">
                     <p className="text-sm text-gray-500">주문 매장</p>
-                    <h2 className="font-bold text-lg">{store?.name || '매장 확인 중'}</h2>
-                    {disabledReason && (
-                        <p className="text-sm text-red-500">{disabledReason}</p>
-                    )}
+                    <h2 className="font-bold text-lg">{store.name}</h2>
+                    {disabledReason && <p className="text-sm text-red-500">{disabledReason}</p>}
                 </section>
 
                 <section className="bg-white rounded-xl p-4 space-y-3">
@@ -252,12 +222,7 @@ export default function CheckoutPage() {
                             <span className="text-gray-500">주소</span>
                             <p className="font-medium mt-1">
                                 {deliveryInfo.address?.address || '주소를 입력해 주세요'}
-                                {deliveryInfo.address?.detailAddress && (
-                                    <>
-                                        <br />
-                                        {deliveryInfo.address.detailAddress}
-                                    </>
-                                )}
+                                {deliveryInfo.address?.detailAddress && <><br />{deliveryInfo.address.detailAddress}</>}
                             </p>
                         </div>
                         <div>
@@ -286,7 +251,7 @@ export default function CheckoutPage() {
                                     <p className="font-medium">{item.menuName}</p>
                                     {item.options && item.options.length > 0 && (
                                         <p className="text-gray-500 text-xs">
-                                            {item.options.map((option) => option.itemName).join(', ')}
+                                            {item.options.map((o) => o.itemName).join(', ')}
                                         </p>
                                     )}
                                 </div>
@@ -309,13 +274,10 @@ export default function CheckoutPage() {
                         clientKey={TOSS_CLIENT_KEY}
                         customerKey={user?.id || 'ANONYMOUS'}
                         amount={paymentAmount}
-                        onWidgetReady={(widget) => {
-                            paymentWidgetRef.current = widget;
-                        }}
+                        onWidgetReady={(widget) => { paymentWidgetRef.current = widget; }}
                     />
                 </section>
 
-                {/* 쿠폰 선택 */}
                 <section className="bg-white rounded-xl p-4">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
@@ -329,14 +291,8 @@ export default function CheckoutPage() {
                         </div>
                         {selectedCoupon ? (
                             <div className="flex items-center gap-2">
-                                <span className="text-sm font-semibold text-purple-600">
-                                    -{discountAmount.toLocaleString()}원
-                                </span>
-                                <button
-                                    onClick={() => setSelectedCoupon(null)}
-                                    className="p-1 text-gray-400 hover:text-gray-600"
-                                    aria-label="쿠폰 제거"
-                                >
+                                <span className="text-sm font-semibold text-purple-600">-{discountAmount.toLocaleString()}원</span>
+                                <button onClick={() => setSelectedCoupon(null)} className="p-1 text-gray-400 hover:text-gray-600" aria-label="쿠폰 제거">
                                     <X size={16} />
                                 </button>
                             </div>
@@ -383,9 +339,7 @@ export default function CheckoutPage() {
                         <div className="h-px bg-gray-200 my-2" />
                         <div className="flex justify-between text-lg">
                             <span className="font-bold">총 결제 금액</span>
-                            <span className="font-bold text-brand-yellow">
-                                {paymentAmount.toLocaleString()}원
-                            </span>
+                            <span className="font-bold text-brand-yellow">{paymentAmount.toLocaleString()}원</span>
                         </div>
                     </div>
                 </section>
@@ -393,38 +347,24 @@ export default function CheckoutPage() {
 
             <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4 pb-8">
                 <div className="max-w-[568px] mx-auto space-y-2">
-                    {disabledReason && (
-                        <p className="text-center text-sm text-red-500">{disabledReason}</p>
-                    )}
+                    {disabledReason && <p className="text-center text-sm text-red-500">{disabledReason}</p>}
                     <button
                         onClick={user ? handlePayment : () => router.push('/login')}
                         disabled={isPaymentButtonDisabled}
                         className="w-full bg-brand-black text-white p-4 rounded-xl font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        {!user
-                            ? '로그인하고 주문하기'
-                            : isProcessing
-                                ? '처리 중...'
-                                : `${paymentAmount.toLocaleString()}원 결제하기`}
+                        {!user ? '로그인하고 주문하기' : isProcessing ? '처리 중...' : `${paymentAmount.toLocaleString()}원 결제하기`}
                     </button>
                 </div>
             </div>
 
-            {/* 쿠폰 선택 바텀시트 */}
             {showCouponSheet && (
                 <div className="fixed inset-0 z-50 flex flex-col justify-end">
-                    <div
-                        className="absolute inset-0 bg-black/40"
-                        onClick={() => setShowCouponSheet(false)}
-                    />
+                    <div className="absolute inset-0 bg-black/40" onClick={() => setShowCouponSheet(false)} />
                     <div className="relative bg-white rounded-t-2xl max-h-[70vh] flex flex-col">
                         <div className="flex items-center justify-between p-4 border-b border-gray-100">
                             <h3 className="font-bold text-lg">쿠폰 선택</h3>
-                            <button
-                                onClick={() => setShowCouponSheet(false)}
-                                className="p-2 text-gray-400"
-                                aria-label="닫기"
-                            >
+                            <button onClick={() => setShowCouponSheet(false)} className="p-2 text-gray-400" aria-label="닫기">
                                 <X size={20} />
                             </button>
                         </div>
@@ -436,17 +376,8 @@ export default function CheckoutPage() {
                                     <button
                                         key={uc.id}
                                         disabled={isDisabled}
-                                        onClick={() => {
-                                            setSelectedCoupon(uc);
-                                            setShowCouponSheet(false);
-                                        }}
-                                        className={`w-full text-left p-4 rounded-xl border-2 transition-colors ${
-                                            isDisabled
-                                                ? 'border-gray-100 bg-gray-50 opacity-50 cursor-not-allowed'
-                                                : selectedCoupon?.id === uc.id
-                                                    ? 'border-purple-500 bg-purple-50'
-                                                    : 'border-gray-100 hover:border-purple-200'
-                                        }`}
+                                        onClick={() => { setSelectedCoupon(uc); setShowCouponSheet(false); }}
+                                        className={`w-full text-left p-4 rounded-xl border-2 transition-colors ${isDisabled ? 'border-gray-100 bg-gray-50 opacity-50 cursor-not-allowed' : selectedCoupon?.id === uc.id ? 'border-purple-500 bg-purple-50' : 'border-gray-100 hover:border-purple-200'}`}
                                     >
                                         <div className="flex justify-between items-start">
                                             <div>
@@ -457,25 +388,13 @@ export default function CheckoutPage() {
                                                         : `${uc.coupon.discountValue.toLocaleString()}원 할인`}
                                                 </p>
                                                 {uc.coupon.minOrderAmount && (
-                                                    <p className="text-xs text-gray-400 mt-0.5">
-                                                        최소 주문 {uc.coupon.minOrderAmount.toLocaleString()}원 이상
-                                                    </p>
+                                                    <p className="text-xs text-gray-400 mt-0.5">최소 주문 {uc.coupon.minOrderAmount.toLocaleString()}원 이상</p>
                                                 )}
-                                                <p className="text-xs text-gray-400 mt-1">
-                                                    만료: {new Date(uc.expiresAt).toLocaleDateString('ko-KR')}
-                                                </p>
+                                                <p className="text-xs text-gray-400 mt-1">만료: {new Date(uc.expiresAt).toLocaleDateString('ko-KR')}</p>
                                             </div>
-                                            {!isDisabled && (
-                                                <span className="text-purple-600 font-bold text-sm flex-shrink-0 ml-2">
-                                                    -{discount.toLocaleString()}원
-                                                </span>
-                                            )}
+                                            {!isDisabled && <span className="text-purple-600 font-bold text-sm flex-shrink-0 ml-2">-{discount.toLocaleString()}원</span>}
                                         </div>
-                                        {isDisabled && (
-                                            <p className="text-xs text-red-400 mt-1">
-                                                최소 주문금액 {uc.coupon.minOrderAmount!.toLocaleString()}원 미달
-                                            </p>
-                                        )}
+                                        {isDisabled && <p className="text-xs text-red-400 mt-1">최소 주문금액 {uc.coupon.minOrderAmount!.toLocaleString()}원 미달</p>}
                                     </button>
                                 );
                             })}

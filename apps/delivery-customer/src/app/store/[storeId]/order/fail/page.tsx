@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense, useEffect, useRef } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { AlertTriangle } from 'lucide-react';
 import { useFailTossPayment } from '@/hooks/mutations/useFailTossPayment';
 
@@ -9,6 +9,7 @@ const PENDING_TOSS_ORDER_ID_KEY = 'delivery.pendingTossOrderId';
 
 function FailContent() {
     const router = useRouter();
+    const { storeId } = useParams<{ storeId: string }>();
     const searchParams = useSearchParams();
     const failMutation = useFailTossPayment();
     const hasReportedRef = useRef(false);
@@ -22,16 +23,8 @@ function FailContent() {
 
         hasReportedRef.current = true;
         failMutation.mutate(
-            {
-                orderId,
-                code,
-                message,
-            },
-            {
-                onSettled: () => {
-                    sessionStorage.removeItem(PENDING_TOSS_ORDER_ID_KEY);
-                },
-            }
+            { orderId, code, message },
+            { onSettled: () => { sessionStorage.removeItem(PENDING_TOSS_ORDER_ID_KEY); } }
         );
     }, [code, failMutation, message, orderId]);
 
@@ -55,13 +48,13 @@ function FailContent() {
 
                 <div className="space-y-2">
                     <button
-                        onClick={() => router.push('/order/checkout')}
+                        onClick={() => router.push(`/store/${storeId}/order/checkout`)}
                         className="w-full bg-brand-black text-white p-4 rounded-xl font-bold"
                     >
                         다시 결제하기
                     </button>
                     <button
-                        onClick={() => router.push('/menu')}
+                        onClick={() => router.push(`/store/${storeId}/menu`)}
                         className="w-full border-2 border-gray-200 p-4 rounded-xl font-bold"
                     >
                         메뉴로 돌아가기

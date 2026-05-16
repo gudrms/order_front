@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense, useEffect, useRef, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { CheckCircle2, RotateCcw } from 'lucide-react';
 import { useCartStore } from '@order/order-core';
 import { useConfirmTossPayment } from '@/hooks/mutations/useConfirmTossPayment';
@@ -12,6 +12,7 @@ const PENDING_TOSS_ORDER_ID_KEY = 'delivery.pendingTossOrderId';
 
 function SuccessContent() {
     const router = useRouter();
+    const { storeId } = useParams<{ storeId: string }>();
     const searchParams = useSearchParams();
     const { clearCart } = useCartStore();
     const { store } = useCurrentStore();
@@ -42,12 +43,7 @@ function SuccessContent() {
         try {
             setError(null);
             setIsProcessing(true);
-            const result = await confirmTossPaymentMutation.mutateAsync({
-                orderId,
-                paymentKey,
-                amount: parsedAmount,
-            });
-
+            const result = await confirmTossPaymentMutation.mutateAsync({ orderId, paymentKey, amount: parsedAmount });
             clearCart();
             sessionStorage.removeItem(PENDING_TOSS_ORDER_ID_KEY);
             setConfirmedOrderId(result.id);
@@ -62,7 +58,6 @@ function SuccessContent() {
 
     useEffect(() => {
         void processPayment();
-        // searchParams is stable for this redirect screen; processPayment is intentionally one-shot.
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -126,18 +121,22 @@ function SuccessContent() {
                     </div>
                     <div className="flex justify-between">
                         <span className="text-gray-500">예상 배달 시간</span>
-                        <span className="font-medium">{store?.estimatedDeliveryMinutes || 40}분</span>
+                        <span className="font-medium">{store.estimatedDeliveryMinutes || 40}분</span>
                     </div>
                 </div>
 
                 <div className="space-y-2">
                     <button
-                        onClick={() => {
-                            if (confirmedOrderId) router.push(`/orders/${confirmedOrderId}`);
-                        }}
+                        onClick={() => { if (confirmedOrderId) router.push(`/orders/${confirmedOrderId}`); }}
                         className="w-full bg-brand-black text-white p-4 rounded-xl font-bold"
                     >
                         주문 상세 보기
+                    </button>
+                    <button
+                        onClick={() => router.push(`/store/${storeId}/menu`)}
+                        className="w-full border-2 border-gray-200 p-4 rounded-xl font-bold"
+                    >
+                        더 주문하기
                     </button>
                     <button
                         onClick={() => router.push('/')}
