@@ -47,6 +47,7 @@
 - 등록 이벤트:
   - `PAYMENT_STATUS_CHANGED`
   - `CANCEL_STATUS_CHANGED`
+- 등록 상태: 2026-05-16 등록 완료
 - 리다이렉트 URL:
   - `https://delivery.tacomole.kr/store/*/order/success`
   - `https://delivery.tacomole.kr/store/*/order/fail`
