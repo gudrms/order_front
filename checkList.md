@@ -1,6 +1,6 @@
 # Taco Mono 작업 현황
 
-마지막 업데이트: 2026-05-16
+마지막 업데이트: 2026-05-16 (2차)
 
 ---
 
@@ -27,6 +27,11 @@
 - [ ] **프록시 헤더 신뢰 정책 문서화**: Vercel/Edge 뒤에서만 `x-forwarded-for`를 신뢰한다는 전제를 `docs/architecture.md` 또는 운영자 문서에 명시. 직접 서버 노출 시 `trust proxy`/WAF 정책 재검토.
 
 ### 치명 버그
+
+- [x] **`apiClient` fallback URL 운영 주소로 수정** (2026-05-16): `packages/shared/src/api/client.ts` — `NEXT_PUBLIC_API_URL` 미설정 시 `http://localhost:3000/api/v1` → `https://api.tacomole.kr/api/v1`로 교체. 서버사이드 `DOMAINS.API` fallback과 통일. Vercel 빌드 시 환경변수 미설정이면 클라이언트 번들에 localhost가 고정되어 delivery/table-order 메뉴 API 호출 실패 → 무한 로딩 발생 원인.
+- [ ] **Vercel `NEXT_PUBLIC_API_URL` 환경변수 설정**: `order-delivery`, `order-front-frontend` 두 프로젝트 모두 Production/Preview에 `NEXT_PUBLIC_API_URL=https://api.tacomole.kr/api/v1` 추가 → 재배포 필요. `NEXT_PUBLIC_*`는 빌드 타임 embed이므로 env 설정 후 반드시 새 배포.
+- [ ] **Supabase OAuth redirect URL 허용 목록에 delivery 도메인 추가**: Supabase 대시보드 → Authentication → URL Configuration → Redirect URLs에 `order-delivery` Vercel URL(`*-vndanwl-6825s-projects.vercel.app`) 및 커스텀 도메인(`delivery.tacomole.kr`) 추가 필요. 미추가 시 Supabase가 Site URL(table-order)로 fallback → 로그인 후 배달앱 대신 table-order로 이동.
+- [ ] **Vercel 프로젝트-앱 매핑 확인**: `order-front-frontend` = table-order 앱, `order-delivery` = delivery-customer 앱. Capacitor Remote WebView URL도 `order-delivery` 도메인으로 설정해야 함.
 
 - [x] **`updateOrderStatus` localStorage mock 제거** (2026-05-12): `packages/shared/src/api/endpoints/order.ts` + `apps/table-order/src/lib/api/endpoints/order.ts` — localStorage mock → `PATCH /stores/:storeId/orders/:orderId/status` 실 API 호출로 교체. 시그니처 `(orderNumber, status)` → `(storeId, orderId, status)` 변경.
 - [x] **`generateOrderNumber` 동시성 취약점** (2026-05-12): DB 레벨 `@@unique([storeId, orderNumber])` 제약이 이미 스키마에 존재 확인. `count() + 1` 중복 발급 시 Prisma P2002 → 트랜잭션 롤백으로 안전. 주석 추가. (진짜 해법은 DB 시퀀스이나 현재 구조로 안전성 확인됨)
@@ -127,6 +132,7 @@
 - [x] `android/app/build.gradle` 서명 설정 (2026-05-12, 2026-05-16 재확인): `signingConfigs.release` 블록 추가. `android/key.properties`에서 `taco-key` 업로드 키를 자동 로드하고 `bundleRelease` 산출물이 서명되도록 고정.
 - [x] `capacitor.config.ts` appId `com.tacomole.app` 확정 (2026-05-12, Play Console 패키지명 기준으로 2026-05-16 보정)
 - [x] `android/app/build.gradle` versionCode 1 / versionName "1.0.0" 설정 (2026-05-12)
+- [x] Google Play API 수준 35 요구 대응 (2026-05-16): `apps/delivery-customer/android/variables.gradle`의 `compileSdkVersion`/`targetSdkVersion`을 35로 상향. Play Console의 target API 34 업로드 오류 보정.
 - [x] 운영 URL cap sync (2026-05-12, 2026-05-16 재수행): `CAPACITOR_SERVER_URL=https://delivery.tacomole.kr pnpm --filter delivery-customer exec cap sync android`. Remote WebView 방식으로 Vercel 배포 앱을 WebView로 로드.
 - [x] 릴리즈 `.aab` 빌드 완료 (2026-05-12, 2026-05-16 재빌드): Play Console 패키지명 `com.tacomole.app` 기준으로 `android/app/release/app-release.aab` 재생성. `jarsigner -verify`로 `taco-key` 서명 확인. 기존 `com.taco.delivery` AAB는 Play Console 업로드 불가.
 - [x] Google Play Console 개발자 계정 등록 완료 (2026-05-12)
