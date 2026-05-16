@@ -206,9 +206,9 @@
 
 ## 🎨 Brand Website
 
-- [ ] Kakao Map 실제 연동 + 운영 키 환경변수 정리
+- [x] **매장 페이지 카카오 지도 + 목록 분할 레이아웃** (2026-05-16): `StoreContent.tsx` 전면 재설계. 지도(좌) + 매장 목록(우) 분할 레이아웃(lg 이상). 지도 마커 클릭 → 해당 카드 강조 + 스크롤 이동. 카드 클릭 → 지도 해당 위치로 이동. 매장 카드 "지금 주문하기" → `delivery.tacomole.kr/store/{storeId}/menu`. `NEXT_PUBLIC_KAKAO_MAP_KEY` 없을 때 목록 단독 fallback(로컬 개발). GPS 거리 정렬·검색 유지.
 - [ ] 결제 콜백/리다이렉트 URL 환경변수에서 brand-website 경로 정리 (운영 배포 직전 점검)
-- [ ] 배포 후 매장 지도 동작 검증
+- [ ] 배포 후 매장 지도 동작 검증 (마커 클릭, 카드 연동, 주문 링크 이동)
 
 ---
 
@@ -236,6 +236,7 @@
 - 카카오 OAuth 정보(이름·전화번호) 배달 정보 입력 폼 자동 완성
 - 로그인 sync 타임아웃 25s 확장 + loading 비블로킹 + sync 후 favorite-stores 자동 재시도
 - Toss 결제 웹훅 연동: PAYMENT_STATUS_CHANGED / CANCEL_STATUS_CHANGED 처리 (payment AI)
+- brand-website 매장 페이지: 카카오 지도 + 목록 분할 레이아웃. 마커 클릭 → 카드 강조, 카드 클릭 → 지도 이동, "지금 주문하기" → delivery 앱 해당 매장 메뉴 직접 링크
 
 ### 2026-05-12
 - env sync 스크립트 도입 (`scripts/sync-env.js`, `pnpm sync:env`)

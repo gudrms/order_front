@@ -72,6 +72,8 @@
 - *로그인 후 즐겨찾기 401*: sync API 완료 전에 favorites 쿼리가 실행되어 401. `syncSessionUser` 성공 후 `queryClient.invalidateQueries(['favorite-stores'])` 호출로 해소.
 - *로그인 sync 타임아웃*: Vercel cold start가 10~15초 걸리는데 기본 타임아웃이 10초라 sync 실패 → loading 블로킹. sync 타임아웃을 25초로 확장하고 loading 상태는 sync 완료를 기다리지 않도록 변경.
 
+**브랜드 사이트 매장 페이지 개편**: 초기에는 카카오 지도를 완전히 제거하고 목록 단독 레이아웃으로 단순화했다. 이후 엽기떡볶이(yupdduk.com) 같은 프랜차이즈 브랜드 사이트 벤치마킹을 통해 지도 기반 매장 찾기 + 주문 연결이 핵심 UX임을 확인했다. 최종적으로 지도(좌) + 목록(우) 분할 레이아웃으로 재설계했다. 마커 클릭 시 해당 카드 강조·스크롤 이동, 카드 클릭 시 지도 위치 이동, "지금 주문하기" 버튼은 `delivery.tacomole.kr/store/{storeId}/menu`로 직접 연결된다. `NEXT_PUBLIC_KAKAO_MAP_KEY` 미설정 시 목록 단독 fallback으로 로컬 개발 환경도 대응한다.
+
 ---
 
 ## 주요 기술 결정 요약
@@ -86,3 +88,4 @@
 | 보안 처리 | git filter-repo | git 히스토리에서 시크릿 완전 제거 (rewrite 필요) |
 | 배달앱 매장 라우팅 | URL 기반 `/store/[storeId]/menu` | localStorage는 공유·북마크 불가, URL이 정확한 상태 표현 |
 | 매장 즐겨찾기 | DB 테이블 (`UserFavoriteStore`) | 기기 간 동기화 필요, localStorage로는 로그인 연동 불가 |
+| 브랜드 사이트 매장 지도 | 카카오 지도 + 목록 분할 | 지도에서 바로 주문 링크 연결 — 브랜드 사이트는 discovery, 실제 주문은 delivery 앱으로 분리 |
