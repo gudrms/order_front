@@ -1,6 +1,6 @@
 # Taco Mono 작업 현황
 
-마지막 업데이트: 2026-05-16 (2차)
+마지막 업데이트: 2026-05-16 (3차)
 
 ---
 
@@ -30,7 +30,7 @@
 
 - [x] **`apiClient` fallback URL 운영 주소로 수정** (2026-05-16): `packages/shared/src/api/client.ts` — `NEXT_PUBLIC_API_URL` 미설정 시 `http://localhost:3000/api/v1` → `https://api.tacomole.kr/api/v1`로 교체. 서버사이드 `DOMAINS.API` fallback과 통일. Vercel 빌드 시 환경변수 미설정이면 클라이언트 번들에 localhost가 고정되어 delivery/table-order 메뉴 API 호출 실패 → 무한 로딩 발생 원인.
 - [ ] **Vercel `NEXT_PUBLIC_API_URL` 환경변수 설정**: `order-delivery`, `order-front-frontend` 두 프로젝트 모두 Production/Preview에 `NEXT_PUBLIC_API_URL=https://api.tacomole.kr/api/v1` 추가 → 재배포 필요. `NEXT_PUBLIC_*`는 빌드 타임 embed이므로 env 설정 후 반드시 새 배포.
-- [ ] **Supabase OAuth redirect URL 허용 목록에 delivery 도메인 추가**: Supabase 대시보드 → Authentication → URL Configuration → Redirect URLs에 `order-delivery` Vercel URL(`*-vndanwl-6825s-projects.vercel.app`) 및 커스텀 도메인(`delivery.tacomole.kr`) 추가 필요. 미추가 시 Supabase가 Site URL(table-order)로 fallback → 로그인 후 배달앱 대신 table-order로 이동.
+- [x] **Supabase OAuth redirect URL 허용 목록에 delivery 도메인 추가** (2026-05-16): Supabase 대시보드 → Authentication → URL Configuration → Redirect URLs에 `https://*.tacomole.kr/**` 와일드카드 추가. Site URL을 `https://delivery.tacomole.kr/`로 변경. 로그인 후 table-order로 리다이렉트되던 문제 해소.
 - [ ] **Vercel 프로젝트-앱 매핑 확인**: `order-front-frontend` = table-order 앱, `order-delivery` = delivery-customer 앱. Capacitor Remote WebView URL도 `order-delivery` 도메인으로 설정해야 함.
 
 - [x] **`updateOrderStatus` localStorage mock 제거** (2026-05-12): `packages/shared/src/api/endpoints/order.ts` + `apps/table-order/src/lib/api/endpoints/order.ts` — localStorage mock → `PATCH /stores/:storeId/orders/:orderId/status` 실 API 호출로 교체. 시그니처 `(orderNumber, status)` → `(storeId, orderId, status)` 변경.
@@ -64,6 +64,8 @@
 
 ### 기능
 
+- [x] **배달앱 매장 선택 흐름 구현** (2026-05-16): `StoreContext`를 env var 고정(`NEXT_PUBLIC_STORE_ID`) 방식에서 사용자 선택 + localStorage 영속 방식으로 전면 교체. 홈 화면을 전체 재작성 — `getAllStores()` 조회 후 `isDeliveryEnabled && isActive` 필터, 이름/주소 검색, `StoreCard` 컴포넌트(배달비·최소 주문금액·예상시간 표시). 선택한 매장은 `delivery.selectedStore` 키로 localStorage 저장, 앱 재진입 시 복원. 메뉴 페이지 guard도 `error` 제거 → `!store` 시 `/`로 replace.
+- [x] **매장 즐겨찾기 (DB 기반)** (2026-05-16): `UserFavoriteStore` Prisma 모델 추가 + migration SQL 생성 및 Supabase 운영 DB 적용. 백엔드 `GET /users/me/favorite-stores` / `POST /users/me/favorite-stores/:storeId/toggle` 엔드포인트 추가. shared `FavoriteStore` 타입 + `getFavoriteStores()` / `toggleFavoriteStore()` API 함수 추가. 배달앱 홈 화면에 하트 버튼(로그인 사용자만 표시) + "즐겨찾기 매장" 섹션(상단 노출). `useFavoriteStores` 훅에 optimistic update 적용.
 - [x] **메뉴 이미지 업로드 기능** (2026-05-16): admin 메뉴 등록/수정 시 이미지 URL 직접 입력 → 파일 업로드로 교체. admin에서 클라이언트 압축(`browser-image-compression`, max 1MB/1280px) 후 백엔드 `POST /stores/:storeId/menus/image` 경유, 백엔드 `StorageService`가 `SUPABASE_SERVICE_KEY`로 Supabase Storage 기존 `assets` 버킷의 `menu/{storeId}/{uuid}.ext` 경로에 저장하고 public URL 반환. 권한은 `assertCanManageAdminDirectMenus` 재사용. Vercel 요청 본문 ~4.5MB 제한 때문에 클라 압축 필수.
 
 ### 테스트

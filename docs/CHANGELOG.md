@@ -9,9 +9,6 @@
 
 ## [Unreleased]
 
-### Added
-- 배달앱 매장 즐겨찾기 기능 (미구현)
-
 ---
 
 ## [0.6.0] - 2026-05-16
@@ -19,14 +16,16 @@
 ### Added
 - 어드민 메뉴 이미지 업로드 (`browser-image-compression` + Supabase Storage)
 - 배달앱 홈 화면 매장 선택 흐름 (`StoreContext`, localStorage 유지, 매장 목록 + 검색)
+- **매장 즐겨찾기 (DB 기반)**: `UserFavoriteStore` 테이블 + migration, 백엔드 `GET /users/me/favorite-stores` / `POST /users/me/favorite-stores/:storeId/toggle`, 배달앱 홈 하트 버튼 + 즐겨찾기 섹션 (optimistic update)
 - Android target API 35 대응, Google Play Console 등록정보 및 스토어 자산 추가, AAB 재빌드
 - Android 앱 버전 상향 (`versionCode 2`, `versionName 1.0.1`) 및 공개 테스트 출시 버전 Google 심사 제출
 - Play Console 광고 ID 미사용 선언 완료
 - E2E 테스트 추가: delivery-customer 결제 플로우 (12 tests), 메뉴 → 장바구니 → 결제 플로우 (11 tests)
+- `docs/CHANGELOG.md`, `docs/history.md` 프로젝트 이력 문서 신규 작성
 
 ### Fixed
 - `apiClient` fallback URL을 `localhost` 에서 `https://api.tacomole.kr/api/v1` 로 수정 (운영 환경 오작동 방지)
-- Supabase OAuth redirect URL 설정 오류 및 CORS 원인 파악·정리
+- Supabase OAuth redirect URL 설정 누락 수정 (`https://*.tacomole.kr/**` 추가, Site URL을 `delivery.tacomole.kr`로 변경)
 
 ---
 
