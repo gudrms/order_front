@@ -66,6 +66,7 @@
 - *Prisma 클라이언트 미재생성*: `UserFavoriteStore` 모델 추가 후 `prisma generate`를 누락해 런타임에서 `userFavoriteStore is not a function` 오류 발생. 스키마 변경 시 반드시 `prisma generate` → commit을 함께 수행해야 한다.
 - *CORS 304 캐시 오염*: 같은 브라우저에서 admin → delivery 순서로 접근하면 카테고리 API 응답 캐시에 `Access-Control-Allow-Origin: admin.tacomole.kr`가 남아 delivery에서 CORS 차단. `Vary: Origin` 미들웨어를 모든 응답에 선제 추가해 브라우저·CDN이 origin별로 캐시를 분리하도록 수정했다.
 - *결제 페이지 404*: `/store/[storeId]/menu/page.tsx`에서 `router.push('order/checkout')`를 상대 경로로 작성해 실제 이동 URL이 `/store/.../menu/order/checkout`가 됨. `/store/${store.id}/order/checkout` 절대 경로로 수정.
+- *장바구니 최소주문금액 불일치*: 홈 화면과 checkout은 매장 정책의 `minimumOrderAmount`를 쓰지만, 장바구니 BottomSheet에 `15,000원`이 하드코딩되어 테스트 매장 10원 결제 흐름이 막혔다. 장바구니도 `StoreContext`의 매장 정책을 사용하도록 고치고, `/orders` 전역 라우트는 선택 매장이 없을 때 안내 상태를 보여주도록 빌드 안전성을 보강했다.
 
 ---
 

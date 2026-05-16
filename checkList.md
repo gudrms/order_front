@@ -65,13 +65,14 @@
 ### 기능
 
 - [x] **배달앱 매장 선택 흐름 구현 — URL 기반으로 전환** (2026-05-16): 처음엔 localStorage 방식으로 구현했으나 URL 공유·북마크 불가 문제로 URL 기반으로 재설계. 라우트 구조를 `/menu`, `/order/*` → `/store/[storeId]/menu`, `/store/[storeId]/order/*` 로 전환. `StoreContext`에서 localStorage 완전 제거 — `/store/[storeId]/layout.tsx`가 `storeId`로 매장을 fetch 후 `StoreProvider`에 주입. Toss `successUrl`·`failUrl`도 새 URL 패턴으로 업데이트. 홈에서 매장 선택 시 `/store/${id}/menu` 로 이동.
+- [x] **배달앱 장바구니 최소주문금액 매장 정책 연동** (2026-05-16): `CartBottomSheet`의 하드코딩 `15,000원` 검증을 제거하고 `StoreContext.store.minimumOrderAmount` 기준으로 안내/주문 진행을 판단하도록 수정. `/orders` 전역 라우트는 `StoreProvider` 밖에서도 빌드되도록 선택 매장 안내 상태를 추가. `pnpm --filter delivery-customer type-check` 및 `build` 통과.
 - [x] **마이페이지 헤더 네비게이션 추가** (2026-05-16): 뒤로가기(←) 및 주문하기 버튼 추가. 홈(`/`)으로 이동.
 - [x] **매장 즐겨찾기 (DB 기반)** (2026-05-16): `UserFavoriteStore` Prisma 모델 추가 + migration SQL 생성 및 Supabase 운영 DB 적용. 백엔드 `GET /users/me/favorite-stores` / `POST /users/me/favorite-stores/:storeId/toggle` 엔드포인트 추가. shared `FavoriteStore` 타입 + `getFavoriteStores()` / `toggleFavoriteStore()` API 함수 추가. 배달앱 홈 화면에 하트 버튼(로그인 사용자만 표시) + "즐겨찾기 매장" 섹션(상단 노출). `useFavoriteStores` 훅에 optimistic update 적용.
 - [x] **메뉴 이미지 업로드 기능** (2026-05-16): admin 메뉴 등록/수정 시 이미지 URL 직접 입력 → 파일 업로드로 교체. admin에서 클라이언트 압축(`browser-image-compression`, max 1MB/1280px) 후 백엔드 `POST /stores/:storeId/menus/image` 경유, 백엔드 `StorageService`가 `SUPABASE_SERVICE_KEY`로 Supabase Storage 기존 `assets` 버킷의 `menu/{storeId}/{uuid}.ext` 경로에 저장하고 public URL 반환. 권한은 `assertCanManageAdminDirectMenus` 재사용. Vercel 요청 본문 ~4.5MB 제한 때문에 클라 압축 필수.
 
 ### 테스트
 
-- [ ] **실 Toss 카드결제 E2E**: `payments-e2e.spec.ts`는 서비스 레이어 mock 한정. 실 HTTP 콜백 / idempotency / 취소 무점검. 실 환경 필요.
+- [ ] **실 Toss 카드결제 E2E**: `payments-e2e.spec.ts`는 서비스 레이어 mock 한정. 실 HTTP 콜백 / idempotency / 취소 무점검. 운영 테스트 매장은 배달 주문 ON, 최소주문금액 0원, `E2E 테스트 타코` 10원으로 세팅 완료. `496603e` 배포 후 장바구니 → 주소 입력 → Toss 결제창 진입 재검증 필요.
 - [ ] **테이블오더 첫 주문/추가 주문 E2E**: 브라우저-백엔드 통합 E2E 미작성.
 - [ ] **백엔드 미작성 모듈 테스트**: `error-logs`, `sessions`, `integrations/toss`, `menu-detail`, `app.module`.
 - [ ] **DB schema `OrderSource.HOMEPAGE` 제거**: migration 영향 검토 후 별도 작업.

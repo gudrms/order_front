@@ -27,6 +27,11 @@
 ### Fixed
 - `apiClient` fallback URL을 `localhost` 에서 `https://api.tacomole.kr/api/v1` 로 수정 (운영 환경 오작동 방지)
 - Supabase OAuth redirect URL 설정 누락 수정 (`https://*.tacomole.kr/**` 추가, Site URL을 `delivery.tacomole.kr`로 변경)
+- 배달앱 장바구니 최소주문금액을 하드코딩 `15,000원`에서 매장별 `minimumOrderAmount` 기준으로 변경
+- 배달앱 `/orders` 전역 라우트가 `StoreProvider` 없이 prerender될 때 빌드 실패하던 문제 수정
+- 결제 페이지 상대 경로 이동으로 `/store/[storeId]/menu/order/checkout` 404가 발생하던 문제 수정
+- API CORS 응답에 `Vary: Origin`을 추가해 여러 프론트 도메인 간 304 캐시 오염 방지
+- `UserFavoriteStore` 추가 후 Prisma 클라이언트 미재생성으로 발생하던 런타임 오류 수정
 
 ---
 
