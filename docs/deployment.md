@@ -2,15 +2,15 @@
 
 ## Vercel 프로젝트 구성
 
-모노레포에 5개 Vercel 프로젝트가 연결되어 있다. 각 프로젝트의 Root Directory를 반드시 아래와 같이 설정해야 한다.
+모노레포에 5개 Vercel 프로젝트가 연결되어 있다. 현재 프론트 프로젝트는 repo root 기준으로 빌드 명령을 실행하고, 백엔드만 `apps/backend` Root Directory를 사용한다.
 
-| Vercel 프로젝트 | Root Directory | 도메인 |
-|---|---|---|
-| backend | `apps/backend` | api.tacomole.kr |
-| admin | `apps/admin` | admin.tacomole.kr |
-| table-order | `apps/table-order` | order.tacomole.kr |
-| delivery-customer | `apps/delivery-customer` | delivery.tacomole.kr |
-| brand-website | `apps/brand-website` | tacomole.kr |
+| Vercel 프로젝트 | 앱 | Root Directory | 도메인 |
+|---|---|---|---|
+| `order-front-backend` | backend | `apps/backend` | api.tacomole.kr |
+| `order-admin` | admin | repo root | admin.tacomole.kr |
+| `order-front-frontend` | table-order | repo root | order.tacomole.kr |
+| `order-delivery` | delivery-customer | repo root | delivery.tacomole.kr |
+| `order-website` | brand-website | repo root | tacomole.kr |
 
 ---
 

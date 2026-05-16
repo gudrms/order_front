@@ -441,20 +441,20 @@ npm i @sentry/nextjs
 
 **코드로 고칠 수 있나?** → **아니요.** 트리거 자체는 Vercel 대시보드 설정이라 코드단에서 제어 불가.
 
-**해결 방법 (Vercel 대시보드)**: 각 프로젝트 Settings → Git → **Ignored Build Step**에 아래 스크립트 입력.
-변경된 파일이 해당 앱 디렉토리에 없으면 빌드를 건너뜀:
+**해결 방법 (Vercel 대시보드)**: 각 프로젝트 Settings → Build and Deployment → **Ignored Build Step**에 아래 스크립트 입력.
+변경된 파일이 해당 앱 또는 의존 패키지에 없으면 빌드를 건너뜀:
 
 | Vercel 프로젝트 | Ignored Build Step 명령어 |
 |----------------|--------------------------|
-| backend | `git diff HEAD^ HEAD --quiet -- apps/backend/ packages/` |
-| admin | `git diff HEAD^ HEAD --quiet -- apps/admin/ packages/` |
-| delivery-customer | `git diff HEAD^ HEAD --quiet -- apps/delivery-customer/ packages/` |
-| brand-website | `git diff HEAD^ HEAD --quiet -- apps/brand-website/ packages/` |
-| table-order | `git diff HEAD^ HEAD --quiet -- apps/table-order/ packages/` |
+| `order-front-backend` | `node ../../scripts/vercel-ignore-build.js backend` |
+| `order-admin` | `node scripts/vercel-ignore-build.js admin` |
+| `order-delivery` | `node scripts/vercel-ignore-build.js delivery-customer` |
+| `order-website` | `node scripts/vercel-ignore-build.js brand-website` |
+| `order-front-frontend` | `node scripts/vercel-ignore-build.js table-order` |
 
 > 명령이 exit 0 (변경 없음) → 빌드 스킵 / exit 1 (변경 있음) → 빌드 진행
 
-**현재 상태**: 미설정 (모든 앱이 항상 재배포됨) → 배포 시간 낭비, 크레딧 소모 주의
+프론트 프로젝트는 Vercel Root Directory가 repo root 기준이므로 `node scripts/...`를 사용한다. 백엔드 프로젝트는 Root Directory가 `apps/backend`라서 `node ../../scripts/...`를 사용한다.
 
 ---
 

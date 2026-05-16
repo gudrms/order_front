@@ -2,19 +2,19 @@
 
 이 저장소는 여러 Vercel 프로젝트가 같은 모노레포에 연결되어 있다. 전체 프로젝트가 매 push마다 빌드되지 않도록 각 프로젝트에 Ignored Build Step을 설정한다.
 
-## 우선 확인할 Vercel 설정
+## 현재 Vercel 프로젝트 매핑
 
-각 Vercel 프로젝트의 Root Directory가 아래처럼 앱 디렉터리로 잡혀 있어야 한다.
+대부분의 프론트 프로젝트는 Root Directory를 비워두고 repo root 기준으로 빌드 명령을 실행한다. 따라서 Ignored Build Step도 repo root 기준 경로인 `node scripts/...`를 사용한다.
 
-| Vercel 프로젝트 | Root Directory |
-|---|---|
-| 관리자 웹 | `apps/admin` |
-| 테이블 주문 | `apps/table-order` |
-| 배달 고객 앱 | `apps/delivery-customer` |
-| 백엔드 API | `apps/backend` |
-| 브랜드 웹 | `apps/brand-website` |
+| Vercel 프로젝트 | 앱 | Root Directory |
+|---|---|---|
+| `order-admin` | 관리자 웹 | repo root |
+| `order-front-frontend` | 테이블 주문 | repo root |
+| `order-delivery` | 배달 고객 앱 | repo root |
+| `order-front-backend` | 백엔드 API | `apps/backend` |
+| `order-website` | 브랜드 웹 | repo root |
 
-Vercel의 모노레포 자동 스킵 기능이 켜져 있으면 수정되지 않은 프로젝트는 자동으로 스킵된다. 그래도 모든 프로젝트가 배포된다면 아래 Ignored Build Step을 추가한다.
+Vercel의 모노레포 자동 스킵 기능만으로 부족하면 아래 Ignored Build Step을 추가한다. Root Directory를 앱 디렉터리로 바꾸는 경우에는 명령 경로도 `../../scripts/...`로 바뀌므로 주의한다.
 
 ## Ignored Build Step
 
@@ -24,13 +24,13 @@ Settings -> Build and Deployment -> Ignored Build Step
 
 각 프로젝트에 아래 명령을 넣는다.
 
-| 프로젝트 | Ignored Build Step |
+| Vercel 프로젝트 | Ignored Build Step |
 |---|---|
-| 관리자 웹 | `node ../../scripts/vercel-ignore-build.js admin` |
-| 테이블 주문 | `node ../../scripts/vercel-ignore-build.js table-order` |
-| 배달 고객 앱 | `node ../../scripts/vercel-ignore-build.js delivery-customer` |
-| 백엔드 API | `node ../../scripts/vercel-ignore-build.js backend` |
-| 브랜드 웹 | `node ../../scripts/vercel-ignore-build.js brand-website` |
+| `order-admin` | `node scripts/vercel-ignore-build.js admin` |
+| `order-front-frontend` | `node scripts/vercel-ignore-build.js table-order` |
+| `order-delivery` | `node scripts/vercel-ignore-build.js delivery-customer` |
+| `order-front-backend` | `node ../../scripts/vercel-ignore-build.js backend` |
+| `order-website` | `node scripts/vercel-ignore-build.js brand-website` |
 
 ## 동작 기준
 
