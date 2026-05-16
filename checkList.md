@@ -74,14 +74,16 @@
 
 현재 시나리오:
 - **admin** (4 spec, ~16 테스트): auth(폼·검증·에러·보호 라우트 7개), menu(ADMIN_DIRECT 생성·TOSS_POS 동기화), orders(상태·환불 1개), store(설정 저장 1개), operations(실패 재시도 1개)
-- **delivery-customer** (1 spec, ~10 테스트): 홈/레이아웃, 로그인 버튼 표시, 미인증 주문내역, 메뉴 페이지 접근 — 표시 여부 위주
+- **delivery-customer** (3 spec, ~33 테스트): 홈/레이아웃, 로그인, 미인증 주문내역, 메뉴 페이지 + 결제 결과 UI 12개(`payment.spec.ts`) + 메뉴→장바구니→결제하기 풀 플로우 11개(`menu-cart.spec.ts`, 2026-05-16 추가)
 - **table-order** (1 spec, 3 테스트): QR 진입만 (잘못된 번호·0번·유효 리다이렉트). vitest 설정만 있고 테스트 0개
 - **brand-website**: E2E 없음 (Playwright 프로젝트 제외)
 - **backend**: 진짜 E2E 없음. `payments-e2e.spec.ts`는 이름만 e2e (Toss mock 통합)
 
 배포 전 우선순위로 채울 시나리오:
 - [ ] **table-order 주문 플로우 E2E**: QR→메뉴 선택→장바구니→주문→결제→추적. 제품 핵심인데 현재 0.
-- [ ] **delivery-customer 주문+결제 플로우 E2E**: OAuth 로그인, 메뉴 담기→장바구니→주문→결제, 주문 추적, 마이페이지.
+- [x] **delivery-customer 결제 결과 페이지 E2E** (2026-05-16, `payment.spec.ts`): 성공 페이지 confirm API mock(로딩·성공·재시도·에러·버튼 네비게이션 7개), 실패 페이지(메시지·버튼 네비게이션·빈 orderId 4개), 체크아웃 빈 장바구니 리다이렉트 1개 — 합계 12 tests 통과.
+- [x] **delivery-customer 메뉴→장바구니→결제하기 E2E** (2026-05-16, `menu-cart.spec.ts`): 메뉴 목록·상세 시트·수량 조절·담기(4개), 배지 갱신·최소 주문금액 안내(3개), 장바구니 시트 아이템·닫기(2개), 배달 정보 입력→체크아웃 이동·주문 내역 확인(2개) — 합계 11 tests 통과.
+- [ ] **delivery-customer OAuth 로그인 후 실결제 플로우**: 로그인 세션 시뮬레이션, 주문 추적, 마이페이지. (TossPayments 위젯 외부 SDK는 계속 범위 외)
 - [ ] **admin 메뉴 이미지 업로드 E2E**: 2026-05-16 추가 기능. 회귀 방지용 — 파일 선택→압축→업로드→URL 저장 시나리오.
 - [ ] **admin 미커버 플로우 E2E**: 옵션 그룹 CRUD, 직원 호출 실시간, 가맹 문의 처리.
 - [ ] **brand-website E2E 도입**: 랜딩/메뉴쇼케이스/가맹 문의 폼, `/privacy` 접근.
@@ -123,20 +125,20 @@
 
 - [x] 릴리즈 keystore 생성 (2026-05-12): `android/app/taco-release-key.keystore` (alias: taco-key). `android/key.properties`에 비밀번호 기록. `.gitignore`에 keystore + key.properties 추가.
 - [x] `android/app/build.gradle` 서명 설정 (2026-05-12): `signingConfigs.release` 블록 추가. key.properties에서 자동 로드.
-- [x] `capacitor.config.ts` appId `com.taco.delivery` 확정 (2026-05-12)
+- [x] `capacitor.config.ts` appId `com.tacomole.app` 확정 (2026-05-12, Play Console 패키지명 기준으로 2026-05-16 보정)
 - [x] `android/app/build.gradle` versionCode 1 / versionName "1.0.0" 설정 (2026-05-12)
 - [x] 운영 URL cap sync (2026-05-12): `CAPACITOR_SERVER_URL=https://delivery.tacomole.kr npx cap sync android`. Remote WebView 방식으로 Vercel 배포 앱을 WebView로 로드.
 - [x] 릴리즈 `.aab` 빌드 완료 (2026-05-12): Android Studio → Generate Signed Bundle → release. `android/app/release/app-release.aab` 생성.
 - [x] Google Play Console 개발자 계정 등록 완료 (2026-05-12)
 - [x] 기존 전달 SHA-256 지문 참고값 기록 (2026-05-12): `6D:AC:8F:5E:5D:A7:AF:F6:80:01:16:6D:78:17:B6:29:62:F2:DC:82:5F:DC:3D:7C:B7:B3:4B:61:B9:04:F2:80`
 - [x] 개인정보처리방침 페이지 생성 (2026-05-12): `apps/brand-website/src/app/privacy/page.tsx` → `https://www.tacomole.kr/privacy`
-- [ ] brand-website push → Vercel 배포 후 `https://www.tacomole.kr/privacy` 접근 확인
+- [x] brand-website push → Vercel 배포 후 `https://www.tacomole.kr/privacy` 접근 확인 (2026-05-16)
 - [x] Google Play 스토어 등록정보 자산 생성 (2026-05-16): `apps/delivery-customer/store-assets/google-play/`에 앱 아이콘(512x512), 그래픽 이미지(1024x500), 휴대전화/7인치/10인치 태블릿 스크린샷 각 2장 정리. 커밋 `ddf22e2`.
 - [x] Play Console 기본 등록정보 초안 정리 (2026-05-16): 앱 이름 `타코몰리`, 카테고리 `음식 및 음료`, 간단한/자세한 설명, 외부 마케팅 기본 허용 기준 정리.
 - [x] Play Console 데이터 보안/금융 기능 응답 기준 정리 (2026-05-16): 개인정보(이름/이메일/사용자 ID/주소/전화번호), 금융 정보(결제 정보/구매 내역), 앱 활동(Analytics), 앱 정보 및 성능(Sentry), 기기 또는 기타 ID(FCM/Analytics) 기준. 금융 기능은 `모바일 결제 및 디지털 지갑`.
-- [ ] Play Console 등록정보 최종 저장: 개인정보처리방침 URL(`https://www.tacomole.kr/privacy`), 앱 아이콘/그래픽 이미지/스크린샷 업로드, 연락처, 콘텐츠 등급 설문 제출.
+- [x] Play Console 등록정보 최종 저장 (2026-05-16): 개인정보처리방침 URL(`https://www.tacomole.kr/privacy`), 앱 아이콘/그래픽 이미지/스크린샷 업로드, 연락처, 콘텐츠 등급 설문 제출.
 - [ ] Play App Signing SHA-256 확정 후 `assetlinks.json` 교체 및 `https://delivery.tacomole.kr/.well-known/assetlinks.json` 운영 배포
-- [ ] `adb shell pm get-app-links com.taco.delivery` App Links 검증
+- [ ] `adb shell pm get-app-links com.tacomole.app` App Links 검증
 - [ ] Play Console 내부 테스트 트랙 AAB 업로드 → 심사 제출
 - [ ] USB 실기기 테스트: FCM 토큰 발급 확인, 잠금화면 푸시 수신 확인
 - [ ] Vercel 원격 WebView 핫 업데이트 파이프라인 검증
