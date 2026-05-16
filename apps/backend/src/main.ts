@@ -38,6 +38,9 @@ Sentry.init({
 
 // Express 인스턴스 생성 (Vercel Serverless용)
 const expressApp = express();
+// ETag 비활성화 — Express 기본 ETag로 인해 304 응답이 캐시된 ACAO 헤더를 재사용하면
+// 다른 origin에서 CORS 차단이 발생한다. API 서버는 ETag 캐싱이 불필요하다.
+expressApp.set('etag', false);
 
 // NestJS 앱 생성 및 초기화
 let cachedApp: INestApplication | null = null;
