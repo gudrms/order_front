@@ -43,13 +43,19 @@
 ## Toss 콘솔 등록값
 
 - 웹훅 이름: `Tacomolly Delivery Payments`
-- 웹훅 URL: `https://api.tacomolly.kr/api/v1/payments/toss/webhook`
+- 웹훅 URL: `https://api.tacomole.kr/api/v1/payments/toss/webhook`
 - 등록 이벤트:
   - `PAYMENT_STATUS_CHANGED`
   - `CANCEL_STATUS_CHANGED`
 - 리다이렉트 URL:
-  - `https://delivery.tacomolly.kr/store/*/order/success`
-  - `https://delivery.tacomolly.kr/store/*/order/fail`
+  - `https://delivery.tacomole.kr/store/*/order/success`
+  - `https://delivery.tacomole.kr/store/*/order/fail`
+
+## 승인 대기 중 사전 검증 결과
+
+- 2026-05-16 운영 배포 기준, `NEXT_PUBLIC_TOSS_CLIENT_KEY`가 결제위젯 키(`test_gck_...`/`live_gck_...`)가 아니거나 없으면 checkout에서 "결제 설정이 준비되지 않았습니다. 관리자에게 문의해 주세요." 문구와 비활성 결제 버튼으로 안전하게 차단된다.
+- 2026-05-16 운영 API 기준, `POST https://api.tacomole.kr/api/v1/payments/toss/webhook`는 미지원 이벤트에 대해 200 응답과 `UNSUPPORTED_EVENT_TYPE` 결과를 반환한다.
+- `tacomolly.kr` 도메인은 DNS가 없으므로 Toss 콘솔에는 `tacomole.kr` 도메인만 등록한다.
 
 ## 공식 문서 기준
 

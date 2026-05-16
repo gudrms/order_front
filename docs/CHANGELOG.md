@@ -12,6 +12,7 @@
 ### Added
 - Toss Payments 웹훅 수신 엔드포인트 `POST /payments/toss/webhook` 추가: `PAYMENT_STATUS_CHANGED`, `CANCEL_STATUS_CHANGED` 이벤트를 Toss API 재조회 후 로컬 결제/주문 상태에 반영.
 - Toss 결제위젯 키 설정 방어: `delivery-customer` checkout에서 `test_gck_`/`live_gck_` 키가 아니면 위젯을 렌더링하지 않도록 보강.
+- Toss 승인 대기 중 사전 검증 기록: 운영 checkout 키 미설정 방어 동작과 운영 웹훅 URL 200 응답 확인.
 
 ---
 
