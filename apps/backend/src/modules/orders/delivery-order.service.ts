@@ -123,7 +123,7 @@ export class DeliveryOrderService {
             }
 
             return order;
-        });
+        }, { maxWait: 5000, timeout: 15000 });
     }
 
     async getDeliveryOrders(params: { storeId?: string; userId?: string; page?: number }) {
@@ -247,6 +247,6 @@ export class DeliveryOrderService {
                 },
                 include: orderInclude(),
             });
-        });
+        }, { maxWait: 5000, timeout: 15000 });
     }
 }
