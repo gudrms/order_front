@@ -34,12 +34,20 @@ export default function AddressInputBottomSheet({
     const { data: savedAddresses = [] } = useAddresses(user?.id);
     const [isClosing, setIsClosing] = useState(false);
 
+    const meta = user?.user_metadata ?? {};
+    const kakaoName = meta.name || meta.full_name || meta.nickname || '';
+    // 카카오 전화번호는 +821012345678 국제 형식으로 올 수 있으므로 한국 형식으로 정규화
+    const rawPhone: string = meta.phone_number || meta.phone || '';
+    const kakaoPhone = rawPhone.startsWith('+82')
+        ? '0' + rawPhone.slice(3).replace(/\s/g, '')
+        : rawPhone;
+
     const [selectedAddressId, setSelectedAddressId] = useState(deliveryInfo.address?.id || '');
     const [address, setAddressInput] = useState(deliveryInfo.address?.address || '');
     const [detailAddress, setDetailAddress] = useState(deliveryInfo.address?.detailAddress || '');
     const [zipCode, setZipCode] = useState(deliveryInfo.address?.zipCode || '');
-    const [customerName, setCustomerName] = useState(deliveryInfo.customerName || '');
-    const [customerPhone, setCustomerPhone] = useState(deliveryInfo.customerPhone || '');
+    const [customerName, setCustomerName] = useState(deliveryInfo.customerName || kakaoName);
+    const [customerPhone, setCustomerPhone] = useState(deliveryInfo.customerPhone || kakaoPhone);
     const [deliveryRequest, setDeliveryRequestInput] = useState(deliveryInfo.deliveryRequest || '');
 
     useEffect(() => {
