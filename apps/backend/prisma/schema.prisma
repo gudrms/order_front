@@ -203,13 +203,14 @@ model Store {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  menuCategories  MenuCategory[]
-  menus           Menu[]
-  menuTags        MenuTag[]
-  orders          Order[]
-  tables          Table[]
-  tableSessions   TableSession[]
-  staffCalls      StaffCall[]
+  menuCategories    MenuCategory[]
+  menus             Menu[]
+  menuTags          MenuTag[]
+  orders            Order[]
+  tables            Table[]
+  tableSessions     TableSession[]
+  staffCalls        StaffCall[]
+  favoritedByUsers  UserFavoriteStore[]
   
   /// 복합 unique key (같은 업종에서 같은 지점명 불가)
   @@unique([storeType, branchId])
@@ -244,6 +245,7 @@ model User {
   stores          Store[]
   errorLogs       ErrorLog[]
   favorites       UserFavorite[]
+  favoriteStores  UserFavoriteStore[]
   addresses       UserAddress[]
   orders          Order[]
   coupons         UserCoupon[]
@@ -813,6 +815,20 @@ model NotificationLog {
   @@index([orderId])
   @@index([storeId])
   @@index([status, updatedAt])
+}
+
+/// 즐겨찾기 매장
+model UserFavoriteStore {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  storeId   String
+  store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, storeId])
+  @@index([userId])
 }
 
 /// 찜한 메뉴 (즐겨찾기)
