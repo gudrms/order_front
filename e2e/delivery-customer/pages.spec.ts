@@ -75,14 +75,14 @@ test.describe('주문 내역 페이지 (비인증)', () => {
 });
 
 test.describe('메뉴 페이지', () => {
+  // /menu 는 /store/[storeId]/menu 로 리팩터링됨 — stub store ID 사용
   test('메뉴 페이지가 접근 가능하다', async ({ page }) => {
-    await page.goto('/menu');
-    // 로딩 상태 또는 에러 상태 중 하나가 표시됨 (API 연결 없이도 렌더링)
+    await page.goto('/store/store-e2e-1/menu');
     await expect(page.locator('main')).toBeVisible({ timeout: 8_000 });
   });
 
   test('헤더에 장바구니 버튼이 있다', async ({ page }) => {
-    await page.goto('/menu');
+    await page.goto('/store/store-e2e-1/menu');
     await expect(
       page.getByRole('button', { name: /장바구니/ })
     ).toBeVisible({ timeout: 10_000 });
