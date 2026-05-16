@@ -14,6 +14,7 @@ package-lock.json
 
 # Service Worker dev builds
 swe-worker-*.js
+swe-worker-*.js.map
 
 # Testing
 coverage
@@ -100,6 +101,7 @@ apps/backend/vitest.config.js
 tree_output*.txt
 
 # Gemini / local automation artifacts
+.claude/
 .gemini/
 gha-creds-*.json
 .github/commands/

@@ -35,5 +35,4 @@ next-env.d.ts
 
 # Capacitor
 /ios
-/android
 .capacitor
