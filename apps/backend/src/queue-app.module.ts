@@ -20,7 +20,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
             validationSchema: Joi.object({
                 DATABASE_URL: Joi.string().required(),
                 SUPABASE_URL: Joi.string().required(),
-                SUPABASE_SERVICE_KEY: Joi.string().required(),
+                SUPABASE_SERVICE_KEY: Joi.string().optional(),
                 TOSS_ACCESS_KEY: Joi.string().required(),
                 TOSS_ACCESS_SECRET: Joi.string().required(),
                 TOSS_PAYMENTS_SECRET_KEY: Joi.string().optional(),
