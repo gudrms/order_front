@@ -18,7 +18,7 @@ export default function MenuPage() {
     const [isCartOpen, setIsCartOpen] = useState(false);
 
     const handleProceedToOrder = () => {
-        router.push('order/checkout');
+        router.push(`/store/${store.id}/order/checkout`);
     };
 
     return (

@@ -197,6 +197,13 @@ Supabase JWT를 Bearer Token으로 전달합니다.
         ? Array.from(new Set([...PRODUCTION_DEFAULT_ORIGINS, ...envOrigins]))
         : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003'];
 
+    // Vary: Origin을 모든 응답에 강제 추가 — ETag 기반 304 응답에서도 브라우저/CDN이
+    // origin별로 캐시를 분리하도록 보장 (cors 패키지는 허용된 origin에만 자동 추가)
+    expressApp.use((_req, res, next) => {
+        res.vary('Origin');
+        next();
+    });
+
     app.enableCors({
         origin: (origin, callback) => {
             // origin이 없는 경우 (모바일 앱 일부, Postman, 같은 origin 요청 등) 허용
@@ -216,7 +223,7 @@ Supabase JWT를 Bearer Token으로 전달합니다.
         credentials: true,
         allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'x-pos-api-key', 'Idempotency-Key', 'x-internal-secret'],
         exposedHeaders: ['X-Total-Count', 'X-Page-Count'],
-        maxAge: 3600, // preflight 캐싱 1시간
+        maxAge: 3600,
     });
 
     // Global Prefix 설정 (AppController는 제외)

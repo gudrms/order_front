@@ -61,6 +61,12 @@
 
 **매장 즐겨찾기**: `UserFavoriteStore` DB 테이블을 추가하고 `GET /users/me/favorite-stores`, `POST /users/me/favorite-stores/:storeId/toggle` 엔드포인트를 구현했다. 프론트에서는 optimistic update로 즉각 반응하고, 로그인 사용자에게만 하트 버튼을 노출한다.
 
+**운영 중 발견한 버그들**:
+
+- *Prisma 클라이언트 미재생성*: `UserFavoriteStore` 모델 추가 후 `prisma generate`를 누락해 런타임에서 `userFavoriteStore is not a function` 오류 발생. 스키마 변경 시 반드시 `prisma generate` → commit을 함께 수행해야 한다.
+- *CORS 304 캐시 오염*: 같은 브라우저에서 admin → delivery 순서로 접근하면 카테고리 API 응답 캐시에 `Access-Control-Allow-Origin: admin.tacomole.kr`가 남아 delivery에서 CORS 차단. `Vary: Origin` 미들웨어를 모든 응답에 선제 추가해 브라우저·CDN이 origin별로 캐시를 분리하도록 수정했다.
+- *결제 페이지 404*: `/store/[storeId]/menu/page.tsx`에서 `router.push('order/checkout')`를 상대 경로로 작성해 실제 이동 URL이 `/store/.../menu/order/checkout`가 됨. `/store/${store.id}/order/checkout` 절대 경로로 수정.
+
 ---
 
 ## 주요 기술 결정 요약
