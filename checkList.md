@@ -131,10 +131,10 @@
 - [x] 릴리즈 keystore 생성 (2026-05-12): `android/app/taco-release-key.keystore` (alias: taco-key). `android/key.properties`에 비밀번호 기록. `.gitignore`에 keystore + key.properties 추가.
 - [x] `android/app/build.gradle` 서명 설정 (2026-05-12, 2026-05-16 재확인): `signingConfigs.release` 블록 추가. `android/key.properties`에서 `taco-key` 업로드 키를 자동 로드하고 `bundleRelease` 산출물이 서명되도록 고정.
 - [x] `capacitor.config.ts` appId `com.tacomole.app` 확정 (2026-05-12, Play Console 패키지명 기준으로 2026-05-16 보정)
-- [x] `android/app/build.gradle` versionCode 1 / versionName "1.0.0" 설정 (2026-05-12)
+- [x] `android/app/build.gradle` versionCode 2 / versionName "1.0.1" 설정 (2026-05-16): Play Console의 기존 versionCode 1 중복 오류 대응.
 - [x] Google Play API 수준 35 요구 대응 (2026-05-16): `apps/delivery-customer/android/variables.gradle`의 `compileSdkVersion`/`targetSdkVersion`을 35로 상향. Play Console의 target API 34 업로드 오류 보정.
 - [x] 운영 URL cap sync (2026-05-12, 2026-05-16 재수행): `CAPACITOR_SERVER_URL=https://delivery.tacomole.kr pnpm --filter delivery-customer exec cap sync android`. Remote WebView 방식으로 Vercel 배포 앱을 WebView로 로드.
-- [x] 릴리즈 `.aab` 빌드 완료 (2026-05-12, 2026-05-16 재빌드): Play Console 패키지명 `com.tacomole.app` 기준으로 `android/app/release/app-release.aab` 재생성. `jarsigner -verify`로 `taco-key` 서명 확인. 기존 `com.taco.delivery` AAB는 Play Console 업로드 불가.
+- [x] 릴리즈 `.aab` 빌드 완료 (2026-05-12, 2026-05-16 재빌드): Play Console 패키지명 `com.tacomole.app`, versionCode 2 / versionName "1.0.1" 기준으로 `android/app/release/app-release.aab` 재생성. `jarsigner -verify`로 `taco-key` 서명 확인. 기존 `com.taco.delivery` AAB는 Play Console 업로드 불가.
 - [x] Google Play Console 개발자 계정 등록 완료 (2026-05-12)
 - [x] 기존 전달 SHA-256 지문 참고값 기록 (2026-05-12): `6D:AC:8F:5E:5D:A7:AF:F6:80:01:16:6D:78:17:B6:29:62:F2:DC:82:5F:DC:3D:7C:B7:B3:4B:61:B9:04:F2:80`
 - [x] 개인정보처리방침 페이지 생성 (2026-05-12): `apps/brand-website/src/app/privacy/page.tsx` → `https://www.tacomole.kr/privacy`
@@ -143,9 +143,11 @@
 - [x] Play Console 기본 등록정보 초안 정리 (2026-05-16): 앱 이름 `타코몰리`, 카테고리 `음식 및 음료`, 간단한/자세한 설명, 외부 마케팅 기본 허용 기준 정리.
 - [x] Play Console 데이터 보안/금융 기능 응답 기준 정리 (2026-05-16): 개인정보(이름/이메일/사용자 ID/주소/전화번호), 금융 정보(결제 정보/구매 내역), 앱 활동(Analytics), 앱 정보 및 성능(Sentry), 기기 또는 기타 ID(FCM/Analytics) 기준. 금융 기능은 `모바일 결제 및 디지털 지갑`.
 - [x] Play Console 등록정보 최종 저장 (2026-05-16): 개인정보처리방침 URL(`https://www.tacomole.kr/privacy`), 앱 아이콘/그래픽 이미지/스크린샷 업로드, 연락처, 콘텐츠 등급 설문 제출.
+- [x] Play Console 광고 ID 선언 완료 (2026-05-16): Android 13+ targetSdk 정책 대응. 앱에서 광고 ID를 사용하지 않는 기준으로 선언.
+- [x] Play Console 공개 테스트 출시 버전 생성 및 심사 제출 (2026-05-16): App Bundle 2 (`1.0.1`, versionCode 2)만 포함하고 기존 App Bundle 1 (`1.0.0`, versionCode 1)은 현재 출시 버전에서 제거. 관리형 게시 기준으로 Google 승인 대기.
 - [ ] Play App Signing SHA-256 확정 후 `assetlinks.json`의 `sha256_cert_fingerprints` 교체 및 `https://delivery.tacomole.kr/.well-known/assetlinks.json` 운영 배포 (`package_name`은 `com.tacomole.app`)
 - [ ] `adb shell pm get-app-links com.tacomole.app` App Links 검증
-- [ ] Play Console 내부 테스트 트랙에 `android/app/release/app-release.aab` 업로드 → 심사 제출
+- [ ] Google 승인 완료 후 관리형 게시에서 공개 테스트 버전 게시
 - [ ] USB 실기기 테스트: FCM 토큰 발급 확인, 잠금화면 푸시 수신 확인
 - [ ] Vercel 원격 WebView 핫 업데이트 파이프라인 검증
 

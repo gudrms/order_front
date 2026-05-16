@@ -53,7 +53,7 @@
 
 ## 7. 배달앱 런칭 준비 & 운영 안정화 (2026-05-16)
 
-**배달앱(Capacitor)**: 웹 앱을 네이티브 앱으로 감싸는 방식으로 **Capacitor Remote WebView**를 선택했다. 별도 React Native 코드베이스를 유지하는 대신 기존 Next.js 앱을 그대로 활용할 수 있어 개발 리소스를 크게 절약할 수 있었다. Android target API 35 대응과 Google Play 스토어 자산을 이 시기에 완성했다.
+**배달앱(Capacitor)**: 웹 앱을 네이티브 앱으로 감싸는 방식으로 **Capacitor Remote WebView**를 선택했다. 별도 React Native 코드베이스를 유지하는 대신 기존 Next.js 앱을 그대로 활용할 수 있어 개발 리소스를 크게 절약할 수 있었다. Android target API 35 대응과 Google Play 스토어 자산을 이 시기에 완성했다. Play Console 업로드 과정에서 기존 versionCode 1 중복 오류가 발생해 Android 앱 버전을 versionCode 2 / versionName 1.0.1로 상향했고, 광고 ID 미사용 선언을 완료한 뒤 공개 테스트 출시 버전을 Google 심사에 제출했다.
 
 **메뉴 이미지 업로드**: 어드민에서 메뉴 이미지를 직접 올릴 수 있도록 `browser-image-compression` + Supabase Storage 조합으로 구현했다. 업로드 전 클라이언트 측 압축으로 스토리지 비용과 로딩 속도를 동시에 잡았다.
 

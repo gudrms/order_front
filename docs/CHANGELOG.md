@@ -20,6 +20,8 @@
 - 어드민 메뉴 이미지 업로드 (`browser-image-compression` + Supabase Storage)
 - 배달앱 홈 화면 매장 선택 흐름 (`StoreContext`, localStorage 유지, 매장 목록 + 검색)
 - Android target API 35 대응, Google Play Console 등록정보 및 스토어 자산 추가, AAB 재빌드
+- Android 앱 버전 상향 (`versionCode 2`, `versionName 1.0.1`) 및 공개 테스트 출시 버전 Google 심사 제출
+- Play Console 광고 ID 미사용 선언 완료
 - E2E 테스트 추가: delivery-customer 결제 플로우 (12 tests), 메뉴 → 장바구니 → 결제 플로우 (11 tests)
 
 ### Fixed
