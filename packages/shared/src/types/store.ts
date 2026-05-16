@@ -27,6 +27,14 @@ export interface Store {
   updatedAt: Date | string;
 }
 
+export interface FavoriteStore {
+  id: string;
+  userId: string;
+  storeId: string;
+  store: Store;
+  createdAt: Date | string;
+}
+
 export interface CreateStoreRequest {
   storeType: string;
   branchId: string;

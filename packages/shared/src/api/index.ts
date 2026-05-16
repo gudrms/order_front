@@ -13,6 +13,7 @@ import * as authApi from './endpoints/auth';
 import * as addressApi from './endpoints/address';
 import * as couponApi from './endpoints/coupon';
 import * as devicesApi from './endpoints/devices';
+import * as favoriteStoreApi from './endpoints/favorite-store';
 
 export { apiClient, ApiClientError } from './client';
 export { cancelOrder, createOrder, getDeliveryOrders, getOrder, getOrdersByTable, updateDeliveryStatus, updateOrderStatus } from './endpoints/order';
@@ -23,6 +24,7 @@ export { syncCurrentUser } from './endpoints/auth';
 export { createAddress, deleteAddress, getAddresses, setDefaultAddress, updateAddress } from './endpoints/address';
 export { getAvailableCoupons, getMyCoupons, redeemCoupon } from './endpoints/coupon';
 export { registerDevice, unregisterDevice } from './endpoints/devices';
+export { getFavoriteStores, toggleFavoriteStore } from './endpoints/favorite-store';
 
 /**
  * 통합 API 객체
@@ -39,4 +41,5 @@ export const api = {
     address: addressApi,
     coupon: couponApi,
     devices: devicesApi,
+    favoriteStore: favoriteStoreApi,
 };
