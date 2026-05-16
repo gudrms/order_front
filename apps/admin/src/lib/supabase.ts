@@ -20,14 +20,6 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 });
 
 /**
- * Storage URL 생성 헬퍼
- */
-export function getPublicUrl(path: string, bucket = 'assets') {
-  const { data } = supabase.storage.from(bucket).getPublicUrl(path);
-  return data.publicUrl;
-}
-
-/**
  * Supabase Realtime 채널 생성 헬퍼
  */
 export function createRealtimeChannel(channelName: string) {

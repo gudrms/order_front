@@ -3,7 +3,6 @@ export * from './constants';
 export * from './api';
 export * from './hooks/useMenuSelection';
 export * from './utils';
-export * from './utils/storage';
 export * from './hooks/useGeolocation';
 export * from './hooks/useOrderStatus';
 export * from './constants/stores';
