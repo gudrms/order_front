@@ -1,5 +1,6 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
-import { ApiBearerAuth, ApiBody, ApiTags, ApiOperation, ApiParam, ApiQuery, ApiResponse } from '@nestjs/swagger';
+import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query, UploadedFile, UseGuards, UseInterceptors, UsePipes, ValidationPipe } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiTags, ApiOperation, ApiParam, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { CurrentUser } from '../../common/decorators/user.decorator';
 import { SupabaseGuard } from '../auth/guards/supabase.guard';
 import {
@@ -150,6 +151,24 @@ export class MenusController {
         @Body() dto: CreateMenuDto,
     ) {
         return this.menusService.createMenu(user.id, storeId, dto);
+    }
+
+    @Post('menus/image')
+    @UseGuards(SupabaseGuard)
+    @ApiBearerAuth('JWT-auth')
+    @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 5 * 1024 * 1024 } }))
+    @ApiConsumes('multipart/form-data')
+    @ApiOperation({ summary: '메뉴 이미지 업로드', description: '메뉴 이미지를 Supabase Storage에 업로드하고 public URL을 반환합니다.' })
+    @ApiParam({ name: 'storeId', description: '매장 ID (UUID)' })
+    @ApiBody({ schema: { type: 'object', properties: { file: { type: 'string', format: 'binary' } } } })
+    @ApiResponse({ status: 201, description: '이미지 업로드 성공', schema: { example: { imageUrl: 'https://.../assets/menu/store-id/uuid.jpg' } } })
+    @ApiResponse({ status: 401, description: '인증 실패' })
+    async uploadMenuImage(
+        @CurrentUser() user: { id: string },
+        @Param('storeId') storeId: string,
+        @UploadedFile() file: Express.Multer.File,
+    ) {
+        return this.menusService.uploadMenuImage(user.id, storeId, file);
     }
 
     @Patch('menus/:menuId')

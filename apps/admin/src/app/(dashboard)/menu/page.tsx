@@ -21,6 +21,7 @@ import {
 import { formatCurrency, type Menu, type MenuCategory } from '@order/shared';
 import { useAdminStore } from '@/contexts/AdminStoreContext';
 import { getHttpErrorMessage } from '@/lib/httpError';
+import { MenuImageUpload } from '@/components/MenuImageUpload';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -360,7 +361,14 @@ export default function MenuListPage() {
               />
               <TextInput value={menuForm.name} onChange={(name) => setMenuForm((prev) => ({ ...prev, name }))} placeholder="메뉴명" />
               <TextInput value={menuForm.price} onChange={(price) => setMenuForm((prev) => ({ ...prev, price }))} placeholder="가격" numeric />
-              <TextInput value={menuForm.imageUrl} onChange={(imageUrl) => setMenuForm((prev) => ({ ...prev, imageUrl }))} placeholder="이미지 URL" />
+              <div className="md:col-span-2">
+                <MenuImageUpload
+                  storeId={selectedStoreId}
+                  value={menuForm.imageUrl}
+                  onChange={(imageUrl) => setMenuForm((prev) => ({ ...prev, imageUrl }))}
+                  authHeaders={authHeaders}
+                />
+              </div>
               <textarea
                 value={menuForm.description}
                 onChange={(event) => setMenuForm((prev) => ({ ...prev, description: event.target.value }))}
@@ -413,7 +421,12 @@ export default function MenuListPage() {
                     <CategorySelect categories={categories} value={editForm.categoryId} onChange={(categoryId) => setEditForm((prev) => ({ ...prev, categoryId }))} />
                     <TextInput value={editForm.name} onChange={(name) => setEditForm((prev) => ({ ...prev, name }))} placeholder="메뉴명" />
                     <TextInput value={editForm.price} onChange={(price) => setEditForm((prev) => ({ ...prev, price }))} placeholder="가격" numeric />
-                    <TextInput value={editForm.imageUrl} onChange={(imageUrl) => setEditForm((prev) => ({ ...prev, imageUrl }))} placeholder="이미지 URL" />
+                    <MenuImageUpload
+                      storeId={selectedStoreId}
+                      value={editForm.imageUrl}
+                      onChange={(imageUrl) => setEditForm((prev) => ({ ...prev, imageUrl }))}
+                      authHeaders={authHeaders}
+                    />
                     <textarea
                       value={editForm.description}
                       onChange={(event) => setEditForm((prev) => ({ ...prev, description: event.target.value }))}

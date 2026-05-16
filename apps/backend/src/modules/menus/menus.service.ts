@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { MenuManagementMode } from '@prisma/client';
 import { assertCanManageStore } from '../../common/auth/permissions';
 import { PrismaService } from '../prisma/prisma.service';
+import { StorageService } from '../storage/storage.service';
 import {
     CreateMenuCategoryDto,
     CreateMenuDto,
@@ -14,7 +15,28 @@ import {
 
 @Injectable()
 export class MenusService {
-    constructor(private readonly prisma: PrismaService) { }
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly storage: StorageService,
+    ) { }
+
+    async uploadMenuImage(
+        userId: string,
+        storeId: string,
+        file: { buffer: Buffer; mimetype: string; size: number } | undefined,
+    ) {
+        await this.assertCanManageAdminDirectMenus(userId, storeId);
+
+        if (!file) {
+            throw new BadRequestException('Image file is required');
+        }
+        if (!this.storage.isSupportedImageType(file.mimetype)) {
+            throw new BadRequestException('Unsupported image type (allowed: JPEG, PNG, WebP)');
+        }
+
+        const imageUrl = await this.storage.uploadMenuImage(storeId, file);
+        return { imageUrl };
+    }
 
     /**
      * 카테고리 목록 조회 (메뉴 포함하지 않음)

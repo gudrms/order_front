@@ -1,6 +1,7 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MenusService } from './menus.service';
+import { StorageService } from '../storage/storage.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { MenuManagementMode } from '@prisma/client';
@@ -56,6 +57,13 @@ describe('MenusService', () => {
                 {
                     provide: PrismaService,
                     useValue: mockPrismaService,
+                },
+                {
+                    provide: StorageService,
+                    useValue: {
+                        isSupportedImageType: vi.fn(),
+                        uploadMenuImage: vi.fn(),
+                    },
                 },
             ],
         }).compile();
