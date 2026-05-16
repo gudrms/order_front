@@ -1,6 +1,6 @@
 # Taco Mono 작업 현황
 
-마지막 업데이트: 2026-05-16 (4차)
+마지막 업데이트: 2026-05-16 (5차)
 
 ---
 
@@ -32,6 +32,8 @@
 - [ ] **Vercel `NEXT_PUBLIC_API_URL` 환경변수 설정**: `order-delivery`, `order-front-frontend` 두 프로젝트 모두 Production/Preview에 `NEXT_PUBLIC_API_URL=https://api.tacomole.kr/api/v1` 추가 → 재배포 필요. `NEXT_PUBLIC_*`는 빌드 타임 embed이므로 env 설정 후 반드시 새 배포.
 - [x] **Supabase OAuth redirect URL 허용 목록에 delivery 도메인 추가** (2026-05-16): Supabase 대시보드 → Authentication → URL Configuration → Redirect URLs에 `https://*.tacomole.kr/**` 와일드카드 추가. Site URL을 `https://delivery.tacomole.kr/`로 변경. 로그인 후 table-order로 리다이렉트되던 문제 해소.
 - [ ] **Vercel 프로젝트-앱 매핑 확인**: `order-front-frontend` = table-order 앱, `order-delivery` = delivery-customer 앱. Capacitor Remote WebView URL도 `order-delivery` 도메인으로 설정해야 함.
+- [x] **브랜드 사이트 CORS 차단 (304 캐시 오염)** (2026-05-16): `tacomole.kr`에서 `api.tacomole.kr/api/v1/stores` 요청 시 ACAO 헤더가 `delivery.tacomole.kr`로 잘못 반환. ETag 기반 304 응답에 오염된 캐시 헤더가 재사용된 것. `expressApp.set('etag', false)`(ETag 생성 차단) + `Vary: Origin`(CDN 분리) + `Cache-Control: no-store`(브라우저 캐시 완전 비활성화) 세 겹으로 해소. push 필요.
+- [x] **Supabase 누락 마이그레이션 3개 적용** (2026-05-16): `20260505` OrderChannel HOMEPAGE enum 제거, `20260506` FranchiseInquiry 테이블 생성(가맹 문의 폼 "table does not exist" 에러 해소), `20260516` UserFavoriteStore `_prisma_migrations` 등록(수동 생성된 테이블 Prisma 상태 동기화).
 
 - [x] **`updateOrderStatus` localStorage mock 제거** (2026-05-12): `packages/shared/src/api/endpoints/order.ts` + `apps/table-order/src/lib/api/endpoints/order.ts` — localStorage mock → `PATCH /stores/:storeId/orders/:orderId/status` 실 API 호출로 교체. 시그니처 `(orderNumber, status)` → `(storeId, orderId, status)` 변경.
 - [x] **`generateOrderNumber` 동시성 취약점** (2026-05-12): DB 레벨 `@@unique([storeId, orderNumber])` 제약이 이미 스키마에 존재 확인. `count() + 1` 중복 발급 시 Prisma P2002 → 트랜잭션 롤백으로 안전. 주석 추가. (진짜 해법은 DB 시퀀스이나 현재 구조로 안전성 확인됨)
@@ -85,7 +87,7 @@
 - [ ] **Toss 승인 대기 중 가능한 사전 검증**: 결제위젯 키가 없을 때 checkout이 `test_ck_...` fallback으로 401을 내지 않고 "결제 설정 미준비" 상태로 막히는지 확인. 주문 생성 API, 주소 입력, 장바구니 금액 계산, 최소주문금액 0원 테스트 매장 세팅은 결제위젯 승인 전에도 검증 가능.
 - [ ] **테이블오더 첫 주문/추가 주문 E2E**: 브라우저-백엔드 통합 E2E 미작성.
 - [ ] **백엔드 미작성 모듈 테스트**: `error-logs`, `sessions`, `integrations/toss`, `menu-detail`, `app.module`.
-- [ ] **DB schema `OrderSource.HOMEPAGE` 제거**: migration 영향 검토 후 별도 작업.
+- [x] **DB schema `OrderChannel.HOMEPAGE` 제거** (2026-05-16): Supabase 운영 DB에서 enum 값 제거 완료. `Order.source` DEFAULT 임시 해제→타입 변환→재설정 순서로 적용. `_prisma_migrations`에 등록.
 
 ### E2E 테스트 커버리지 점검 (2026-05-16)
 
@@ -105,7 +107,7 @@
 - [ ] **delivery-customer OAuth 로그인 후 실결제 플로우**: 로그인 세션 시뮬레이션, 주문 추적, 마이페이지. (TossPayments 위젯 외부 SDK는 계속 범위 외)
 - [ ] **admin 메뉴 이미지 업로드 E2E**: 2026-05-16 추가 기능. 회귀 방지용 — 파일 선택→압축→업로드→URL 저장 시나리오.
 - [ ] **admin 미커버 플로우 E2E**: 옵션 그룹 CRUD, 직원 호출 실시간, 가맹 문의 처리.
-- [ ] **brand-website E2E 도입**: 랜딩/메뉴쇼케이스/가맹 문의 폼, `/privacy` 접근.
+- [x] **brand-website E2E 도입** (2026-05-16): `e2e/brand-website/fixtures.ts`(매장·메뉴 API 스텁) + `pages.spec.ts`(21 tests, 랜딩·메뉴·브랜드·가맹·매장·개인정보 6페이지). Playwright `brand-website` 프로젝트 port 3000 추가.
 - [ ] **cross-app 동기화 E2E**: admin 메뉴 변경 → table-order/delivery 실시간 반영, 결제 webhook → UI 갱신.
 
 ---
@@ -225,6 +227,15 @@
 ---
 
 ## 🗓 완료 이력 (마일스톤 요약)
+
+### 2026-05-16 (5차)
+- CORS 304 캐시 오염 완전 해소: ETag 비활성화 + `Vary: Origin` + `Cache-Control: no-store` 세 겹 방어 (backend main.ts)
+- 브랜드 사이트 CORS 차단 원인 확인 — `tacomole.kr`이 CORS 허용 목록에는 있었으나 delivery 세션의 캐시된 ACAO 헤더 재사용으로 차단. push 후 해소.
+- Supabase 운영 DB 누락 마이그레이션 3개 직접 적용: OrderChannel HOMEPAGE 제거, FranchiseInquiry 테이블 생성, _prisma_migrations 동기화
+- brand-website E2E 인프라 구축: Playwright `brand-website` 프로젝트(port 3000) + 21개 테스트 (6페이지 커버)
+- 카카오 OAuth 정보(이름·전화번호) 배달 정보 입력 폼 자동 완성
+- 로그인 sync 타임아웃 25s 확장 + loading 비블로킹 + sync 후 favorite-stores 자동 재시도
+- Toss 결제 웹훅 연동: PAYMENT_STATUS_CHANGED / CANCEL_STATUS_CHANGED 처리 (payment AI)
 
 ### 2026-05-12
 - env sync 스크립트 도입 (`scripts/sync-env.js`, `pnpm sync:env`)

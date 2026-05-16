@@ -64,9 +64,13 @@
 **운영 중 발견한 버그들**:
 
 - *Prisma 클라이언트 미재생성*: `UserFavoriteStore` 모델 추가 후 `prisma generate`를 누락해 런타임에서 `userFavoriteStore is not a function` 오류 발생. 스키마 변경 시 반드시 `prisma generate` → commit을 함께 수행해야 한다.
-- *CORS 304 캐시 오염*: 같은 브라우저에서 admin → delivery 순서로 접근하면 카테고리 API 응답 캐시에 `Access-Control-Allow-Origin: admin.tacomole.kr`가 남아 delivery에서 CORS 차단. `Vary: Origin` 미들웨어를 모든 응답에 선제 추가해 브라우저·CDN이 origin별로 캐시를 분리하도록 수정했다.
+- *CORS 304 캐시 오염 (1차)*: 같은 브라우저에서 admin → delivery 순서로 접근하면 카테고리 API 응답 캐시에 `Access-Control-Allow-Origin: admin.tacomole.kr`가 남아 delivery에서 CORS 차단. `Vary: Origin` 미들웨어를 모든 응답에 선제 추가해 브라우저·CDN이 origin별로 캐시를 분리하도록 수정했다.
+- *CORS 304 캐시 오염 (2차 — 브랜드 사이트)*: `tacomole.kr`(브랜드 사이트)에서 `api.tacomole.kr/api/v1/stores`를 요청하면 ACAO 헤더가 `delivery.tacomole.kr`로 반환되는 문제. fix 배포 전에 브라우저가 delivery 세션의 캐시된 ACAO 헤더를 저장해 두었고, 브랜드 사이트 요청 시 그 오래된 캐시를 재사용한 것. `expressApp.set('etag', false)`(새 오염 방지)에 더해 `Cache-Control: no-store`를 API 응답에 추가해 브라우저가 API 응답을 캐시하지 않도록 강제했다.
 - *결제 페이지 404*: `/store/[storeId]/menu/page.tsx`에서 `router.push('order/checkout')`를 상대 경로로 작성해 실제 이동 URL이 `/store/.../menu/order/checkout`가 됨. `/store/${store.id}/order/checkout` 절대 경로로 수정.
 - *장바구니 최소주문금액 불일치*: 홈 화면과 checkout은 매장 정책의 `minimumOrderAmount`를 쓰지만, 장바구니 BottomSheet에 `15,000원`이 하드코딩되어 테스트 매장 10원 결제 흐름이 막혔다. 장바구니도 `StoreContext`의 매장 정책을 사용하도록 고치고, `/orders` 전역 라우트는 선택 매장이 없을 때 안내 상태를 보여주도록 빌드 안전성을 보강했다.
+- *Supabase 마이그레이션 누락*: `FranchiseInquiry`, `UserFavoriteStore` 테이블과 `OrderChannel` enum 변경이 `_prisma_migrations`에 기록됐지만 Supabase 운영 DB에 실제 적용이 안 된 상태였다. 가맹 문의 폼 제출 시 "table does not exist" 런타임 오류 발생. Supabase MCP로 직접 SQL을 적용하고 `_prisma_migrations`에 수동 등록했다. 향후 스키마 변경 시 `prisma migrate deploy`를 반드시 실행해야 한다.
+- *로그인 후 즐겨찾기 401*: sync API 완료 전에 favorites 쿼리가 실행되어 401. `syncSessionUser` 성공 후 `queryClient.invalidateQueries(['favorite-stores'])` 호출로 해소.
+- *로그인 sync 타임아웃*: Vercel cold start가 10~15초 걸리는데 기본 타임아웃이 10초라 sync 실패 → loading 블로킹. sync 타임아웃을 25초로 확장하고 loading 상태는 sync 완료를 기다리지 않도록 변경.
 
 ---
 
