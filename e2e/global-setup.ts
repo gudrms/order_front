@@ -8,17 +8,19 @@ import { startStubBackend } from './utils/stub-backend';
  * 포트 충돌(이미 backend 가 떠 있음) 시에는 기존 서버를 신뢰하고 통과.
  */
 export default async function globalSetup(_config: FullConfig) {
+  const stubPort = Number(process.env.E2E_STUB_BACKEND_PORT ?? 4000);
+
   try {
-    const server = await startStubBackend(4000);
+    const server = await startStubBackend(stubPort);
     // teardown 에서 사용
     (globalThis as Record<string, unknown>).__stubBackend = server;
     // eslint-disable-next-line no-console
-    console.log('[stub-backend] listening on http://127.0.0.1:4000');
+    console.log(`[stub-backend] listening on http://127.0.0.1:${stubPort}`);
   } catch (err) {
     // EADDRINUSE 등으로 시작 실패 시: 기존 backend 가 있다고 가정하고 진행
     if ((err as NodeJS.ErrnoException).code === 'EADDRINUSE') {
       // eslint-disable-next-line no-console
-      console.warn('[stub-backend] port 4000 already in use — skipping stub');
+      console.warn(`[stub-backend] port ${stubPort} already in use — skipping stub`);
       return;
     }
     throw err;
