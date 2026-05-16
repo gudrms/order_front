@@ -10,8 +10,8 @@ const STUB_STORE = {
   isDeliveryEnabled: true,
   menuManagementMode: 'ADMIN_DIRECT',
   deliveryFee: 0,
-  minimumOrderAmount: 0,
-  freeDeliveryThreshold: 0,
+  minimumOrderAmount: 15000,
+  freeDeliveryThreshold: null,
 };
 
 const STUB_CATEGORIES = [
