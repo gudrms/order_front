@@ -1,39 +1,69 @@
-import Image from 'next/image';
 import Link from 'next/link';
 import ScrollAnimation from './ScrollAnimation';
 
-const MENU_ITEMS = [
-    {
-        id: 1,
-        name: "시그니처 타코",
-        desc: "직화구이 고기와 신선한 살사의 조화",
-        image: "https://images.unsplash.com/photo-1551504734-5ee1c4a1479b?q=80&w=800&auto=format&fit=crop",
-        tag: "BEST"
-    },
-    {
-        id: 2,
-        name: "비프 부리또",
-        desc: "든든한 한 끼, 꽉 찬 속재료",
-        image: "https://images.unsplash.com/photo-1626700051175-6818013e1d4f?q=80&w=800&auto=format&fit=crop",
-        tag: "HIT"
-    },
-    {
-        id: 3,
-        name: "치즈 퀘사디아",
-        desc: "4가지 치즈의 풍미가 가득",
-        image: "https://images.unsplash.com/photo-1618040996337-56904b7850b9?q=80&w=800&auto=format&fit=crop",
-        tag: null
-    },
-    {
-        id: 4,
-        name: "나초 플래터",
-        desc: "맥주와 찰떡궁합, 바삭한 즐거움",
-        image: "https://images.unsplash.com/photo-1513456852971-30c0b8199d4d?q=80&w=800&auto=format&fit=crop",
-        tag: "NEW"
-    }
-];
+interface StoreSummary {
+    id: string;
+    isActive: boolean;
+}
 
-export default function MenuSection() {
+interface Category {
+    id: string;
+    name: string;
+    sortOrder: number;
+}
+
+interface MenuItem {
+    id: string;
+    name: string;
+    description: string | null;
+    price: number;
+    imageUrl: string | null;
+    isAvailable: boolean;
+}
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.tacomole.kr/api/v1';
+
+function unwrapList<T>(json: unknown): T[] {
+    if (Array.isArray(json)) return json as T[];
+    if (json && typeof json === 'object' && 'data' in json) {
+        const data = (json as { data?: unknown }).data;
+        return Array.isArray(data) ? (data as T[]) : [];
+    }
+    return [];
+}
+
+async function fetchJson<T>(url: string): Promise<T[]> {
+    const response = await fetch(url, { next: { revalidate: 300 } });
+    if (!response.ok) return [];
+    return unwrapList<T>(await response.json());
+}
+
+async function getFeaturedMenus(): Promise<MenuItem[]> {
+    try {
+        const stores = await fetchJson<StoreSummary>(`${API_URL}/stores`);
+        const store = stores.find((item) => item.isActive) ?? stores[0];
+        if (!store) return [];
+
+        const categories = await fetchJson<Category>(`${API_URL}/stores/${store.id}/categories`);
+        const sortedCategories = [...categories].sort((a, b) => a.sortOrder - b.sortOrder).slice(0, 4);
+        const menuGroups = await Promise.all(
+            sortedCategories.map((category) =>
+                fetchJson<MenuItem>(`${API_URL}/stores/${store.id}/menus?categoryId=${category.id}`),
+            ),
+        );
+
+        return menuGroups
+            .flat()
+            .filter((item) => item.isAvailable)
+            .slice(0, 4);
+    } catch {
+        return [];
+    }
+}
+
+export default async function MenuSection() {
+    const menuItems = await getFeaturedMenus();
+
     return (
         <section id="menu" className="py-20 bg-white">
             <div className="container mx-auto px-4">
@@ -43,37 +73,64 @@ export default function MenuSection() {
                         <h3 className="text-4xl font-black text-brand-black">
                             타코몰리 <span className="text-brand-yellow">대표 메뉴</span>
                         </h3>
+                        <p className="mt-4 text-gray-600">
+                            관리자에 등록된 메뉴와 사진을 기준으로 보여드립니다.
+                        </p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                        {MENU_ITEMS.map((item, idx) => (
-                            <ScrollAnimation key={item.id} delay={idx * 0.1}>
-                                <div className="group cursor-pointer">
-                                    <div className="relative aspect-square rounded-2xl overflow-hidden mb-4 bg-gray-100">
-                                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                                        <img
-                                            src={item.image}
-                                            alt={item.name}
-                                            className="object-cover w-full h-full group-hover:scale-110 transition-transform duration-500"
-                                        />
-                                        {item.tag && (
-                                            <div className="absolute top-4 left-4 bg-brand-red text-white text-xs font-bold px-3 py-1 rounded-full bg-[#E60012]">
-                                                {item.tag}
-                                            </div>
-                                        )}
-                                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
-                                    </div>
+                    {menuItems.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                            {menuItems.map((item, idx) => (
+                                <ScrollAnimation key={item.id} delay={idx * 0.1}>
+                                    <div className="group h-full">
+                                        <div className="relative aspect-square rounded-2xl overflow-hidden mb-4 bg-gray-100">
+                                            {item.imageUrl ? (
+                                                // eslint-disable-next-line @next/next/no-img-element
+                                                <img
+                                                    src={item.imageUrl}
+                                                    alt={item.name}
+                                                    className="object-cover w-full h-full group-hover:scale-110 transition-transform duration-500"
+                                                />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center text-brand-green font-black">
+                                                    TACO MOLE
+                                                </div>
+                                            )}
+                                            {idx === 0 && (
+                                                <div className="absolute top-4 left-4 bg-[#E60012] text-white text-xs font-bold px-3 py-1 rounded-full">
+                                                    BEST
+                                                </div>
+                                            )}
+                                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                                        </div>
 
-                                    <div className="text-center">
-                                        <h4 className="text-xl font-bold text-brand-black mb-1 group-hover:text-brand-green transition-colors">
-                                            {item.name}
-                                        </h4>
-                                        <p className="text-gray-500 text-sm mb-2">{item.desc}</p>
+                                        <div className="text-center">
+                                            <h4 className="text-xl font-bold text-brand-black mb-1 group-hover:text-brand-green transition-colors">
+                                                {item.name}
+                                            </h4>
+                                            {item.description && (
+                                                <p className="text-gray-500 text-sm mb-2 line-clamp-2">
+                                                    {item.description}
+                                                </p>
+                                            )}
+                                            <p className="text-brand-black font-black">
+                                                {item.price.toLocaleString()}원
+                                            </p>
+                                        </div>
                                     </div>
-                                </div>
-                            </ScrollAnimation>
-                        ))}
-                    </div>
+                                </ScrollAnimation>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="max-w-2xl mx-auto bg-gray-50 border border-gray-200 rounded-2xl p-8 text-center">
+                            <p className="text-lg font-bold text-brand-black mb-2">
+                                대표 메뉴를 불러오는 중입니다.
+                            </p>
+                            <p className="text-gray-600">
+                                전체 메뉴 페이지에서 현재 판매 중인 메뉴를 확인할 수 있습니다.
+                            </p>
+                        </div>
+                    )}
 
                     <div className="text-center mt-12">
                         <Link

@@ -26,7 +26,7 @@ interface MenuItem {
     options?: MenuOption[];
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.tacomole.kr/api/v1';
 const SPICY_KEYWORDS = ['스파이시', '매운', '핫', 'spicy', '불닭', '매콤'];
 
 function isSpicy(name: string, desc: string | null): boolean {

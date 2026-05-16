@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { TrendingUp, Users, Store, DollarSign } from 'lucide-react';
+import { ClipboardCheck, Store } from 'lucide-react';
 import ScrollAnimation from './ScrollAnimation';
 
 export default function FranchiseSection() {
@@ -17,8 +17,8 @@ export default function FranchiseSection() {
                                 <span className="text-brand-green">타코몰리</span>와 함께하세요.
                             </h3>
                             <p className="text-gray-600 text-lg mb-8 leading-relaxed">
-                                체계적인 교육 시스템과 차별화된 맛으로<br />
-                                점주님의 성공적인 창업을 지원합니다.<br />
+                                인천에서 검증해온 캐주얼 멕시칸 브랜드.<br />
+                                조리 효율과 배달 적합성을 고려한 메뉴 구성으로<br />
                                 지금 바로 가맹 상담을 받아보세요.
                             </p>
 
@@ -29,9 +29,9 @@ export default function FranchiseSection() {
                                     <div className="text-gray-500 text-sm">돌파</div>
                                 </div>
                                 <div className="bg-white p-6 rounded-xl shadow-sm border border-brand-yellow/20">
-                                    <TrendingUp className="text-brand-green mb-3" size={32} />
-                                    <div className="text-2xl font-black text-brand-black mb-1">30%</div>
-                                    <div className="text-gray-500 text-sm">평균 수익률</div>
+                                    <ClipboardCheck className="text-brand-green mb-3" size={32} />
+                                    <div className="text-2xl font-black text-brand-black mb-1">상담 후</div>
+                                    <div className="text-gray-500 text-sm">개설 비용 안내</div>
                                 </div>
                             </div>
 

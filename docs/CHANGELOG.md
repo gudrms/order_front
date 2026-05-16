@@ -14,6 +14,13 @@
 - Toss 결제위젯 키 설정 방어: `delivery-customer` checkout에서 `test_gck_`/`live_gck_` 키가 아니면 위젯을 렌더링하지 않도록 보강.
 - Toss 승인 대기 중 사전 검증 기록: 운영 checkout 키 미설정 방어 동작과 운영 웹훅 URL 200 응답 확인.
 - Toss 콘솔 웹훅 `Tacomolly Delivery Payments` 등록 완료.
+- 브랜드 사이트 보강 기획안 갱신: 기존 `/brand`, `/menu`, `/store`, `/franchise` 구조를 유지하고 홈/가맹/푸터 중심으로 보강하는 방향으로 정리.
+- 브랜드 사이트 홈에 인천 중심 7개 매장 신뢰 지표와 매장 찾기/주문 CTA 섹션 추가.
+- 브랜드 사이트 홈 대표 메뉴를 API 메뉴 데이터와 Supabase Storage 이미지 URL 기반으로 표시.
+
+### Changed
+- 브랜드 사이트 가맹 섹션의 미확정 `30% 평균 수익률` 표현을 제거하고 `상담 후 개설 비용 안내`로 완곡 처리.
+- 브랜드 사이트 메뉴 API fallback URL을 운영 API(`https://api.tacomole.kr/api/v1`) 기준으로 보정.
 
 ---
 
