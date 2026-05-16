@@ -20,6 +20,7 @@
 - Android target API 35 대응, Google Play Console 등록정보 및 스토어 자산 추가, AAB 재빌드
 - Android 앱 버전 상향 (`versionCode 2`, `versionName 1.0.1`) 및 공개 테스트 출시 버전 Google 심사 제출
 - Play Console 광고 ID 미사용 선언 완료
+- Play App Signing 앱 서명 키 SHA-256을 `assetlinks.json`에 반영해 Android App Links 검증 준비
 - E2E 테스트 추가: delivery-customer 결제 플로우 (12 tests), 메뉴 → 장바구니 → 결제 플로우 (11 tests)
 - `docs/CHANGELOG.md`, `docs/history.md` 프로젝트 이력 문서 신규 작성
 

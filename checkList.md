@@ -147,7 +147,8 @@
 - [x] Play Console 등록정보 최종 저장 (2026-05-16): 개인정보처리방침 URL(`https://www.tacomole.kr/privacy`), 앱 아이콘/그래픽 이미지/스크린샷 업로드, 연락처, 콘텐츠 등급 설문 제출.
 - [x] Play Console 광고 ID 선언 완료 (2026-05-16): Android 13+ targetSdk 정책 대응. 앱에서 광고 ID를 사용하지 않는 기준으로 선언.
 - [x] Play Console 공개 테스트 출시 버전 생성 및 심사 제출 (2026-05-16): App Bundle 2 (`1.0.1`, versionCode 2)만 포함하고 기존 App Bundle 1 (`1.0.0`, versionCode 1)은 현재 출시 버전에서 제거. 관리형 게시 기준으로 Google 승인 대기.
-- [ ] Play App Signing SHA-256 확정 후 `assetlinks.json`의 `sha256_cert_fingerprints` 교체 및 `https://delivery.tacomole.kr/.well-known/assetlinks.json` 운영 배포 (`package_name`은 `com.tacomole.app`)
+- [x] Play App Signing SHA-256 확정 및 `assetlinks.json` 교체 (2026-05-16): Play Console 앱 서명 키 SHA-256 `6D:AC:8F:5E:5D:A7:AF:F6:80:01:16:6D:78:17:B6:29:62:F2:DC:82:5F:DC:3D:7C:B7:B3:4B:61:B9:04:F2:80`를 `apps/delivery-customer/public/.well-known/assetlinks.json`에 반영. 업로드 키 SHA-256이 아니라 앱 서명 키 기준.
+- [ ] `https://delivery.tacomole.kr/.well-known/assetlinks.json` 운영 배포 및 placeholder 제거 확인
 - [ ] `adb shell pm get-app-links com.tacomole.app` App Links 검증
 - [ ] Google 승인 완료 후 관리형 게시에서 공개 테스트 버전 게시
 - [ ] USB 실기기 테스트: FCM 토큰 발급 확인, 잠금화면 푸시 수신 확인
