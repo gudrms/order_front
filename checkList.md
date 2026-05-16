@@ -95,9 +95,9 @@
 
 현재 시나리오:
 - **admin** (4 spec, ~16 테스트): auth(폼·검증·에러·보호 라우트 7개), menu(ADMIN_DIRECT 생성·TOSS_POS 동기화), orders(상태·환불 1개), store(설정 저장 1개), operations(실패 재시도 1개)
-- **delivery-customer** (3 spec, ~33 테스트): 홈/레이아웃, 로그인, 미인증 주문내역, 메뉴 페이지 + 결제 결과 UI 12개(`payment.spec.ts`) + 메뉴→장바구니→결제하기 풀 플로우 11개(`menu-cart.spec.ts`, 2026-05-16 추가)
+- **delivery-customer** (3 spec, ~33 테스트): 홈/레이아웃, 로그인, 미인증 주문내역, 메뉴 페이지(`/store/store-e2e-1/menu`, 2026-05-16 경로 수정) + 결제 결과 UI 12개(`payment.spec.ts`) + 메뉴→장바구니→결제하기 풀 플로우 11개(`menu-cart.spec.ts`, 2026-05-16 추가)
 - **table-order** (1 spec, 3 테스트): QR 진입만 (잘못된 번호·0번·유효 리다이렉트). vitest 설정만 있고 테스트 0개
-- **brand-website**: E2E 없음 (Playwright 프로젝트 제외)
+- **brand-website** (1 spec, 21 테스트): 랜딩·메뉴·브랜드·가맹·매장·개인정보 6페이지. Playwright `brand-website` 프로젝트 port 3000 (2026-05-16 추가)
 - **backend**: 진짜 E2E 없음. `payments-e2e.spec.ts`는 이름만 e2e (Toss mock 통합)
 
 배포 전 우선순위로 채울 시나리오:
@@ -108,6 +108,7 @@
 - [ ] **admin 메뉴 이미지 업로드 E2E**: 2026-05-16 추가 기능. 회귀 방지용 — 파일 선택→압축→업로드→URL 저장 시나리오.
 - [ ] **admin 미커버 플로우 E2E**: 옵션 그룹 CRUD, 직원 호출 실시간, 가맹 문의 처리.
 - [x] **brand-website E2E 도입** (2026-05-16): `e2e/brand-website/fixtures.ts`(매장·메뉴 API 스텁) + `pages.spec.ts`(21 tests, 랜딩·메뉴·브랜드·가맹·매장·개인정보 6페이지). Playwright `brand-website` 프로젝트 port 3000 추가.
+- [x] **delivery-customer E2E 메뉴 경로 수정** (2026-05-16): `/menu` 라우트가 `/store/[storeId]/menu`로 리팩터링되면서 CI E2E 실패. `e2e/delivery-customer/pages.spec.ts` 메뉴 관련 테스트 2개를 `/store/store-e2e-1/menu` 경로로 수정.
 - [ ] **cross-app 동기화 E2E**: admin 메뉴 변경 → table-order/delivery 실시간 반영, 결제 webhook → UI 갱신.
 
 ---
@@ -236,6 +237,7 @@
 - 카카오 OAuth 정보(이름·전화번호) 배달 정보 입력 폼 자동 완성
 - 로그인 sync 타임아웃 25s 확장 + loading 비블로킹 + sync 후 favorite-stores 자동 재시도
 - Toss 결제 웹훅 연동: PAYMENT_STATUS_CHANGED / CANCEL_STATUS_CHANGED 처리 (payment AI)
+- delivery-customer E2E `/menu` → `/store/store-e2e-1/menu` 경로 수정 (CI 실패 해소)
 - brand-website 매장 페이지: 카카오 지도 + 목록 분할 레이아웃. 마커 클릭 → 카드 강조, 카드 클릭 → 지도 이동, "지금 주문하기" → delivery 앱 해당 매장 메뉴 직접 링크
 
 ### 2026-05-12
