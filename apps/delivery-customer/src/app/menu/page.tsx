@@ -13,7 +13,7 @@ import { useCartStore } from '@order/order-core';
 
 export default function MenuPage() {
     const router = useRouter();
-    const { store, isLoading, error } = useCurrentStore();
+    const { store, isLoading } = useCurrentStore();
     const { totalQuantity, totalPrice } = useCartStore();
     const [isCartOpen, setIsCartOpen] = useState(false);
 
@@ -29,13 +29,9 @@ export default function MenuPage() {
         );
     }
 
-    if (error || !store) {
-        return (
-            <main className="min-h-screen bg-white flex flex-col items-center justify-center gap-3 px-6 text-center">
-                <p className="font-bold text-lg">매장을 찾을 수 없습니다.</p>
-                <p className="text-sm text-gray-500">매장 주소나 환경변수 설정을 확인해 주세요.</p>
-            </main>
-        );
+    if (!store) {
+        router.replace('/');
+        return null;
     }
 
     return (
