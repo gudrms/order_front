@@ -1,0 +1,3 @@
+-- AlterTable: Store에 위도/경도 컬럼 추가
+ALTER TABLE "Store" ADD COLUMN "lat" DOUBLE PRECISION;
+ALTER TABLE "Store" ADD COLUMN "lng" DOUBLE PRECISION;

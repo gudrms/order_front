@@ -180,7 +180,11 @@ model Store {
   
   /// 주소
   address         String?
-  
+
+  /// 지도 좌표 (주소 저장 시 카카오 Geocoding으로 자동 설정)
+  lat             Float?
+  lng             Float?
+
   /// 전화번호
   phoneNumber     String?
 

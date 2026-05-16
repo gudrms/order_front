@@ -31,6 +31,52 @@ const STUB_STORE = {
   freeDeliveryAmount: 0,
 };
 
+const STUB_STORES = [
+  {
+    ...STUB_STORE,
+    id: 'store-brand-e2e-1',
+    name: '타코몰리',
+    branchName: '부평점',
+    address: '인천 부평구 장제로249번길 9 1층',
+    phoneNumber: '032-555-7777',
+    businessHours: { default: '11:00 - 22:00' },
+    estimatedDeliveryMinutes: 30,
+    lat: 37.507,
+    lng: 126.722,
+  },
+  {
+    ...STUB_STORE,
+    id: 'store-brand-e2e-2',
+    name: '타코몰리',
+    branchName: '루원시티점',
+    address: '인천 서구 서곶로 45',
+    phoneNumber: '032-777-8888',
+    businessHours: { default: '11:00 - 22:00' },
+    estimatedDeliveryMinutes: 35,
+    lat: 37.525,
+    lng: 126.675,
+  },
+];
+
+const STUB_CATEGORIES = [
+  { id: 'cat-brand-1', name: '타코', sortOrder: 1, displayOrder: 1, isActive: true },
+];
+
+const STUB_MENUS = [
+  {
+    id: 'menu-brand-1',
+    name: '시그니처 타코',
+    price: 9000,
+    description: '직화구이 고기와 신선한 살사의 조화',
+    imageUrl: '',
+    isAvailable: true,
+    soldOut: false,
+    isActive: true,
+    categoryId: 'cat-brand-1',
+    optionGroups: [],
+  },
+];
+
 function json(res: ServerResponse, data: unknown, status = 200) {
   res.writeHead(status, {
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
@@ -54,6 +100,11 @@ function handle(req: IncomingMessage, res: ServerResponse) {
     return;
   }
 
+  if (req.method === 'GET' && /^\/api\/v1\/stores(\?.*)?$/.test(url)) {
+    json(res, { data: STUB_STORES });
+    return;
+  }
+
   if (req.method === 'GET' && /^\/api\/v1\/stores\/[^/]+$/.test(url)) {
     json(res, { data: STUB_STORE });
     return;
@@ -61,9 +112,17 @@ function handle(req: IncomingMessage, res: ServerResponse) {
 
   if (
     req.method === 'GET' &&
-    /^\/api\/v1\/stores\/[^/]+\/(menus|categories)(\?.*)?$/.test(url)
+    /^\/api\/v1\/stores\/[^/]+\/categories(\?.*)?$/.test(url)
   ) {
-    json(res, { data: [] });
+    json(res, { data: STUB_CATEGORIES });
+    return;
+  }
+
+  if (
+    req.method === 'GET' &&
+    /^\/api\/v1\/stores\/[^/]+\/menus(\?.*)?$/.test(url)
+  ) {
+    json(res, { data: STUB_MENUS });
     return;
   }
 
@@ -74,7 +133,7 @@ export function startStubBackend(port = 4000): Promise<Server> {
   return new Promise((resolve, reject) => {
     const server = createServer(handle);
     server.once('error', reject);
-    server.listen(port, () => {
+    server.listen(port, '127.0.0.1', () => {
       server.removeListener('error', reject);
       resolve(server);
     });

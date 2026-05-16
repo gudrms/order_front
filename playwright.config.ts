@@ -141,7 +141,7 @@ export default defineConfig({
 
     // ── Brand-Website 개발 서버 ──────────────────────────────────────────
     {
-      command: 'pnpm --filter brand-website exec next dev --port 3000',
+      command: 'pnpm --filter brand-website exec next dev --webpack --port 3000',
       url: 'http://localhost:3000',
       reuseExistingServer: !isCI,
       timeout: 300_000,

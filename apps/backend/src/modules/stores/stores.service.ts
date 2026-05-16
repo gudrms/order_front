@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { Prisma } from '@prisma/client';
 import { assertCanCreateStore, assertCanManageStore } from '../../common/auth/permissions';
@@ -7,7 +7,27 @@ import { CreateStoreDto, CreateTablesDto, UpdateStoreDto } from './dto/store-adm
 
 @Injectable()
 export class StoresService {
+    private readonly logger = new Logger(StoresService.name);
+
     constructor(private readonly prisma: PrismaService) { }
+
+    private async geocodeAddress(address: string): Promise<{ lat: number; lng: number } | null> {
+        const apiKey = process.env.KAKAO_REST_API_KEY;
+        if (!apiKey || !address.trim()) return null;
+
+        try {
+            const url = `https://dapi.kakao.com/v2/local/search/address.json?query=${encodeURIComponent(address)}`;
+            const res = await fetch(url, { headers: { Authorization: `KakaoAK ${apiKey}` } });
+            if (!res.ok) return null;
+            const json = await res.json() as { documents: { x: string; y: string }[] };
+            const doc = json.documents?.[0];
+            if (!doc) return null;
+            return { lat: parseFloat(doc.y), lng: parseFloat(doc.x) };
+        } catch (err) {
+            this.logger.warn(`Geocoding failed for "${address}": ${err}`);
+            return null;
+        }
+    }
 
     async getStore(storeId: string) {
         return this.prisma.store.findUnique({
@@ -34,6 +54,8 @@ export class StoresService {
                 deliveryFee: true,
                 freeDeliveryThreshold: true,
                 estimatedDeliveryMinutes: true,
+                lat: true,
+                lng: true,
             },
         });
     }
@@ -59,9 +81,13 @@ export class StoresService {
     async createStore(userId: string, dto: CreateStoreDto) {
         await this.assertAdmin(userId);
 
+        const coords = dto.address ? await this.geocodeAddress(dto.address) : null;
+
         return this.prisma.store.create({
             data: {
                 ...dto,
+                lat: coords?.lat ?? null,
+                lng: coords?.lng ?? null,
                 businessHours: dto.businessHours as Prisma.InputJsonValue,
                 theme: dto.theme as Prisma.InputJsonValue,
                 inviteCode: dto.inviteCode || this.generateInviteCode(dto.storeType, dto.branchId),
@@ -72,10 +98,18 @@ export class StoresService {
     async updateStore(userId: string, storeId: string, dto: UpdateStoreDto) {
         await this.assertCanManageStore(userId, storeId);
 
+        const coordsUpdate: { lat?: number | null; lng?: number | null } = {};
+        if (dto.address !== undefined) {
+            const coords = dto.address ? await this.geocodeAddress(dto.address) : null;
+            coordsUpdate.lat = coords?.lat ?? null;
+            coordsUpdate.lng = coords?.lng ?? null;
+        }
+
         return this.prisma.store.update({
             where: { id: storeId },
             data: {
                 ...dto,
+                ...coordsUpdate,
                 businessHours: dto.businessHours as Prisma.InputJsonValue,
                 theme: dto.theme as Prisma.InputJsonValue,
             },

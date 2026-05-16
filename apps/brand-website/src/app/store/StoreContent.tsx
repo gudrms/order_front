@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Map, MapMarker, useKakaoLoader } from 'react-kakao-maps-sdk';
 import { MapPin, Phone, Clock, Search, Navigation, ShoppingBag, ExternalLink } from 'lucide-react';
 import ScrollAnimation from '@/components/ScrollAnimation';
@@ -18,8 +18,8 @@ interface StoreDisplay {
     deliveryFee: number;
     freeDeliveryThreshold: number | null;
     estimatedDeliveryMinutes: number | null;
-    lat: number;
-    lng: number;
+    lat: number | null;
+    lng: number | null;
     distance: number;
 }
 
@@ -29,6 +29,10 @@ const KAKAO_MAP_KEY = process.env.NEXT_PUBLIC_KAKAO_MAP_KEY || '';
 
 // 서울 중심 기본 좌표
 const DEFAULT_CENTER = { lat: 37.5665, lng: 126.978 };
+
+function hasCoordinates(store: StoreDisplay): store is StoreDisplay & { lat: number; lng: number } {
+    return typeof store.lat === 'number' && typeof store.lng === 'number' && store.lat !== 0 && store.lng !== 0;
+}
 
 function useBrowserGeolocation() {
     const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
@@ -117,6 +121,11 @@ function StoreCard({
                             배달 가능
                         </span>
                     )}
+                    {!hasCoordinates(store) && (
+                        <span className="text-xs bg-amber-50 text-amber-700 px-2.5 py-1 rounded-full font-medium">
+                            좌표 확인 필요
+                        </span>
+                    )}
                 </div>
             </div>
 
@@ -154,7 +163,7 @@ function StoreCard({
                 </div>
             )}
 
-            {store.distance > 0 && (
+            {Number.isFinite(store.distance) && store.distance > 0 && (
                 <p className="text-brand-green font-bold text-xs mt-2">
                     내 위치에서 {store.distance.toFixed(1)}km
                 </p>
@@ -181,17 +190,43 @@ function KakaoMapView({
     stores,
     selectedId,
     mapCenter,
+    fitBoundsKey,
     onMarkerClick,
 }: {
     stores: StoreDisplay[];
     selectedId: string | null;
     mapCenter: { lat: number; lng: number };
+    fitBoundsKey: string;
     onMarkerClick: (store: StoreDisplay) => void;
 }) {
     const [loading, loadError] = useKakaoLoader({
         appkey: KAKAO_MAP_KEY,
         libraries: ['services'],
     });
+    const mapRef = useRef<kakao.maps.Map | null>(null);
+    const validStores = useMemo(() => stores.filter(hasCoordinates), [stores]);
+
+    useEffect(() => {
+        if (!mapRef.current || validStores.length === 0 || typeof kakao === 'undefined') return;
+
+        if (validStores.length === 1) {
+            const store = validStores[0];
+            mapRef.current.setCenter(new kakao.maps.LatLng(store.lat, store.lng));
+            mapRef.current.setLevel(4);
+            return;
+        }
+
+        const bounds = new kakao.maps.LatLngBounds();
+        validStores.forEach((store) => {
+            bounds.extend(new kakao.maps.LatLng(store.lat, store.lng));
+        });
+        mapRef.current.setBounds(bounds);
+    }, [fitBoundsKey, validStores.length]);
+
+    useEffect(() => {
+        if (!mapRef.current || typeof kakao === 'undefined') return;
+        mapRef.current.setCenter(new kakao.maps.LatLng(mapCenter.lat, mapCenter.lng));
+    }, [mapCenter.lat, mapCenter.lng]);
 
     if (loadError || loading) {
         return (
@@ -201,13 +236,22 @@ function KakaoMapView({
         );
     }
 
-    const validStores = stores.filter((s) => s.lat !== 0 && s.lng !== 0);
+    if (validStores.length === 0) {
+        return (
+            <div className="w-full h-full flex items-center justify-center bg-gray-100 rounded-2xl text-gray-400 text-sm text-center px-6">
+                지도에 표시할 좌표가 등록된 매장이 없습니다.
+            </div>
+        );
+    }
 
     return (
         <Map
             center={mapCenter}
             style={{ width: '100%', height: '100%', borderRadius: '1rem' }}
             level={7}
+            onCreate={(map) => {
+                mapRef.current = map;
+            }}
         >
             {validStores.map((store) => (
                 <MapMarker
@@ -236,6 +280,7 @@ export default function StoreContent() {
     const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [mapCenter, setMapCenter] = useState(DEFAULT_CENTER);
+    const [fitBoundsKey, setFitBoundsKey] = useState('initial');
     const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
     const { loaded: geoLoaded, coordinates, error: geoError } = useBrowserGeolocation();
@@ -260,7 +305,9 @@ export default function StoreContent() {
             [...prev]
                 .map((s) => ({
                     ...s,
-                    distance: haversine(coordinates.lat, coordinates.lng, s.lat, s.lng),
+                    distance: hasCoordinates(s)
+                        ? haversine(coordinates.lat, coordinates.lng, s.lat, s.lng)
+                        : Number.POSITIVE_INFINITY,
                 }))
                 .sort((a, b) => a.distance - b.distance),
         );
@@ -273,32 +320,54 @@ export default function StoreContent() {
             [...prev]
                 .map((s) => ({
                     ...s,
-                    distance: haversine(userLocation.lat, userLocation.lng, s.lat, s.lng),
+                    distance: hasCoordinates(s)
+                        ? haversine(userLocation.lat, userLocation.lng, s.lat, s.lng)
+                        : Number.POSITIVE_INFINITY,
                 }))
                 .sort((a, b) => a.distance - b.distance),
         );
     };
 
+    const handleResetMapBounds = () => {
+        setFitBoundsKey(`all-${Date.now()}`);
+    };
+
     const handleMarkerClick = (store: StoreDisplay) => {
         setSelectedId(store.id);
-        setMapCenter({ lat: store.lat, lng: store.lng });
+        if (hasCoordinates(store)) {
+            setMapCenter({ lat: store.lat, lng: store.lng });
+        }
         const el = cardRefs.current[store.id];
         if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     };
 
     const handleCardClick = (store: StoreDisplay) => {
         setSelectedId(store.id);
-        if (store.lat !== 0 && store.lng !== 0) {
+        if (hasCoordinates(store)) {
             setMapCenter({ lat: store.lat, lng: store.lng });
         }
     };
 
-    const filteredStores = stores.filter(
-        (s) =>
-            s.name.includes(searchQuery) ||
-            s.branchName.includes(searchQuery) ||
-            (s.address ?? '').includes(searchQuery),
+    const filteredStores = useMemo(
+        () =>
+            stores.filter(
+                (s) =>
+                    s.name.includes(searchQuery) ||
+                    s.branchName.includes(searchQuery) ||
+                    (s.address ?? '').includes(searchQuery),
+            ),
+        [stores, searchQuery],
     );
+    const filteredStoreKey = useMemo(
+        () => filteredStores.map((store) => store.id).join(','),
+        [filteredStores],
+    );
+    const mappedStoreCount = filteredStores.filter(hasCoordinates).length;
+
+    useEffect(() => {
+        setSelectedId(null);
+        setFitBoundsKey(`filter-${searchQuery}-${filteredStoreKey}`);
+    }, [searchQuery, filteredStoreKey]);
 
     return (
         <main className="min-h-screen bg-gray-50">
@@ -308,7 +377,7 @@ export default function StoreContent() {
                 </h1>
 
                 {/* 검색 + 내 주변 */}
-                <div className="flex gap-2 mb-6">
+                <div className="flex flex-col sm:flex-row gap-2 mb-6">
                     <div className="relative flex-1">
                         <input
                             type="text"
@@ -326,7 +395,26 @@ export default function StoreContent() {
                         <Navigation size={18} />
                         내 주변
                     </button>
+                    {hasMapKey && (
+                        <button
+                            onClick={handleResetMapBounds}
+                            className="flex items-center justify-center gap-2 bg-white text-brand-black border border-gray-200 px-4 py-3 rounded-xl hover:border-brand-yellow transition-colors font-bold shadow-sm whitespace-nowrap"
+                        >
+                            전체 보기
+                        </button>
+                    )}
                 </div>
+
+                {!isLoading && (
+                    <p className="text-sm text-gray-500 mb-4">
+                        총 <span className="font-bold text-brand-green">{filteredStores.length}</span>개 매장이 표시됩니다.
+                        {hasMapKey && (
+                            <span className="ml-2">
+                                지도 표시 가능 매장 <span className="font-bold text-brand-green">{mappedStoreCount}</span>개
+                            </span>
+                        )}
+                    </p>
+                )}
 
                 {hasMapKey ? (
                     /* 지도 + 목록 분할 레이아웃 */
@@ -337,6 +425,7 @@ export default function StoreContent() {
                                 stores={filteredStores}
                                 selectedId={selectedId}
                                 mapCenter={mapCenter}
+                                fitBoundsKey={fitBoundsKey}
                                 onMarkerClick={handleMarkerClick}
                             />
                         </div>
