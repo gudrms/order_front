@@ -131,7 +131,10 @@
 - [x] 기존 전달 SHA-256 지문 참고값 기록 (2026-05-12): `6D:AC:8F:5E:5D:A7:AF:F6:80:01:16:6D:78:17:B6:29:62:F2:DC:82:5F:DC:3D:7C:B7:B3:4B:61:B9:04:F2:80`
 - [x] 개인정보처리방침 페이지 생성 (2026-05-12): `apps/brand-website/src/app/privacy/page.tsx` → `https://www.tacomole.kr/privacy`
 - [ ] brand-website push → Vercel 배포 후 `https://www.tacomole.kr/privacy` 접근 확인
-- [ ] Play Console 앱 정보 입력: 개인정보처리방침 URL(`https://www.tacomole.kr/privacy`), 앱 아이콘(512x512), 스크린샷(최소 2장), 짧은/긴 설명, 카테고리(음식 및 음료), 콘텐츠 등급 설문
+- [x] Google Play 스토어 등록정보 자산 생성 (2026-05-16): `apps/delivery-customer/store-assets/google-play/`에 앱 아이콘(512x512), 그래픽 이미지(1024x500), 휴대전화/7인치/10인치 태블릿 스크린샷 각 2장 정리. 커밋 `ddf22e2`.
+- [x] Play Console 기본 등록정보 초안 정리 (2026-05-16): 앱 이름 `타코몰리`, 카테고리 `음식 및 음료`, 간단한/자세한 설명, 외부 마케팅 기본 허용 기준 정리.
+- [x] Play Console 데이터 보안/금융 기능 응답 기준 정리 (2026-05-16): 개인정보(이름/이메일/사용자 ID/주소/전화번호), 금융 정보(결제 정보/구매 내역), 앱 활동(Analytics), 앱 정보 및 성능(Sentry), 기기 또는 기타 ID(FCM/Analytics) 기준. 금융 기능은 `모바일 결제 및 디지털 지갑`.
+- [ ] Play Console 등록정보 최종 저장: 개인정보처리방침 URL(`https://www.tacomole.kr/privacy`), 앱 아이콘/그래픽 이미지/스크린샷 업로드, 연락처, 콘텐츠 등급 설문 제출.
 - [ ] Play App Signing SHA-256 확정 후 `assetlinks.json` 교체 및 `https://delivery.tacomole.kr/.well-known/assetlinks.json` 운영 배포
 - [ ] `adb shell pm get-app-links com.taco.delivery` App Links 검증
 - [ ] Play Console 내부 테스트 트랙 AAB 업로드 → 심사 제출
