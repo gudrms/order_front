@@ -85,6 +85,16 @@ export default defineConfig({
       testMatch: 'delivery-customer/**/*.spec.ts',
     },
 
+    // ── 브랜드 홈페이지 (Desktop) ─────────────────────────────────────────
+    {
+      name: 'brand-website',
+      use: {
+        ...devices['Desktop Chrome'],
+        baseURL: 'http://localhost:3000',
+      },
+      testMatch: 'brand-website/**/*.spec.ts',
+    },
+
     // ── 테이블오더 (Tablet) ──────────────────────────────────────────────
     // 태블릿용 UI 지만 CI 의 chromium 만으로 실행하도록 Desktop Chrome +
     // 태블릿 viewport 조합. WebKit 기반 iPad 디바이스는 별도 브라우저 설치 필요.
@@ -124,6 +134,15 @@ export default defineConfig({
     {
       command: 'pnpm --filter delivery-customer exec next dev --webpack --port 3001',
       url: 'http://localhost:3001',
+      reuseExistingServer: !isCI,
+      timeout: 300_000,
+      env: buildEnv(),
+    },
+
+    // ── Brand-Website 개발 서버 ──────────────────────────────────────────
+    {
+      command: 'pnpm --filter brand-website exec next dev --port 3000',
+      url: 'http://localhost:3000',
       reuseExistingServer: !isCI,
       timeout: 300_000,
       env: buildEnv(),
