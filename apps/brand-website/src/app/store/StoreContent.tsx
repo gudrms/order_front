@@ -188,15 +188,15 @@ function KakaoMapView({
     mapCenter: { lat: number; lng: number };
     onMarkerClick: (store: StoreDisplay) => void;
 }) {
-    const [isLoaded, isError] = useKakaoLoader({
+    const [loading, loadError] = useKakaoLoader({
         appkey: KAKAO_MAP_KEY,
         libraries: ['services'],
     });
 
-    if (isError || !isLoaded) {
+    if (loadError || loading) {
         return (
             <div className="w-full h-full flex items-center justify-center bg-gray-100 rounded-2xl text-gray-400 text-sm">
-                {isError ? '지도를 불러올 수 없습니다' : '지도 로딩 중...'}
+                {loadError ? '지도를 불러올 수 없습니다' : '지도 로딩 중...'}
             </div>
         );
     }
