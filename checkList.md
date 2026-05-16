@@ -1,6 +1,6 @@
 # Taco Mono 작업 현황
 
-마지막 업데이트: 2026-05-13
+마지막 업데이트: 2026-05-16
 
 ---
 
@@ -67,6 +67,25 @@
 - [ ] **테이블오더 첫 주문/추가 주문 E2E**: 브라우저-백엔드 통합 E2E 미작성.
 - [ ] **백엔드 미작성 모듈 테스트**: `error-logs`, `sessions`, `integrations/toss`, `menu-detail`, `app.module`.
 - [ ] **DB schema `OrderSource.HOMEPAGE` 제거**: migration 영향 검토 후 별도 작업.
+
+### E2E 테스트 커버리지 점검 (2026-05-16)
+
+루트 Playwright 1개로 통합 — 3개 프로젝트(admin :3003, delivery :3001, table-order :3002), `e2e/global-setup.ts` stub 백엔드(:4000). 모든 E2E가 Supabase/백엔드를 mock·stub → 실제 인증·DB·결제 흐름 미검증.
+
+현재 시나리오:
+- **admin** (4 spec, ~16 테스트): auth(폼·검증·에러·보호 라우트 7개), menu(ADMIN_DIRECT 생성·TOSS_POS 동기화), orders(상태·환불 1개), store(설정 저장 1개), operations(실패 재시도 1개)
+- **delivery-customer** (1 spec, ~10 테스트): 홈/레이아웃, 로그인 버튼 표시, 미인증 주문내역, 메뉴 페이지 접근 — 표시 여부 위주
+- **table-order** (1 spec, 3 테스트): QR 진입만 (잘못된 번호·0번·유효 리다이렉트). vitest 설정만 있고 테스트 0개
+- **brand-website**: E2E 없음 (Playwright 프로젝트 제외)
+- **backend**: 진짜 E2E 없음. `payments-e2e.spec.ts`는 이름만 e2e (Toss mock 통합)
+
+배포 전 우선순위로 채울 시나리오:
+- [ ] **table-order 주문 플로우 E2E**: QR→메뉴 선택→장바구니→주문→결제→추적. 제품 핵심인데 현재 0.
+- [ ] **delivery-customer 주문+결제 플로우 E2E**: OAuth 로그인, 메뉴 담기→장바구니→주문→결제, 주문 추적, 마이페이지.
+- [ ] **admin 메뉴 이미지 업로드 E2E**: 2026-05-16 추가 기능. 회귀 방지용 — 파일 선택→압축→업로드→URL 저장 시나리오.
+- [ ] **admin 미커버 플로우 E2E**: 옵션 그룹 CRUD, 직원 호출 실시간, 가맹 문의 처리.
+- [ ] **brand-website E2E 도입**: 랜딩/메뉴쇼케이스/가맹 문의 폼, `/privacy` 접근.
+- [ ] **cross-app 동기화 E2E**: admin 메뉴 변경 → table-order/delivery 실시간 반영, 결제 webhook → UI 갱신.
 
 ---
 
