@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import { Analytics } from '@vercel/analytics/next';
 import './globals.css';
 import Providers from './providers';
 import PWAInstaller from '@/components/PWAInstaller';
@@ -46,6 +47,7 @@ export default function RootLayout({
         <PWAInstaller />
         <DeepLinkHandler />
         <Providers>{children}</Providers>
+        <Analytics />
       </body>
     </html>
   );
