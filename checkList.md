@@ -74,6 +74,7 @@
   - [x] 로그인 페이지: 회원가입 모드 제거 → `email + password + [로그인]`만.
   - [x] 정리: `/auth/callback` 페이지·`/setup` 가입 경로·`generateInviteCode`/`refreshInviteCode` 제거. `Store.inviteCode` 컬럼은 운영 DB 마이그레이션 타이밍에 제거 검토.
   - [x] 문서: `docs/admin-account-management-scenario.md`, `docs/test-scenarios/admin.md`, `docs/test-scenarios/backend.md`, `docs/test-scenarios/full-flow.md` 최신화.
+  - [x] 테스트: `AdminAccountsService` 단위 테스트 5개 + admin 계정 관리 E2E 2개 추가. 계정 생성/매장 연결/비밀번호 초기화/삭제/OWNER 네비게이션 차단 검증.
 - [ ] **브랜드 사이트 Phase 1 보강**: `docs/brand-website-plan.md` 기준으로 기존 구조를 유지하면서 홈 신뢰 지표, 매장 찾기/주문 CTA, 가맹 수치 표현, 브랜드 임시 콘텐츠, 푸터 사업자 정보를 보강.
   - [x] 홈 Hero에 인천 중심 7개 매장 운영 메시지 반영
   - [x] 홈에 매장 찾기/주문 CTA 섹션 추가
@@ -117,7 +118,7 @@
 루트 Playwright 1개로 통합 — 3개 프로젝트(admin :3003, delivery :3001, table-order :3002), `e2e/global-setup.ts` stub 백엔드(:4000). 모든 E2E가 Supabase/백엔드를 mock·stub → 실제 인증·DB·결제 흐름 미검증.
 
 현재 시나리오:
-- **admin** (4 spec, ~16 테스트): auth(폼·검증·에러·보호 라우트 7개), menu(ADMIN_DIRECT 생성·TOSS_POS 동기화), orders(상태·환불 1개), store(설정 저장 1개), operations(실패 재시도 1개)
+- **admin** (6 spec, ~18 테스트): auth(폼·검증·에러·보호 라우트 7개), accounts(계정 생성·비밀번호 초기화·삭제·OWNER 네비게이션 차단 2개), menu(ADMIN_DIRECT 생성·TOSS_POS 동기화), orders(상태·환불 1개), store(설정 저장 1개), operations(실패 재시도 1개)
 - **delivery-customer** (3 spec, ~33 테스트): 홈/레이아웃, 로그인, 미인증 주문내역, 메뉴 페이지(`/store/store-e2e-1/menu`, 2026-05-16 경로 수정) + 결제 결과 UI 12개(`payment.spec.ts`) + 메뉴→장바구니→결제하기 풀 플로우 11개(`menu-cart.spec.ts`, 2026-05-16 추가)
 - **table-order** (1 spec, 3 테스트): QR 진입만 (잘못된 번호·0번·유효 리다이렉트). vitest 설정만 있고 테스트 0개
 - **brand-website** (1 spec, 21 테스트): 랜딩·메뉴·브랜드·가맹·매장·개인정보 6페이지. Playwright `brand-website` 프로젝트 port 3000 (2026-05-16 추가)

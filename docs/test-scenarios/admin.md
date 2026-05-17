@@ -60,6 +60,10 @@
 
 - `docs/admin-account-management-scenario.md`
 
+자동화:
+
+- `e2e/admin/accounts.spec.ts`
+
 ## 시나리오 C. Toss POS 없이 새 매장 시작하기
 
 1. `ADMIN` 권한 계정으로 로그인한다.

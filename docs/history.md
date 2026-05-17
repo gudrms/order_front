@@ -138,6 +138,8 @@ admin 앱에는 `ADMIN` 전용 `계정 관리` 화면을 추가했다. 마스터
 
 상세 시나리오는 `docs/admin-account-management-scenario.md`로 분리했고, 기존 테스트 시나리오 문서의 `/setup`·초대코드 흐름은 마스터 계정 관리 흐름으로 갱신했다.
 
+후속으로 `AdminAccountsService` 단위 테스트와 admin 계정 관리 E2E를 추가했다. 자동화 범위는 ADMIN 권한 검증, OWNER 생성과 매장 연결, Supabase Auth 실패 시 롤백, 비밀번호 초기화, 자기 계정 삭제 차단, OWNER 메뉴에서 계정 관리 숨김까지다.
+
 ---
 
 ## 주요 기술 결정 요약

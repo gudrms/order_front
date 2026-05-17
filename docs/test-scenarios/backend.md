@@ -63,6 +63,10 @@
 - 비밀번호 초기화는 Supabase Admin API를 통해 이메일 발송 없이 처리된다.
 - 계정 삭제 시 매장의 `ownerId`는 해제된다.
 
+자동화:
+
+- `apps/backend/src/modules/admin-accounts/admin-accounts.service.spec.ts`
+
 ## 시나리오 D. 테이블 주문 API
 
 1. 매장 카테고리와 메뉴를 조회한다.

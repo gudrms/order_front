@@ -141,7 +141,7 @@ export default function AccountsPage() {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8" data-testid="admin-accounts-page">
       <section className="space-y-4">
         <h2 className="text-xl font-semibold text-gray-900">계정 생성</h2>
         <form onSubmit={handleCreate} className="grid gap-3 rounded-lg border border-gray-200 bg-white p-4 md:grid-cols-2">
