@@ -1,6 +1,6 @@
 # Taco Mono 작업 현황
 
-마지막 업데이트: 2026-05-17 (8차)
+마지막 업데이트: 2026-05-17 (9차)
 
 ---
 
@@ -32,7 +32,7 @@
 - [ ] **Vercel `NEXT_PUBLIC_API_URL` 환경변수 설정**: `order-delivery`, `order-front-frontend` 두 프로젝트 모두 Production/Preview에 `NEXT_PUBLIC_API_URL=https://api.tacomole.kr/api/v1` 추가 → 재배포 필요. `NEXT_PUBLIC_*`는 빌드 타임 embed이므로 env 설정 후 반드시 새 배포.
 - [x] **Supabase OAuth redirect URL 허용 목록에 delivery 도메인 추가** (2026-05-16): Supabase 대시보드 → Authentication → URL Configuration → Redirect URLs에 `https://*.tacomole.kr/**` 와일드카드 추가. Site URL을 `https://delivery.tacomole.kr/`로 변경. 로그인 후 table-order로 리다이렉트되던 문제 해소.
 - [ ] **Vercel 프로젝트-앱 매핑 확인**: `order-front-frontend` = table-order 앱, `order-delivery` = delivery-customer 앱. Capacitor Remote WebView URL도 `order-delivery` 도메인으로 설정해야 함.
-- [x] **브랜드 사이트 CORS 차단 (304 캐시 오염)** (2026-05-16): `tacomole.kr`에서 `api.tacomole.kr/api/v1/stores` 요청 시 ACAO 헤더가 `delivery.tacomole.kr`로 잘못 반환. ETag 기반 304 응답에 오염된 캐시 헤더가 재사용된 것. `expressApp.set('etag', false)`(ETag 생성 차단) + `Vary: Origin`(CDN 분리) + `Cache-Control: no-store`(브라우저 캐시 완전 비활성화) 세 겹으로 해소. push 필요.
+- [x] **브랜드 사이트 CORS 차단 (304 캐시 오염)** (2026-05-16): `tacomole.kr`에서 `api.tacomole.kr/api/v1/stores` 요청 시 ACAO 헤더가 `delivery.tacomole.kr`로 잘못 반환. ETag 기반 304 응답에 오염된 캐시 헤더가 재사용된 것. `expressApp.set('etag', false)`(ETag 생성 차단) + `Vary: Origin`(CDN 분리) + `Cache-Control: no-store`(브라우저 캐시 완전 비활성화) 세 겹으로 해소.
 - [x] **Supabase 누락 마이그레이션 3개 적용** (2026-05-16): `20260505` OrderChannel HOMEPAGE enum 제거, `20260506` FranchiseInquiry 테이블 생성(가맹 문의 폼 "table does not exist" 에러 해소), `20260516` UserFavoriteStore `_prisma_migrations` 등록(수동 생성된 테이블 Prisma 상태 동기화).
 
 - [x] **`updateOrderStatus` localStorage mock 제거** (2026-05-12): `packages/shared/src/api/endpoints/order.ts` + `apps/table-order/src/lib/api/endpoints/order.ts` — localStorage mock → `PATCH /stores/:storeId/orders/:orderId/status` 실 API 호출로 교체. 시그니처 `(orderNumber, status)` → `(storeId, orderId, status)` 변경.
@@ -89,7 +89,7 @@
 - [x] **배달앱 장바구니 최소주문금액 매장 정책 연동** (2026-05-16): `CartBottomSheet`의 하드코딩 `15,000원` 검증을 제거하고 `StoreContext.store.minimumOrderAmount` 기준으로 안내/주문 진행을 판단하도록 수정. `/orders` 전역 라우트는 `StoreProvider` 밖에서도 빌드되도록 선택 매장 안내 상태를 추가. `pnpm --filter delivery-customer type-check` 및 `build` 통과.
 - [x] **마이페이지 헤더 네비게이션 추가** (2026-05-16): 뒤로가기(←) 및 주문하기 버튼 추가. 홈(`/`)으로 이동.
 - [x] **배달앱 홈 화면 개편** (2026-05-17): 동대문엽기떡볶이 앱 스타일 참고. `HomeHeader` — 주소 바 + 배너 캐러셀(3.5초 자동재생, 스와이프, 점·번호 인디케이터). `ServiceButtons` — 3열에서 2열(배달/방문포장)로 변경. 홈 — 비로그인 CTA 바, 선물하기 배너, 주문유형 탭 필터 + 검색 + 즐겨찾기 섹션 + 매장 목록으로 재구성.
-- [x] **매장 좌표(lat/lng) 자동 지오코딩** (2026-05-17): Prisma Store 스키마에 `lat Float?`, `lng Float?` 추가. `stores.service` 매장 생성·수정 시 카카오 REST API `KAKAO_REST_API_KEY`로 주소 → 좌표 자동 변환. `getActiveStores` select에 lat/lng 포함. 브랜드 사이트 지도 마커 정밀도 개선 목적. `KAKAO_REST_API_KEY` Vercel 백엔드 환경변수 추가 필요.
+- [x] **매장 좌표(lat/lng) 자동 지오코딩** (2026-05-17): Prisma Store 스키마에 `lat Float?`, `lng Float?` 추가. `stores.service` 매장 생성·수정 시 카카오 REST API `KAKAO_REST_API_KEY`로 주소 → 좌표 자동 변환. `getActiveStores` select에 lat/lng 포함. 브랜드 사이트 지도 마커 정밀도 개선 목적. 운영 DB `Store` 테이블에 lat/lng 컬럼 적용 + `_prisma_migrations` 등록 완료(9차). `KAKAO_REST_API_KEY` Vercel 백엔드 env 설정 완료.
 - [x] **매장 즐겨찾기 (DB 기반)** (2026-05-16): `UserFavoriteStore` Prisma 모델 추가 + migration SQL 생성 및 Supabase 운영 DB 적용. 백엔드 `GET /users/me/favorite-stores` / `POST /users/me/favorite-stores/:storeId/toggle` 엔드포인트 추가. shared `FavoriteStore` 타입 + `getFavoriteStores()` / `toggleFavoriteStore()` API 함수 추가. 배달앱 홈 화면에 하트 버튼(로그인 사용자만 표시) + "즐겨찾기 매장" 섹션(상단 노출). `useFavoriteStores` 훅에 optimistic update 적용.
 - [x] **메뉴 이미지 업로드 기능** (2026-05-16): admin 메뉴 등록/수정 시 이미지 URL 직접 입력 → 파일 업로드로 교체. admin에서 클라이언트 압축(`browser-image-compression`, max 1MB/1280px) 후 백엔드 `POST /stores/:storeId/menus/image` 경유, 백엔드 `StorageService`가 `SUPABASE_SERVICE_KEY`로 Supabase Storage 기존 `assets` 버킷의 `menu/{storeId}/{uuid}.ext` 경로에 저장하고 public URL 반환. 권한은 `assertCanManageAdminDirectMenus` 재사용. Vercel 요청 본문 ~4.5MB 제한 때문에 클라 압축 필수.
 
@@ -130,7 +130,7 @@
 - [ ] **admin 미커버 플로우 E2E**: 옵션 그룹 CRUD, 직원 호출 실시간, 가맹 문의 처리.
 - [x] **brand-website E2E 도입** (2026-05-16): `e2e/brand-website/fixtures.ts`(매장·메뉴 API 스텁) + `pages.spec.ts`(21 tests, 랜딩·메뉴·브랜드·가맹·매장·개인정보 6페이지). Playwright `brand-website` 프로젝트 port 3000 추가.
 - [x] **delivery-customer E2E 메뉴 경로 수정** (2026-05-16): `/menu` 라우트가 `/store/[storeId]/menu`로 리팩터링되면서 CI E2E 실패. `e2e/delivery-customer/pages.spec.ts` 메뉴 관련 테스트 2개를 `/store/store-e2e-1/menu` 경로로 수정.
-- [x] **admin E2E strict mode 수정** (2026-05-17): 회원가입 탭 추가로 로그인 페이지에 '로그인' 텍스트 버튼이 2개 생겨 `getByRole('button', { name: '로그인' })` strict mode 위반. `locator('button[type="submit"]')`으로 교체.
+- [x] **admin E2E auth 테스트 — 로그인 페이지 개편 추적** (2026-05-17): ① 회원가입 탭 추가로 '로그인' 버튼이 2개라 strict mode 위반 → `button[type="submit"]`로 교체(8차). ② 이후 로그인 페이지가 `<form>`/submit 버튼 없는 구조(`type="button"` + onClick)로 재개편되며 `button[type="submit"]`이 사라져, `getByRole('button', { name: '로그인' })` + 회원가입 버튼 검증으로 재수정(9차). 로컬 admin auth E2E 10개 통과 확인.
 - [x] **delivery-customer payment E2E 라우트 수정** (2026-05-17): 테스트가 `/order/success|fail|checkout` 등 존재하지 않는 경로로 탐색해 404 실패. 실제 라우트인 `/store/test-store-e2e/order/...`로 수정 + `StoreLayout`이 요구하는 `/stores/test-store-e2e` API 모킹 추가.
 - [ ] **cross-app 동기화 E2E**: admin 메뉴 변경 → table-order/delivery 실시간 반영, 결제 webhook → UI 갱신.
 
@@ -252,6 +252,13 @@
 ---
 
 ## 🗓 완료 이력 (마일스톤 요약)
+
+### 2026-05-17 (9차)
+- **관리자 계정 모델 전환 결정**: 외부 셀프 회원가입(이메일 인증 + 초대코드) 폐기 → 마스터(ADMIN)가 admin UI에서 점주 계정을 직접 생성·관리하는 모델로 전환 결정. 구현은 다음 작업일.
+- **로그인 페이지 빌드 수정**: `useSearchParams()` Suspense 경계 누락으로 Next.js 16 프리렌더 빌드 실패 → `LoginContent` 분리 후 `<Suspense>` 래핑 (`107ba4a`).
+- **E2E auth 테스트 재수정**: 새 로그인 페이지에 `button[type="submit"]`이 없어 실패 → `getByRole('button',{name:'로그인'})` 기반으로 교체, 로컬 10개 통과 (`56d1d08`).
+- **운영 DB lat/lng 마이그레이션 적용**: `getActiveStores`가 select하는 `lat`/`lng` 컬럼이 운영 DB에 없어 매장 목록 API 깨짐 위험 → Supabase `order` DB에 컬럼 추가 + `_prisma_migrations` 등록.
+- `dev` → `master` 머지 2회, Vercel Web Analytics 4개 앱 반영.
 
 ### 2026-05-17 (8차)
 - **관리자 로그인 개편**: 탭 제거 → [로그인][회원가입] 버튼 나란히. 이메일 형식·비밀번호 8자+·비밀번호 확인 검증. `emailRedirectTo: /auth/callback` 이메일 인증 플로우 완성. `/auth/callback` 신규 생성.
