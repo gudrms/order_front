@@ -5,6 +5,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 const ASSETS_BUCKET = 'assets';
 const MENU_IMAGE_PREFIX = 'menu';
+const BRAND_MENU_IMAGE_PREFIX = 'brand-menu';
 
 const EXTENSION_BY_MIME: Record<string, string> = {
     'image/jpeg': 'jpg',
@@ -44,7 +45,15 @@ export class StorageService {
 
     async uploadMenuImage(storeId: string, file: { buffer: Buffer; mimetype: string }): Promise<string> {
         const ext = EXTENSION_BY_MIME[file.mimetype];
-        const path = `${MENU_IMAGE_PREFIX}/${storeId}/${randomUUID()}.${ext}`;
+        return this.uploadToAssets(`${MENU_IMAGE_PREFIX}/${storeId}/${randomUUID()}.${ext}`, file);
+    }
+
+    async uploadBrandMenuImage(file: { buffer: Buffer; mimetype: string }): Promise<string> {
+        const ext = EXTENSION_BY_MIME[file.mimetype];
+        return this.uploadToAssets(`${BRAND_MENU_IMAGE_PREFIX}/${randomUUID()}.${ext}`, file);
+    }
+
+    private async uploadToAssets(path: string, file: { buffer: Buffer; mimetype: string }): Promise<string> {
         const client = this.getClient();
 
         const { error } = await client.storage

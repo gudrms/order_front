@@ -24,12 +24,15 @@
 
 1. `BrandMenuCategory`, `BrandMenu` 테이블을 추가한다.
 2. 공개 API는 `GET /brand-menus/categories`, `GET /brand-menus`를 제공한다.
-3. 관리자 API는 `GET/POST/PATCH /brand-menus/admin/categories`, `POST/PATCH/DELETE /brand-menus/admin/menus`를 제공한다.
+3. 관리자 API는 `GET/POST/PATCH /brand-menus/admin/categories`, `POST/PATCH/DELETE /brand-menus/admin/menus`, 이미지 업로드 `POST /brand-menus/admin/menus/image`를 제공한다.
 4. 브랜드 사이트 홈 대표 메뉴와 `/menu` 페이지는 매장 메뉴가 아니라 브랜드 메뉴 API를 사용한다.
 5. admin에는 `ADMIN` 전용 `브랜드 메뉴` 화면을 추가한다.
 
+## 이미지 업로드
+
+브랜드 메뉴 이미지는 매장 메뉴와 동일하게 Supabase Storage `assets` 버킷에 업로드한다. 경로는 매장 메뉴(`menu/{storeId}/...`)와 구분해 `brand-menu/{uuid}.{ext}`를 사용한다. admin `브랜드 메뉴` 화면은 매장 메뉴와 같은 `MenuImageUpload` 컴포넌트(파일 선택 → 클라이언트 압축 → 업로드)를 재사용한다.
+
 ## 추후 보강
 
-- 브랜드 메뉴 이미지 업로드도 현재 매장 메뉴 이미지 업로드처럼 Supabase Storage 업로드 버튼으로 확장한다.
 - 대표 메뉴 정렬, 카테고리 숨김, 메뉴 수정 폼을 더 촘촘하게 만든다.
 - 필요한 경우 브랜드 메뉴를 특정 매장 메뉴로 복사하는 기능을 별도 액션으로 만든다. 자동 동기화는 매장별 가격/옵션 차이가 생길 수 있어 신중하게 둔다.

@@ -6,16 +6,15 @@ import imageCompression from 'browser-image-compression';
 import { ImagePlus, Loader2, X } from 'lucide-react';
 import { getHttpErrorMessage } from '@/lib/httpError';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
 const ACCEPTED_TYPES = 'image/jpeg,image/png,image/webp';
 
 export function MenuImageUpload({
-  storeId,
+  uploadUrl,
   value,
   onChange,
   authHeaders,
 }: {
-  storeId: string;
+  uploadUrl: string;
   value: string;
   onChange: (url: string) => void;
   authHeaders: { Authorization: string } | undefined;
@@ -40,11 +39,7 @@ export function MenuImageUpload({
       const formData = new FormData();
       formData.append('file', compressed, file.name);
 
-      const response = await axios.post(
-        `${API_URL}/stores/${storeId}/menus/image`,
-        formData,
-        { headers: authHeaders },
-      );
+      const response = await axios.post(uploadUrl, formData, { headers: authHeaders });
       const imageUrl = response.data?.data?.imageUrl ?? response.data?.imageUrl;
       if (!imageUrl) {
         throw new Error('No imageUrl in response');

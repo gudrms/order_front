@@ -6,6 +6,7 @@ import axios from 'axios';
 import { Plus, RefreshCw, Save } from 'lucide-react';
 import { useAdminStore } from '@/contexts/AdminStoreContext';
 import { getHttpErrorMessage } from '@/lib/httpError';
+import { MenuImageUpload } from '@/components/MenuImageUpload';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -221,11 +222,11 @@ export default function BrandMenuPage() {
                 inputMode="numeric"
                 className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none"
               />
-              <input
+              <MenuImageUpload
+                uploadUrl={`${API_URL}/brand-menus/admin/menus/image`}
                 value={menuForm.imageUrl}
-                onChange={(event) => setMenuForm((prev) => ({ ...prev, imageUrl: event.target.value }))}
-                placeholder="이미지 URL"
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none"
+                onChange={(imageUrl) => setMenuForm((prev) => ({ ...prev, imageUrl }))}
+                authHeaders={authHeaders}
               />
               <textarea
                 value={menuForm.description}

@@ -363,7 +363,7 @@ export default function MenuListPage() {
               <TextInput value={menuForm.price} onChange={(price) => setMenuForm((prev) => ({ ...prev, price }))} placeholder="가격" numeric />
               <div className="md:col-span-2">
                 <MenuImageUpload
-                  storeId={selectedStoreId}
+                  uploadUrl={`${API_URL}/stores/${selectedStoreId}/menus/image`}
                   value={menuForm.imageUrl}
                   onChange={(imageUrl) => setMenuForm((prev) => ({ ...prev, imageUrl }))}
                   authHeaders={authHeaders}
@@ -422,7 +422,7 @@ export default function MenuListPage() {
                     <TextInput value={editForm.name} onChange={(name) => setEditForm((prev) => ({ ...prev, name }))} placeholder="메뉴명" />
                     <TextInput value={editForm.price} onChange={(price) => setEditForm((prev) => ({ ...prev, price }))} placeholder="가격" numeric />
                     <MenuImageUpload
-                      storeId={selectedStoreId}
+                      uploadUrl={`${API_URL}/stores/${selectedStoreId}/menus/image`}
                       value={editForm.imageUrl}
                       onChange={(imageUrl) => setEditForm((prev) => ({ ...prev, imageUrl }))}
                       authHeaders={authHeaders}
