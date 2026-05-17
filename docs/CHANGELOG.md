@@ -17,6 +17,7 @@
 - 브랜드 사이트 보강 기획안 갱신: 기존 `/brand`, `/menu`, `/store`, `/franchise` 구조를 유지하고 홈/가맹/푸터 중심으로 보강하는 방향으로 정리.
 - 브랜드 사이트 홈에 인천 중심 7개 매장 신뢰 지표와 매장 찾기/주문 CTA 섹션 추가.
 - 브랜드 사이트 홈 대표 메뉴를 API 메뉴 데이터와 Supabase Storage 이미지 URL 기반으로 표시.
+- 브랜드 메뉴 분리: `BrandMenuCategory`/`BrandMenu` 스키마, 공개 `/brand-menus` API, ADMIN 전용 관리 API와 admin `브랜드 메뉴` 화면을 추가.
 
 ### Changed
 - 브랜드 사이트 가맹 섹션의 미확정 `30% 평균 수익률` 표현을 제거하고 `상담 후 개설 비용 안내`로 완곡 처리.

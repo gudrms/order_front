@@ -1,24 +1,14 @@
 import Link from 'next/link';
 import ScrollAnimation from './ScrollAnimation';
 
-interface StoreSummary {
-    id: string;
-    isActive: boolean;
-}
-
-interface Category {
-    id: string;
-    name: string;
-    sortOrder: number;
-}
-
-interface MenuItem {
+interface BrandMenuItem {
     id: string;
     name: string;
     description: string | null;
     price: number;
     imageUrl: string | null;
-    isAvailable: boolean;
+    isFeatured: boolean;
+    isActive: boolean;
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.tacomole.kr/api/v1';
@@ -32,30 +22,13 @@ function unwrapList<T>(json: unknown): T[] {
     return [];
 }
 
-async function fetchJson<T>(url: string): Promise<T[]> {
-    const response = await fetch(url, { next: { revalidate: 300 } });
-    if (!response.ok) return [];
-    return unwrapList<T>(await response.json());
-}
-
-async function getFeaturedMenus(): Promise<MenuItem[]> {
+async function getFeaturedMenus(): Promise<BrandMenuItem[]> {
     try {
-        const stores = await fetchJson<StoreSummary>(`${API_URL}/stores`);
-        const store = stores.find((item) => item.isActive) ?? stores[0];
-        if (!store) return [];
-
-        const categories = await fetchJson<Category>(`${API_URL}/stores/${store.id}/categories`);
-        const sortedCategories = [...categories].sort((a, b) => a.sortOrder - b.sortOrder).slice(0, 4);
-        const menuGroups = await Promise.all(
-            sortedCategories.map((category) =>
-                fetchJson<MenuItem>(`${API_URL}/stores/${store.id}/menus?categoryId=${category.id}`),
-            ),
-        );
-
-        return menuGroups
-            .flat()
-            .filter((item) => item.isAvailable)
-            .slice(0, 4);
+        const response = await fetch(`${API_URL}/brand-menus?featured=true`, {
+            next: { revalidate: 300 },
+        });
+        if (!response.ok) return [];
+        return unwrapList<BrandMenuItem>(await response.json()).slice(0, 4);
     } catch {
         return [];
     }
@@ -71,10 +44,10 @@ export default async function MenuSection() {
                     <div className="text-center mb-16">
                         <h2 className="text-brand-green font-bold tracking-widest mb-2">OUR MENU</h2>
                         <h3 className="text-4xl font-black text-brand-black">
-                            타코몰리 <span className="text-brand-yellow">대표 메뉴</span>
+                            타코몰리<span className="text-brand-yellow"> 대표 메뉴</span>
                         </h3>
                         <p className="mt-4 text-gray-600">
-                            관리자에 등록된 메뉴와 사진을 기준으로 보여드립니다.
+                            브랜드 관리자가 등록한 대표 메뉴와 실제 메뉴 사진을 보여드립니다.
                         </p>
                     </div>
 
@@ -124,10 +97,10 @@ export default async function MenuSection() {
                     ) : (
                         <div className="max-w-2xl mx-auto bg-gray-50 border border-gray-200 rounded-2xl p-8 text-center">
                             <p className="text-lg font-bold text-brand-black mb-2">
-                                대표 메뉴를 불러오는 중입니다.
+                                대표 메뉴를 준비 중입니다.
                             </p>
                             <p className="text-gray-600">
-                                전체 메뉴 페이지에서 현재 판매 중인 메뉴를 확인할 수 있습니다.
+                                관리자에서 브랜드 대표 메뉴를 등록하면 홈페이지에 자동으로 표시됩니다.
                             </p>
                         </div>
                     )}

@@ -30,6 +30,12 @@ export function assertCanCreateStore(user?: PermissionUser | null) {
     }
 }
 
+export function assertPlatformAdmin(user?: PermissionUser | null) {
+    if (!isPlatformAdmin(user)) {
+        throw new ForbiddenException('Only admins can manage brand menus');
+    }
+}
+
 export function assertCanManageStore(user?: PermissionUser | null, store?: PermissionStore | null) {
     if (!canManageStore(user, store)) {
         throw new ForbiddenException('You do not have permission to manage this store');

@@ -54,6 +54,12 @@ const STUB_MENUS = [
     },
 ];
 
+const STUB_BRAND_CATEGORIES = STUB_CATEGORIES;
+const STUB_BRAND_MENUS = STUB_MENUS.map((menu) => ({
+    ...menu,
+    isFeatured: true,
+}));
+
 export const test = base.extend({
     page: async ({ page }, use) => {
         await page.route('**/api/v1/stores**', async (route) => {
@@ -64,6 +70,12 @@ export const test = base.extend({
         });
         await page.route('**/api/v1/stores/*/menus**', async (route) => {
             await route.fulfill({ json: { data: STUB_MENUS } });
+        });
+        await page.route('**/api/v1/brand-menus/categories**', async (route) => {
+            await route.fulfill({ json: { data: STUB_BRAND_CATEGORIES } });
+        });
+        await page.route('**/api/v1/brand-menus**', async (route) => {
+            await route.fulfill({ json: { data: STUB_BRAND_MENUS } });
         });
         await use(page);
     },

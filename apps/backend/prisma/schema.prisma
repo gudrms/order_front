@@ -459,6 +459,42 @@ model MenuTagRelation {
 }
 
 /// 테이블 세션 (손님이 앉아서 나갈 때까지의 단위)
+/// 브랜드 홈페이지용 대표 메뉴 카테고리
+model BrandMenuCategory {
+  id           String      @id @default(uuid())
+  name         String
+  displayOrder Int         @default(0)
+  isActive     Boolean     @default(true)
+
+  menus        BrandMenu[]
+
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@index([isActive, displayOrder])
+}
+
+/// 브랜드 홈페이지용 대표 메뉴
+model BrandMenu {
+  id           String            @id @default(uuid())
+  categoryId   String
+  category     BrandMenuCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  name         String
+  price        Int
+  description  String?
+  imageUrl     String?
+  displayOrder Int               @default(0)
+  isFeatured   Boolean           @default(false)
+  isActive     Boolean           @default(true)
+
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  @@index([categoryId, isActive, displayOrder])
+  @@index([isFeatured, isActive, displayOrder])
+}
+
 model TableSession {
   id            String        @id @default(uuid())
   storeId       String

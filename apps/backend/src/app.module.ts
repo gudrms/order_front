@@ -7,6 +7,7 @@ import { Redis } from 'ioredis';
 import { APP_GUARD } from '@nestjs/core';
 import { PrismaModule } from './modules/prisma/prisma.module';
 import { MenusModule } from './modules/menus/menus.module';
+import { BrandMenusModule } from './modules/brand-menus/brand-menus.module';
 import { StoresModule } from './modules/stores/stores.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { SessionsModule } from './modules/sessions/sessions.module';
@@ -77,6 +78,7 @@ import { CustomThrottlerGuard } from './common/guards/throttler.guard';
         LoggerModule,
         PrismaModule,
         MenusModule,
+        BrandMenusModule,
         StoresModule,
         OrdersModule,
         SessionsModule,

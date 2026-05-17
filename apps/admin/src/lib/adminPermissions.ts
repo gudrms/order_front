@@ -1,6 +1,7 @@
 import {
   Activity,
   Bell,
+  BookOpen,
   FileText,
   LayoutDashboard,
   Menu as MenuIcon,
@@ -29,6 +30,7 @@ export const adminNavItems: AdminNavItem[] = [
   { name: '주문 관리', href: '/orders', icon: ShoppingBag, roles: ['ADMIN', 'OWNER'] },
   { name: '직원 호출', href: '/calls', icon: Bell, roles: ['ADMIN', 'OWNER'] },
   { name: '메뉴 관리', href: '/menu', icon: MenuIcon, roles: ['ADMIN', 'OWNER'] },
+  { name: '브랜드 메뉴', href: '/brand-menu', icon: BookOpen, roles: ['ADMIN'] },
   { name: '매장 관리', href: '/store', icon: Store, roles: ['ADMIN', 'OWNER'] },
   { name: '가맹 문의', href: '/franchise-inquiries', icon: MessageSquareText, roles: ['ADMIN'] },
   { name: '운영 관리', href: '/operations', icon: Activity, roles: ['ADMIN', 'OWNER'] },

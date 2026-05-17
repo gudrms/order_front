@@ -77,6 +77,12 @@ const STUB_MENUS = [
   },
 ];
 
+const STUB_BRAND_CATEGORIES = STUB_CATEGORIES;
+const STUB_BRAND_MENUS = STUB_MENUS.map((menu) => ({
+  ...menu,
+  isFeatured: true,
+}));
+
 function json(res: ServerResponse, data: unknown, status = 200) {
   res.writeHead(status, {
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
@@ -102,6 +108,27 @@ function handle(req: IncomingMessage, res: ServerResponse) {
 
   if (req.method === 'GET' && /^\/api\/v1\/stores(\?.*)?$/.test(url)) {
     json(res, { data: STUB_STORES });
+    return;
+  }
+
+  if (
+    req.method === 'GET' &&
+    /^\/api\/v1\/brand-menus\/categories(\?.*)?$/.test(url)
+  ) {
+    json(res, { data: STUB_BRAND_CATEGORIES });
+    return;
+  }
+
+  if (req.method === 'GET' && /^\/api\/v1\/brand-menus(\?.*)?$/.test(url)) {
+    const parsed = new URL(url, 'http://127.0.0.1');
+    const categoryId = parsed.searchParams.get('categoryId');
+    const featured = parsed.searchParams.get('featured');
+    const menus = STUB_BRAND_MENUS.filter((menu) => {
+      if (categoryId && menu.categoryId !== categoryId) return false;
+      if (featured === 'true' && !menu.isFeatured) return false;
+      return true;
+    });
+    json(res, { data: menus });
     return;
   }
 
