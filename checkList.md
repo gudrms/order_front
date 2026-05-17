@@ -82,6 +82,7 @@
   - [x] 브랜드 메뉴를 매장별 주문 메뉴와 분리: `BrandMenuCategory`/`BrandMenu` 추가, 공개 `/brand-menus` API와 ADMIN 전용 관리 API/화면 1차 구현
   - [x] 브랜드 메뉴 이미지 업로드: `POST /brand-menus/admin/menus/image`로 Supabase Storage `assets` 버킷(`brand-menu/{uuid}`)에 업로드, admin `브랜드 메뉴` 화면이 `MenuImageUpload` 컴포넌트 재사용
   - [x] 브랜드 메뉴 수정 폼: admin `브랜드 메뉴` 화면에 인라인 수정(카테고리/메뉴명/가격/이미지/설명/대표 노출) 추가, 목록에 이미지 썸네일 표시
+  - [x] 브랜드 메뉴 정렬/카테고리 관리 UI: 메뉴 `displayOrder` 입력, 카테고리 숨김/노출 토글 및 정렬 순서 편집
   - [ ] 브랜드 페이지 임시 스토리/이미지 교체
   - [x] 푸터 사업자 정보 표시 구조 및 `/privacy` 링크 보강
   - [x] 홈 대표 메뉴는 API 메뉴 데이터와 Supabase Storage 이미지 URL 기반으로 표시

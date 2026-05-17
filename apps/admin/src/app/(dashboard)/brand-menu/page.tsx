@@ -46,6 +46,7 @@ export default function BrandMenuPage() {
     price: '',
     description: '',
     imageUrl: '',
+    displayOrder: '0',
     isFeatured: true,
   });
   const [editingMenuId, setEditingMenuId] = useState<string | null>(null);
@@ -55,6 +56,7 @@ export default function BrandMenuPage() {
     price: '',
     description: '',
     imageUrl: '',
+    displayOrder: '0',
     isFeatured: false,
   });
 
@@ -107,6 +109,7 @@ export default function BrandMenuPage() {
           price: Number(menuForm.price),
           description: menuForm.description.trim() || undefined,
           imageUrl: menuForm.imageUrl.trim() || undefined,
+          displayOrder: Number(menuForm.displayOrder) || 0,
           isFeatured: menuForm.isFeatured,
         },
         { headers: authHeaders },
@@ -119,6 +122,7 @@ export default function BrandMenuPage() {
         price: '',
         description: '',
         imageUrl: '',
+        displayOrder: '0',
         isFeatured: true,
       });
       setFeedback({ type: 'success', message: '브랜드 메뉴를 추가했습니다.' });
@@ -143,6 +147,20 @@ export default function BrandMenuPage() {
     },
   });
 
+  const updateCategoryMutation = useMutation({
+    mutationFn: async ({ categoryId, data }: { categoryId: string; data: Record<string, unknown> }) => {
+      await axios.patch(
+        `${API_URL}/brand-menus/admin/categories/${categoryId}`,
+        data,
+        { headers: authHeaders },
+      );
+    },
+    onSuccess: invalidate,
+    onError: (error) => {
+      setFeedback({ type: 'error', message: getHttpErrorMessage(error, '카테고리 변경에 실패했습니다.') });
+    },
+  });
+
   const updateMenuMutation = useMutation({
     mutationFn: async () => {
       if (!editingMenuId) return;
@@ -154,6 +172,7 @@ export default function BrandMenuPage() {
           price: Number(editForm.price),
           description: editForm.description.trim() || undefined,
           imageUrl: editForm.imageUrl.trim() || undefined,
+          displayOrder: Number(editForm.displayOrder) || 0,
           isFeatured: editForm.isFeatured,
         },
         { headers: authHeaders },
@@ -177,6 +196,7 @@ export default function BrandMenuPage() {
       price: String(menu.price),
       description: menu.description || '',
       imageUrl: menu.imageUrl || '',
+      displayOrder: String(menu.displayOrder),
       isFeatured: menu.isFeatured,
     });
   };
@@ -250,6 +270,48 @@ export default function BrandMenuPage() {
             </button>
           </form>
 
+          {categories.length > 0 && (
+            <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+              <h2 className="mb-4 text-lg font-semibold text-gray-900">카테고리 관리</h2>
+              <div className="space-y-2">
+                {categories.map((category) => (
+                  <div key={category.id} className="flex items-center gap-2">
+                    <span className="flex-1 truncate text-sm text-gray-800">
+                      {category.name}
+                      {!category.isActive && (
+                        <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-500">숨김</span>
+                      )}
+                    </span>
+                    <input
+                      type="number"
+                      defaultValue={category.displayOrder}
+                      onBlur={(event) => {
+                        const next = Number(event.target.value) || 0;
+                        if (next !== category.displayOrder) {
+                          updateCategoryMutation.mutate({ categoryId: category.id, data: { displayOrder: next } });
+                        }
+                      }}
+                      title="정렬 순서"
+                      className="w-16 rounded-md border border-gray-300 px-2 py-1 text-sm focus:border-gray-900 focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        updateCategoryMutation.mutate({
+                          categoryId: category.id,
+                          data: { isActive: !category.isActive },
+                        })
+                      }
+                      className="rounded-md border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                    >
+                      {category.isActive ? '숨기기' : '노출하기'}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <form onSubmit={handleCreateMenu} className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
             <h2 className="mb-4 text-lg font-semibold text-gray-900">메뉴 추가</h2>
             <div className="space-y-3">
@@ -272,6 +334,13 @@ export default function BrandMenuPage() {
                 value={menuForm.price}
                 onChange={(event) => setMenuForm((prev) => ({ ...prev, price: event.target.value }))}
                 placeholder="가격"
+                inputMode="numeric"
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none"
+              />
+              <input
+                value={menuForm.displayOrder}
+                onChange={(event) => setMenuForm((prev) => ({ ...prev, displayOrder: event.target.value }))}
+                placeholder="정렬 순서 (작을수록 먼저)"
                 inputMode="numeric"
                 className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none"
               />
@@ -343,6 +412,13 @@ export default function BrandMenuPage() {
                     value={editForm.price}
                     onChange={(event) => setEditForm((prev) => ({ ...prev, price: event.target.value }))}
                     placeholder="가격"
+                    inputMode="numeric"
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none"
+                  />
+                  <input
+                    value={editForm.displayOrder}
+                    onChange={(event) => setEditForm((prev) => ({ ...prev, displayOrder: event.target.value }))}
+                    placeholder="정렬 순서 (작을수록 먼저)"
                     inputMode="numeric"
                     className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none"
                   />
