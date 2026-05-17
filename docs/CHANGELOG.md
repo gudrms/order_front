@@ -10,6 +10,8 @@
 ## [Unreleased]
 
 ### Added
+- ADMIN 전용 관리자 계정 관리 기능 추가: `/admin/accounts` API와 admin `계정 관리` 화면에서 계정 생성, 비밀번호 초기화, 삭제, 매장 OWNER 연결을 처리.
+- 관리자 계정 관리 상세 시나리오 문서 `docs/admin-account-management-scenario.md` 추가.
 - Toss Payments 웹훅 수신 엔드포인트 `POST /payments/toss/webhook` 추가: `PAYMENT_STATUS_CHANGED`, `CANCEL_STATUS_CHANGED` 이벤트를 Toss API 재조회 후 로컬 결제/주문 상태에 반영.
 - Toss 결제위젯 키 설정 방어: `delivery-customer` checkout에서 `test_gck_`/`live_gck_` 키가 아니면 위젯을 렌더링하지 않도록 보강.
 - Toss 승인 대기 중 사전 검증 기록: 운영 checkout 키 미설정 방어 동작과 운영 웹훅 URL 200 응답 확인.
@@ -20,8 +22,13 @@
 - 브랜드 메뉴 분리: `BrandMenuCategory`/`BrandMenu` 스키마, 공개 `/brand-menus` API, ADMIN 전용 관리 API와 admin `브랜드 메뉴` 화면을 추가.
 
 ### Changed
+- 관리자 로그인은 마스터가 생성한 계정의 이메일/비밀번호 로그인만 지원하도록 단순화.
+- 관리자/백엔드/전체 흐름 테스트 시나리오를 마스터 직접 계정 관리 모델 기준으로 갱신.
 - 브랜드 사이트 가맹 섹션의 미확정 `30% 평균 수익률` 표현을 제거하고 `상담 후 개설 비용 안내`로 완곡 처리.
 - 브랜드 사이트 메뉴 API fallback URL을 운영 API(`https://api.tacomole.kr/api/v1`) 기준으로 보정.
+
+### Removed
+- admin 셀프 회원가입, 이메일 인증 콜백(`/auth/callback`), `/setup` 가입 경로, 무인증 `POST /auth/register`, 매장 초대코드 재발급 UI/API 제거.
 
 ---
 

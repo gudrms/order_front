@@ -43,23 +43,25 @@
 - 권한이 없는 매장 접근은 403이다.
 - 본인 매장 관리자 요청은 성공한다.
 
-## 시나리오 C. 관리자 온보딩과 매장 생성 API
+## 시나리오 C. 관리자 계정 관리와 매장 생성 API
 
-1. Supabase Auth로 로그인한 신규 관리자 계정을 준비한다.
-2. `POST /api/v1/auth/register`로 이름, 전화번호, 선택적 초대 코드를 등록한다.
-3. `ADMIN` 권한 계정으로 `POST /api/v1/stores`를 호출해 새 매장을 생성한다.
-4. 같은 `storeType + branchId`로 중복 생성을 시도한다.
-5. `POST /api/v1/stores/{storeId}/invite-code`로 초대 코드를 재발급한다.
-6. 다른 신규 계정이 초대 코드로 `POST /api/v1/auth/register`를 호출한다.
-7. `GET /api/v1/stores/me`로 두 계정의 매장 접근 권한을 확인한다.
+1. 기존 `ADMIN` 권한 계정으로 인증한다.
+2. `POST /api/v1/stores`를 호출해 새 매장을 생성한다.
+3. 같은 `storeType + branchId`로 중복 생성을 시도한다.
+4. `POST /api/v1/admin/accounts`로 `OWNER` 계정을 생성하고 매장을 연결한다.
+5. `GET /api/v1/admin/accounts`로 생성된 계정과 연결 매장을 확인한다.
+6. `PATCH /api/v1/admin/accounts/{userId}/password`로 비밀번호를 초기화한다.
+7. `DELETE /api/v1/admin/accounts/{userId}`로 계정을 삭제한다.
+8. `GET /api/v1/stores/me`로 삭제 또는 연결 해제 후 매장 접근 권한을 확인한다.
 
 기대 결과:
 
-- 신규 사용자는 프로필과 역할이 생성된다.
 - `ADMIN` 권한이 없는 계정은 새 매장을 생성할 수 없다.
 - 중복 `storeType + branchId` 생성은 실패한다.
-- 초대 코드로 등록한 사용자는 해당 매장 관리자 또는 owner 권한을 얻는다.
-- 초대 코드 재발급 후 이전 코드 사용 가능 여부가 정책대로 동작한다.
+- `ADMIN` 권한이 없는 계정은 `/admin/accounts` API를 호출할 수 없다.
+- 생성된 `OWNER`는 해당 매장의 `ownerId`로 연결된다.
+- 비밀번호 초기화는 Supabase Admin API를 통해 이메일 발송 없이 처리된다.
+- 계정 삭제 시 매장의 `ownerId`는 해제된다.
 
 ## 시나리오 D. 테이블 주문 API
 

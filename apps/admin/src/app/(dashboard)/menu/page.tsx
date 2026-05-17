@@ -250,7 +250,7 @@ export default function MenuListPage() {
     return (
       <div className="rounded-xl border border-dashed border-gray-300 bg-white p-10 text-center">
         <h2 className="text-xl font-bold text-gray-800">연결된 매장이 없습니다</h2>
-        <p className="mt-2 text-sm text-gray-500">먼저 매장 등록 또는 초대코드 가입을 완료해 주세요.</p>
+        <p className="mt-2 text-sm text-gray-500">마스터 관리자에게 계정과 매장 연결을 요청해 주세요.</p>
       </div>
     );
   }

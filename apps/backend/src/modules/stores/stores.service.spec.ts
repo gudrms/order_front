@@ -44,7 +44,7 @@ describe('StoresService', () => {
         service = module.get<StoresService>(StoresService);
     });
 
-    it('allows admins to create stores and generates an invite code', async () => {
+    it('allows admins to create stores without generating invite codes', async () => {
         prisma.user.findUnique.mockResolvedValue(admin);
 
         const result = await service.createStore('admin-1', {
@@ -55,12 +55,11 @@ describe('StoresService', () => {
             isDeliveryEnabled: true,
         });
 
-        expect(result.inviteCode).toMatch(/^TACOMOLLYGIM-[-A-Z0-9]+$/);
+        expect(result.inviteCode).toBeUndefined();
         expect(prisma.store.create).toHaveBeenCalledWith({
             data: expect.objectContaining({
                 storeType: 'tacomolly',
                 branchId: 'gimpo',
-                inviteCode: expect.any(String),
                 isDeliveryEnabled: true,
             }),
         });
@@ -171,28 +170,6 @@ describe('StoresService', () => {
             where: { ownerId: 'owner-1' },
             orderBy: { createdAt: 'desc' },
         });
-    });
-
-    it('refreshes the invite code for an owner of the store', async () => {
-        prisma.user.findUnique.mockResolvedValue(owner);
-        prisma.store.findUnique.mockResolvedValue(store);
-        prisma.store.update.mockResolvedValue({ id: 'store-1', inviteCode: 'NEWCODE-XYZ' });
-
-        const result = await service.refreshInviteCode('owner-1', 'store-1');
-
-        expect(prisma.store.update).toHaveBeenCalledWith(expect.objectContaining({
-            where: { id: 'store-1' },
-            data: expect.objectContaining({ inviteCode: expect.any(String) }),
-        }));
-        expect(result.inviteCode).toBeDefined();
-    });
-
-    it('blocks non-owner from refreshing another store invite code', async () => {
-        const otherOwner = { id: 'other-owner', role: 'OWNER' };
-        prisma.user.findUnique.mockResolvedValue(otherOwner);
-        prisma.store.findUnique.mockResolvedValue(store);
-
-        await expect(service.refreshInviteCode('other-owner', 'store-1')).rejects.toBeInstanceOf(ForbiddenException);
     });
 
     it('returns tables for an authorized owner', async () => {

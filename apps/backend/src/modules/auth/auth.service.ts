@@ -17,59 +17,29 @@ export class AuthService {
 
         const email = data.email || `${data.id}@supabase.local`;
 
-        return this.register({
-            id: data.id,
-            email,
-            name: data.name || undefined,
-            phoneNumber: data.phoneNumber || undefined,
-        });
-    }
-
-    async register(data: { id: string; email: string; name?: string; phoneNumber?: string; inviteCode?: string }) {
         return this.prisma.$transaction(async (tx) => {
-            const store = data.inviteCode
-                ? await tx.store.findUnique({ where: { inviteCode: data.inviteCode } })
-                : null;
-
-            if (data.inviteCode && !store) {
-                throw new BadRequestException('Invalid or expired invite code');
-            }
-
             const existingUser = await tx.user.findUnique({
                 where: { id: data.id },
             });
 
-            const user = existingUser
+            return existingUser
                 ? await tx.user.update({
                     where: { id: data.id },
                     data: {
-                        email: data.email,
-                        name: data.name,
-                        phoneNumber: data.phoneNumber,
-                        role: store && existingUser.role !== 'ADMIN' ? 'OWNER' : existingUser.role,
+                        email,
+                        name: data.name || undefined,
+                        phoneNumber: data.phoneNumber || undefined,
                     },
                 })
                 : await tx.user.create({
                     data: {
                         id: data.id,
-                        email: data.email,
-                        name: data.name,
-                        phoneNumber: data.phoneNumber,
-                        role: store ? 'OWNER' : 'USER',
+                        email,
+                        name: data.name || undefined,
+                        phoneNumber: data.phoneNumber || undefined,
+                        role: 'USER',
                     },
                 });
-
-            if (store) {
-                await tx.store.update({
-                    where: { id: store.id },
-                    data: {
-                        ownerId: user.id,
-                        inviteCode: null,
-                    },
-                });
-            }
-
-            return user;
         });
     }
 

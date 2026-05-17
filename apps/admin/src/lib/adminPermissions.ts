@@ -8,6 +8,7 @@ import {
   MessageSquareText,
   ShoppingBag,
   Store,
+  Users,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -31,6 +32,7 @@ export const adminNavItems: AdminNavItem[] = [
   { name: '직원 호출', href: '/calls', icon: Bell, roles: ['ADMIN', 'OWNER'] },
   { name: '메뉴 관리', href: '/menu', icon: MenuIcon, roles: ['ADMIN', 'OWNER'] },
   { name: '브랜드 메뉴', href: '/brand-menu', icon: BookOpen, roles: ['ADMIN'] },
+  { name: '계정 관리', href: '/accounts', icon: Users, roles: ['ADMIN'] },
   { name: '매장 관리', href: '/store', icon: Store, roles: ['ADMIN', 'OWNER'] },
   { name: '가맹 문의', href: '/franchise-inquiries', icon: MessageSquareText, roles: ['ADMIN'] },
   { name: '운영 관리', href: '/operations', icon: Activity, roles: ['ADMIN', 'OWNER'] },
@@ -63,7 +65,6 @@ export function isPendingUser(profile: AdminProfile) {
 }
 
 export function canAccessPath(profile: AdminProfile, pathname: string) {
-  if (pathname === '/setup') return true;
   if (pathname === '/pending') return true;
   if (!canAccessAdmin(profile)) return false;
 

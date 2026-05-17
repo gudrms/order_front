@@ -1,4 +1,3 @@
-import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { PrismaService } from '../prisma/prisma.service';
@@ -36,28 +35,6 @@ describe('AuthService', () => {
         }).compile();
 
         service = module.get<AuthService>(AuthService);
-    });
-
-    it('registers a regular customer as USER when no invite code is provided', async () => {
-        tx.user.findUnique.mockResolvedValue(null);
-
-        const result = await service.register({
-            id: 'user-1',
-            email: 'customer@example.com',
-            name: 'Customer',
-        });
-
-        expect(result.role).toBe('USER');
-        expect(tx.store.findUnique).not.toHaveBeenCalled();
-        expect(tx.user.create).toHaveBeenCalledWith({
-            data: {
-                id: 'user-1',
-                email: 'customer@example.com',
-                name: 'Customer',
-                phoneNumber: undefined,
-                role: 'USER',
-            },
-        });
     });
 
     it('syncs an authenticated OAuth user into the app user table', async () => {
@@ -98,35 +75,21 @@ describe('AuthService', () => {
         }));
     });
 
-    it('rejects an invalid owner invite code', async () => {
-        tx.store.findUnique.mockResolvedValue(null);
+    it('preserves an existing admin or owner role during auth sync', async () => {
+        tx.user.findUnique.mockResolvedValue({ id: 'admin-1', role: 'ADMIN' });
 
-        await expect(service.register({
-            id: 'owner-1',
-            email: 'owner@example.com',
-            inviteCode: 'BAD-CODE',
-        })).rejects.toBeInstanceOf(BadRequestException);
-
-        expect(tx.user.create).not.toHaveBeenCalled();
-        expect(tx.store.update).not.toHaveBeenCalled();
-    });
-
-    it('registers an invited owner and consumes the store invite code', async () => {
-        tx.store.findUnique.mockResolvedValue({ id: 'store-1', inviteCode: 'INVITE-1' });
-        tx.user.findUnique.mockResolvedValue(null);
-
-        const result = await service.register({
-            id: 'owner-1',
-            email: 'owner@example.com',
-            inviteCode: 'INVITE-1',
+        await service.syncAuthenticatedUser({
+            id: 'admin-1',
+            email: 'admin@example.com',
+            name: 'Admin',
         });
 
-        expect(result.role).toBe('OWNER');
-        expect(tx.store.update).toHaveBeenCalledWith({
-            where: { id: 'store-1' },
+        expect(tx.user.update).toHaveBeenCalledWith({
+            where: { id: 'admin-1' },
             data: {
-                ownerId: 'owner-1',
-                inviteCode: null,
+                email: 'admin@example.com',
+                name: 'Admin',
+                phoneNumber: undefined,
             },
         });
     });

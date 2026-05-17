@@ -17,7 +17,7 @@ test.describe('관리자 로그인 페이지', () => {
     await expect(page.locator('input[type="email"]')).toBeVisible();
     await expect(page.locator('input[type="password"]')).toBeVisible();
     await expect(page.getByRole('button', { name: '로그인' })).toBeVisible();
-    await expect(page.getByRole('button', { name: '회원가입' })).toBeVisible();
+    await expect(page.getByRole('button', { name: '회원가입' })).toHaveCount(0);
   });
 
   test('빈 폼으로 로그인 시 유효성 에러가 표시된다', async ({ page }) => {
