@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
+import { Analytics } from '@vercel/analytics/next';
 import { QueryProvider } from '@/lib/query/QueryProvider';
 import { ErrorBoundary, ErrorToast } from '@/components/error';
 import './globals.css';
@@ -66,6 +67,7 @@ export default function RootLayout({
           <QueryProvider>{children}</QueryProvider>
           <ErrorToast />
         </ErrorBoundary>
+        <Analytics />
       </body>
     </html>
   );

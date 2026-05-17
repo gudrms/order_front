@@ -105,4 +105,3 @@ tree_output*.txt
 .gemini/
 gha-creds-*.json
 .github/commands/
-.github/workflows/gemini-*.yml
