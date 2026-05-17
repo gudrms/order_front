@@ -1,5 +1,14 @@
 import Link from 'next/link';
 
+const BUSINESS_INFO = [
+    { label: '가맹문의', value: '010-4593-0731' },
+    { label: '이메일', value: 'tacomole26@gmail.com' },
+    // 대표자, 사업자등록번호, 본사 주소는 확정 후 value를 채우면 자동 노출한다.
+    { label: '대표자', value: '' },
+    { label: '사업자등록번호', value: '' },
+    { label: '주소', value: '' },
+].filter((item) => item.value);
+
 export default function Footer() {
     return (
         <footer className="bg-gray-50 text-gray-800 py-16 border-t border-gray-200">
@@ -32,8 +41,11 @@ export default function Footer() {
                     <div>
                         <h4 className="font-bold text-lg mb-6 text-brand-green">CONTACT</h4>
                         <ul className="space-y-3 text-gray-500">
-                            <li>가맹문의: 010-4593-0731</li>
-                            <li>이메일: tacomole26@gmail.com</li>
+                            {BUSINESS_INFO.map((item) => (
+                                <li key={item.label}>
+                                    {item.label}: {item.value}
+                                </li>
+                            ))}
                         </ul>
                     </div>
                 </div>
@@ -42,7 +54,9 @@ export default function Footer() {
                     <p>&copy; 2024 TACO MOLE. All rights reserved.</p>
                     <div className="flex gap-6 mt-4 md:mt-0">
                         <span className="cursor-pointer hover:text-brand-black">이용약관</span>
-                        <span className="cursor-pointer hover:text-brand-black">개인정보처리방침</span>
+                        <Link href="/privacy" className="hover:text-brand-black transition-colors">
+                            개인정보처리방침
+                        </Link>
                     </div>
                 </div>
             </div>

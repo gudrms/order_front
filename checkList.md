@@ -77,8 +77,9 @@
   - [x] 가맹 섹션의 미확정 수익률/비용 표현 정리
   - [x] 매장 찾기에서 전체 매장 리스트/마커 노출 및 지도 bounds 자동 맞춤
   - [ ] 브랜드 페이지 임시 스토리/이미지 교체
-  - [ ] 푸터 사업자 정보 및 `/privacy` 링크 보강
+  - [x] 푸터 사업자 정보 표시 구조 및 `/privacy` 링크 보강
   - [x] 홈 대표 메뉴는 API 메뉴 데이터와 Supabase Storage 이미지 URL 기반으로 표시
+  - [x] 대표 확인 요청 문구 작성: 브랜드 스토리, 창업 비용/수익률 공개 범위, 사업자 정보
 - [x] **배달앱 매장 선택 흐름 구현 — URL 기반으로 전환** (2026-05-16): 처음엔 localStorage 방식으로 구현했으나 URL 공유·북마크 불가 문제로 URL 기반으로 재설계. 라우트 구조를 `/menu`, `/order/*` → `/store/[storeId]/menu`, `/store/[storeId]/order/*` 로 전환. `StoreContext`에서 localStorage 완전 제거 — `/store/[storeId]/layout.tsx`가 `storeId`로 매장을 fetch 후 `StoreProvider`에 주입. Toss `successUrl`·`failUrl`도 새 URL 패턴으로 업데이트. 홈에서 매장 선택 시 `/store/${id}/menu` 로 이동.
 - [x] **배달앱 장바구니 최소주문금액 매장 정책 연동** (2026-05-16): `CartBottomSheet`의 하드코딩 `15,000원` 검증을 제거하고 `StoreContext.store.minimumOrderAmount` 기준으로 안내/주문 진행을 판단하도록 수정. `/orders` 전역 라우트는 `StoreProvider` 밖에서도 빌드되도록 선택 매장 안내 상태를 추가. `pnpm --filter delivery-customer type-check` 및 `build` 통과.
 - [x] **마이페이지 헤더 네비게이션 추가** (2026-05-16): 뒤로가기(←) 및 주문하기 버튼 추가. 홈(`/`)으로 이동.
