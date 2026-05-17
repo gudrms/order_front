@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 
 function validateEmail(email: string) {
@@ -15,12 +15,10 @@ export default function LoginPage() {
     const [passwordConfirm, setPasswordConfirm] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [signupDone, setSignupDone] = useState(false);
     const router = useRouter();
-
-    const switchToSignup = () => {
-        setSignupMode(true);
-        setError(null);
-    };
+    const searchParams = useSearchParams();
+    const authError = searchParams.get('error');
 
     const switchToLogin = () => {
         setSignupMode(false);
@@ -56,7 +54,8 @@ export default function LoginPage() {
 
     const handleSignup = async () => {
         if (!signupMode) {
-            switchToSignup();
+            setSignupMode(true);
+            setError(null);
             return;
         }
 
@@ -66,7 +65,14 @@ export default function LoginPage() {
         setLoading(true);
         setError(null);
 
-        const { data, error } = await supabase.auth.signUp({ email, password });
+        const origin = typeof window !== 'undefined' ? window.location.origin : '';
+        const { data, error } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+                emailRedirectTo: `${origin}/auth/callback`,
+            },
+        });
 
         if (error) {
             setError(error.message);
@@ -74,15 +80,36 @@ export default function LoginPage() {
             return;
         }
 
-        // 이메일 인증 비활성화 시 세션 즉시 생성 → /setup으로 이동
-        // 이메일 인증 활성화 시 signupDone 상태 (인증 메일 안내)
+        // 이메일 인증 비활성화된 경우 세션 즉시 생성
         if (data.session) {
             router.push('/setup');
         } else {
-            setError('인증 메일을 확인해주세요. (관리자에게 문의)');
+            setSignupDone(true);
             setLoading(false);
         }
     };
+
+    if (signupDone) {
+        return (
+            <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+                <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-10 text-center space-y-4">
+                    <div className="text-5xl">📧</div>
+                    <h2 className="text-xl font-bold text-gray-900">인증 메일을 보냈습니다</h2>
+                    <p className="text-sm text-gray-500">
+                        <strong>{email}</strong>로 발송된 링크를 클릭하면<br />
+                        자동으로 다음 단계로 이동합니다.
+                    </p>
+                    <button
+                        type="button"
+                        onClick={switchToLogin}
+                        className="text-blue-600 text-sm hover:underline"
+                    >
+                        로그인 화면으로 돌아가기
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
@@ -127,9 +154,9 @@ export default function LoginPage() {
                         />
                     )}
 
-                    {error && (
+                    {(error || authError) && (
                         <div className="text-red-600 text-sm bg-red-50 px-3 py-2.5 rounded-lg border border-red-100">
-                            {error}
+                            {error ?? '이메일 인증에 실패했습니다. 다시 시도해주세요.'}
                         </div>
                     )}
 
