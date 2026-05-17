@@ -66,14 +66,15 @@
 
 ### 기능
 
-- [x] **점주 가입 플로우 구현** (2026-05-17): 로그인 페이지 개편 + 이메일 인증 플로우 완성.
-  - [x] 로그인 페이지 탭 제거 → `[로그인]` `[회원가입]` 버튼 나란히. 회원가입 클릭 시 비밀번호 확인 필드 확장.
-  - [x] 클라이언트 유효성 검증: 이메일 형식, 비밀번호 8자+, 비밀번호 확인 일치.
-  - [x] `signUp()` 시 `emailRedirectTo: /auth/callback` 지정. `/auth/callback` 페이지 신규 생성 — 세션 확인 후 `/setup`으로 이동.
-  - [x] 초대코드는 `/setup` 단계에서 처리 (기존 구조 유지). 매장 생성 시 자동 발급 → `POST /auth/register` 에서 매장 연결 + role=OWNER.
-  - [ ] `USER`(대기) 상태 점주 대시보드 차단: `dashboard/layout.tsx`에서 role 체크 → 초대코드 입력 화면으로 리다이렉트
-  - [ ] `/setup` 리다이렉트 조건 수정: 프로필 있고 `USER` 상태면 대기 화면으로 진입 가능하게 (현재는 무조건 `/`로 리다이렉트)
-  - [ ] Supabase 이메일 미도달 시 커스텀 SMTP 연결 (Authentication → SMTP Settings, Resend/SendGrid 등)
+- [ ] **관리자 계정 — 마스터 직접 관리 모델로 전환** (2026-05-17 결정, 구현 예정): 외부 자가 회원가입을 폐지하고 마스터(ADMIN)가 모든 계정을 직접 생성·관리. 이메일 인증·`/auth/callback`·`/setup` 가입 경로·매장 초대코드 소모 플로우가 전부 불필요해지고, 이메일 발송 의존성이 제거됨.
+  - **결정 사항**: ID = 실제 이메일 주소 / 비밀번호 초기화 = 마스터가 새 PW 직접 입력 / ADMIN 마스터 계정은 이미 존재(시드 불필요).
+  - [ ] 백엔드: ADMIN 전용 `/admin/accounts` 엔드포인트군 — Supabase Admin API(`service_role` 키)로 계정 생성(`createUser`, `email_confirm:true`)·비밀번호 변경(`updateUserById`)·삭제(`deleteUser`). 동시에 앱 DB `User` 행 생성·매장 `ownerId` 연결·역할(OWNER) 부여.
+  - [ ] 백엔드: 무인증 `POST /auth/register` 제거 (임의 id로 계정 생성 가능한 보안 구멍). 초대코드 기반 register 로직 폐기.
+  - [ ] admin UI: '계정 관리' 페이지 신규 — 계정 목록 / 생성(email·pw·이름·매장·역할) / 비밀번호 초기화 / 삭제.
+  - [ ] 로그인 페이지: 회원가입 모드 제거 → `email + password + [로그인]`만. (8차에서 추가한 signup 모드·`emailRedirectTo`·검증 롤백)
+  - [ ] 정리: `/auth/callback` 페이지·`/setup` 가입 경로·`Store.inviteCode` 컬럼·`generateInviteCode`/`refreshInviteCode` 제거 검토 (Prisma 마이그레이션 필요).
+  - 참고: 마스터가 생성 시점에 역할을 직접 부여하므로 `USER`(권한 미부여) 대기 상태·`/pending` 분기 로직이 단순해짐.
+- 🔖 **다음 작업 시작점 (2026-05-18 예정)**: 위 항목. 현재 코드는 8차의 이메일 인증 가입 플로우 상태 — 마스터 직접 관리 모델로 전환하는 작업부터 진행.
 - [ ] **브랜드 사이트 Phase 1 보강**: `docs/brand-website-plan.md` 기준으로 기존 구조를 유지하면서 홈 신뢰 지표, 매장 찾기/주문 CTA, 가맹 수치 표현, 브랜드 임시 콘텐츠, 푸터 사업자 정보를 보강.
   - [x] 홈 Hero에 인천 중심 7개 매장 운영 메시지 반영
   - [x] 홈에 매장 찾기/주문 CTA 섹션 추가
