@@ -1,6 +1,6 @@
 # Taco Mono 작업 현황
 
-마지막 업데이트: 2026-05-17 (7차)
+마지막 업데이트: 2026-05-17 (8차)
 
 ---
 
@@ -66,11 +66,14 @@
 
 ### 기능
 
-- [ ] **점주 가입 플로우 구현**: 현재 admin 로그인 페이지에 회원가입 없음 — 점주가 초대코드를 받아도 계정 생성 경로 없음.
-  - [ ] 로그인 페이지에 "회원가입" 탭 추가: 이메일/비밀번호 Supabase `signUp` → `/setup`으로 이동
+- [x] **점주 가입 플로우 구현** (2026-05-17): 로그인 페이지 개편 + 이메일 인증 플로우 완성.
+  - [x] 로그인 페이지 탭 제거 → `[로그인]` `[회원가입]` 버튼 나란히. 회원가입 클릭 시 비밀번호 확인 필드 확장.
+  - [x] 클라이언트 유효성 검증: 이메일 형식, 비밀번호 8자+, 비밀번호 확인 일치.
+  - [x] `signUp()` 시 `emailRedirectTo: /auth/callback` 지정. `/auth/callback` 페이지 신규 생성 — 세션 확인 후 `/setup`으로 이동.
+  - [x] 초대코드는 `/setup` 단계에서 처리 (기존 구조 유지). 매장 생성 시 자동 발급 → `POST /auth/register` 에서 매장 연결 + role=OWNER.
   - [ ] `USER`(대기) 상태 점주 대시보드 차단: `dashboard/layout.tsx`에서 role 체크 → 초대코드 입력 화면으로 리다이렉트
-  - [ ] 대기 화면 구현: "관리자에게 초대코드를 받아 입력하세요" + 초대코드 입력란 + 입력 시 OWNER 승격
   - [ ] `/setup` 리다이렉트 조건 수정: 프로필 있고 `USER` 상태면 대기 화면으로 진입 가능하게 (현재는 무조건 `/`로 리다이렉트)
+  - [ ] Supabase 이메일 미도달 시 커스텀 SMTP 연결 (Authentication → SMTP Settings, Resend/SendGrid 등)
 - [ ] **브랜드 사이트 Phase 1 보강**: `docs/brand-website-plan.md` 기준으로 기존 구조를 유지하면서 홈 신뢰 지표, 매장 찾기/주문 CTA, 가맹 수치 표현, 브랜드 임시 콘텐츠, 푸터 사업자 정보를 보강.
   - [x] 홈 Hero에 인천 중심 7개 매장 운영 메시지 반영
   - [x] 홈에 매장 찾기/주문 CTA 섹션 추가
@@ -84,6 +87,8 @@
 - [x] **배달앱 매장 선택 흐름 구현 — URL 기반으로 전환** (2026-05-16): 처음엔 localStorage 방식으로 구현했으나 URL 공유·북마크 불가 문제로 URL 기반으로 재설계. 라우트 구조를 `/menu`, `/order/*` → `/store/[storeId]/menu`, `/store/[storeId]/order/*` 로 전환. `StoreContext`에서 localStorage 완전 제거 — `/store/[storeId]/layout.tsx`가 `storeId`로 매장을 fetch 후 `StoreProvider`에 주입. Toss `successUrl`·`failUrl`도 새 URL 패턴으로 업데이트. 홈에서 매장 선택 시 `/store/${id}/menu` 로 이동.
 - [x] **배달앱 장바구니 최소주문금액 매장 정책 연동** (2026-05-16): `CartBottomSheet`의 하드코딩 `15,000원` 검증을 제거하고 `StoreContext.store.minimumOrderAmount` 기준으로 안내/주문 진행을 판단하도록 수정. `/orders` 전역 라우트는 `StoreProvider` 밖에서도 빌드되도록 선택 매장 안내 상태를 추가. `pnpm --filter delivery-customer type-check` 및 `build` 통과.
 - [x] **마이페이지 헤더 네비게이션 추가** (2026-05-16): 뒤로가기(←) 및 주문하기 버튼 추가. 홈(`/`)으로 이동.
+- [x] **배달앱 홈 화면 개편** (2026-05-17): 동대문엽기떡볶이 앱 스타일 참고. `HomeHeader` — 주소 바 + 배너 캐러셀(3.5초 자동재생, 스와이프, 점·번호 인디케이터). `ServiceButtons` — 3열에서 2열(배달/방문포장)로 변경. 홈 — 비로그인 CTA 바, 선물하기 배너, 주문유형 탭 필터 + 검색 + 즐겨찾기 섹션 + 매장 목록으로 재구성.
+- [x] **매장 좌표(lat/lng) 자동 지오코딩** (2026-05-17): Prisma Store 스키마에 `lat Float?`, `lng Float?` 추가. `stores.service` 매장 생성·수정 시 카카오 REST API `KAKAO_REST_API_KEY`로 주소 → 좌표 자동 변환. `getActiveStores` select에 lat/lng 포함. 브랜드 사이트 지도 마커 정밀도 개선 목적. `KAKAO_REST_API_KEY` Vercel 백엔드 환경변수 추가 필요.
 - [x] **매장 즐겨찾기 (DB 기반)** (2026-05-16): `UserFavoriteStore` Prisma 모델 추가 + migration SQL 생성 및 Supabase 운영 DB 적용. 백엔드 `GET /users/me/favorite-stores` / `POST /users/me/favorite-stores/:storeId/toggle` 엔드포인트 추가. shared `FavoriteStore` 타입 + `getFavoriteStores()` / `toggleFavoriteStore()` API 함수 추가. 배달앱 홈 화면에 하트 버튼(로그인 사용자만 표시) + "즐겨찾기 매장" 섹션(상단 노출). `useFavoriteStores` 훅에 optimistic update 적용.
 - [x] **메뉴 이미지 업로드 기능** (2026-05-16): admin 메뉴 등록/수정 시 이미지 URL 직접 입력 → 파일 업로드로 교체. admin에서 클라이언트 압축(`browser-image-compression`, max 1MB/1280px) 후 백엔드 `POST /stores/:storeId/menus/image` 경유, 백엔드 `StorageService`가 `SUPABASE_SERVICE_KEY`로 Supabase Storage 기존 `assets` 버킷의 `menu/{storeId}/{uuid}.ext` 경로에 저장하고 public URL 반환. 권한은 `assertCanManageAdminDirectMenus` 재사용. Vercel 요청 본문 ~4.5MB 제한 때문에 클라 압축 필수.
 
@@ -124,6 +129,8 @@
 - [ ] **admin 미커버 플로우 E2E**: 옵션 그룹 CRUD, 직원 호출 실시간, 가맹 문의 처리.
 - [x] **brand-website E2E 도입** (2026-05-16): `e2e/brand-website/fixtures.ts`(매장·메뉴 API 스텁) + `pages.spec.ts`(21 tests, 랜딩·메뉴·브랜드·가맹·매장·개인정보 6페이지). Playwright `brand-website` 프로젝트 port 3000 추가.
 - [x] **delivery-customer E2E 메뉴 경로 수정** (2026-05-16): `/menu` 라우트가 `/store/[storeId]/menu`로 리팩터링되면서 CI E2E 실패. `e2e/delivery-customer/pages.spec.ts` 메뉴 관련 테스트 2개를 `/store/store-e2e-1/menu` 경로로 수정.
+- [x] **admin E2E strict mode 수정** (2026-05-17): 회원가입 탭 추가로 로그인 페이지에 '로그인' 텍스트 버튼이 2개 생겨 `getByRole('button', { name: '로그인' })` strict mode 위반. `locator('button[type="submit"]')`으로 교체.
+- [x] **delivery-customer payment E2E 라우트 수정** (2026-05-17): 테스트가 `/order/success|fail|checkout` 등 존재하지 않는 경로로 탐색해 404 실패. 실제 라우트인 `/store/test-store-e2e/order/...`로 수정 + `StoreLayout`이 요구하는 `/stores/test-store-e2e` API 모킹 추가.
 - [ ] **cross-app 동기화 E2E**: admin 메뉴 변경 → table-order/delivery 실시간 반영, 결제 webhook → UI 갱신.
 
 ---
@@ -201,7 +208,7 @@
 - [ ] **Vercel Queues 재검토**: consumer를 Vercel 네이티브 queue function으로 분리할 때 재검토.
 - [ ] **Sentry Releases 연동**: 배포 시 `sentry-cli releases` GitHub Actions 자동 실행.
 - [ ] **Uptime 모니터링**: Better Uptime / UptimeRobot으로 주요 엔드포인트 감시.
-- [ ] **Vercel Web Analytics / Speed Insights 도입**: Sentry는 장애·예외 추적용으로 유지하고, `brand-website`, `delivery-customer`, `table-order`에 Vercel Analytics와 Speed Insights를 추가해 페이지뷰, Web Vitals, 배포 후 성능 변화를 수집.
+- [x] **Vercel Web Analytics 도입** (2026-05-17): `admin`, `delivery-customer`, `brand-website`, `table-order` 4개 Next.js 앱 루트 layout에 `<Analytics />` 컴포넌트 추가. 백엔드가 아닌 프론트엔드 앱에 올바르게 적용. Speed Insights는 추후 검토.
 - [ ] **제품 퍼널 분석 도구 검토(PostHog 등)**: 주문 퍼널(QR 진입 → 장바구니 → 주문 완료), 배달 결제 이탈, 창업 문의 전환처럼 이벤트 기반 분석이 필요해질 때 PostHog 도입 여부 검토.
 - [ ] **Sentry → Slack/Discord 에러율 알림**: 웹훅 연결.
 - [ ] **Queue 실패/백로그 운영 알림**: `QueueEventLog` 기준 FAILED 누적, retry 초과, 오래된 PROCESSING, POS sync 실패 급증 시 Slack/Discord 또는 Sentry alert로 통지.
@@ -244,6 +251,13 @@
 ---
 
 ## 🗓 완료 이력 (마일스톤 요약)
+
+### 2026-05-17 (8차)
+- **관리자 로그인 개편**: 탭 제거 → [로그인][회원가입] 버튼 나란히. 이메일 형식·비밀번호 8자+·비밀번호 확인 검증. `emailRedirectTo: /auth/callback` 이메일 인증 플로우 완성. `/auth/callback` 신규 생성.
+- **배달앱 홈 화면 개편**: 배너 캐러셀(3.5초·스와이프) + 비로그인 CTA + 2열 주문유형 카드 + 탭 필터·검색·즐겨찾기·매장 목록.
+- **Vercel Web Analytics**: admin·delivery-customer·brand-website·table-order 4개 앱 layout에 `<Analytics />` 추가.
+- **매장 좌표 지오코딩**: Store 스키마 lat/lng 추가 + 카카오 REST API 자동 변환 (매장 생성·수정 시).
+- **E2E 수정 2건**: admin auth strict mode(로그인 버튼 중복 → `button[type="submit"]`), payment spec 라우트(/order/* → /store/:id/order/* + store API 모킹).
 
 ### 2026-05-17 (7차)
 - brand-website 매장 지도 무한 로딩 버그 수정: `useKakaoLoader` 반환값 `loading` 을 `isLoaded`로 오인, `!isLoaded` 조건 역전 → SDK 완료 후 오히려 "로딩 중..." 고착. 변수명·조건 수정으로 해소
