@@ -16,17 +16,19 @@ test.describe('관리자 로그인 페이지', () => {
     await expect(page.getByRole('heading', { name: '관리자 로그인' })).toBeVisible();
     await expect(page.locator('input[type="email"]')).toBeVisible();
     await expect(page.locator('input[type="password"]')).toBeVisible();
-    await expect(page.locator('button[type="submit"]')).toBeVisible();
+    await expect(page.getByRole('button', { name: '로그인' })).toBeVisible();
+    await expect(page.getByRole('button', { name: '회원가입' })).toBeVisible();
   });
 
-  test('빈 폼 제출 시 HTML5 required 검증이 동작한다', async ({ page }) => {
+  test('빈 폼으로 로그인 시 유효성 에러가 표시된다', async ({ page }) => {
     await page.goto('/login');
 
-    // required 속성으로 인해 제출이 막혀야 함
-    await page.locator('button[type="submit"]').click();
+    // 이메일·비밀번호 미입력 상태로 로그인 클릭 → 클라이언트 유효성 검증 에러
+    await page.getByRole('button', { name: '로그인' }).click();
 
-    // 이메일 입력창에 포커스가 유지되면 제출 막힘 확인
-    await expect(page.locator('input[type="email"]')).toBeFocused();
+    await expect(
+      page.locator('[class*="text-red"], [class*="bg-red"]').first()
+    ).toBeVisible({ timeout: 10_000 });
   });
 
   test('잘못된 자격증명 입력 시 에러 메시지가 표시된다', async ({ page }) => {
@@ -34,7 +36,7 @@ test.describe('관리자 로그인 페이지', () => {
 
     await page.locator('input[type="email"]').fill('invalid@test.com');
     await page.locator('input[type="password"]').fill('wrongpassword123');
-    await page.locator('button[type="submit"]').click();
+    await page.getByRole('button', { name: '로그인' }).click();
 
     // Supabase 에러 또는 네트워크 오류 메시지 표시 대기
     await expect(
