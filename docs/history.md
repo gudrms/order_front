@@ -94,6 +94,40 @@
 
 ---
 
+## 10. 관리자 로그인 개편 & 홈 개편 & Analytics (2026-05-17)
+
+**관리자 로그인 페이지 재설계**: 기존 탭(로그인/회원가입) 구조를 제거하고 `[로그인]` `[회원가입]` 버튼을 나란히 배치했다. 회원가입 클릭 시 비밀번호 확인 필드가 확장되며, 이메일 형식·비밀번호 8자 이상·비밀번호 일치 검증이 API 호출 이전에 클라이언트에서 선행된다.
+
+이메일 인증을 유지하는 방향을 선택했다. Supabase 무료 SMTP 발송 한도(시간당 3건)가 문제였을 뿐 인증 자체는 관리자 도구에 더 적합하기 때문이다. `signUp()` 시 `emailRedirectTo: ${origin}/auth/callback`을 지정하고, admin 앱에 `/auth/callback` 페이지를 신규 생성해 이메일 링크 클릭 → 세션 확인 → `/setup` 이동 흐름을 완성했다. 이메일 발송이 불안정할 경우 Supabase 대시보드에서 커스텀 SMTP(Resend, SendGrid 등)로 교체할 수 있다.
+
+초대코드 구조는 기존 설계를 그대로 유지했다. 매장 생성 시 `inviteCode`가 자동 발급되고, 점주는 `/setup` 단계에서 코드를 입력해 `POST /auth/register`를 통해 OWNER 권한과 매장이 연결된다. 코드는 1회 사용 후 null로 소모된다.
+
+**배달앱 홈 화면 개편**: 동대문엽기떡볶이 앱을 레퍼런스로 삼아 홈 구조를 재설계했다. `HomeHeader`는 주소 바 + 배너 캐러셀(3.5초 자동재생, 포인터 스와이프, 점·번호 인디케이터)로 재작성했다. 배너 이미지는 임시 그라디언트로 처리했으며, 추후 관리자 페이지에서 등록·관리하는 구조로 확장할 예정이다. 홈 바디는 비로그인 CTA 바 → 2열 주문유형 카드(배달/방문포장, 클릭 시 매장 목록으로 스크롤) → 선물하기 배너 → 탭 필터·검색·즐겨찾기·매장 목록 순서로 재구성했다.
+
+**Vercel Web Analytics**: admin, delivery-customer, brand-website, table-order 4개 Next.js 앱의 루트 `layout.tsx`에 `<Analytics />`를 추가했다. Vercel 봇이 자동 생성한 `vercel/install-and-configure-vercel-w-gzuywv` 브랜치는 NestJS Swagger UI에 analytics를 주입하는 방식으로 구현해 방향이 맞지 않아 머지하지 않고 직접 프론트엔드에 적용했다.
+
+**매장 좌표 자동 지오코딩**: 브랜드 사이트 카카오 지도의 마커 정밀도를 높이기 위해 Prisma Store 스키마에 `lat Float?`, `lng Float?`를 추가했다. `stores.service`의 `createStore`·`updateStore`에서 카카오 REST API(`/v2/local/search/address.json`)를 호출해 주소를 좌표로 자동 변환한다. `KAKAO_REST_API_KEY` 환경변수가 없거나 API 실패 시 좌표 없이 저장해 기존 동작을 유지한다.
+
+**E2E 안정화**: 두 가지 CI 실패를 수정했다.
+- admin `auth.spec.ts`: 회원가입 탭 추가로 페이지에 '로그인' 텍스트 버튼이 2개 생기면서 Playwright strict mode 위반. `getByRole('button', { name: '로그인' })` → `locator('button[type="submit"]')`으로 교체.
+- delivery-customer `payment.spec.ts`: 테스트가 `/order/success|fail|checkout` 등 존재하지 않는 평탄 경로로 탐색해 404. 실제 라우트인 `/store/test-store-e2e/order/...`로 수정하고, `StoreLayout`이 요구하는 `/stores/test-store-e2e` API를 STUB_STORE로 모킹 추가.
+
+---
+
+## 11. 관리자 계정 관리 모델로 전환 결정 (2026-05-17)
+
+10번에서 관리자 로그인에 점주 셀프 회원가입(이메일/비밀번호 + 이메일 인증 + 초대코드)을 붙였으나, Supabase 무료 SMTP의 발송 한도와 도달 불안정 때문에 이메일 인증 플로우가 실질적으로 동작하지 않았다. 인증 메일이 도착하지 않아 로컬에서도 가입을 완료할 수 없는 상태가 반복됐다.
+
+원인을 다시 짚어보니, 타코몰리는 인천 중심 약 7개 매장 규모의 내부 운영 도구다. 점주가 스스로 가입하고 이메일을 인증하는 셀프서비스 모델은 이 규모에 과하다. 비밀번호 초기화·계정 삭제 같은 운영 행위도 결국 마스터가 관여해야 한다.
+
+이에 외부 회원가입을 폐기하고 **마스터(ADMIN)가 admin UI에서 점주 계정을 직접 생성·관리하는 모델**로 전환하기로 결정했다. 마스터가 점주의 실제 이메일을 ID로, 비밀번호와 함께 직접 등록한다. 비밀번호 초기화는 마스터가 새 비밀번호를 직접 입력해 즉시 변경하고, 계정 삭제도 마스터가 수행한다. 이 결정으로 이메일 발송 의존성이 통째로 사라지고, 무인증으로 열려 있던 `POST /auth/register` 보안 구멍도 함께 닫힌다.
+
+기술적으로 Supabase auth 유저의 생성·삭제·비밀번호 변경은 `service_role` 키가 필요한 Admin API 호출이라 브라우저에서 불가능하다. 따라서 백엔드에 ADMIN 전용 `/admin/accounts` 엔드포인트군을 두고(`createUser` 시 `email_confirm: true`), admin UI의 '계정 관리' 화면이 이를 호출하는 구조로 간다. 백엔드는 메뉴 이미지 업로드용으로 이미 `SUPABASE_SERVICE_KEY`를 보유하고 있어 추가 인프라가 필요 없다.
+
+10번에서 작업한 회원가입 모드·이메일 인증(`/auth/callback`)·초대코드 소모 플로우는 이 전환으로 폐기 대상이며, 구현은 다음 작업일(2026-05-18 예정)로 미뤘다.
+
+---
+
 ## 주요 기술 결정 요약
 
 | 결정 | 선택 | 이유 |
@@ -107,3 +141,6 @@
 | 배달앱 매장 라우팅 | URL 기반 `/store/[storeId]/menu` | localStorage는 공유·북마크 불가, URL이 정확한 상태 표현 |
 | 매장 즐겨찾기 | DB 테이블 (`UserFavoriteStore`) | 기기 간 동기화 필요, localStorage로는 로그인 연동 불가 |
 | 브랜드 사이트 매장 지도 | 카카오 지도 + 목록 분할 | 지도에서 바로 주문 링크 연결 — 브랜드 사이트는 discovery, 실제 주문은 delivery 앱으로 분리 |
+| 관리자 계정 생성 | 마스터가 admin UI에서 직접 등록 (셀프 회원가입 폐기) | 7개 매장 규모 내부 도구에 셀프 가입·이메일 인증은 과함. 이메일 발송 의존성·`/auth/register` 보안 구멍 동시 제거 |
+| 매장 좌표 | 카카오 REST API 자동 지오코딩 | 주소 입력만으로 좌표 자동 변환. 지도 마커 정밀도 확보, 추가 관리 화면 불필요 |
+| Vercel Analytics | 프론트엔드 4개 앱 layout에 직접 추가 | Vercel 봇 브랜치(NestJS Swagger 주입 방식)는 방향 오류. 프론트엔드 앱에 올바르게 적용 |
