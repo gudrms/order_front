@@ -69,7 +69,7 @@ export default function LoginPage() {
             {tab === 'login' ? '매장 관리를 위해 로그인해주세요.' : '이메일과 비밀번호로 계정을 만드세요.'}
           </p>
         </div>
-
+        {/*테스트 pr*/}
         {/* 탭 */}
         <div className="flex rounded-lg border border-gray-200 overflow-hidden">
           <button
