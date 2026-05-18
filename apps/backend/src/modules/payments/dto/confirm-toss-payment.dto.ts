@@ -88,7 +88,7 @@ export class CancelTossPaymentDto {
     cancelReason: string;
 
     @ApiPropertyOptional({
-        description: '부분 환불 금액. 생략하면 남은 결제 금액 전체를 취소합니다.',
+        description: '현재 미지원. 부분 환불 요청은 거부되며, 생략하면 남은 결제 금액 전체를 취소합니다.',
         example: 5000,
         minimum: 1,
     })

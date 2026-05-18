@@ -391,6 +391,10 @@ export class PaymentsService {
             throw new BadRequestException('Payment key is missing');
         }
 
+        if (dto.cancelAmount !== undefined) {
+            throw new BadRequestException('Partial refunds are not supported. Cancel the full remaining payment amount.');
+        }
+
         const paidAmount = payment.approvedAmount || payment.amount;
         const alreadyCancelledAmount = payment.cancelledAmount || 0;
         const remainingAmount = paidAmount - alreadyCancelledAmount;
@@ -398,32 +402,22 @@ export class PaymentsService {
             return this.getOrderResponse(orderId);
         }
 
-        const cancelAmount = dto.cancelAmount || remainingAmount;
-        if (cancelAmount > remainingAmount) {
-            throw new BadRequestException('Cancel amount exceeds remaining paid amount');
-        }
-
-        const isFullRefund = cancelAmount === remainingAmount;
         const cancelReason = dto.cancelReason.trim();
         const tossPayment = await this.tossApiService.cancelPayment({
             paymentKey: payment.paymentKey,
             cancelReason,
-            cancelAmount: isFullRefund ? undefined : cancelAmount,
-            idempotencyKey: `cancel-${payment.id}-${alreadyCancelledAmount + cancelAmount}`,
+            cancelAmount: undefined,
+            idempotencyKey: `cancel-${payment.id}-${paidAmount}`,
         });
 
         const now = new Date();
-        const nextCancelledAmount = alreadyCancelledAmount + cancelAmount;
-        const nextPaymentStatus = nextCancelledAmount >= paidAmount ? 'REFUNDED' : 'PARTIAL_REFUNDED';
         const orderUpdateData: Prisma.OrderUpdateInput = {
-            paymentStatus: nextPaymentStatus,
-            ...(nextPaymentStatus === 'REFUNDED' ? {
-                status: 'CANCELLED',
-                cancelledAt: now,
-                cancelReason: cancelReason,
-                ...(payment.order.delivery ? {
-                    delivery: { update: { status: 'CANCELLED', cancelledAt: now } },
-                } : {}),
+            paymentStatus: 'REFUNDED',
+            status: 'CANCELLED',
+            cancelledAt: now,
+            cancelReason: cancelReason,
+            ...(payment.order.delivery ? {
+                delivery: { update: { status: 'CANCELLED', cancelledAt: now } },
             } : {}),
         };
 
@@ -431,10 +425,10 @@ export class PaymentsService {
             this.prisma.payment.update({
                 where: { id: payment.id },
                 data: {
-                    status: nextPaymentStatus,
-                    cancelledAmount: nextCancelledAmount,
-                    cancelledAt: nextPaymentStatus === 'REFUNDED' ? now : payment.cancelledAt,
-                    rawPayload: tossPayment,
+                    status: 'REFUNDED',
+                    cancelledAmount: paidAmount,
+                    cancelledAt: now,
+                    rawPayload: tossPayment as unknown as Prisma.InputJsonValue,
                 },
             }),
             this.prisma.order.update({
@@ -448,9 +442,9 @@ export class PaymentsService {
             orderId,
             storeId: payment.order.storeId,
             providerOrderId: payment.providerOrderId || undefined,
-            refundedAmount: cancelAmount,
-            totalCancelledAmount: nextCancelledAmount,
-            isFullRefund,
+            refundedAmount: remainingAmount,
+            totalCancelledAmount: paidAmount,
+            isFullRefund: true,
         });
 
         return this.getOrderResponse(orderId);

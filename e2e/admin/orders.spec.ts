@@ -183,15 +183,6 @@ test.describe('admin orders page', () => {
     await page.getByTestId('admin-refund-submit-full').click();
     await expect(page.getByTestId('admin-order-operation-message')).toBeVisible();
     expect(refundRequests[0]).toEqual({ cancelReason: '고객 요청 전액 취소' });
-
-    await page.getByTestId(`admin-refund-partial-${refundOrderId}`).click();
-    await page.locator('input[inputmode="numeric"]').fill('5000', { timeout: 15_000 });
-    await page.locator('textarea').fill('고객 요청 부분 환불', { timeout: 15_000 });
-    await page.getByTestId('admin-refund-submit-partial').click();
-    await expect(page.getByTestId('admin-order-operation-message')).toBeVisible();
-    expect(refundRequests[1]).toEqual({
-      cancelReason: '고객 요청 부분 환불',
-      cancelAmount: 5000,
-    });
+    await expect(page.getByTestId(`admin-refund-partial-${refundOrderId}`)).toHaveCount(0);
   });
 });

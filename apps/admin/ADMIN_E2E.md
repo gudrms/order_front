@@ -47,7 +47,7 @@
 3. 사유를 입력하고 제출한다.
    - 셀렉터: `data-testid="admin-refund-submit-full"`
 4. 결제 상태가 `REFUNDED`, 주문 상태가 `CANCELLED`로 변경되는지 확인한다.
-5. 부분 환불은 `admin-refund-partial-{orderId}`와 `admin-refund-submit-partial`로 동일하게 검증한다.
+5. 부분 환불 버튼과 환불 금액 입력이 노출되지 않는지 확인한다.
 
 ## 매장 설정 E2E
 
@@ -75,7 +75,7 @@
 ## 현재 미검증 항목
 
 - [ ] 관리자 주문 상태 변경/배달 상태 변경 브라우저 E2E
-- [ ] 관리자 Toss 전액/부분 환불 브라우저 E2E
+- [ ] 관리자 Toss 전액 환불 브라우저 E2E
 - [ ] 관리자 매장 설정 브라우저 E2E
 - [ ] 관리자 직접 메뉴 등록 브라우저 E2E
 - [ ] Toss 메뉴 동기화 브라우저 E2E

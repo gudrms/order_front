@@ -84,7 +84,10 @@
   - [x] 브랜드 메뉴 이미지 업로드: `POST /brand-menus/admin/menus/image`로 Supabase Storage `assets` 버킷(`brand-menu/{uuid}`)에 업로드, admin `브랜드 메뉴` 화면이 `MenuImageUpload` 컴포넌트 재사용
   - [x] 브랜드 메뉴 수정 폼: admin `브랜드 메뉴` 화면에 인라인 수정(카테고리/메뉴명/가격/이미지/설명/대표 노출) 추가, 목록에 이미지 썸네일 표시
   - [x] 브랜드 메뉴 정렬/카테고리 관리 UI: 메뉴 `displayOrder` 입력, 카테고리 숨김/노출 토글 및 정렬 순서 편집
-  - [ ] 브랜드 페이지 임시 스토리/이미지 교체
+  - [x] 브랜드 메뉴 가격을 선택값(nullable)으로 전환: `BrandMenu.price Int?` 마이그레이션 + DTO·admin·홈페이지 표시 처리. 대표 메뉴는 매장별 가격이 달라 가격 미입력 허용.
+  - [x] 브랜드 메뉴 7개 등록: 타코/부리또/케사디야/사이드/음료 5개 카테고리에 메뉴판 기준 7개 메뉴를 이미지와 함께 등록 (가격 미입력)
+  - [x] 브랜드 페이지 이미지 교체: `/brand` Hero·Philosophy 이모지를 실사진으로 교체 (`public/brand/` 고정 파일명 — 추후 사진 교체 시 파일만 덮어쓰면 됨)
+  - [ ] 브랜드 페이지 스토리 텍스트 교체 (대표 회신 대기)
   - [x] 푸터 사업자 정보 표시 구조 및 `/privacy` 링크 보강
   - [x] 홈 대표 메뉴는 API 메뉴 데이터와 Supabase Storage 이미지 URL 기반으로 표시
   - [x] 대표 확인 요청 문구 작성: 브랜드 스토리, 창업 비용/수익률 공개 범위, 사업자 정보
@@ -95,6 +98,9 @@
 - [x] **매장 좌표(lat/lng) 자동 지오코딩** (2026-05-17): Prisma Store 스키마에 `lat Float?`, `lng Float?` 추가. `stores.service` 매장 생성·수정 시 카카오 REST API `KAKAO_REST_API_KEY`로 주소 → 좌표 자동 변환. `getActiveStores` select에 lat/lng 포함. 브랜드 사이트 지도 마커 정밀도 개선 목적. 운영 DB `Store` 테이블에 lat/lng 컬럼 적용 + `_prisma_migrations` 등록 완료(9차). `KAKAO_REST_API_KEY` Vercel 백엔드 env 설정 완료.
 - [x] **매장 즐겨찾기 (DB 기반)** (2026-05-16): `UserFavoriteStore` Prisma 모델 추가 + migration SQL 생성 및 Supabase 운영 DB 적용. 백엔드 `GET /users/me/favorite-stores` / `POST /users/me/favorite-stores/:storeId/toggle` 엔드포인트 추가. shared `FavoriteStore` 타입 + `getFavoriteStores()` / `toggleFavoriteStore()` API 함수 추가. 배달앱 홈 화면에 하트 버튼(로그인 사용자만 표시) + "즐겨찾기 매장" 섹션(상단 노출). `useFavoriteStores` 훅에 optimistic update 적용.
 - [x] **메뉴 이미지 업로드 기능** (2026-05-16): admin 메뉴 등록/수정 시 이미지 URL 직접 입력 → 파일 업로드로 교체. admin에서 클라이언트 압축(`browser-image-compression`, max 1MB/1280px) 후 백엔드 `POST /stores/:storeId/menus/image` 경유, 백엔드 `StorageService`가 `SUPABASE_SERVICE_KEY`로 Supabase Storage 기존 `assets` 버킷의 `menu/{storeId}/{uuid}.ext` 경로에 저장하고 public URL 반환. 권한은 `assertCanManageAdminDirectMenus` 재사용. Vercel 요청 본문 ~4.5MB 제한 때문에 클라 압축 필수.
+- [x] **타코몰리 매장 7곳 등록** (2026-05-18): 김포·부천·부평·검단풍무·만수구월·루원시티·검단마전 7개 매장을 `Store` 테이블에 등록(`storeType=tacomolle`). 기존 김포점은 메뉴 29개·주문 1건 보존을 위해 삭제 대신 업데이트. 주소는 네이버 기준, 좌표는 카카오 REST API 지오코딩, 전화번호는 실제 번호 반영. 브랜드 사이트 `/store` 지도·홈 매장 섹션은 `GET /stores`를 쓰므로 자동 반영. `STORES` 상수(e2e fixture)도 동일 데이터로 교정.
+- [x] **admin 사이드바 가맹/창업 문의 중복 메뉴 제거** (2026-05-18): `adminNavItems`에 `/franchise-inquiries` href가 중복('가맹 문의'·'창업 문의')이라 React key 중복 경고가 발생 — 동일 라우트이므로 '창업 문의' 제거.
+- [x] **e2e 빈 로그인 폼 테스트 수정** (2026-05-18): 로그인 input의 HTML5 `required`로 빈 폼은 브라우저 기본 검증이 작동하고 커스텀 에러 div가 안 생김. 테스트를 실제 동작(`input:invalid` + `/login` 유지) 검증으로 교정.
 
 ### 테스트
 
@@ -252,7 +258,7 @@
 - [ ] **`orders/page.tsx` 컴포넌트 분리**: 약 1,000줄에 달하는 거대 단일 컴포넌트를 `RefundDialog.tsx`, `OrderDetailPanel.tsx`, `lib/toss-utils.ts` 등으로 모듈화하여 유지보수성 개선
 - [x] **관리자 주문 중복 폴링 여부 확인** (2026-05-18): admin `orders/page.tsx`는 `useRealtimeOrders(storeId)`로 Realtime invalidate만 수행하고 `refetchInterval`을 쓰지 않는다. 5초 polling은 배달앱 `OrderStatusTracker`가 공유 `useOrderStatus`를 통해 사용자 주문 상세에서만 fallback으로 사용한다.
 - [ ] **API 호출 모듈화**: `orders/page.tsx` 내부의 직접적인 `axios.patch` 호출들을 `@order/shared`의 `apiClient` 인스턴스를 사용하도록 변경하여 인증 및 에러 처리 일원화
-- [ ] **부분 환불 서버단 엣지 케이스 점검**: 다중 환불 요청(Race Condition) 시 남은 결제 금액에 대해 백엔드 API에서 락(Lock)을 걸어 검증하는지 확인
+- [x] **관리자 부분 환불 제거** (2026-05-18): 초기 운영 안정성을 위해 관리자 환불은 전액 취소만 허용한다. admin UI에서 부분 환불 버튼/금액 입력 제거, 백엔드 `cancelAmount` 요청 거부, 테스트 시나리오를 전액 환불 기준으로 정리.
 
 ---
 
@@ -286,8 +292,7 @@
 
 - [ ] Toss 테스트 카드 결제 성공: 주문 생성 → 결제 승인 → `PAID` → 주문 상세 갱신
 - [ ] Toss 결제 실패/취소: fail 페이지 안내와 재시도 UX 확인
-- [ ] 관리자 전액 취소 후 배달앱 주문 상태 갱신 확인
-- [ ] 관리자 부분 환불 후 남은 금액/환불 배지 표시 확인
+- [ ] 관리자 전액 취소/환불 후 배달앱 주문 상태 갱신 확인
 - [ ] 결제 후 POS 전송 큐 처리 + 알림 발송 중복 없는지 확인
 - [ ] GitHub Actions cron `POST /queue/process-once` 실제 실행 로그 확인
 - [ ] Queue backlog/failed event가 관리자 `/operations`에서 조회·재시도되는지 운영 데이터로 확인

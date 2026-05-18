@@ -108,7 +108,7 @@ export class PaymentsController {
     @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
     @ApiOperation({
         summary: '관리자 Toss 결제 취소/환불',
-        description: '관리자 또는 매장 소유자가 결제 완료 주문의 Toss Payments 결제를 전액 또는 부분 취소합니다.',
+        description: '관리자 또는 매장 소유자가 결제 완료 주문의 Toss Payments 결제를 전액 취소합니다. 초기 운영에서는 부분 환불을 지원하지 않습니다.',
     })
     @ApiParam({ name: 'orderId', description: '주문 ID' })
     @ApiBody({ type: CancelTossPaymentDto })

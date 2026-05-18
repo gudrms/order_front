@@ -6,7 +6,7 @@
  *   2. 결제 실패 → 주문 취소 + 배달 취소
  *   3. 결제 승인 후 DB 실패 → 보상 취소 자동 수행
  *   4. 결제 완료 후 관리자 전액 환불 → MQ 환불 이벤트 발행
- *   5. 결제 완료 후 부분 환불 → 주문 유지, PARTIAL_REFUNDED
+ *   5. 부분 환불 요청 거부 → 전액 취소만 허용
  *   6. 만료 처리 (timeout) → PENDING_PAYMENT 주문 일괄 취소
  *
  * 외부 의존(Toss API)은 mock으로 대체하되, 서비스 간 연결(OrdersService → PaymentsService → QueueService)은
@@ -463,11 +463,11 @@ describe('Toss 카드결제 E2E Flow', () => {
     });
 
     // ──────────────────────────────────────────────────────────────────────
-    // E2E 시나리오 5: 부분 환불
+    // E2E 시나리오 5: 부분 환불 요청 거부
     // ──────────────────────────────────────────────────────────────────────
 
-    describe('E2E Scenario 5: 부분 환불 → 주문 유지', () => {
-        it('부분 환불 시 Order 유지, Payment PARTIAL_REFUNDED, 올바른 금액 추적', async () => {
+    describe('E2E Scenario 5: 부분 환불 요청 거부', () => {
+        it('관리자 환불 API는 cancelAmount가 포함된 부분 환불 요청을 거부한다', async () => {
             prisma.user.findUnique.mockResolvedValue({ id: 'owner-e2e', role: 'OWNER' });
             prisma.store.findUnique.mockResolvedValue(store);
             prisma.payment.findFirst.mockResolvedValue({
@@ -489,48 +489,15 @@ describe('Toss 카드결제 E2E Flow', () => {
                 },
             });
 
-            tossApiService.cancelPayment.mockResolvedValue({
-                paymentKey: 'tgen_e2e_card_key_001',
-                cancels: [{ cancelAmount: 5000 }],
-            });
-
-            prisma.order.findUnique.mockResolvedValue({
-                id: 'order-e2e-1',
-                status: 'PAID',
-                paymentStatus: 'PARTIAL_REFUNDED',
-                payments: [{ id: 'payment-e2e-1', status: 'PARTIAL_REFUNDED', cancelledAmount: 5000 }],
-                items: [],
-            });
-
-            const result = await paymentsService.cancelOrderTossPayment(
+            await expect(paymentsService.cancelOrderTossPayment(
                 'owner-e2e',
                 'order-e2e-1',
                 { cancelReason: '배달비 조정', cancelAmount: 5000 },
-            );
+            )).rejects.toThrow('Partial refunds are not supported');
 
-            expect(result.status).toBe('PAID');
-            expect(result.paymentStatus).toBe('PARTIAL_REFUNDED');
-
-            // 부분 환불 시 cancelAmount 전달
-            expect(tossApiService.cancelPayment).toHaveBeenCalledWith(expect.objectContaining({
-                cancelAmount: 5000,
-            }));
-
-            // 주문은 CANCELLED가 아닌 PAID 유지 (paymentStatus만 변경)
-            expect(prisma.order.update).toHaveBeenCalledWith({
-                where: { id: 'order-e2e-1' },
-                data: { paymentStatus: 'PARTIAL_REFUNDED' },
-            });
-
-            expect(queueService.publishPaymentRefunded).toHaveBeenCalledWith({
-                paymentId: 'payment-e2e-1',
-                orderId: 'order-e2e-1',
-                storeId: 'store-e2e',
-                providerOrderId: 'TOSS_ORDER_E2E_001',
-                refundedAmount: 5000,
-                totalCancelledAmount: 5000,
-                isFullRefund: false,
-            });
+            expect(tossApiService.cancelPayment).not.toHaveBeenCalled();
+            expect(prisma.order.update).not.toHaveBeenCalled();
+            expect(queueService.publishPaymentRefunded).not.toHaveBeenCalled();
         });
     });
 
