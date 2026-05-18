@@ -5,7 +5,7 @@ interface BrandMenuItem {
     id: string;
     name: string;
     description: string | null;
-    price: number;
+    price: number | null;
     imageUrl: string | null;
     isFeatured: boolean;
     isActive: boolean;
@@ -86,9 +86,11 @@ export default async function MenuSection() {
                                                     {item.description}
                                                 </p>
                                             )}
-                                            <p className="text-brand-black font-black">
-                                                {item.price.toLocaleString()}원
-                                            </p>
+                                            {item.price != null && (
+                                                <p className="text-brand-black font-black">
+                                                    {item.price.toLocaleString()}원
+                                                </p>
+                                            )}
                                         </div>
                                     </div>
                                 </ScrollAnimation>
