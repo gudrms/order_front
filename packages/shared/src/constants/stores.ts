@@ -12,7 +12,7 @@ export interface BrandStore {
 export const STORES: BrandStore[] = [
     {
         id: 1,
-        name: '타코몰리 본점',
+        name: '타코몰리 김포점',
         address: '경기 김포시 김포한강11로140번길 15-2 1층',
         phone: '0507-1410-8774',
         hours: '평일 16:00 - 24:00 / 주말 12:00 - 24:00',
