@@ -142,6 +142,8 @@ admin 앱에는 `ADMIN` 전용 `계정 관리` 화면을 추가했다. 마스터
 
 체크리스트 하단 개선 항목을 실제 코드와 대조했다. 주문 생성 가격 검증은 이미 `prepareOrderItems`가 DB 메뉴/옵션 가격으로 재계산하고 배달 주문 총액을 비교하는 구조였으므로, 로직 변경 대신 위변조 거부와 클라이언트 item price 무시 테스트를 추가해 회귀 방어를 보강했다.
 
+Toss Payments 일반 결제 웹훅도 공식 문서와 현재 구현을 대조했다. `PAYMENT_STATUS_CHANGED`/`CANCEL_STATUS_CHANGED`에는 서명 헤더가 없고, 결제 조회 API 재호출로 상태를 검증하는 방식이 권장된다. 현재 `handleTossWebhook`가 `orderId` 또는 `paymentKey`로 Toss API를 다시 조회하므로 로직 변경 없이 체크리스트를 정정했다.
+
 ---
 
 ## 주요 기술 결정 요약

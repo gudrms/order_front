@@ -1,9 +1,5 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { PrismaService } from '../prisma/prisma.service';
-import { TossApiService } from '../integrations/toss/toss-api.service';
-import { QueueService } from '../queue';
 import { PaymentsService } from './payments.service';
 
 describe('PaymentsService', () => {
@@ -63,16 +59,7 @@ describe('PaymentsService', () => {
             publishPaymentRefunded: vi.fn(),
         };
 
-        const module: TestingModule = await Test.createTestingModule({
-            providers: [
-                PaymentsService,
-                { provide: PrismaService, useValue: prisma },
-                { provide: TossApiService, useValue: tossApiService },
-                { provide: QueueService, useValue: queueService },
-            ],
-        }).compile();
-
-        service = module.get<PaymentsService>(PaymentsService);
+        service = new PaymentsService(prisma, tossApiService, queueService);
     });
 
     it('confirms a pending Toss payment and marks the order as paid', async () => {

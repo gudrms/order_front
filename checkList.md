@@ -260,7 +260,7 @@
 
 - [ ] **대량 트랜잭션 청크(Batch) 분할**: `payments.service.ts`의 `expirePendingTossPayments`에서 수많은 결제를 한 번에 처리할 때 발생하는 Prisma 타임아웃 방지를 위해 `lodash.chunk` 등을 활용한 배치 분할 처리 적용
 - [ ] **Vercel Serverless DB 커넥션 풀러 점검**: 람다 인스턴스 복제 시 Supabase Max Connections 초과 방지를 위해 `.env`의 `DATABASE_URL`에 PgBouncer 커넥션 풀링 포트(6543) 및 `?pgbouncer=true` 파라미터가 적용되어 있는지 점검
-- [ ] **Toss 웹훅 서명(Signature) 검증 추가**: 악의적인 웹훅 요청으로 인한 불필요한 Toss API 조회 및 Rate Limit 소모를 방지하기 위해 `handleTossWebhook` 진입 전 헤더 서명 검증 로직 추가
+- [x] **Toss 일반 결제 웹훅 검증 방식 확인** (2026-05-18): 공식 문서 기준 `PAYMENT_STATUS_CHANGED`/`CANCEL_STATUS_CHANGED` 일반 결제 웹훅에는 `tosspayments-webhook-signature`가 포함되지 않는다. 현재 구현처럼 웹훅 body의 `orderId` 또는 `paymentKey`로 Toss 결제 조회 API를 재호출해 상태를 검증하는 방식이 맞다. 서명 검증은 `payout.changed`/`seller.changed` 웹훅 도입 시 별도 적용.
 - [x] **주문 생성 시 가격 위변조 검증 확인 및 테스트 보강** (2026-05-18): `prepareOrderItems`가 DB `Menu.price`/`MenuOption.price`로 재계산하고, 배달 주문은 `dto.totalAmount`/`payment.amount`가 서버 계산 금액과 다르면 거부한다. `delivery-order.service.spec.ts`에 총액 위변조 거부 및 클라이언트 item price 무시 테스트 추가.
 
 ---
