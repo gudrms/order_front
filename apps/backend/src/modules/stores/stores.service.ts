@@ -1,5 +1,4 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { randomUUID } from 'crypto';
 import { Prisma } from '@prisma/client';
 import { assertCanCreateStore, assertCanManageStore } from '../../common/auth/permissions';
 import { PrismaService } from '../prisma/prisma.service';
@@ -90,7 +89,6 @@ export class StoresService {
                 lng: coords?.lng ?? null,
                 businessHours: dto.businessHours as Prisma.InputJsonValue,
                 theme: dto.theme as Prisma.InputJsonValue,
-                inviteCode: dto.inviteCode || this.generateInviteCode(dto.storeType, dto.branchId),
             },
         });
     }
@@ -112,20 +110,6 @@ export class StoresService {
                 ...coordsUpdate,
                 businessHours: dto.businessHours as Prisma.InputJsonValue,
                 theme: dto.theme as Prisma.InputJsonValue,
-            },
-        });
-    }
-
-    async refreshInviteCode(userId: string, storeId: string) {
-        const store = await this.assertCanManageStore(userId, storeId);
-        const inviteCode = this.generateInviteCode(store.storeType, store.branchId);
-
-        return this.prisma.store.update({
-            where: { id: storeId },
-            data: { inviteCode },
-            select: {
-                id: true,
-                inviteCode: true,
             },
         });
     }
@@ -250,12 +234,4 @@ export class StoresService {
         return store;
     }
 
-    private generateInviteCode(storeType: string, branchId: string) {
-        const prefix = `${storeType}-${branchId}`
-            .replace(/[^a-zA-Z0-9]/g, '')
-            .slice(0, 12)
-            .toUpperCase();
-
-        return `${prefix}-${randomUUID().slice(0, 8).toUpperCase()}`;
-    }
 }

@@ -25,6 +25,7 @@ import { CallsModule } from './modules/calls/calls.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { FranchiseInquiriesModule } from './modules/franchise-inquiries/franchise-inquiries.module';
 import { CustomThrottlerGuard } from './common/guards/throttler.guard';
+import { AdminAccountsModule } from './modules/admin-accounts/admin-accounts.module';
 
 @Module({
     imports: [
@@ -92,6 +93,7 @@ import { CustomThrottlerGuard } from './common/guards/throttler.guard';
         CallsModule,
         NotificationsModule,
         FranchiseInquiriesModule,
+        AdminAccountsModule,
     ],
     controllers: [AppController, HealthController],
     providers: [

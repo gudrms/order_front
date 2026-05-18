@@ -72,7 +72,17 @@ export async function installAdminSession(page: Page, user: AdminUser) {
       },
     };
 
-    window.localStorage.setItem('sb-placeholder-auth-token', JSON.stringify(session));
+    const serializedSession = JSON.stringify(session);
+    window.localStorage.setItem('sb-placeholder-auth-token', serializedSession);
+    window.localStorage.setItem('supabase.auth.token', serializedSession);
+
+    const originalGetItem = window.localStorage.getItem.bind(window.localStorage);
+    window.localStorage.getItem = (key: string) => {
+      if (/^sb-.+-auth-token$/.test(key) || key === 'supabase.auth.token') {
+        return originalGetItem(key) ?? serializedSession;
+      }
+      return originalGetItem(key);
+    };
   }, user);
 }
 

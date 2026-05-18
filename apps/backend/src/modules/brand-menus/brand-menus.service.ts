@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { assertPlatformAdmin } from '../../common/auth/permissions';
 import { PrismaService } from '../prisma/prisma.service';
+import { StorageService } from '../storage/storage.service';
 import {
     CreateBrandMenuCategoryDto,
     CreateBrandMenuDto,
@@ -10,7 +11,10 @@ import {
 
 @Injectable()
 export class BrandMenusService {
-    constructor(private readonly prisma: PrismaService) {}
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly storage: StorageService,
+    ) {}
 
     private get brandMenuCategory() {
         return (this.prisma as any).brandMenuCategory;
@@ -94,6 +98,23 @@ export class BrandMenusService {
         await this.assertAdmin(userId);
         await this.ensureMenu(menuId);
         return this.brandMenu.delete({ where: { id: menuId } });
+    }
+
+    async uploadMenuImage(
+        userId: string,
+        file: { buffer: Buffer; mimetype: string; size: number } | undefined,
+    ) {
+        await this.assertAdmin(userId);
+
+        if (!file) {
+            throw new BadRequestException('Image file is required');
+        }
+        if (!this.storage.isSupportedImageType(file.mimetype)) {
+            throw new BadRequestException('Unsupported image type (allowed: JPEG, PNG, WebP)');
+        }
+
+        const imageUrl = await this.storage.uploadBrandMenuImage(file);
+        return { imageUrl };
     }
 
     private async assertAdmin(userId: string) {

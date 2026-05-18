@@ -5,6 +5,7 @@
 ## 문서 목록
 
 - [관리자 웹](./admin.md)
+- [관리자 계정 관리](../admin-account-management-scenario.md)
 - [테이블 주문](./table-order.md)
 - [배달 고객 앱](./delivery-customer.md)
 - [백엔드 API](./backend.md)
@@ -23,7 +24,7 @@
 
 ### 1차: Toss POS 없이 직접 검증
 
-- 관리자 로그인과 프로필 설정
+- 관리자 로그인과 계정 관리
 - 관리자 새 매장 생성
 - 매장 메뉴 관리 방식 `ADMIN_DIRECT` 설정
 - 카테고리/메뉴/옵션 직접 등록

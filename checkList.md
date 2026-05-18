@@ -66,21 +66,24 @@
 
 ### 기능
 
-- [ ] **관리자 계정 — 마스터 직접 관리 모델로 전환** (2026-05-17 결정, 구현 예정): 외부 자가 회원가입을 폐지하고 마스터(ADMIN)가 모든 계정을 직접 생성·관리. 이메일 인증·`/auth/callback`·`/setup` 가입 경로·매장 초대코드 소모 플로우가 전부 불필요해지고, 이메일 발송 의존성이 제거됨.
+- [x] **관리자 계정 — 마스터 직접 관리 모델로 전환** (2026-05-18): 외부 자가 회원가입을 폐지하고 마스터(ADMIN)가 모든 계정을 직접 생성·관리. 이메일 인증·`/auth/callback`·`/setup` 가입 경로·매장 초대코드 소모 플로우 제거. 이메일 발송 의존성과 무인증 계정 생성 구멍 제거.
   - **결정 사항**: ID = 실제 이메일 주소 / 비밀번호 초기화 = 마스터가 새 PW 직접 입력 / ADMIN 마스터 계정은 이미 존재(시드 불필요).
-  - [ ] 백엔드: ADMIN 전용 `/admin/accounts` 엔드포인트군 — Supabase Admin API(`service_role` 키)로 계정 생성(`createUser`, `email_confirm:true`)·비밀번호 변경(`updateUserById`)·삭제(`deleteUser`). 동시에 앱 DB `User` 행 생성·매장 `ownerId` 연결·역할(OWNER) 부여.
-  - [ ] 백엔드: 무인증 `POST /auth/register` 제거 (임의 id로 계정 생성 가능한 보안 구멍). 초대코드 기반 register 로직 폐기.
-  - [ ] admin UI: '계정 관리' 페이지 신규 — 계정 목록 / 생성(email·pw·이름·매장·역할) / 비밀번호 초기화 / 삭제.
-  - [ ] 로그인 페이지: 회원가입 모드 제거 → `email + password + [로그인]`만. (8차에서 추가한 signup 모드·`emailRedirectTo`·검증 롤백)
-  - [ ] 정리: `/auth/callback` 페이지·`/setup` 가입 경로·`Store.inviteCode` 컬럼·`generateInviteCode`/`refreshInviteCode` 제거 검토 (Prisma 마이그레이션 필요).
-  - 참고: 마스터가 생성 시점에 역할을 직접 부여하므로 `USER`(권한 미부여) 대기 상태·`/pending` 분기 로직이 단순해짐.
-- 🔖 **다음 작업 시작점 (2026-05-18 예정)**: 위 항목. 현재 코드는 8차의 이메일 인증 가입 플로우 상태 — 마스터 직접 관리 모델로 전환하는 작업부터 진행.
+  - [x] 백엔드: ADMIN 전용 `/admin/accounts` 엔드포인트군 — Supabase Admin API(`service_role` 키)로 계정 생성(`createUser`, `email_confirm:true`)·비밀번호 변경(`updateUserById`)·삭제(`deleteUser`). 동시에 앱 DB `User` 행 생성·매장 `ownerId` 연결·역할 부여.
+  - [x] 백엔드: 무인증 `POST /auth/register` 제거. 초대코드 기반 register 로직 폐기.
+  - [x] admin UI: `계정 관리` 페이지 신규 — 계정 목록 / 생성(email·pw·이름·매장·역할) / 비밀번호 초기화 / 삭제.
+  - [x] 로그인 페이지: 회원가입 모드 제거 → `email + password + [로그인]`만.
+  - [x] 정리: `/auth/callback` 페이지·`/setup` 가입 경로·`generateInviteCode`/`refreshInviteCode` 제거. `Store.inviteCode` 컬럼은 운영 DB 마이그레이션 타이밍에 제거 검토.
+  - [x] 문서: `docs/admin-account-management-scenario.md`, `docs/test-scenarios/admin.md`, `docs/test-scenarios/backend.md`, `docs/test-scenarios/full-flow.md` 최신화.
+  - [x] 테스트: `AdminAccountsService` 단위 테스트 5개 + admin 계정 관리 E2E 2개 추가. 계정 생성/매장 연결/비밀번호 초기화/삭제/OWNER 네비게이션 차단 검증.
 - [ ] **브랜드 사이트 Phase 1 보강**: `docs/brand-website-plan.md` 기준으로 기존 구조를 유지하면서 홈 신뢰 지표, 매장 찾기/주문 CTA, 가맹 수치 표현, 브랜드 임시 콘텐츠, 푸터 사업자 정보를 보강.
   - [x] 홈 Hero에 인천 중심 7개 매장 운영 메시지 반영
   - [x] 홈에 매장 찾기/주문 CTA 섹션 추가
   - [x] 가맹 섹션의 미확정 수익률/비용 표현 정리
   - [x] 매장 찾기에서 전체 매장 리스트/마커 노출 및 지도 bounds 자동 맞춤
   - [x] 브랜드 메뉴를 매장별 주문 메뉴와 분리: `BrandMenuCategory`/`BrandMenu` 추가, 공개 `/brand-menus` API와 ADMIN 전용 관리 API/화면 1차 구현
+  - [x] 브랜드 메뉴 이미지 업로드: `POST /brand-menus/admin/menus/image`로 Supabase Storage `assets` 버킷(`brand-menu/{uuid}`)에 업로드, admin `브랜드 메뉴` 화면이 `MenuImageUpload` 컴포넌트 재사용
+  - [x] 브랜드 메뉴 수정 폼: admin `브랜드 메뉴` 화면에 인라인 수정(카테고리/메뉴명/가격/이미지/설명/대표 노출) 추가, 목록에 이미지 썸네일 표시
+  - [x] 브랜드 메뉴 정렬/카테고리 관리 UI: 메뉴 `displayOrder` 입력, 카테고리 숨김/노출 토글 및 정렬 순서 편집
   - [ ] 브랜드 페이지 임시 스토리/이미지 교체
   - [x] 푸터 사업자 정보 표시 구조 및 `/privacy` 링크 보강
   - [x] 홈 대표 메뉴는 API 메뉴 데이터와 Supabase Storage 이미지 URL 기반으로 표시
@@ -115,7 +118,7 @@
 루트 Playwright 1개로 통합 — 3개 프로젝트(admin :3003, delivery :3001, table-order :3002), `e2e/global-setup.ts` stub 백엔드(:4000). 모든 E2E가 Supabase/백엔드를 mock·stub → 실제 인증·DB·결제 흐름 미검증.
 
 현재 시나리오:
-- **admin** (4 spec, ~16 테스트): auth(폼·검증·에러·보호 라우트 7개), menu(ADMIN_DIRECT 생성·TOSS_POS 동기화), orders(상태·환불 1개), store(설정 저장 1개), operations(실패 재시도 1개)
+- **admin** (6 spec, ~18 테스트): auth(폼·검증·에러·보호 라우트 7개), accounts(계정 생성·비밀번호 초기화·삭제·OWNER 네비게이션 차단 2개), menu(ADMIN_DIRECT 생성·TOSS_POS 동기화), orders(상태·환불 1개), store(설정 저장 1개), operations(실패 재시도 1개)
 - **delivery-customer** (3 spec, ~33 테스트): 홈/레이아웃, 로그인, 미인증 주문내역, 메뉴 페이지(`/store/store-e2e-1/menu`, 2026-05-16 경로 수정) + 결제 결과 UI 12개(`payment.spec.ts`) + 메뉴→장바구니→결제하기 풀 플로우 11개(`menu-cart.spec.ts`, 2026-05-16 추가)
 - **table-order** (1 spec, 3 테스트): QR 진입만 (잘못된 번호·0번·유효 리다이렉트). vitest 설정만 있고 테스트 0개
 - **brand-website** (1 spec, 21 테스트): 랜딩·메뉴·브랜드·가맹·매장·개인정보 6페이지. Playwright `brand-website` 프로젝트 port 3000 (2026-05-16 추가)
@@ -185,6 +188,8 @@
 - [x] Play Console 등록정보 최종 저장 (2026-05-16): 개인정보처리방침 URL(`https://www.tacomole.kr/privacy`), 앱 아이콘/그래픽 이미지/스크린샷 업로드, 연락처, 콘텐츠 등급 설문 제출.
 - [x] Play Console 광고 ID 선언 완료 (2026-05-16): Android 13+ targetSdk 정책 대응. 앱에서 광고 ID를 사용하지 않는 기준으로 선언.
 - [x] Play Console 공개 테스트 출시 버전 생성 및 심사 제출 (2026-05-16): App Bundle 2 (`1.0.1`, versionCode 2)만 포함하고 기존 App Bundle 1 (`1.0.0`, versionCode 1)은 현재 출시 버전에서 제거. 관리형 게시 기준으로 Google 승인 대기.
+- [x] Android 개발자 인증 패키지명 등록 확인 (2026-05-18): Play Console → Android 개발자 인증에서 `타코몰리 / com.tacomole.app` 상태가 `등록됨`임을 확인. 추가 Android 앱을 배포하지 않는 한 `패키지 이름 등록` 버튼으로 더 등록할 항목 없음.
+- [x] Android 예전 패키지 소스 정리 (2026-05-18): `apps/delivery-customer/android/app/src/main/java/com/taco/delivery/MainActivity.java` 제거. 실제 패키지는 `com.tacomole.app`만 유지.
 - [x] Play App Signing SHA-256 확정 및 `assetlinks.json` 교체 (2026-05-16): Play Console 앱 서명 키 SHA-256 `6D:AC:8F:5E:5D:A7:AF:F6:80:01:16:6D:78:17:B6:29:62:F2:DC:82:5F:DC:3D:7C:B7:B3:4B:61:B9:04:F2:80`를 `apps/delivery-customer/public/.well-known/assetlinks.json`에 반영. 업로드 키 SHA-256이 아니라 앱 서명 키 기준.
 - [x] `https://delivery.tacomole.kr/.well-known/assetlinks.json` 운영 배포 및 확인 (2026-05-16): 파일 정상 서빙 확인. `com.tacomole.app` + Play App Signing SHA-256 `6D:AC:...F2:80` 일치.
 - [ ] `adb shell pm get-app-links com.tacomole.app` App Links 검증
@@ -252,6 +257,11 @@
 ---
 
 ## 🗓 완료 이력 (마일스톤 요약)
+
+### 2026-05-18
+- **관리자 계정 관리 모델 구현**: 셀프 회원가입·이메일 인증·초대코드 가입 흐름 제거. `ADMIN` 전용 `/admin/accounts` API와 admin `계정 관리` 화면 추가. 마스터가 이메일/초기 비밀번호/역할/매장을 직접 지정하고, 비밀번호 초기화·삭제까지 수행.
+- **Android 개발자 인증 패키지 확인**: Play Console Android 개발자 인증에서 `com.tacomole.app` 등록 상태 확인. 예전 Android 패키지 소스(`com.taco.delivery`) 제거.
+- **문서 최신화**: 관리자 계정 관리 상세 시나리오와 admin/backend/full-flow 테스트 시나리오 갱신.
 
 ### 2026-05-17 (9차)
 - **관리자 계정 모델 전환 결정**: 외부 셀프 회원가입(이메일 인증 + 초대코드) 폐기 → 마스터(ADMIN)가 admin UI에서 점주 계정을 직접 생성·관리하는 모델로 전환 결정. 구현은 다음 작업일.

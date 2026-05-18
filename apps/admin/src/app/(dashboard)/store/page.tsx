@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import axios from 'axios';
-import { Plus, Save, Ticket } from 'lucide-react';
+import { Plus, Save } from 'lucide-react';
 import type { MenuManagementMode } from '@order/shared';
 import { useAdminStore } from '@/contexts/AdminStoreContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -77,26 +77,6 @@ export default function StoreSettingsPage() {
     },
   });
 
-  const refreshInviteMutation = useMutation({
-    mutationFn: async () => {
-      await axios.post(
-        `${API_URL}/stores/${selectedStoreId}/invite-code`,
-        undefined,
-        { headers: authHeaders }
-      );
-    },
-    onSuccess: async () => {
-      await refetchStores();
-      setFeedback({ type: 'success', message: '초대 코드를 재발급했습니다.' });
-    },
-    onError: (error) => {
-      setFeedback({
-        type: 'error',
-        message: getHttpErrorMessage(error, '초대 코드 재발급에 실패했습니다.'),
-      });
-    },
-  });
-
   if (isLoading) {
     return <div className="py-12 text-center text-gray-500">매장 정보를 불러오는 중입니다.</div>;
   }
@@ -107,7 +87,7 @@ export default function StoreSettingsPage() {
     ) : (
       <div className="rounded-xl border border-dashed border-gray-300 bg-white p-10 text-center">
         <h2 className="text-xl font-bold text-gray-800">연결된 매장이 없습니다</h2>
-        <p className="mt-2 text-sm text-gray-500">관리자에게 매장 생성을 요청하거나 초대코드로 가입해 주세요.</p>
+        <p className="mt-2 text-sm text-gray-500">마스터 관리자에게 계정과 매장 연결을 요청해 주세요.</p>
       </div>
     );
   }
@@ -196,23 +176,6 @@ export default function StoreSettingsPage() {
             description="관리자 화면에서 카테고리와 메뉴를 직접 등록해 고객에게 노출합니다."
             onClick={() => setForm((prev) => ({ ...prev, menuManagementMode: 'ADMIN_DIRECT' }))}
           />
-        </div>
-      </section>
-
-      <section className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h3 className="font-bold text-gray-800">초대 코드</h3>
-            <p className="mt-1 font-mono text-sm text-gray-600">{selectedStore.inviteCode || '초대 코드 없음'}</p>
-          </div>
-          <button
-            onClick={() => refreshInviteMutation.mutate()}
-            disabled={refreshInviteMutation.isPending}
-            className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-60"
-          >
-            <Ticket className="h-4 w-4" />
-            재발급
-          </button>
         </div>
       </section>
 
@@ -340,7 +303,7 @@ function CreateStoreSection({
         <div className="flex items-center justify-between">
           <div>
             <h3 className="font-bold text-gray-800">새 매장 등록</h3>
-            <p className="mt-1 text-sm text-gray-500">ADMIN 전용 — 새 매장을 생성하고 초대코드를 발급합니다.</p>
+            <p className="mt-1 text-sm text-gray-500">ADMIN 전용 — 새 매장을 생성합니다. 점주 연결은 계정 관리에서 설정합니다.</p>
           </div>
           <button
             onClick={() => setOpen(true)}

@@ -6,6 +6,7 @@ import axios from 'axios';
 import { Plus, RefreshCw, Save } from 'lucide-react';
 import { useAdminStore } from '@/contexts/AdminStoreContext';
 import { getHttpErrorMessage } from '@/lib/httpError';
+import { MenuImageUpload } from '@/components/MenuImageUpload';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -45,7 +46,18 @@ export default function BrandMenuPage() {
     price: '',
     description: '',
     imageUrl: '',
+    displayOrder: '0',
     isFeatured: true,
+  });
+  const [editingMenuId, setEditingMenuId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({
+    categoryId: '',
+    name: '',
+    price: '',
+    description: '',
+    imageUrl: '',
+    displayOrder: '0',
+    isFeatured: false,
   });
 
   const categoriesQuery = useQuery<BrandMenuCategory[]>({
@@ -97,6 +109,7 @@ export default function BrandMenuPage() {
           price: Number(menuForm.price),
           description: menuForm.description.trim() || undefined,
           imageUrl: menuForm.imageUrl.trim() || undefined,
+          displayOrder: Number(menuForm.displayOrder) || 0,
           isFeatured: menuForm.isFeatured,
         },
         { headers: authHeaders },
@@ -109,6 +122,7 @@ export default function BrandMenuPage() {
         price: '',
         description: '',
         imageUrl: '',
+        displayOrder: '0',
         isFeatured: true,
       });
       setFeedback({ type: 'success', message: '브랜드 메뉴를 추가했습니다.' });
@@ -132,6 +146,66 @@ export default function BrandMenuPage() {
       setFeedback({ type: 'error', message: getHttpErrorMessage(error, '메뉴 노출 상태 변경에 실패했습니다.') });
     },
   });
+
+  const updateCategoryMutation = useMutation({
+    mutationFn: async ({ categoryId, data }: { categoryId: string; data: Record<string, unknown> }) => {
+      await axios.patch(
+        `${API_URL}/brand-menus/admin/categories/${categoryId}`,
+        data,
+        { headers: authHeaders },
+      );
+    },
+    onSuccess: invalidate,
+    onError: (error) => {
+      setFeedback({ type: 'error', message: getHttpErrorMessage(error, '카테고리 변경에 실패했습니다.') });
+    },
+  });
+
+  const updateMenuMutation = useMutation({
+    mutationFn: async () => {
+      if (!editingMenuId) return;
+      await axios.patch(
+        `${API_URL}/brand-menus/admin/menus/${editingMenuId}`,
+        {
+          categoryId: editForm.categoryId,
+          name: editForm.name.trim(),
+          price: Number(editForm.price),
+          description: editForm.description.trim() || undefined,
+          imageUrl: editForm.imageUrl.trim() || undefined,
+          displayOrder: Number(editForm.displayOrder) || 0,
+          isFeatured: editForm.isFeatured,
+        },
+        { headers: authHeaders },
+      );
+    },
+    onSuccess: () => {
+      setEditingMenuId(null);
+      setFeedback({ type: 'success', message: '브랜드 메뉴를 수정했습니다.' });
+      invalidate();
+    },
+    onError: (error) => {
+      setFeedback({ type: 'error', message: getHttpErrorMessage(error, '브랜드 메뉴 수정에 실패했습니다.') });
+    },
+  });
+
+  const startEdit = (menu: BrandMenu) => {
+    setEditingMenuId(menu.id);
+    setEditForm({
+      categoryId: menu.categoryId,
+      name: menu.name,
+      price: String(menu.price),
+      description: menu.description || '',
+      imageUrl: menu.imageUrl || '',
+      displayOrder: String(menu.displayOrder),
+      isFeatured: menu.isFeatured,
+    });
+  };
+
+  const handleUpdateMenu = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!editForm.name.trim() || !editForm.price) return;
+    updateMenuMutation.mutate();
+  };
 
   const handleCreateCategory = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -196,6 +270,48 @@ export default function BrandMenuPage() {
             </button>
           </form>
 
+          {categories.length > 0 && (
+            <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+              <h2 className="mb-4 text-lg font-semibold text-gray-900">카테고리 관리</h2>
+              <div className="space-y-2">
+                {categories.map((category) => (
+                  <div key={category.id} className="flex items-center gap-2">
+                    <span className="flex-1 truncate text-sm text-gray-800">
+                      {category.name}
+                      {!category.isActive && (
+                        <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-500">숨김</span>
+                      )}
+                    </span>
+                    <input
+                      type="number"
+                      defaultValue={category.displayOrder}
+                      onBlur={(event) => {
+                        const next = Number(event.target.value) || 0;
+                        if (next !== category.displayOrder) {
+                          updateCategoryMutation.mutate({ categoryId: category.id, data: { displayOrder: next } });
+                        }
+                      }}
+                      title="정렬 순서"
+                      className="w-16 rounded-md border border-gray-300 px-2 py-1 text-sm focus:border-gray-900 focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        updateCategoryMutation.mutate({
+                          categoryId: category.id,
+                          data: { isActive: !category.isActive },
+                        })
+                      }
+                      className="rounded-md border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                    >
+                      {category.isActive ? '숨기기' : '노출하기'}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <form onSubmit={handleCreateMenu} className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
             <h2 className="mb-4 text-lg font-semibold text-gray-900">메뉴 추가</h2>
             <div className="space-y-3">
@@ -222,10 +338,17 @@ export default function BrandMenuPage() {
                 className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none"
               />
               <input
-                value={menuForm.imageUrl}
-                onChange={(event) => setMenuForm((prev) => ({ ...prev, imageUrl: event.target.value }))}
-                placeholder="이미지 URL"
+                value={menuForm.displayOrder}
+                onChange={(event) => setMenuForm((prev) => ({ ...prev, displayOrder: event.target.value }))}
+                placeholder="정렬 순서 (작을수록 먼저)"
+                inputMode="numeric"
                 className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none"
+              />
+              <MenuImageUpload
+                uploadUrl={`${API_URL}/brand-menus/admin/menus/image`}
+                value={menuForm.imageUrl}
+                onChange={(imageUrl) => setMenuForm((prev) => ({ ...prev, imageUrl }))}
+                authHeaders={authHeaders}
               />
               <textarea
                 value={menuForm.description}
@@ -266,32 +389,120 @@ export default function BrandMenuPage() {
             {!categoriesQuery.isLoading && menus.length === 0 && (
               <p className="px-5 py-8 text-center text-sm text-gray-500">등록된 브랜드 메뉴가 없습니다.</p>
             )}
-            {menus.map((menu) => (
-              <div key={menu.id} className="flex flex-col gap-3 px-5 py-4 md:flex-row md:items-center md:justify-between">
-                <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="font-semibold text-gray-900">{menu.name}</h3>
-                    {menu.isFeatured && (
-                      <span className="rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-semibold text-yellow-800">대표</span>
-                    )}
-                    {!menu.isActive && (
-                      <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-500">숨김</span>
-                    )}
+            {menus.map((menu) =>
+              editingMenuId === menu.id ? (
+                <form key={menu.id} onSubmit={handleUpdateMenu} className="space-y-3 bg-gray-50 px-5 py-4">
+                  <h3 className="text-sm font-semibold text-gray-900">메뉴 수정</h3>
+                  <select
+                    value={editForm.categoryId}
+                    onChange={(event) => setEditForm((prev) => ({ ...prev, categoryId: event.target.value }))}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none"
+                  >
+                    {categories.map((category) => (
+                      <option key={category.id} value={category.id}>{category.name}</option>
+                    ))}
+                  </select>
+                  <input
+                    value={editForm.name}
+                    onChange={(event) => setEditForm((prev) => ({ ...prev, name: event.target.value }))}
+                    placeholder="메뉴명"
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none"
+                  />
+                  <input
+                    value={editForm.price}
+                    onChange={(event) => setEditForm((prev) => ({ ...prev, price: event.target.value }))}
+                    placeholder="가격"
+                    inputMode="numeric"
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none"
+                  />
+                  <input
+                    value={editForm.displayOrder}
+                    onChange={(event) => setEditForm((prev) => ({ ...prev, displayOrder: event.target.value }))}
+                    placeholder="정렬 순서 (작을수록 먼저)"
+                    inputMode="numeric"
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none"
+                  />
+                  <MenuImageUpload
+                    uploadUrl={`${API_URL}/brand-menus/admin/menus/image`}
+                    value={editForm.imageUrl}
+                    onChange={(imageUrl) => setEditForm((prev) => ({ ...prev, imageUrl }))}
+                    authHeaders={authHeaders}
+                  />
+                  <textarea
+                    value={editForm.description}
+                    onChange={(event) => setEditForm((prev) => ({ ...prev, description: event.target.value }))}
+                    placeholder="설명"
+                    rows={3}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none"
+                  />
+                  <label className="flex items-center gap-2 text-sm text-gray-700">
+                    <input
+                      type="checkbox"
+                      checked={editForm.isFeatured}
+                      onChange={(event) => setEditForm((prev) => ({ ...prev, isFeatured: event.target.checked }))}
+                      className="h-4 w-4 rounded border-gray-300"
+                    />
+                    홈 대표 메뉴에 노출
+                  </label>
+                  <div className="flex gap-2">
+                    <button
+                      type="submit"
+                      disabled={updateMenuMutation.isPending}
+                      className="inline-flex items-center justify-center rounded-md bg-gray-900 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                    >
+                      <Save className="mr-2 h-4 w-4" />
+                      저장
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditingMenuId(null)}
+                      className="inline-flex items-center justify-center rounded-md border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                    >
+                      취소
+                    </button>
                   </div>
-                  <p className="mt-1 text-sm text-gray-500">
-                    {menu.price.toLocaleString()}원
-                    {menu.description ? ` · ${menu.description}` : ''}
-                  </p>
+                </form>
+              ) : (
+                <div key={menu.id} className="flex flex-col gap-3 px-5 py-4 md:flex-row md:items-center md:justify-between">
+                  <div className="flex items-center gap-3">
+                    {menu.imageUrl && (
+                      <img src={menu.imageUrl} alt={menu.name} className="h-14 w-14 rounded-md border border-gray-200 object-cover" />
+                    )}
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="font-semibold text-gray-900">{menu.name}</h3>
+                        {menu.isFeatured && (
+                          <span className="rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-semibold text-yellow-800">대표</span>
+                        )}
+                        {!menu.isActive && (
+                          <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-500">숨김</span>
+                        )}
+                      </div>
+                      <p className="mt-1 text-sm text-gray-500">
+                        {menu.price.toLocaleString()}원
+                        {menu.description ? ` · ${menu.description}` : ''}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => startEdit(menu)}
+                      className="inline-flex items-center justify-center rounded-md border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                    >
+                      수정
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleMenuMutation.mutate(menu)}
+                      className="inline-flex items-center justify-center rounded-md border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                    >
+                      {menu.isActive ? '숨기기' : '노출하기'}
+                    </button>
+                  </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => toggleMenuMutation.mutate(menu)}
-                  className="inline-flex items-center justify-center rounded-md border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                >
-                  {menu.isActive ? '숨기기' : '노출하기'}
-                </button>
-              </div>
-            ))}
+              ),
+            )}
           </div>
         </div>
       </section>

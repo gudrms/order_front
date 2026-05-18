@@ -33,15 +33,7 @@ export default function DashboardLayout({
       return;
     }
 
-    // ⭐️ 프로필 정보가 없으면 /setup 으로 강제 이동 (단, 현재 페이지가 /setup 이 아닐 때만)
-    if (!loading && user && (!profile || !profile.name || !profile.phoneNumber)) {
-      if (pathname !== '/setup') {
-        router.push('/setup');
-      }
-      return;
-    }
-
-    if (!loading && user && profile && !canAccessAdmin(profile)) {
+    if (!loading && user && (!profile || !canAccessAdmin(profile))) {
       if (pathname !== '/pending') router.push('/pending');
       return;
     }
@@ -62,7 +54,7 @@ export default function DashboardLayout({
   if (!user) return null;
   if (profile && !canAccessPath(profile, pathname)) return null;
 
-  const isSetupPage = pathname === '/setup' || pathname === '/pending';
+  const isSetupPage = pathname === '/pending';
 
   return (
     <div className="flex h-screen bg-gray-50">

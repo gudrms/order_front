@@ -62,11 +62,6 @@ export class CreateStoreDto {
     @IsOptional()
     menuManagementMode?: MenuManagementMode;
 
-    @ApiPropertyOptional({ description: '사장님 가입용 초대코드. 생략하면 서버가 자동 생성합니다.' })
-    @IsString()
-    @IsOptional()
-    inviteCode?: string;
-
     @ApiPropertyOptional({ description: '배달 주문 접수 가능 여부', default: false })
     @IsBoolean()
     @IsOptional()

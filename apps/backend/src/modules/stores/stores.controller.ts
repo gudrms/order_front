@@ -16,7 +16,7 @@ export class StoresController {
     @UsePipes(new ValidationPipe({ transform: true }))
     @ApiOperation({
         summary: '매장 생성',
-        description: '관리자가 새 매장을 만들고 사장님 가입용 초대코드를 발급합니다.',
+        description: '관리자가 새 매장을 만듭니다. 점주 계정 연결은 ADMIN 전용 계정 관리 API에서 처리합니다.',
     })
     @ApiBody({ type: CreateStoreDto })
     @ApiResponse({
@@ -30,7 +30,6 @@ export class StoresController {
                     name: '타코몰리 김포점',
                     storeType: 'tacomolly',
                     branchId: 'gimpo',
-                    inviteCode: 'TACO-AB12',
                     createdAt: '2024-01-01T00:00:00.000Z',
                 },
             },
@@ -219,20 +218,6 @@ export class StoresController {
         @Body() dto: UpdateStoreDto,
     ) {
         return this.storesService.updateStore(user.id, storeId, dto);
-    }
-
-    @Post(':storeId/invite-code')
-    @UseGuards(SupabaseGuard)
-    @ApiBearerAuth('JWT-auth')
-    @ApiOperation({
-        summary: '매장 초대코드 재발급',
-        description: '관리자 또는 해당 매장 사장님이 새 사장님 가입용 초대코드를 발급합니다.',
-    })
-    async refreshInviteCode(
-        @CurrentUser() user: { id: string },
-        @Param('storeId') storeId: string,
-    ) {
-        return this.storesService.refreshInviteCode(user.id, storeId);
     }
 
     @Post(':storeId/tables/bulk')
