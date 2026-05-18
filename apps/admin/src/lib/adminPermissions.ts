@@ -2,7 +2,6 @@ import {
   Activity,
   Bell,
   BookOpen,
-  FileText,
   LayoutDashboard,
   Menu as MenuIcon,
   MessageSquareText,
@@ -36,7 +35,6 @@ export const adminNavItems: AdminNavItem[] = [
   { name: '매장 관리', href: '/store', icon: Store, roles: ['ADMIN', 'OWNER'] },
   { name: '가맹 문의', href: '/franchise-inquiries', icon: MessageSquareText, roles: ['ADMIN'] },
   { name: '운영 관리', href: '/operations', icon: Activity, roles: ['ADMIN', 'OWNER'] },
-  { name: '창업 문의', href: '/franchise-inquiries', icon: FileText, roles: ['ADMIN'] },
 ];
 
 export function getAdminRole(profile: AdminProfile): AdminRole | null {
