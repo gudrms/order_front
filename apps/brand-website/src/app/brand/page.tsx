@@ -12,11 +12,16 @@ export default function BrandPage() {
         <main className="min-h-screen bg-white text-brand-black">
             {/* Hero Section */}
             <section className="relative h-[60vh] flex items-center justify-center overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-white/90 z-10" />
-                {/* Placeholder for Brand Hero Image */}
-                <div className="absolute inset-0 bg-gray-100 flex items-center justify-center text-gray-300">
-                    <span className="text-9xl opacity-20">🌮</span>
-                </div>
+                {/* 교체 방법: public/brand/hero.jpg 파일만 같은 이름으로 덮어쓰면 됨 */}
+                <Image
+                    src="/brand/hero.jpg"
+                    alt="타코몰리"
+                    fill
+                    priority
+                    sizes="100vw"
+                    className="object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-b from-black/30 to-white/95 z-10" />
 
                 <div className="relative z-20 text-center px-4">
                     <h1 className="text-5xl md:text-7xl font-bold text-brand-black mb-6 tracking-tighter">
@@ -48,9 +53,14 @@ export default function BrandPage() {
                         </p>
                     </ScrollAnimation>
                     <ScrollAnimation delay={0.2} className="relative h-[400px] bg-gray-100 rounded-3xl overflow-hidden border border-gray-200 transform rotate-2 hover:rotate-0 transition-transform duration-500 shadow-xl">
-                        <div className="absolute inset-0 flex items-center justify-center text-gray-300">
-                            <span className="text-8xl opacity-20">🥑</span>
-                        </div>
+                        {/* 교체 방법: public/brand/philosophy.jpg 파일만 같은 이름으로 덮어쓰면 됨 */}
+                        <Image
+                            src="/brand/philosophy.jpg"
+                            alt="타코몰리 메뉴"
+                            fill
+                            sizes="(max-width: 768px) 100vw, 50vw"
+                            className="object-cover"
+                        />
                     </ScrollAnimation>
                 </div>
             </section>
