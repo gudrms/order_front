@@ -31,10 +31,8 @@ import { OrderReceipt } from '@/components/OrderReceipt';
 import { getHttpErrorMessage } from '@/lib/httpError';
 
 type BadgeVariant = React.ComponentProps<typeof Badge>['variant'];
-type RefundMode = 'full' | 'partial';
 type RefundDialogState = {
   order: Order;
-  mode: RefundMode;
   remainingAmount: number;
 };
 type OperationMessage = {
@@ -178,15 +176,13 @@ export default function OrdersPage() {
     mutationFn: async ({
       orderId,
       cancelReason,
-      cancelAmount,
     }: {
       orderId: string;
       cancelReason: string;
-      cancelAmount?: number;
     }) => {
       await axios.post(
         `${API_URL}/payments/orders/${orderId}/toss/cancel`,
-        { cancelReason, cancelAmount },
+        { cancelReason },
         { headers: authHeaders }
       );
     },
@@ -410,15 +406,14 @@ export default function OrdersPage() {
 
       {refundDialog && (
         <RefundDialog
-          key={`${refundDialog.order.id}-${refundDialog.mode}`}
+          key={refundDialog.order.id}
           dialog={refundDialog}
           isSubmitting={cancelPaymentMutation.isPending}
           onClose={() => setRefundDialog(null)}
-          onSubmit={({ cancelReason, cancelAmount }) => {
+          onSubmit={({ cancelReason }) => {
             cancelPaymentMutation.mutate({
               orderId: refundDialog.order.id,
               cancelReason,
-              cancelAmount,
             });
           }}
         />
@@ -675,29 +670,15 @@ function RefundDialog({
   dialog: RefundDialogState;
   isSubmitting: boolean;
   onClose: () => void;
-  onSubmit: (payload: { cancelReason: string; cancelAmount?: number }) => void;
+  onSubmit: (payload: { cancelReason: string }) => void;
 }) {
-  const isPartial = dialog.mode === 'partial';
-  const [amountText, setAmountText] = useState(isPartial ? '' : String(dialog.remainingAmount));
-  const [reason, setReason] = useState(isPartial ? '관리자 부분 환불 처리' : '고객 요청으로 주문을 취소합니다.');
+  const [reason, setReason] = useState('고객 요청으로 주문을 취소합니다.');
   const [error, setError] = useState<string | null>(null);
-
-  const parsedAmount = Number(amountText.replace(/[^0-9]/g, ''));
 
   const handleSubmit = () => {
     const trimmedReason = reason.trim();
     if (!trimmedReason) {
       setError('취소/환불 사유를 입력해주세요.');
-      return;
-    }
-
-    if (isPartial) {
-      if (!Number.isFinite(parsedAmount) || parsedAmount <= 0 || parsedAmount > dialog.remainingAmount) {
-        setError('환불 금액은 남은 결제금액 이하로 입력해주세요.');
-        return;
-      }
-
-      onSubmit({ cancelReason: trimmedReason, cancelAmount: parsedAmount });
       return;
     }
 
@@ -711,10 +692,10 @@ function RefundDialog({
           <div className="flex items-start justify-between gap-4">
             <div>
               <h3 className="text-lg font-bold text-gray-900">
-                {isPartial ? '부분 환불' : '전액 취소'}
+                전액 취소
               </h3>
               <p className="mt-1 text-sm text-gray-500">
-                {dialog.order.orderNumber} · 환불 가능 {formatCurrency(dialog.remainingAmount)}
+                {dialog.order.orderNumber} · 취소 금액 {formatCurrency(dialog.remainingAmount)}
               </p>
             </div>
             <button
@@ -729,28 +710,6 @@ function RefundDialog({
         </div>
 
         <div className="space-y-4 px-5 py-5">
-          {isPartial && (
-            <label className="block">
-              <span className="text-sm font-medium text-gray-700">환불 금액</span>
-              <div className="mt-2 flex items-center rounded-lg border border-gray-200 px-3 focus-within:border-gray-900">
-                <input
-                  value={amountText}
-                  onChange={(event) => {
-                    setAmountText(event.target.value);
-                    setError(null);
-                  }}
-                  inputMode="numeric"
-                  placeholder="환불할 금액"
-                  className="h-11 min-w-0 flex-1 border-0 text-sm outline-none"
-                />
-                <span className="text-sm text-gray-400">원</span>
-              </div>
-              <p className="mt-1 text-xs text-gray-400">
-                최대 {formatCurrency(dialog.remainingAmount)}까지 환불할 수 있습니다.
-              </p>
-            </label>
-          )}
-
           <label className="block">
             <span className="text-sm font-medium text-gray-700">사유</span>
             <textarea
@@ -784,9 +743,9 @@ function RefundDialog({
             onClick={handleSubmit}
             disabled={isSubmitting}
             className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-red-300"
-            data-testid={`admin-refund-submit-${dialog.mode}`}
+            data-testid="admin-refund-submit-full"
           >
-            {isSubmitting ? '처리 중...' : isPartial ? '부분 환불' : '전액 취소'}
+            {isSubmitting ? '처리 중...' : '전액 취소'}
           </button>
         </div>
       </div>
@@ -1022,19 +981,12 @@ function renderPaymentCancelAction(
   return (
     <>
       <button
-        onClick={() => openRefundDialog({ order, mode: 'full', remainingAmount })}
+        onClick={() => openRefundDialog({ order, remainingAmount })}
         className="inline-flex items-center gap-1 rounded-md bg-red-600 px-3 py-1.5 text-xs text-white hover:bg-red-700"
         data-testid={`admin-refund-full-${order.id}`}
       >
         <XCircle size={14} />
         전액 취소
-      </button>
-      <button
-        onClick={() => openRefundDialog({ order, mode: 'partial', remainingAmount })}
-        className="inline-flex items-center gap-1 rounded-md border border-red-200 px-3 py-1.5 text-xs text-red-600 hover:bg-red-50"
-        data-testid={`admin-refund-partial-${order.id}`}
-      >
-        부분 환불
       </button>
     </>
   );

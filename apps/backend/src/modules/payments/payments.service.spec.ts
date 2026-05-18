@@ -1,9 +1,5 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { PrismaService } from '../prisma/prisma.service';
-import { TossApiService } from '../integrations/toss/toss-api.service';
-import { QueueService } from '../queue';
 import { PaymentsService } from './payments.service';
 
 describe('PaymentsService', () => {
@@ -63,16 +59,7 @@ describe('PaymentsService', () => {
             publishPaymentRefunded: vi.fn(),
         };
 
-        const module: TestingModule = await Test.createTestingModule({
-            providers: [
-                PaymentsService,
-                { provide: PrismaService, useValue: prisma },
-                { provide: TossApiService, useValue: tossApiService },
-                { provide: QueueService, useValue: queueService },
-            ],
-        }).compile();
-
-        service = module.get<PaymentsService>(PaymentsService);
+        service = new PaymentsService(prisma, tossApiService, queueService);
     });
 
     it('confirms a pending Toss payment and marks the order as paid', async () => {
@@ -516,12 +503,12 @@ describe('PaymentsService', () => {
         });
     });
 
-    it('partially refunds a paid Toss payment without cancelling the order', async () => {
+    it('fully refunds the remaining amount when a payment was already partially refunded externally', async () => {
         prisma.user.findUnique.mockResolvedValue({ id: 'admin-1', role: 'ADMIN' });
         prisma.store.findUnique.mockResolvedValue({ id: 'store-1', ownerId: 'owner-1' });
         prisma.payment.findFirst.mockResolvedValue({
             ...pendingPayment,
-            status: 'PAID',
+            status: 'PARTIAL_REFUNDED',
             paymentKey: 'payment-key',
             approvedAmount: 24000,
             cancelledAmount: 3000,
@@ -535,47 +522,47 @@ describe('PaymentsService', () => {
         });
         prisma.order.findUnique.mockResolvedValue({
             id: 'order-1',
-            status: 'PAID',
-            paymentStatus: 'PARTIAL_REFUNDED',
+            status: 'CANCELLED',
+            paymentStatus: 'REFUNDED',
         });
         tossApiService.cancelPayment.mockResolvedValue({
             paymentKey: 'payment-key',
-            cancels: [{ cancelAmount: 5000 }],
+            cancels: [{ cancelAmount: 21000 }],
         });
 
         await service.cancelOrderTossPayment('admin-1', 'order-1', {
-            cancelReason: 'delivery fee adjustment',
-            cancelAmount: 5000,
+            cancelReason: 'customer requested cancellation',
         });
 
         expect(tossApiService.cancelPayment).toHaveBeenCalledWith(expect.objectContaining({
-            cancelAmount: 5000,
-            idempotencyKey: 'cancel-payment-1-8000',
+            cancelAmount: undefined,
+            idempotencyKey: 'cancel-payment-1-24000',
         }));
         expect(prisma.payment.update).toHaveBeenCalledWith(expect.objectContaining({
             data: expect.objectContaining({
-                status: 'PARTIAL_REFUNDED',
-                cancelledAmount: 8000,
+                status: 'REFUNDED',
+                cancelledAmount: 24000,
             }),
         }));
-        expect(prisma.order.update).toHaveBeenCalledWith({
+        expect(prisma.order.update).toHaveBeenCalledWith(expect.objectContaining({
             where: { id: 'order-1' },
-            data: {
-                paymentStatus: 'PARTIAL_REFUNDED',
-            },
-        });
+            data: expect.objectContaining({
+                status: 'CANCELLED',
+                paymentStatus: 'REFUNDED',
+            }),
+        }));
         expect(queueService.publishPaymentRefunded).toHaveBeenCalledWith({
             paymentId: 'payment-1',
             orderId: 'order-1',
             storeId: 'store-1',
             providerOrderId: 'ORDER_1',
-            refundedAmount: 5000,
-            totalCancelledAmount: 8000,
-            isFullRefund: false,
+            refundedAmount: 21000,
+            totalCancelledAmount: 24000,
+            isFullRefund: true,
         });
     });
 
-    it('rejects refund amounts greater than the remaining paid amount', async () => {
+    it('rejects partial refund requests', async () => {
         prisma.user.findUnique.mockResolvedValue({ id: 'owner-1', role: 'OWNER' });
         prisma.store.findUnique.mockResolvedValue({ id: 'store-1', ownerId: 'owner-1' });
         prisma.payment.findFirst.mockResolvedValue({
@@ -583,7 +570,7 @@ describe('PaymentsService', () => {
             status: 'PAID',
             paymentKey: 'payment-key',
             approvedAmount: 24000,
-            cancelledAmount: 10000,
+            cancelledAmount: 0,
             order: {
                 id: 'order-1',
                 storeId: 'store-1',
@@ -594,8 +581,8 @@ describe('PaymentsService', () => {
         });
 
         await expect(service.cancelOrderTossPayment('owner-1', 'order-1', {
-            cancelReason: 'too much',
-            cancelAmount: 20000,
+            cancelReason: 'partial refund',
+            cancelAmount: 5000,
         })).rejects.toBeInstanceOf(BadRequestException);
 
         expect(tossApiService.cancelPayment).not.toHaveBeenCalled();

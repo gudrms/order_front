@@ -141,6 +141,44 @@ describe('DeliveryOrderService', () => {
         }));
     });
 
+    it('rejects tampered delivery totals that do not match server-side menu prices', async () => {
+        tx.store.findUnique.mockResolvedValue(store);
+        tx.menu.findMany.mockResolvedValue([menu]);
+
+        await expect(service.createDeliveryOrder('store-1', {
+            ...dto,
+            totalAmount: 3001,
+            payment: { ...dto.payment, amount: 3001 },
+        })).rejects.toBeInstanceOf(BadRequestException);
+
+        expect(tx.order.create).not.toHaveBeenCalled();
+    });
+
+    it('ignores client-provided item prices and stores DB menu prices', async () => {
+        tx.store.findUnique.mockResolvedValue(store);
+        tx.menu.findMany.mockResolvedValue([menu]);
+        tx.order.count.mockResolvedValue(1);
+        tx.order.create.mockResolvedValue({ id: 'order-2', orderNumber: '0002' });
+
+        await service.createDeliveryOrder('store-1', {
+            ...dto,
+            items: [{ menuId: 'menu-1', quantity: 1, price: 1, menuName: 'Tampered Taco' }],
+        });
+
+        expect(tx.order.create).toHaveBeenCalledWith(expect.objectContaining({
+            data: expect.objectContaining({
+                totalAmount: 15000,
+                items: {
+                    create: [expect.objectContaining({
+                        menuName: 'Taco',
+                        menuPrice: 12000,
+                        totalPrice: 12000,
+                    })],
+                },
+            }),
+        }));
+    });
+
     it('lists delivery orders by authenticated user', async () => {
         prisma.order = {
             findMany: vi.fn().mockResolvedValue([{ id: 'order-1' }]),

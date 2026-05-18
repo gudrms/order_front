@@ -20,15 +20,16 @@ test.describe('관리자 로그인 페이지', () => {
     await expect(page.getByRole('button', { name: '회원가입' })).toHaveCount(0);
   });
 
-  test('빈 폼으로 로그인 시 유효성 에러가 표시된다', async ({ page }) => {
+  test('빈 폼으로 로그인 시 제출이 막힌다', async ({ page }) => {
     await page.goto('/login');
 
-    // 이메일·비밀번호 미입력 상태로 로그인 클릭 → 클라이언트 유효성 검증 에러
+    // 이메일·비밀번호 미입력 상태로 로그인 클릭
     await page.getByRole('button', { name: '로그인' }).click();
 
-    await expect(
-      page.locator('[class*="text-red"], [class*="bg-red"]').first()
-    ).toBeVisible({ timeout: 10_000 });
+    // input의 required 속성으로 브라우저 기본 유효성 검증이 작동 →
+    // 빈 입력은 :invalid 상태이고, 폼 제출이 막혀 /login에 그대로 머문다.
+    await expect(page.locator('input[type="email"]:invalid')).toHaveCount(1);
+    await expect(page).toHaveURL(/\/login/);
   });
 
   test('잘못된 자격증명 입력 시 에러 메시지가 표시된다', async ({ page }) => {

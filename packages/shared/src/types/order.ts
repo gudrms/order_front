@@ -131,7 +131,6 @@ export interface UpdateDeliveryStatusRequest {
 
 export interface CancelPaymentRequest {
   cancelReason: string;
-  cancelAmount?: number;
 }
 
 export interface OrderListResponse {
