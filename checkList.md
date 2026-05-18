@@ -239,6 +239,46 @@
 - [x] **매장 지도 무한 로딩 버그 수정** (2026-05-17): `useKakaoLoader`는 `[loading, error]`를 반환하나 `[isLoaded, isError]`로 받아 `!isLoaded` 조건 체크 — SDK 로드 완료 후 오히려 영원히 "지도 로딩 중..." 표시되던 버그. 변수명 및 조건 수정(`!isLoaded` → `loading`).
 - [ ] 결제 콜백/리다이렉트 URL 환경변수에서 brand-website 경로 정리 (운영 배포 직전 점검)
 - [ ] 배포 후 매장 지도 동작 검증 (마커 클릭, 카드 연동, 주문 링크 이동)
+- [ ] **가맹 문의 폼 UX/UI 보강**: `useActionState` 응답 `alert()` 대신 Toast 알림 적용, 폼 유효성 검사 강화(Zod + react-hook-form 권장)
+- [ ] **가맹 문의 전화번호 포맷팅**: `010-1234-5678` 형태로 자동 포맷팅 적용 (`react-number-format` 등 검토)
+- [ ] **모바일 네비게이션 사용성 개선**: 모바일 메뉴바 오픈 시 body 배경 스크롤 차단 (`overflow: hidden` 적용)
+- [ ] **주문 CTA 환경변수 Fallback 대비**: `NEXT_PUBLIC_DELIVERY_URL` 누락 시 `localhost` 연결 방지를 위한 운영 환경 변수 및 방어 로직 점검
+- [ ] **Honeypot(스팸 방지) 필드 서버단 검증**: `FranchiseContent.tsx`의 `<input name="website" />` 봇 트랩에 대한 서버 액션(`submitFranchiseInquiry`) 처리 로직 보완 점검
+
+---
+
+## ⚙️ Admin (관리자 서비스)
+
+- [ ] **`orders/page.tsx` 컴포넌트 분리**: 약 1,000줄에 달하는 거대 단일 컴포넌트를 `RefundDialog.tsx`, `OrderDetailPanel.tsx`, `lib/toss-utils.ts` 등으로 모듈화하여 유지보수성 개선
+- [ ] **`useOrderStatus` 중복 폴링 로직 제거**: Supabase Realtime과 5초 주기 HTTP 폴링이 동시 동작하여 발생하는 서버 부하 방지. Realtime을 메인으로 사용하고 연결 끊김 시에만 Fallback으로 폴링하도록 수정하거나 상위 컴포넌트로 상태 끌어올리기
+- [ ] **API 호출 모듈화**: `orders/page.tsx` 내부의 직접적인 `axios.patch` 호출들을 `@order/shared`의 `apiClient` 인스턴스를 사용하도록 변경하여 인증 및 에러 처리 일원화
+- [ ] **부분 환불 서버단 엣지 케이스 점검**: 다중 환불 요청(Race Condition) 시 남은 결제 금액에 대해 백엔드 API에서 락(Lock)을 걸어 검증하는지 확인
+
+---
+
+## ⚙️ Backend (백엔드 서비스)
+
+- [ ] **대량 트랜잭션 청크(Batch) 분할**: `payments.service.ts`의 `expirePendingTossPayments`에서 수많은 결제를 한 번에 처리할 때 발생하는 Prisma 타임아웃 방지를 위해 `lodash.chunk` 등을 활용한 배치 분할 처리 적용
+- [ ] **Vercel Serverless DB 커넥션 풀러 점검**: 람다 인스턴스 복제 시 Supabase Max Connections 초과 방지를 위해 `.env`의 `DATABASE_URL`에 PgBouncer 커넥션 풀링 포트(6543) 및 `?pgbouncer=true` 파라미터가 적용되어 있는지 점검
+- [ ] **Toss 웹훅 서명(Signature) 검증 추가**: 악의적인 웹훅 요청으로 인한 불필요한 Toss API 조회 및 Rate Limit 소모를 방지하기 위해 `handleTossWebhook` 진입 전 헤더 서명 검증 로직 추가
+- [ ] **주문 생성 시 가격 위변조 검증**: 클라이언트가 전달한 `menuPrice`, `totalPrice`를 무조건 신뢰하지 않고, `orders.service.ts`의 `prepareOrderItems` 내부에서 서버 DB 마스터 데이터를 기반으로 가격을 재검증/재계산하는지 확인
+
+---
+
+## 📱 Delivery Customer (배달앱)
+
+- [ ] **결제 이탈(Drop-off) 주문 클라이언트 렌더링 시 자동 정리**: 결제창을 띄운 채 브라우저를 닫거나 뒤로가기 시 `sessionStorage`에 남은 `PENDING_TOSS_ORDER_ID_KEY`를 앱 진입(`layout.tsx` 또는 `page.tsx`) 시점에 체크하여 백엔드에 취소 요청을 보내도록 로직 추가 (결제 대기 잉여 데이터 최소화)
+- [ ] **Capacitor 빌드 점검**: 모바일 네이티브 환경(iOS/Android)에서 Toss 결제 위젯이 `iframe` 기반이므로 WebView 결제 리다이렉션이 정상적으로 `app scheme`으로 돌아오는지 E2E 테스트 필수
+
+## 🍽️ Table Order (테이블 오더)
+
+- [ ] **QR 스캔 예외 처리 강화**: `CartPage` 접속 시 URL 쿼리에 `?table=x`가 파싱되지 않거나 없는 경우 빈 장바구니로 넘어가지 않고 명시적으로 "QR 코드를 다시 스캔해 주세요" 화면으로 차단하는 로직 추가
+
+## 🔌 Toss POS Plugin (포스 연동 플러그인)
+
+- [ ] **웹소켓(Realtime) 이벤트 디바운싱(Debouncing)**: `realtime.ts`에서 Supabase `postgres_changes` 이벤트 수신 시 `pollOrders()`를 즉시 호출하고 있는데, 짧은 시간에 여러 주문 상태가 변경될 경우 다중 API 호출이 발생하므로 `lodash.debounce` 등을 적용
+- [ ] **백그라운드 폴링 최적화**: Realtime과 동시에 도는 타이머(`setInterval(pollOrders)`)의 주기를 길게 조정하거나, 소켓 연결이 끊어졌을 때(Fallback)만 폴링하도록 변경하여 백엔드 부하 감소
+- [ ] **메뉴 매핑 실패 알림 로직**: `order.ts`의 `findUnmappedItems`에서 POS 상품 매핑 누락 발생 시, 단순 `console.warn` 및 `toast` 외에 관리자(웹) 쪽 에러 로그로 전송하여 점주가 즉시 인지하도록 파이프라인 추가
 
 ---
 
