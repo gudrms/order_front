@@ -14,7 +14,7 @@ type BrandMenu = {
   id: string;
   categoryId: string;
   name: string;
-  price: number;
+  price?: number | null;
   description?: string | null;
   imageUrl?: string | null;
   displayOrder: number;
@@ -106,7 +106,7 @@ export default function BrandMenuPage() {
         {
           categoryId: menuForm.categoryId || categories[0]?.id,
           name: menuForm.name.trim(),
-          price: Number(menuForm.price),
+          price: menuForm.price.trim() ? Number(menuForm.price) : undefined,
           description: menuForm.description.trim() || undefined,
           imageUrl: menuForm.imageUrl.trim() || undefined,
           displayOrder: Number(menuForm.displayOrder) || 0,
@@ -169,7 +169,7 @@ export default function BrandMenuPage() {
         {
           categoryId: editForm.categoryId,
           name: editForm.name.trim(),
-          price: Number(editForm.price),
+          price: editForm.price.trim() ? Number(editForm.price) : undefined,
           description: editForm.description.trim() || undefined,
           imageUrl: editForm.imageUrl.trim() || undefined,
           displayOrder: Number(editForm.displayOrder) || 0,
@@ -193,7 +193,7 @@ export default function BrandMenuPage() {
     setEditForm({
       categoryId: menu.categoryId,
       name: menu.name,
-      price: String(menu.price),
+      price: menu.price != null ? String(menu.price) : '',
       description: menu.description || '',
       imageUrl: menu.imageUrl || '',
       displayOrder: String(menu.displayOrder),
@@ -203,7 +203,7 @@ export default function BrandMenuPage() {
 
   const handleUpdateMenu = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!editForm.name.trim() || !editForm.price) return;
+    if (!editForm.name.trim()) return;
     updateMenuMutation.mutate();
   };
 
@@ -215,7 +215,7 @@ export default function BrandMenuPage() {
 
   const handleCreateMenu = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!menuForm.name.trim() || !menuForm.price || categories.length === 0) return;
+    if (!menuForm.name.trim() || categories.length === 0) return;
     createMenuMutation.mutate();
   };
 
@@ -333,7 +333,7 @@ export default function BrandMenuPage() {
               <input
                 value={menuForm.price}
                 onChange={(event) => setMenuForm((prev) => ({ ...prev, price: event.target.value }))}
-                placeholder="가격"
+                placeholder="가격 (선택 — 매장별 상이)"
                 inputMode="numeric"
                 className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none"
               />
@@ -411,7 +411,7 @@ export default function BrandMenuPage() {
                   <input
                     value={editForm.price}
                     onChange={(event) => setEditForm((prev) => ({ ...prev, price: event.target.value }))}
-                    placeholder="가격"
+                    placeholder="가격 (선택 — 매장별 상이)"
                     inputMode="numeric"
                     className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none"
                   />
@@ -479,7 +479,7 @@ export default function BrandMenuPage() {
                         )}
                       </div>
                       <p className="mt-1 text-sm text-gray-500">
-                        {menu.price.toLocaleString()}원
+                        {menu.price != null ? `${menu.price.toLocaleString()}원` : '가격 미설정'}
                         {menu.description ? ` · ${menu.description}` : ''}
                       </p>
                     </div>

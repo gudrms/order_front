@@ -481,7 +481,7 @@ model BrandMenu {
   category     BrandMenuCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   name         String
-  price        Int
+  price        Int?
   description  String?
   imageUrl     String?
   displayOrder Int               @default(0)

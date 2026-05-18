@@ -32,10 +32,11 @@ export class CreateBrandMenuDto {
     @IsNotEmpty()
     name: string;
 
-    @ApiProperty({ description: 'Price', example: 9000 })
+    @ApiPropertyOptional({ description: 'Price (optional — brand menu is a representative catalog; store prices may differ)', example: 9000 })
     @IsInt()
     @Min(0)
-    price: number;
+    @IsOptional()
+    price?: number;
 
     @ApiPropertyOptional({ description: 'Menu description' })
     @IsString()

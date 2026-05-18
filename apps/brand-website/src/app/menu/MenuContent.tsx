@@ -14,7 +14,7 @@ interface BrandMenuItem {
     id: string;
     name: string;
     description: string | null;
-    price: number;
+    price: number | null;
     imageUrl: string | null;
     categoryId: string;
     isFeatured: boolean;
@@ -144,9 +144,11 @@ export default function MenuContent() {
                                             <h3 className="text-xl font-bold text-brand-black group-hover:text-brand-green transition-colors">
                                                 {item.name}
                                             </h3>
-                                            <span className="text-brand-black font-bold text-lg shrink-0">
-                                                {item.price.toLocaleString()}원
-                                            </span>
+                                            {item.price != null && (
+                                                <span className="text-brand-black font-bold text-lg shrink-0">
+                                                    {item.price.toLocaleString()}원
+                                                </span>
+                                            )}
                                         </div>
 
                                         {item.description && (
