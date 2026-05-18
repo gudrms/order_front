@@ -12,6 +12,7 @@
 ### Added
 - ADMIN 전용 관리자 계정 관리 기능 추가: `/admin/accounts` API와 admin `계정 관리` 화면에서 계정 생성, 비밀번호 초기화, 삭제, 매장 OWNER 연결을 처리.
 - 관리자 계정 관리 회귀 테스트 추가: `AdminAccountsService` 단위 테스트와 admin `accounts.spec.ts` E2E.
+- 배달 주문 가격 위변조 회귀 테스트 추가: 서버 DB 가격 재계산과 클라이언트 총액 불일치 거부를 고정.
 - 관리자 계정 관리 상세 시나리오 문서 `docs/admin-account-management-scenario.md` 추가.
 - Toss Payments 웹훅 수신 엔드포인트 `POST /payments/toss/webhook` 추가: `PAYMENT_STATUS_CHANGED`, `CANCEL_STATUS_CHANGED` 이벤트를 Toss API 재조회 후 로컬 결제/주문 상태에 반영.
 - Toss 결제위젯 키 설정 방어: `delivery-customer` checkout에서 `test_gck_`/`live_gck_` 키가 아니면 위젯을 렌더링하지 않도록 보강.

@@ -1,6 +1,6 @@
 # Taco Mono 작업 현황
 
-마지막 업데이트: 2026-05-17 (9차)
+마지막 업데이트: 2026-05-18 (10차)
 
 ---
 
@@ -240,17 +240,17 @@
 - [ ] 결제 콜백/리다이렉트 URL 환경변수에서 brand-website 경로 정리 (운영 배포 직전 점검)
 - [ ] 배포 후 매장 지도 동작 검증 (마커 클릭, 카드 연동, 주문 링크 이동)
 - [ ] **가맹 문의 폼 UX/UI 보강**: `useActionState` 응답 `alert()` 대신 Toast 알림 적용, 폼 유효성 검사 강화(Zod + react-hook-form 권장)
-- [ ] **가맹 문의 전화번호 포맷팅**: `010-1234-5678` 형태로 자동 포맷팅 적용 (`react-number-format` 등 검토)
+- [ ] **가맹 문의 전화번호 포맷팅**: 현재 입력값에서 숫자 외 문자를 제거하고 서버는 11자리 숫자만 허용한다. `010-1234-5678` 형태의 자동 하이픈 포맷팅은 아직 미적용 (`react-number-format` 등 검토).
 - [ ] **모바일 네비게이션 사용성 개선**: 모바일 메뉴바 오픈 시 body 배경 스크롤 차단 (`overflow: hidden` 적용)
-- [ ] **주문 CTA 환경변수 Fallback 대비**: `NEXT_PUBLIC_DELIVERY_URL` 누락 시 `localhost` 연결 방지를 위한 운영 환경 변수 및 방어 로직 점검
-- [ ] **Honeypot(스팸 방지) 필드 서버단 검증**: `FranchiseContent.tsx`의 `<input name="website" />` 봇 트랩에 대한 서버 액션(`submitFranchiseInquiry`) 처리 로직 보완 점검
+- [ ] **주문 CTA 환경변수 Fallback 대비**: `StoreOrderSection`/`StoreContent`는 운영 URL fallback을 사용하지만 `OrderCTAButton.tsx`, `Navbar.tsx`는 `NEXT_PUBLIC_DELIVERY_URL` 누락 시 `http://localhost:3001`로 연결된다. 운영 fallback 또는 명시적 환경변수 검증 필요.
+- [x] **Honeypot(스팸 방지) 필드 서버단 검증 확인** (2026-05-18): `FranchiseContent.tsx`의 `<input name="website" />` 값을 서버 액션 `submitFranchiseInquiry`에서 읽고, 값이 있으면 저장/API 호출 없이 성공 응답만 반환해 봇 제출을 흡수한다.
 
 ---
 
 ## ⚙️ Admin (관리자 서비스)
 
 - [ ] **`orders/page.tsx` 컴포넌트 분리**: 약 1,000줄에 달하는 거대 단일 컴포넌트를 `RefundDialog.tsx`, `OrderDetailPanel.tsx`, `lib/toss-utils.ts` 등으로 모듈화하여 유지보수성 개선
-- [ ] **`useOrderStatus` 중복 폴링 로직 제거**: Supabase Realtime과 5초 주기 HTTP 폴링이 동시 동작하여 발생하는 서버 부하 방지. Realtime을 메인으로 사용하고 연결 끊김 시에만 Fallback으로 폴링하도록 수정하거나 상위 컴포넌트로 상태 끌어올리기
+- [x] **관리자 주문 중복 폴링 여부 확인** (2026-05-18): admin `orders/page.tsx`는 `useRealtimeOrders(storeId)`로 Realtime invalidate만 수행하고 `refetchInterval`을 쓰지 않는다. 5초 polling은 배달앱 `OrderStatusTracker`가 공유 `useOrderStatus`를 통해 사용자 주문 상세에서만 fallback으로 사용한다.
 - [ ] **API 호출 모듈화**: `orders/page.tsx` 내부의 직접적인 `axios.patch` 호출들을 `@order/shared`의 `apiClient` 인스턴스를 사용하도록 변경하여 인증 및 에러 처리 일원화
 - [ ] **부분 환불 서버단 엣지 케이스 점검**: 다중 환불 요청(Race Condition) 시 남은 결제 금액에 대해 백엔드 API에서 락(Lock)을 걸어 검증하는지 확인
 
@@ -261,13 +261,13 @@
 - [ ] **대량 트랜잭션 청크(Batch) 분할**: `payments.service.ts`의 `expirePendingTossPayments`에서 수많은 결제를 한 번에 처리할 때 발생하는 Prisma 타임아웃 방지를 위해 `lodash.chunk` 등을 활용한 배치 분할 처리 적용
 - [ ] **Vercel Serverless DB 커넥션 풀러 점검**: 람다 인스턴스 복제 시 Supabase Max Connections 초과 방지를 위해 `.env`의 `DATABASE_URL`에 PgBouncer 커넥션 풀링 포트(6543) 및 `?pgbouncer=true` 파라미터가 적용되어 있는지 점검
 - [ ] **Toss 웹훅 서명(Signature) 검증 추가**: 악의적인 웹훅 요청으로 인한 불필요한 Toss API 조회 및 Rate Limit 소모를 방지하기 위해 `handleTossWebhook` 진입 전 헤더 서명 검증 로직 추가
-- [ ] **주문 생성 시 가격 위변조 검증**: 클라이언트가 전달한 `menuPrice`, `totalPrice`를 무조건 신뢰하지 않고, `orders.service.ts`의 `prepareOrderItems` 내부에서 서버 DB 마스터 데이터를 기반으로 가격을 재검증/재계산하는지 확인
+- [x] **주문 생성 시 가격 위변조 검증 확인 및 테스트 보강** (2026-05-18): `prepareOrderItems`가 DB `Menu.price`/`MenuOption.price`로 재계산하고, 배달 주문은 `dto.totalAmount`/`payment.amount`가 서버 계산 금액과 다르면 거부한다. `delivery-order.service.spec.ts`에 총액 위변조 거부 및 클라이언트 item price 무시 테스트 추가.
 
 ---
 
 ## 📱 Delivery Customer (배달앱)
 
-- [ ] **결제 이탈(Drop-off) 주문 클라이언트 렌더링 시 자동 정리**: 결제창을 띄운 채 브라우저를 닫거나 뒤로가기 시 `sessionStorage`에 남은 `PENDING_TOSS_ORDER_ID_KEY`를 앱 진입(`layout.tsx` 또는 `page.tsx`) 시점에 체크하여 백엔드에 취소 요청을 보내도록 로직 추가 (결제 대기 잉여 데이터 최소화)
+- [ ] **결제 이탈(Drop-off) 주문 클라이언트 렌더링 시 자동 정리**: success/fail 페이지와 checkout 요청 실패 경로에서는 `PENDING_TOSS_ORDER_ID_KEY`를 제거하지만, 브라우저 종료/뒤로가기 후 앱 재진입(`layout.tsx` 또는 `page.tsx`) 시 남은 pending 주문을 백엔드에 취소 요청하는 로직은 아직 없음.
 - [ ] **Capacitor 빌드 점검**: 모바일 네이티브 환경(iOS/Android)에서 Toss 결제 위젯이 `iframe` 기반이므로 WebView 결제 리다이렉션이 정상적으로 `app scheme`으로 돌아오는지 E2E 테스트 필수
 
 ## 🍽️ Table Order (테이블 오더)
