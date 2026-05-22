@@ -22,3 +22,13 @@ body {
     min-height: 100vh;
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
 }
+
+/* WebView 상태바/홈 인디케이터 겹침 방지 (viewport-fit=cover 전제) */
+@layer utilities {
+    .pt-safe {
+        padding-top: env(safe-area-inset-top);
+    }
+    .pb-safe {
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+}

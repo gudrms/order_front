@@ -37,7 +37,7 @@ export default function AddressListPage() {
     if (isLoading) {
         return (
             <main className="min-h-screen bg-gray-50 pb-24">
-                <header className="bg-white px-4 h-14 flex items-center border-b border-gray-100 sticky top-0 z-50">
+                <header className="bg-white px-4 h-14 flex items-center border-b border-gray-100 sticky top-0 z-50 pt-safe">
                     <ChevronLeft size={24} className="text-gray-300" />
                     <div className="ml-2 h-5 w-20 rounded bg-gray-200 animate-pulse" />
                 </header>
@@ -48,7 +48,7 @@ export default function AddressListPage() {
 
     return (
         <main className="min-h-screen bg-gray-50 pb-24">
-            <header className="bg-white px-4 h-14 flex items-center border-b border-gray-100 sticky top-0 z-50">
+            <header className="bg-white px-4 h-14 flex items-center border-b border-gray-100 sticky top-0 z-50 pt-safe">
                 <button onClick={() => router.back()} className="p-2 -ml-2">
                     <ChevronLeft size={24} />
                 </button>

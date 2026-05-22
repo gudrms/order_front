@@ -62,7 +62,7 @@ export default function PWAInstaller() {
     if (!showInstallBanner) return null;
 
     return (
-        <div className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-brand-yellow to-yellow-400 p-4 shadow-lg">
+        <div className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-brand-yellow to-yellow-400 p-4 shadow-lg pt-safe">
             <div className="max-w-[568px] mx-auto flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 flex-1">
                     <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-2xl shadow-sm">
