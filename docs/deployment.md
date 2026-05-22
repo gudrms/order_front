@@ -24,6 +24,8 @@ Vercel Dashboard → Team Settings → Environment Variables → Import .env
 
 로컬에서는 `pnpm sync:env`로 각 앱의 `.env.local`을 생성한다 ([로컬 세팅 참고](setup.md)).
 
+Backend 운영 `DATABASE_URL`은 Supabase 서버리스용 pooler URL을 사용하고 Prisma가 과도한 per-instance pool을 열지 않도록 `pgbouncer=true`와 낮은 `connection_limit`부터 적용한다. `connection_limit` 값은 DB connection error와 query timeout을 보고 조정한다.
+
 ---
 
 ## 배포 흐름
@@ -120,6 +122,8 @@ Reconcile Toss Payments
 ```
 
 `curl --fail-with-body`를 사용하므로 4xx/5xx 응답은 workflow 실패로 표시된다.
+
+큐는 publish 직후 Vercel background wake-up도 사용한다. backend Vercel 환경변수 `BACKEND_QUEUE_PROCESS_URL`을 `https://api.tacomole.kr/api/v1/queue/process-once`로 설정하면 지연 없는 처리를 먼저 시도하고, 위 GitHub Actions cron은 wake-up 누락이나 실패 메시지를 회수하는 fail-safe로 유지된다. `INTERNAL_JOB_SECRET`은 두 경로에서 같은 값을 사용한다.
 
 ---
 

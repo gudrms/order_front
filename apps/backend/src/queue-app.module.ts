@@ -29,6 +29,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
                 REDIS_URL: Joi.string().optional(),
                 NODE_ENV: Joi.string().valid('development', 'production', 'test').default('development'),
                 BACKEND_QUEUE_NAME: Joi.string().default('backend_events'),
+                BACKEND_QUEUE_PROCESS_URL: Joi.string().uri().optional(),
             }),
             validationOptions: { allowUnknown: true, abortEarly: false },
         }),

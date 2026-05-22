@@ -23,6 +23,7 @@ describe('QueueConsumerService', () => {
         };
         prisma = {
             queueEventLog: {
+                create: vi.fn().mockResolvedValue({ status: 'PROCESSING' }),
                 findUnique: vi.fn(),
                 upsert: vi.fn(),
                 update: vi.fn(),
@@ -81,15 +82,14 @@ describe('QueueConsumerService', () => {
                 },
             },
         ]);
-        prisma.queueEventLog.findUnique.mockResolvedValue(null);
-        prisma.queueEventLog.upsert.mockResolvedValue({ status: 'PROCESSING' });
+        prisma.queueEventLog.create.mockResolvedValue({ status: 'PROCESSING' });
 
         const result = await service.processOnce();
 
         expect(result).toEqual({ processedCount: 1 });
-        expect(prisma.queueEventLog.upsert).toHaveBeenCalledWith(expect.objectContaining({
-            where: { idempotencyKey: 'order.paid:order-1' },
-            create: expect.objectContaining({
+        expect(prisma.queueEventLog.create).toHaveBeenCalledWith(expect.objectContaining({
+            data: expect.objectContaining({
+                idempotencyKey: 'order.paid:order-1',
                 status: 'PROCESSING',
                 attemptCount: 1,
             }),
@@ -516,6 +516,7 @@ describe('QueueConsumerService', () => {
                 },
             },
         ]);
+        prisma.queueEventLog.create.mockRejectedValue({ code: 'P2002' });
         prisma.queueEventLog.findUnique.mockResolvedValue({ status: 'SUCCEEDED' });
 
         const result = await service.processOnce();
@@ -523,6 +524,35 @@ describe('QueueConsumerService', () => {
         expect(result).toEqual({ processedCount: 0 });
         expect(queueService.archive).toHaveBeenCalledWith(undefined, 2);
         expect(prisma.queueEventLog.upsert).not.toHaveBeenCalled();
+    });
+
+    it('archives duplicate messages while the original event is still processing', async () => {
+        queueService.read.mockResolvedValue([
+            {
+                msg_id: 12,
+                read_ct: 1,
+                enqueued_at: new Date(),
+                vt: new Date(),
+                message: {
+                    eventId: 'event-12',
+                    eventType: 'order.paid',
+                    idempotencyKey: 'order.paid:order-12',
+                    occurredAt: new Date().toISOString(),
+                    payload: { orderId: 'order-12' },
+                },
+            },
+        ]);
+        prisma.queueEventLog.create.mockRejectedValue({ code: 'P2002' });
+        prisma.queueEventLog.findUnique.mockResolvedValue({
+            status: 'PROCESSING',
+            updatedAt: new Date(),
+        });
+
+        const result = await service.processOnce();
+
+        expect(result).toEqual({ processedCount: 0 });
+        expect(queueService.publishPosSendOrder).not.toHaveBeenCalled();
+        expect(queueService.archive).toHaveBeenCalledWith(undefined, 12);
     });
 
     it('records invalid messages as failed without archiving them', async () => {
