@@ -11,8 +11,12 @@ contextBridge.exposeInMainWorld('adminElectron', {
     ipcRenderer.send('play-sound', 'new-order');
   },
 
-  printReceipt: (payload: unknown) => {
-    return ipcRenderer.invoke('print-receipt', payload);
+  getPrinters: () => {
+    return ipcRenderer.invoke('get-printers');
+  },
+
+  printReceipt: (options?: { deviceName?: string }) => {
+    return ipcRenderer.invoke('print-receipt', options);
   },
 
   // 수동 업데이트 — 렌더러가 승인 UI에서 호출

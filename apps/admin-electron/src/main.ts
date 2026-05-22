@@ -122,18 +122,32 @@ ipcMain.on('install-update', () => {
   autoUpdater.quitAndInstall();
 });
 
-// IPC: 무음 영수증 출력
-ipcMain.handle('print-receipt', async () => {
+// IPC: 사용 가능한 프린터 목록 (다중 프린터 환경 타겟팅용)
+ipcMain.handle('get-printers', async () => {
+  if (!win) return [];
+  return win.webContents.getPrintersAsync();
+});
+
+// IPC: 무음 영수증 출력 (특정 프린터 지정 + 15초 타임아웃)
+ipcMain.handle('print-receipt', async (_event, options?: { deviceName?: string }) => {
   if (!win) return { success: false, message: '창을 찾을 수 없습니다.' };
   return new Promise<{ success: boolean; message?: string }>((resolve) => {
+    let settled = false;
+    const finish = (result: { success: boolean; message?: string }) => {
+      if (settled) return;
+      settled = true;
+      resolve(result);
+    };
+    // 프린터가 응답하지 않을 때 무한 대기 방지
+    const timer = setTimeout(
+      () => finish({ success: false, message: '출력 시간 초과(15초)' }),
+      15000
+    );
     win!.webContents.print(
-      { silent: true, printBackground: false },
+      { silent: true, printBackground: false, deviceName: options?.deviceName },
       (success, errorType) => {
-        if (success) {
-          resolve({ success: true });
-        } else {
-          resolve({ success: false, message: errorType ?? '출력 실패' });
-        }
+        clearTimeout(timer);
+        finish(success ? { success: true } : { success: false, message: errorType ?? '출력 실패' });
       }
     );
   });
