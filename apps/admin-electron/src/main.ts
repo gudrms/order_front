@@ -77,7 +77,9 @@ function createWindow() {
 }
 
 function setupAutoUpdater() {
-  autoUpdater.checkForUpdatesAndNotify();
+  // 영업 피크타임 강제 다운로드/재시작 방지 — 자동 다운로드를 끄고 사용자 승인 후 진행
+  autoUpdater.autoDownload = false;
+  autoUpdater.checkForUpdates();
 
   autoUpdater.on('update-available', () => {
     win?.webContents.send('update-available');
@@ -109,6 +111,15 @@ ipcMain.on('notify-staff-call', (_event, payload: { tableNumber?: number; callTy
 ipcMain.on('play-sound', (_event, _type: string) => {
   // shell.beep()은 시스템 기본음. 커스텀 음원이 필요하면 추후 play-sound 패키지 추가
   shell.beep();
+});
+
+// IPC: 업데이트 수동 다운로드/설치 (렌더러의 승인 UX 연계)
+ipcMain.on('download-update', () => {
+  autoUpdater.downloadUpdate();
+});
+
+ipcMain.on('install-update', () => {
+  autoUpdater.quitAndInstall();
 });
 
 // IPC: 무음 영수증 출력
