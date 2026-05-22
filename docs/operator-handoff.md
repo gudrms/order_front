@@ -107,6 +107,19 @@ Play App Signing 앱 서명 키 SHA-256:
 
 2026-05-16 기준 `apps/delivery-customer/public/.well-known/assetlinks.json`에는 위 앱 서명 키 SHA-256을 반영했습니다. 운영 배포 후 `https://delivery.tacomole.kr/.well-known/assetlinks.json`에서 같은 값이 내려오는지 확인해야 합니다.
 
+## Android 앱 운영 메모
+
+배달 앱은 `CAPACITOR_SERVER_URL=https://delivery.tacomole.kr` 원격 WebView 방식입니다. 네이티브 앱 시작은 정상이어도 운영 웹 JS가 잘못된 Capacitor 플러그인 호출을 하면 Play 설치본이 시작 직후 종료될 수 있습니다. 앱 크래시 핫픽스가 웹 코드에만 있으면 AAB 재심사 전에도 운영 delivery 웹 배포 반영 여부를 먼저 확인합니다.
+
+Android 푸시와 OAuth 기준:
+
+- Android Push Notifications는 `android/app/google-services.json`과 Firebase Android 앱 `com.tacomole.app` 설정이 준비된 뒤 활성화합니다.
+- Firebase 설정 전에는 Vercel delivery 앱의 `NEXT_PUBLIC_CAPACITOR_PUSH_ENABLED`를 unset 또는 `false`로 유지합니다.
+- 카카오 OAuth 앱 복귀는 Supabase Redirect URLs의 `taco://auth/callback`과 Android Manifest의 `taco` scheme을 함께 사용합니다.
+- OAuth 완료 후 웹 브라우저에 남거나 홈이 비로그인 상태면 callback 복귀와 WebView 세션 복원 로그를 확인합니다.
+
+Android Studio Logcat은 로그인 진단 때 `Auth`, `AuthCallback`, `DeepLink` 필터를 우선 사용합니다. 크래시는 `FATAL EXCEPTION` 또는 `AndroidRuntime`으로 확인합니다. `View`, `VRI`, `setRequestedFrameRate`는 WebView 렌더 로그라 운영 판단에서는 보통 제외합니다.
+
 ## 보안/비밀값 관리
 
 - `INTERNAL_JOB_SECRET`은 GitHub Actions Secret과 Vercel backend 환경변수에 같은 값으로 설정합니다.

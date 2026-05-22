@@ -1,6 +1,6 @@
 # Taco Mono 작업 현황
 
-마지막 업데이트: 2026-05-18 (10차)
+마지막 업데이트: 2026-05-22 (11차)
 
 ---
 
@@ -198,8 +198,12 @@
 - [x] Android 예전 패키지 소스 정리 (2026-05-18): `apps/delivery-customer/android/app/src/main/java/com/taco/delivery/MainActivity.java` 제거. 실제 패키지는 `com.tacomole.app`만 유지.
 - [x] Play App Signing SHA-256 확정 및 `assetlinks.json` 교체 (2026-05-16): Play Console 앱 서명 키 SHA-256 `6D:AC:8F:5E:5D:A7:AF:F6:80:01:16:6D:78:17:B6:29:62:F2:DC:82:5F:DC:3D:7C:B7:B3:4B:61:B9:04:F2:80`를 `apps/delivery-customer/public/.well-known/assetlinks.json`에 반영. 업로드 키 SHA-256이 아니라 앱 서명 키 기준.
 - [x] `https://delivery.tacomole.kr/.well-known/assetlinks.json` 운영 배포 및 확인 (2026-05-16): 파일 정상 서빙 확인. `com.tacomole.app` + Play App Signing SHA-256 `6D:AC:...F2:80` 일치.
+- [x] 공개 테스트 설치본 시작 직후 크래시 원인 확인 (2026-05-22): `android/app/google-services.json` 없는 AAB에서 원격 WebView가 `PushNotifications.register()`를 호출해 `Default FirebaseApp is not initialized`로 종료. `NEXT_PUBLIC_CAPACITOR_PUSH_ENABLED=true` opt-in 전까지 네이티브 푸시 초기화를 막는 delivery 웹 핫픽스 반영.
+- [ ] Supabase Redirect URLs에 앱 OAuth 복귀 URL `taco://auth/callback` 추가 후 카카오 로그인 앱 복귀 검증
+- [ ] 앱 표시명/아이콘 통일 AAB 재업로드: Play 스토어 등록정보 기준 `타코몰리`와 `store-assets/google-play/icon-512x512.jpg`를 Android 런처 리소스에 반영한 versionCode 3 번들 제출
 - [ ] `adb shell pm get-app-links com.tacomole.app` App Links 검증
 - [ ] Google 승인 완료 후 관리형 게시에서 공개 테스트 버전 게시
+- [ ] Firebase Android `com.tacomole.app` 설정과 `google-services.json` 추가 후 `NEXT_PUBLIC_CAPACITOR_PUSH_ENABLED=true` 활성화
 - [ ] USB 실기기 테스트: FCM 토큰 발급 확인, 잠금화면 푸시 수신 확인
 - [ ] Vercel 원격 WebView 핫 업데이트 파이프라인 검증
 

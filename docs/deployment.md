@@ -78,6 +78,16 @@ open https://api.tacomole.kr/api/docs
 
 ---
 
+## 배달 Android 앱 배포
+
+`order-delivery` 웹 배포와 Play Console AAB 배포는 함께 확인한다. 배달 Android 앱은 운영 `delivery.tacomole.kr`을 원격 WebView로 로드하므로, 네이티브 번들이 같아도 운영 웹 JS 변경으로 시작 크래시나 OAuth 복귀 동작이 달라질 수 있다.
+
+- AAB 생성, Play 테스트 트랙, 카카오 OAuth 앱 복귀, Firebase 푸시 활성화 조건은 `apps/delivery-customer/DEPLOYMENT.md`를 따른다.
+- 앱 표시명과 런처 아이콘은 Play 스토어 등록정보 기준 `타코몰리`로 맞춘 뒤 versionCode를 올려 제출한다.
+- 운영 확인용 로그 필터와 Remote WebView 핫픽스 판단 기준은 `docs/operator-handoff.md`의 Android 앱 운영 메모를 본다.
+
+---
+
 ## GitHub Actions Cron 확인
 
 콜드스타트 완화와 백그라운드 작업 처리는 `.github/workflows/backend-cron.yml`에서 5분마다 실행한다.

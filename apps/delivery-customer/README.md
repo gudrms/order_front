@@ -39,6 +39,10 @@ iOS 빌드는 macOS/Xcode 환경에서 진행합니다.
 
 Google Play Console 앱은 `com.tacomole.app` 패키지명으로 생성되어 있으므로 `capacitor.config.ts`의 `appId`와 Android `applicationId`를 다른 값으로 바꾸면 기존 Play Console 앱에 AAB를 업로드할 수 없습니다.
 
+네이티브 OAuth는 웹 callback이 아니라 앱 scheme으로 복귀해야 합니다. Supabase Redirect URLs에 `taco://auth/callback`을 등록하고, Android에서 카카오 로그인 후 앱으로 돌아오는지 확인합니다. 앱 로그인 진단 로그는 Android Studio Logcat에서 `Auth` 또는 `DeepLink`로 좁혀 봅니다.
+
+Android 푸시는 Firebase 네이티브 설정이 준비된 뒤에만 켭니다. `android/app/google-services.json` 없이 `NEXT_PUBLIC_CAPACITOR_PUSH_ENABLED=true`를 배포하면 앱이 `PushNotifications.register()`에서 종료될 수 있습니다.
+
 ## Android 서명 지문
 
 현재 참고 지문:
