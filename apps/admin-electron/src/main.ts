@@ -5,6 +5,8 @@ import { createTray, notifyNewOrder, notifyStaffCall } from './tray';
 
 const ADMIN_URL = process.env.ADMIN_URL ?? 'https://admin.tacomole.kr';
 const isDev = process.env.NODE_ENV === 'development';
+const START_URL = isDev ? (process.env.ADMIN_DEV_URL ?? 'http://localhost:3003') : ADMIN_URL;
+const ALLOWED_ORIGIN = new URL(START_URL).origin;
 
 let win: BrowserWindow | null = null;
 
@@ -23,7 +25,7 @@ function createWindow() {
     show: false,
   });
 
-  win.loadURL(isDev ? (process.env.ADMIN_DEV_URL ?? 'http://localhost:3003') : ADMIN_URL);
+  win.loadURL(START_URL);
 
   win.once('ready-to-show', () => win?.show());
 
@@ -38,6 +40,14 @@ function createWindow() {
   win.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url);
     return { action: 'deny' };
+  });
+
+  // 메인 프레임이 허용 origin 밖으로 이동하려 하면 차단하고 외부 브라우저로 연다 (XSS/피싱 리다이렉트 방어)
+  win.webContents.on('will-navigate', (event, url) => {
+    if (new URL(url).origin !== ALLOWED_ORIGIN) {
+      event.preventDefault();
+      shell.openExternal(url);
+    }
   });
 
   createTray(win);
