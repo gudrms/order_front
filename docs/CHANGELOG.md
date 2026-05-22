@@ -29,6 +29,9 @@
 - 타코몰리 매장 7곳(김포·부천·부평·검단풍무·만수구월·루원시티·검단마전)을 `Store` 테이블에 등록. 카카오 REST API 지오코딩으로 좌표 설정.
 - brand-website 서체 적용: next/font/google로 한글 Noto Sans KR(본문)과 영문 Outfit(디스플레이)을 self-host(`display: swap`).
 - 배달앱 쿼리 전역 에러 토스트: `QueryCache.onError`로 쿼리 실패 시 Capacitor 토스트 안내.
+- admin-electron 오프라인 복구 화면(`offline.html`): admin 로드 실패 시 안내 화면 + 5초 주기 자동 재연결.
+- admin-electron 영수증 프린터 타겟팅: `get-printers`로 프린터 목록 제공, `deviceName` 지정 무음 출력 + 15초 타임아웃 예외 처리.
+- admin-electron 수동 업데이트 IPC(`download-update`/`install-update`)와 업데이트 이벤트 구독을 preload에 노출.
 
 ### Changed
 - 백엔드 pgmq 소비 경로를 publish 직후 Vercel background wake-up 우선 처리로 보강하고, GitHub Actions 5분 queue cron은 누락 메시지 회수용 fail-safe로 유지.
@@ -52,6 +55,10 @@
 - 배달앱 메뉴 이미지에 `loading="lazy"`/`decoding="async"`를 적용하고 외부 placeholder 의존을 제거.
 - brand-website 매장 찾기 거리 정렬을 `setStores` 사이드이펙트에서 `sortedStores` useMemo 파생으로 전환.
 - brand-website Hero 배경을 CSS `bg-[url]` 2880px 원본에서 next/image `fill`+`priority`로 전환(2880→1920, webp/리사이즈 최적화).
+- admin-electron 메인 프레임 네비게이션 가드(`will-navigate`)로 허용 origin 밖 이동을 차단하고 외부 브라우저로 연다.
+- admin-electron 업데이트를 `autoDownload=false` 수동 승인 방식으로 전환(영업 중 강제 다운로드/재시작 방지).
+- admin-electron 트레이 종료를 `win.destroy()`에서 `app.quit()`로 바꿔 프로세스를 완전 해제.
+- admin 매장 조회 쿼리를 `enabled:!!authHeaders`로 가드해 토큰 미탑재 상태의 401 경쟁을 방지.
 
 ### Removed
 - admin 셀프 회원가입, 이메일 인증 콜백(`/auth/callback`), `/setup` 가입 경로, 무인증 `POST /auth/register`, 매장 초대코드 재발급 UI/API 제거.
