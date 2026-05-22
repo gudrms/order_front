@@ -10,7 +10,31 @@ export default function AuthCallbackPage() {
     useEffect(() => {
         // OAuth 콜백 처리
         const handleCallback = async () => {
-            const { error } = await supabase.auth.getSession();
+            const code = new URLSearchParams(window.location.search).get('code');
+            console.info('[AuthCallback] opened', {
+                hasCode: !!code,
+                hasHash: !!window.location.hash,
+            });
+
+            if (code) {
+                const { error } = await supabase.auth.exchangeCodeForSession(code);
+                if (error) {
+                    console.error('인증 코드 교환 오류:', error);
+                    router.push('/login?error=auth_failed');
+                    return;
+                }
+                console.info('[AuthCallback] OAuth code session restored');
+            }
+
+            const {
+                data: { session },
+                error,
+            } = await supabase.auth.getSession();
+            console.info('[AuthCallback] session checked', {
+                hasSession: !!session,
+                hasUser: !!session?.user,
+                provider: session?.user.app_metadata?.provider ?? null,
+            });
 
             if (error) {
                 console.error('인증 오류:', error);
