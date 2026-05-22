@@ -12,6 +12,10 @@ export default function Providers({ children }: { children: React.ReactNode }) {
                 defaultOptions: {
                     queries: {
                         staleTime: 60 * 1000,
+                        // 하이브리드 앱 백그라운드→복귀 시 stale 쿼리가 한꺼번에
+                        // refetch되는 focus storm 방지. 신선도는 staleTime·Realtime·
+                        // 명시적 invalidate로 보장한다.
+                        refetchOnWindowFocus: false,
                     },
                 },
             })
