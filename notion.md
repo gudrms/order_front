@@ -36,7 +36,7 @@
 ### DevOps & Infrastructure
 - **Monorepo Build System:** pnpm Workspace + Turborepo (Remote Caching 적용)
 - **Deployment:** Vercel (Frontend & Backend Serverless), Supabase (Auth, Database, Storage)
-- **CI/CD:** GitHub Actions (Type Check, Lint, Vitest, Playwright E2E 통합 빌드 파이프라인)
+- **CI/CD:** GitHub Actions (Type Check, Lint, Vitest, Playwright E2E 통합 빌드 파이프라인, **Gemini AI 기반 PR 자동 코드 리뷰 시스템**)
 
 ---
 
@@ -162,6 +162,12 @@ packages/
 ### 7. 인프라 보안 위생 수호 (Git History 시크릿 완전 박멸)
 과거 커밋에 기록되어 남아 있던 Supabase DB 패스워드 및 Toss Access Key 등의 유출 흔적을 없애기 위해 단순 커밋 덮어쓰기가 아닌 Git 히스토리 개조 작업을 진행했습니다.
 - **`git-filter-repo` 활용:** Python 기반의 히스토리 재작성 툴을 통해 Git Repository 내의 304개 커밋을 통째로 재빌드하여 유출된 env 파일의 모든 과거 커밋 로그를 완벽하게 소거 및 강제 푸시를 수행하여 인프라 위생 수준을 기업형 포트폴리오급으로 고도화했습니다.
+
+### 8. 대규모 모노레포 환경에서의 GitHub Actions & Gemini API 기반 실시간 AI 코드 리뷰봇 도입 및 트러블슈팅
+1인 개발 환경에서 코드 품질을 엄격하게 관리하고 지속 가능한 자가 검토 프로세스를 상시화하기 위해, GitHub Actions와 Google AI Studio의 Gemini API를 결합한 PR 자동 코드 리뷰 파이프라인(`gemini-review`)을 도입하였습니다. 구축 과정에서 대형 모노레포가 겪는 분석 한계와 예외 대기 장애를 다음과 같이 해결하여 안정성을 확보했습니다.
+- **모노레포 분석 지연에 따른 7분 타임아웃 장애 해소:** pnpm 모노레포 구조 특성상 의존성 파일 및 프로젝트 전체의 방대한 코드 맥락을 분석하는 과정에서 GitHub Actions의 기본 7분 시간 제한을 초과해 리뷰봇이 조기 강제 취소되는 현상이 발생했습니다. 이에 CI 워크플로우(`gemini-review.yml`, `gemini-triage.yml`, `gemini-scheduled-triage.yml`)의 `timeout-minutes`를 `30분`으로 전면 상향 조정하여 모노레포 환경에 걸맞은 충분한 분석 연산 시간을 확보했습니다.
+- **인증 예외에 따른 CLI 무한 대기(Hang) 장애 해결:** GitHub Secrets에 `GEMINI_API_KEY`가 주입되지 않았을 때 `No authentication method provided` 예외가 발생했으나, CLI 내부 프로세스가 적절히 종료되지 않고 대기(Hang) 상태에 빠져 늘려놓은 30분의 빌드 시간을 전부 낭비하고 실패하는 병목이 발견되었습니다.
+- **Secrets 기반 비침투형 보안 바인딩 적용:** 소스코드 내부에는 어떠한 API Key 정보도 기입하지 않는 무노출 원칙을 유지하며, GitHub Repository의 `Settings -> Secrets and variables -> Actions` 공간에 `GEMINI_API_KEY`를 등록하여 런타임에 동적으로 안전하게 공급(Non-intrusive Security Binding)했습니다. 이를 통해 잘못된 인증 컨텍스트로 인한 대기(Hang) 현상을 종식시키고, 정상 시 **2~5분 내외**로 초고속 리뷰 피드백이 PR에 실시간으로 등록되도록 최종 연동에 성공했습니다.
 
 ---
 
