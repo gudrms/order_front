@@ -5,8 +5,11 @@ import { createTray, notifyNewOrder, notifyStaffCall } from './tray';
 
 const ADMIN_URL = process.env.ADMIN_URL ?? 'https://admin.tacomole.kr';
 const isDev = process.env.NODE_ENV === 'development';
+const START_URL = isDev ? (process.env.ADMIN_DEV_URL ?? 'http://localhost:3003') : ADMIN_URL;
+const ALLOWED_ORIGIN = new URL(START_URL).origin;
 
 let win: BrowserWindow | null = null;
+let reconnectTimer: ReturnType<typeof setInterval> | null = null;
 
 function createWindow() {
   win = new BrowserWindow({
@@ -23,7 +26,7 @@ function createWindow() {
     show: false,
   });
 
-  win.loadURL(isDev ? (process.env.ADMIN_DEV_URL ?? 'http://localhost:3003') : ADMIN_URL);
+  win.loadURL(START_URL);
 
   win.once('ready-to-show', () => win?.show());
 
@@ -40,6 +43,32 @@ function createWindow() {
     return { action: 'deny' };
   });
 
+  // 메인 프레임이 허용 origin 밖으로 이동하려 하면 차단하고 외부 브라우저로 연다 (XSS/피싱 리다이렉트 방어)
+  win.webContents.on('will-navigate', (event, url) => {
+    if (new URL(url).origin !== ALLOWED_ORIGIN) {
+      event.preventDefault();
+      shell.openExternal(url);
+    }
+  });
+
+  // 인터넷 장애 등으로 admin 로드 실패 시 오프라인 화면 + 5초 주기 재연결
+  win.webContents.on('did-fail-load', (_event, errorCode) => {
+    if (errorCode === -3) return; // ERR_ABORTED (내부 취소)
+    win?.loadFile(path.join(__dirname, '..', 'assets', 'offline.html'));
+    if (!reconnectTimer) {
+      reconnectTimer = setInterval(() => win?.loadURL(START_URL), 5000);
+    }
+  });
+
+  win.webContents.on('did-finish-load', () => {
+    const current = win?.webContents.getURL() ?? '';
+    // admin 정상 로드(http + 허용 origin)일 때만 재연결 타이머 해제 (offline.html은 file:// 라 유지)
+    if (current.startsWith('http') && new URL(current).origin === ALLOWED_ORIGIN && reconnectTimer) {
+      clearInterval(reconnectTimer);
+      reconnectTimer = null;
+    }
+  });
+
   createTray(win);
 
   if (!isDev) {
@@ -48,7 +77,9 @@ function createWindow() {
 }
 
 function setupAutoUpdater() {
-  autoUpdater.checkForUpdatesAndNotify();
+  // 영업 피크타임 강제 다운로드/재시작 방지 — 자동 다운로드를 끄고 사용자 승인 후 진행
+  autoUpdater.autoDownload = false;
+  autoUpdater.checkForUpdates();
 
   autoUpdater.on('update-available', () => {
     win?.webContents.send('update-available');
@@ -82,18 +113,41 @@ ipcMain.on('play-sound', (_event, _type: string) => {
   shell.beep();
 });
 
-// IPC: 무음 영수증 출력
-ipcMain.handle('print-receipt', async () => {
+// IPC: 업데이트 수동 다운로드/설치 (렌더러의 승인 UX 연계)
+ipcMain.on('download-update', () => {
+  autoUpdater.downloadUpdate();
+});
+
+ipcMain.on('install-update', () => {
+  autoUpdater.quitAndInstall();
+});
+
+// IPC: 사용 가능한 프린터 목록 (다중 프린터 환경 타겟팅용)
+ipcMain.handle('get-printers', async () => {
+  if (!win) return [];
+  return win.webContents.getPrintersAsync();
+});
+
+// IPC: 무음 영수증 출력 (특정 프린터 지정 + 15초 타임아웃)
+ipcMain.handle('print-receipt', async (_event, options?: { deviceName?: string }) => {
   if (!win) return { success: false, message: '창을 찾을 수 없습니다.' };
   return new Promise<{ success: boolean; message?: string }>((resolve) => {
+    let settled = false;
+    const finish = (result: { success: boolean; message?: string }) => {
+      if (settled) return;
+      settled = true;
+      resolve(result);
+    };
+    // 프린터가 응답하지 않을 때 무한 대기 방지
+    const timer = setTimeout(
+      () => finish({ success: false, message: '출력 시간 초과(15초)' }),
+      15000
+    );
     win!.webContents.print(
-      { silent: true, printBackground: false },
+      { silent: true, printBackground: false, deviceName: options?.deviceName },
       (success, errorType) => {
-        if (success) {
-          resolve({ success: true });
-        } else {
-          resolve({ success: false, message: errorType ?? '출력 실패' });
-        }
+        clearTimeout(timer);
+        finish(success ? { success: true } : { success: false, message: errorType ?? '출력 실패' });
       }
     );
   });

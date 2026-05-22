@@ -176,6 +176,18 @@ Google Play 공개 테스트 설치본을 실기기에서 처음 확인하면서
 
 ---
 
+## 15. 큐 실시간 처리와 중복 소비 방어 (2026-05-22)
+
+결제 완료 후 POS 전송과 알림 발송이 pgmq 소비 단계에 걸려 있는데, GitHub Actions `Process Queue` cron만 기다리면 첫 `order.paid` 메시지가 처리된 뒤에야 `pos.send_order`와 `notification.send` 후속 메시지가 발행된다. cron 간격만 보고 최대 5분 지연이라고 적으면 실제 사용자 체감 경로를 과소평가할 수 있어, 백엔드가 메시지를 publish한 직후 Vercel background work로 내부 `/queue/process-once`를 깨우는 경로를 추가했다. GitHub Actions cron은 제거하지 않고 wake-up 누락, 일시 실패, backlog 회수용 fail-safe로 둔다.
+
+운영 설정은 `BACKEND_QUEUE_PROCESS_URL`과 기존 `INTERNAL_JOB_SECRET`을 함께 사용한다. 함수 응답 이후에도 wake-up HTTP 호출이 끝날 수 있도록 `@vercel/functions`의 `waitUntil()` 경로를 사용하고, 개발이나 미설정 환경에서는 기존 큐 발행만 유지한다. 실제 결제부터 POS/알림까지의 지연은 운영 env 반영 후 다시 계측한다.
+
+중복 소비 판단도 `upsert`만으로 끝내지 않았다. 소비 시작 전에 `QueueEventLog`의 `PROCESSING` claim을 먼저 만들고, 이미 성공했거나 lease가 살아 있는 메시지는 다시 side effect를 실행하지 않는다. 실패했거나 processing lease가 만료된 경우만 재시도할 수 있게 해 결제 웹훅 재수신, queue 재전달, 워커 경합이 POS와 알림을 동시에 두 번 밀어 넣는 위험을 낮췄다.
+
+DB 연결 수는 고정 숫자를 선승인하지 않는다. Vercel scale-out과 Supabase pooler 설정을 같이 봐야 하므로 env 예시는 serverless pooler와 낮은 `connection_limit` 시작값으로 갱신했고, 운영 connection error와 query timeout을 보고 조정하기로 했다.
+
+---
+
 ## 주요 기술 결정 요약
 
 | 결정 | 선택 | 이유 |
@@ -196,3 +208,4 @@ Google Play 공개 테스트 설치본을 실기기에서 처음 확인하면서
 | 브랜드 페이지 이미지 | `public/brand/` 고정 파일명 | 코드 수정 없이 파일 교체만으로 사진 갱신 — 대표 제공 사진 반영 용이 |
 | 배달앱 네이티브 푸시 활성화 | Firebase 준비 후 env opt-in | Remote WebView가 Firebase 없는 Android 번들에서 Push 등록을 호출하면 앱 시작 크래시가 날 수 있음 |
 | 배달앱 OAuth 복귀 | `taco://auth/callback` 앱 scheme | 외부 웹 callback에 남지 않고 앱으로 복귀해 WebView 세션을 복원해야 함 |
+| 결제 후 큐 깨우기 | Vercel background wake-up + cron fail-safe | POS/알림 지연을 줄이되 publish 직후 wake-up 누락과 queue backlog 회수 경로를 남김 |

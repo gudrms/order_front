@@ -269,6 +269,20 @@
 - [x] **관리자 주문 중복 폴링 여부 확인** (2026-05-18): admin `orders/page.tsx`는 `useRealtimeOrders(storeId)`로 Realtime invalidate만 수행하고 `refetchInterval`을 쓰지 않는다. 5초 polling은 배달앱 `OrderStatusTracker`가 공유 `useOrderStatus`를 통해 사용자 주문 상세에서만 fallback으로 사용한다.
 - [ ] **API 호출 모듈화**: `orders/page.tsx` 내부의 직접적인 `axios.patch` 호출들을 `@order/shared`의 `apiClient` 인스턴스를 사용하도록 변경하여 인증 및 에러 처리 일원화
 - [x] **관리자 부분 환불 제거** (2026-05-18): 초기 운영 안정성을 위해 관리자 환불은 전액 취소만 허용한다. admin UI에서 부분 환불 버튼/금액 입력 제거, 백엔드 `cancelAmount` 요청 거부, 테스트 시나리오를 전액 환불 기준으로 정리.
+- [x] **매장 조회 쿼리 authHeaders 가드** (2026-05-23): `AdminStoreContext`의 매장 조회를 `enabled:!!session` → `enabled:!!authHeaders`로 변경해 토큰 미탑재 상태의 401 경쟁 방지.
+- [ ] **Realtime 주문 무효화 throttle 검토**: `useRealtimeOrders`가 모든 주문 이벤트에 `invalidateQueries`를 호출. status 화이트리스트는 admin 특성상(접수·조리·완료 등 대부분 변경이 UI 반영 필요) 갱신 누락 위험이 커 부적합 — 짧은 시간 다중 변경 시 REST 재조회 폭주를 debounce/throttle로 완화하는 방향 검토.
+
+---
+
+## 🖥️ Admin Electron (데스크톱 앱)
+
+- [x] **메인 프레임 네비게이션 가드** (2026-05-23): `will-navigate`에서 허용 origin(`ALLOWED_ORIGIN`) 밖 이동을 차단하고 외부 브라우저로 연다(피싱/XSS 리다이렉트 방어). CSP는 원격 admin의 정상 리소스(Supabase·Sentry 등) 차단 위험이 있어 Electron 강제 주입 대신 admin 웹 서버에서 설정 권장.
+- [x] **오프라인 복구 화면 + 5초 재연결** (2026-05-23): `did-fail-load` 시 `assets/offline.html`을 띄우고 5초 주기로 `START_URL` 재연결, 정상 로드(허용 origin) 시 타이머 해제. 매장 인터넷 장애 대응.
+- [x] **종료 시 프로세스 완전 해제** (2026-05-23): 트레이 종료를 `win.destroy()`에서 `tray.destroy()` + `app.quit()`로 변경해 좀비 프로세스 방지.
+- [x] **업데이트 수동 승인 전환** (2026-05-23): `autoUpdater.autoDownload=false`로 영업 중 강제 다운로드/재시작 방지. `download-update`/`install-update` IPC와 `update-available`/`downloaded` 구독을 preload에 노출해 렌더러 승인 UX와 연계.
+- [x] **영수증 프린터 타겟팅 + 타임아웃** (2026-05-23): `get-printers`로 프린터 목록 제공, `print-receipt`에 `deviceName` 옵션으로 특정 프린터 무음 출력, 무응답 시 15초 타임아웃. **실제 프린터 동작은 실기기 검증 필요.**
+- [ ] **렌더러(admin 웹) 측 Electron 연동 UI**: preload `adminElectron` API(업데이트 승인 모달, 프린터 선택 드롭다운, 새 주문 사운드)를 admin 웹에서 실제 사용하는 UI는 미구현.
+- [ ] **주문 알림 커스텀 음원 (선택)**: 현재 `play-sound` IPC가 `shell.beep()` 시스템 기본음. `play-sound` 패키지 + 음원 에셋으로 교체 여부 결정.
 
 ---
 
