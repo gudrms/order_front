@@ -27,6 +27,8 @@
 - 브랜드 메뉴 이미지 업로드: `POST /brand-menus/admin/menus/image`로 Supabase Storage `assets` 버킷(`brand-menu/{uuid}`)에 업로드. 매장 메뉴와 같은 `MenuImageUpload` 컴포넌트 재사용.
 - 브랜드 메뉴 admin 관리 보강: 인라인 수정 폼, 메뉴 정렬(`displayOrder`), 카테고리 숨김/노출 토글 및 정렬 편집.
 - 타코몰리 매장 7곳(김포·부천·부평·검단풍무·만수구월·루원시티·검단마전)을 `Store` 테이블에 등록. 카카오 REST API 지오코딩으로 좌표 설정.
+- brand-website 서체 적용: next/font/google로 한글 Noto Sans KR(본문)과 영문 Outfit(디스플레이)을 self-host(`display: swap`).
+- 배달앱 쿼리 전역 에러 토스트: `QueryCache.onError`로 쿼리 실패 시 Capacitor 토스트 안내.
 
 ### Changed
 - 배달앱 네이티브 카카오 OAuth callback을 웹 URL 대신 `taco://auth/callback` 앱 scheme 복귀 흐름으로 보강.
@@ -45,6 +47,8 @@
 - 배달앱 TanStack Query `refetchOnWindowFocus`를 비활성화해 하이브리드 앱 복귀 시 focus storm을 완화.
 - 배달앱 장바구니 store 구독을 selector로 분리해 장바구니 변경 시 불필요한 리렌더를 축소.
 - 배달앱 메뉴 이미지에 `loading="lazy"`/`decoding="async"`를 적용하고 외부 placeholder 의존을 제거.
+- brand-website 매장 찾기 거리 정렬을 `setStores` 사이드이펙트에서 `sortedStores` useMemo 파생으로 전환.
+- brand-website Hero 배경을 CSS `bg-[url]` 2880px 원본에서 next/image `fill`+`priority`로 전환(2880→1920, webp/리사이즈 최적화).
 
 ### Removed
 - admin 셀프 회원가입, 이메일 인증 콜백(`/auth/callback`), `/setup` 가입 경로, 무인증 `POST /auth/register`, 매장 초대코드 재발급 UI/API 제거.
