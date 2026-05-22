@@ -3,6 +3,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { emitAdminOrderAlert } from '@/lib/adminOrderAlerts';
 
+// Test comment: triggering Gemini review bot verification
+
 /**
  * 실시간 주문 알림 훅
  * @param storeId 매장 ID (해당 매장의 주문만 구독)
