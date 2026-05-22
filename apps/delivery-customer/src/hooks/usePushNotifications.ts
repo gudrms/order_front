@@ -12,6 +12,10 @@ import {
 } from '@/lib/capacitor/push-notifications';
 import { api } from '@order/shared/api';
 
+// Android native push requires Firebase native config before registration.
+const nativePushEnabled =
+    process.env.NEXT_PUBLIC_CAPACITOR_PUSH_ENABLED === 'true';
+
 /**
  * FCM 푸시 알림 초기화 훅.
  *
@@ -46,7 +50,7 @@ export function usePushNotifications() {
 
     // ── 최초 마운트: 푸시 초기화 + 탭 네비게이션 리스너 ──────────────────
     useEffect(() => {
-        if (!isNative) return;
+        if (!isNative || !nativePushEnabled) return;
 
         // 탭 네비게이션 이벤트 → 라우터 이동
         const removePushNav = addPushNavigateListener((path) => {
@@ -69,7 +73,7 @@ export function usePushNotifications() {
     // ── 로그인 완료 후: 이미 발급된 토큰 재등록 시도 ──────────────────────
     // (권한 허용 후 앱 시작 → 토큰 먼저 옴 → 아직 비로그인 → 로그인 완료 → 여기서 재시도)
     useEffect(() => {
-        if (!user || !isNative) return;
+        if (!user || !isNative || !nativePushEnabled) return;
         const token = getCurrentPushToken();
         if (token) {
             void registerTokenToServer(token);
