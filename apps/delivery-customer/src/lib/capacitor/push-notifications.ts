@@ -112,7 +112,7 @@ export async function initPushNotifications(
                         notifications: [
                             {
                                 id: Date.now(),
-                                title: notification.title ?? '타코 배달',
+                                title: notification.title ?? '타코몰리',
                                 body: notification.body ?? '',
                                 schedule: { at: new Date(Date.now() + 300) },
                                 extra: notification.data ?? {},
