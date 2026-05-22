@@ -1,5 +1,20 @@
 import type { Metadata } from 'next';
+import { Noto_Sans_KR, Outfit } from 'next/font/google';
 import './globals.css';
+
+const notoSansKr = Noto_Sans_KR({
+  subsets: ['latin'],
+  weight: ['400', '500', '700', '900'],
+  variable: '--font-noto-sans-kr',
+  display: 'swap',
+});
+
+const outfit = Outfit({
+  subsets: ['latin'],
+  weight: ['400', '600', '700', '800'],
+  variable: '--font-outfit',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://www.tacomole.kr'),
@@ -43,7 +58,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ko">
+    <html lang="ko" className={`${notoSansKr.variable} ${outfit.variable}`}>
       <body>
         <Navbar />
         {children}
