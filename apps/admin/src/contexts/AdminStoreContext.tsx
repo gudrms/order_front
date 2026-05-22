@@ -36,7 +36,8 @@ export function AdminStoreProvider({ children }: { children: React.ReactNode }) 
       });
       return response.data.data || response.data;
     },
-    enabled: !!session,
+    // 토큰이 실린 authHeaders가 준비된 시점에만 조회 — 토큰 미탑재 401 경쟁 방지
+    enabled: !!authHeaders,
   });
 
   const stores = storesQuery.data || [];
