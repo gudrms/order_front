@@ -15,7 +15,10 @@ interface CartBottomSheetProps {
 }
 
 export default function CartBottomSheet({ isOpen, onClose, onProceedToOrder }: CartBottomSheetProps) {
-    const { items, totalPrice, updateQuantity, removeItem } = useCartStore();
+    const items = useCartStore((s) => s.items);
+    const totalPrice = useCartStore((s) => s.totalPrice);
+    const updateQuantity = useCartStore((s) => s.updateQuantity);
+    const removeItem = useCartStore((s) => s.removeItem);
     const { store } = useCurrentStore();
     const [isClosing, setIsClosing] = useState(false);
     const [isAddressSheetOpen, setIsAddressSheetOpen] = useState(false);

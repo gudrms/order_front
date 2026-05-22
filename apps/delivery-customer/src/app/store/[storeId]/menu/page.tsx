@@ -14,7 +14,8 @@ import { useCartStore } from '@order/order-core';
 export default function MenuPage() {
     const router = useRouter();
     const { store } = useCurrentStore();
-    const { totalQuantity, totalPrice } = useCartStore();
+    const totalQuantity = useCartStore((s) => s.totalQuantity);
+    const totalPrice = useCartStore((s) => s.totalPrice);
     const [isCartOpen, setIsCartOpen] = useState(false);
 
     const handleProceedToOrder = () => {

@@ -32,7 +32,8 @@ export default function CheckoutPage() {
     const { storeId } = useParams<{ storeId: string }>();
     const { store } = useCurrentStore();
     const { user, loading: isAuthLoading } = useAuth();
-    const { items, totalPrice } = useCartStore();
+    const items = useCartStore((s) => s.items);
+    const totalPrice = useCartStore((s) => s.totalPrice);
     const { deliveryInfo, setAddress, setCustomerInfo, setDeliveryRequest } = useDeliveryStore();
     const { data: addresses = [] } = useAddresses(user?.id);
     const createOrderMutation = useCreateOrder();
