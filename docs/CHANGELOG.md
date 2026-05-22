@@ -31,6 +31,9 @@
 - 배달앱 쿼리 전역 에러 토스트: `QueryCache.onError`로 쿼리 실패 시 Capacitor 토스트 안내.
 
 ### Changed
+- 백엔드 pgmq 소비 경로를 publish 직후 Vercel background wake-up 우선 처리로 보강하고, GitHub Actions 5분 queue cron은 누락 메시지 회수용 fail-safe로 유지.
+- 큐 이벤트 소비 시작 시 `QueueEventLog` claim을 먼저 획득하도록 바꿔 중복 메시지와 재시도 경합이 같은 POS/알림 side effect를 동시에 실행할 가능성을 낮춤.
+- 백엔드 배포 문서와 env 예시를 Supabase serverless pooler + 낮은 `connection_limit`부터 계측하는 기준으로 갱신.
 - 배달앱 네이티브 카카오 OAuth callback을 웹 URL 대신 `taco://auth/callback` 앱 scheme 복귀 흐름으로 보강.
 - 배달앱 표시명과 Android/PWA 아이콘을 Play 스토어 등록정보 기준 `타코몰리` 브랜드로 통일.
 - 관리자 로그인은 마스터가 생성한 계정의 이메일/비밀번호 로그인만 지원하도록 단순화.
