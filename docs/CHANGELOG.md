@@ -41,12 +41,18 @@
 - 브랜드 사이트 `/brand` 페이지 Hero·Philosophy 섹션의 이모지 플레이스홀더를 실제 사진으로 교체.
 - admin 사이드바에서 동일 라우트(`/franchise-inquiries`)를 가리키던 중복 메뉴('창업 문의')를 제거.
 - e2e 빈 로그인 폼 테스트를 HTML5 네이티브 유효성 검증 기준으로 수정.
+- 배달앱 매장 클릭 진입 성능 개선: 홈 목록의 store를 상세 캐시에 시드하고 카테고리/메뉴를 prefetch해 전체화면 로딩 워터폴 제거.
+- 배달앱 TanStack Query `refetchOnWindowFocus`를 비활성화해 하이브리드 앱 복귀 시 focus storm을 완화.
+- 배달앱 장바구니 store 구독을 selector로 분리해 장바구니 변경 시 불필요한 리렌더를 축소.
+- 배달앱 메뉴 이미지에 `loading="lazy"`/`decoding="async"`를 적용하고 외부 placeholder 의존을 제거.
 
 ### Removed
 - admin 셀프 회원가입, 이메일 인증 콜백(`/auth/callback`), `/setup` 가입 경로, 무인증 `POST /auth/register`, 매장 초대코드 재발급 UI/API 제거.
+- 배달앱 `StoreContext`의 미사용 배달비 헬퍼(`orderTotal`, 정적 `deliveryFee`, `calcDeliveryFee`) 제거. checkout은 `calculateOrderTotals`로 동적 계산.
 
 ### Fixed
 - Firebase Android 설정이 없는 공개 테스트 설치본에서 원격 WebView가 네이티브 Push Notifications 등록을 호출해 시작 직후 종료되던 흐름을 opt-in 푸시 초기화로 차단.
+- 배달앱 웹뷰 상단 상태바 겹침: `viewport-fit=cover`와 `safe-area-inset` 패딩을 고정 헤더 전반에 적용해 Android 15 edge-to-edge/iOS 노치에서 핸드폰 상단 정보와 콘텐츠가 겹치던 문제 해소.
 
 ---
 
