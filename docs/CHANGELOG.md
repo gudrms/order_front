@@ -10,6 +10,8 @@
 ## [Unreleased]
 
 ### Added
+- 배달 Android 공개 테스트 운영 메모 추가: Firebase 푸시 활성화 조건, Logcat 필터, 카카오 OAuth 앱 복귀 검증 절차를 배포/인수인계 문서에 정리.
+- 배달앱 카카오 OAuth 앱 복귀 진단 로그 추가: `Auth`, `AuthCallback`, `DeepLink` 로그로 callback과 세션 복원 여부를 확인.
 - ADMIN 전용 관리자 계정 관리 기능 추가: `/admin/accounts` API와 admin `계정 관리` 화면에서 계정 생성, 비밀번호 초기화, 삭제, 매장 OWNER 연결을 처리.
 - 관리자 계정 관리 회귀 테스트 추가: `AdminAccountsService` 단위 테스트와 admin `accounts.spec.ts` E2E.
 - 배달 주문 가격 위변조 회귀 테스트 추가: 서버 DB 가격 재계산과 클라이언트 총액 불일치 거부를 고정.
@@ -27,6 +29,8 @@
 - 타코몰리 매장 7곳(김포·부천·부평·검단풍무·만수구월·루원시티·검단마전)을 `Store` 테이블에 등록. 카카오 REST API 지오코딩으로 좌표 설정.
 
 ### Changed
+- 배달앱 네이티브 카카오 OAuth callback을 웹 URL 대신 `taco://auth/callback` 앱 scheme 복귀 흐름으로 보강.
+- 배달앱 표시명과 Android/PWA 아이콘을 Play 스토어 등록정보 기준 `타코몰리` 브랜드로 통일.
 - 관리자 로그인은 마스터가 생성한 계정의 이메일/비밀번호 로그인만 지원하도록 단순화.
 - 관리자/백엔드/전체 흐름 테스트 시나리오를 마스터 직접 계정 관리 모델 기준으로 갱신.
 - Toss 일반 결제 웹훅 검증 방식 문서화: `PAYMENT_STATUS_CHANGED`/`CANCEL_STATUS_CHANGED`는 서명 헤더가 아니라 결제 조회 API 재호출로 검증하는 현재 구현을 유지.
@@ -40,6 +44,9 @@
 
 ### Removed
 - admin 셀프 회원가입, 이메일 인증 콜백(`/auth/callback`), `/setup` 가입 경로, 무인증 `POST /auth/register`, 매장 초대코드 재발급 UI/API 제거.
+
+### Fixed
+- Firebase Android 설정이 없는 공개 테스트 설치본에서 원격 WebView가 네이티브 Push Notifications 등록을 호출해 시작 직후 종료되던 흐름을 opt-in 푸시 초기화로 차단.
 
 ---
 
