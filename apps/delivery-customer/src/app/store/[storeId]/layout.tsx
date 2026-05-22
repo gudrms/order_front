@@ -14,6 +14,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
         queryKey: ['store', storeId],
         queryFn: () => getStore(storeId),
         retry: false,
+        staleTime: 5 * 60 * 1000,
     });
 
     useEffect(() => {

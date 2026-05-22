@@ -2,9 +2,9 @@
 
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Search, MapPin, Clock, ChevronRight, Heart, Bike, Gift } from 'lucide-react';
-import { getAllStores } from '@order/shared/api';
+import { getAllStores, api } from '@order/shared/api';
 import type { Store } from '@order/shared';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFavoriteStores } from '@/hooks/useFavoriteStores';
@@ -16,11 +16,29 @@ type OrderType = 'delivery' | 'takeout';
 
 export default function Home() {
     const router = useRouter();
+    const queryClient = useQueryClient();
     const { user } = useAuth();
     const { favoriteStoreIds, toggle: toggleFavorite, isLoggedIn } = useFavoriteStores();
     const [searchQuery, setSearchQuery] = useState('');
     const [orderType, setOrderType] = useState<OrderType>('delivery');
     const storesSectionRef = useRef<HTMLDivElement>(null);
+
+    // 매장 진입 시 워터폴 제거: 목록에서 받은 store를 상세 캐시에 시드해
+    // layout의 전체화면 로딩을 건너뛰고, 메뉴/카테고리는 라우팅과 병렬로 미리 받는다.
+    const handleSelectStore = (store: Store) => {
+        queryClient.setQueryData(['store', store.id], store);
+        queryClient.prefetchQuery({
+            queryKey: ['categories', store.id],
+            queryFn: () => api.menu.getCategories(store.id),
+            staleTime: 5 * 60 * 1000,
+        });
+        queryClient.prefetchQuery({
+            queryKey: ['menus', store.id, undefined],
+            queryFn: () => api.menu.getMenus(store.id),
+            staleTime: 5 * 60 * 1000,
+        });
+        router.push(`/store/${store.id}/menu`);
+    };
 
     const { data: stores = [], isLoading } = useQuery({
         queryKey: ['delivery-stores'],
@@ -134,7 +152,7 @@ export default function Home() {
                                     key={store.id}
                                     store={store}
                                     isFavorite={true}
-                                    onSelect={() => router.push(`/store/${store.id}/menu`)}
+                                    onSelect={() => handleSelectStore(store)}
                                     onToggleFavorite={() => toggleFavorite(store.id)}
                                 />
                             ))}
@@ -167,7 +185,7 @@ export default function Home() {
                                 key={store.id}
                                 store={store}
                                 isFavorite={favoriteStoreIds.has(store.id)}
-                                onSelect={() => router.push(`/store/${store.id}/menu`)}
+                                onSelect={() => handleSelectStore(store)}
                                 onToggleFavorite={isLoggedIn ? () => toggleFavorite(store.id) : undefined}
                             />
                         ))}
