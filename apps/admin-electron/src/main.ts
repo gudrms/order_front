@@ -9,6 +9,7 @@ const START_URL = isDev ? (process.env.ADMIN_DEV_URL ?? 'http://localhost:3003')
 const ALLOWED_ORIGIN = new URL(START_URL).origin;
 
 let win: BrowserWindow | null = null;
+let reconnectTimer: ReturnType<typeof setInterval> | null = null;
 
 function createWindow() {
   win = new BrowserWindow({
@@ -47,6 +48,24 @@ function createWindow() {
     if (new URL(url).origin !== ALLOWED_ORIGIN) {
       event.preventDefault();
       shell.openExternal(url);
+    }
+  });
+
+  // 인터넷 장애 등으로 admin 로드 실패 시 오프라인 화면 + 5초 주기 재연결
+  win.webContents.on('did-fail-load', (_event, errorCode) => {
+    if (errorCode === -3) return; // ERR_ABORTED (내부 취소)
+    win?.loadFile(path.join(__dirname, '..', 'assets', 'offline.html'));
+    if (!reconnectTimer) {
+      reconnectTimer = setInterval(() => win?.loadURL(START_URL), 5000);
+    }
+  });
+
+  win.webContents.on('did-finish-load', () => {
+    const current = win?.webContents.getURL() ?? '';
+    // admin 정상 로드(http + 허용 origin)일 때만 재연결 타이머 해제 (offline.html은 file:// 라 유지)
+    if (current.startsWith('http') && new URL(current).origin === ALLOWED_ORIGIN && reconnectTimer) {
+      clearInterval(reconnectTimer);
+      reconnectTimer = null;
     }
   });
 

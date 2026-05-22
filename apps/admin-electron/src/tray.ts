@@ -1,5 +1,5 @@
 import path from 'path';
-import { BrowserWindow, Menu, NativeImage, nativeImage, Notification, shell, Tray } from 'electron';
+import { app, BrowserWindow, Menu, NativeImage, nativeImage, Notification, shell, Tray } from 'electron';
 
 let tray: Tray | null = null;
 
@@ -35,8 +35,9 @@ export function createTray(win: BrowserWindow): Tray {
     {
       label: '종료',
       click: () => {
+        // 트레이 정리 후 앱 전체 종료 — win.destroy()만 호출하면 프로세스가 잔존할 수 있음
         tray?.destroy();
-        win.destroy();
+        app.quit();
       },
     },
   ]);

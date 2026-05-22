@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>연결 끊김 · 타코 관리자</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #1a1a1a;
+      color: #fff;
+      font-family: -apple-system, "Segoe UI", "Malgun Gothic", sans-serif;
+      text-align: center;
+    }
+    .box { max-width: 420px; padding: 32px; }
+    .spinner {
+      width: 44px;
+      height: 44px;
+      margin: 0 auto 24px;
+      border: 4px solid rgba(255, 193, 7, 0.25);
+      border-top-color: #ffc107;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    h1 { font-size: 20px; font-weight: 700; margin-bottom: 12px; }
+    p { font-size: 14px; line-height: 1.6; color: #aaa; }
+    .hint { margin-top: 20px; font-size: 12px; color: #777; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <div class="spinner"></div>
+    <h1>인터넷 연결을 확인해주세요</h1>
+    <p>네트워크가 복구되면 자동으로 다시 연결됩니다.<br />매장 와이파이 또는 유선 연결 상태를 확인해주세요.</p>
+    <p class="hint">5초마다 자동으로 재연결을 시도하고 있습니다…</p>
+  </div>
+</body>
+</html>
