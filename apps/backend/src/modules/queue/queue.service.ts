@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { waitUntil } from '@vercel/functions';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import {
@@ -20,12 +21,17 @@ import {
 export class QueueService {
     private readonly logger = new Logger(QueueService.name);
     private readonly defaultQueueName: string;
+    private readonly processUrl?: string;
+    private readonly internalJobSecret?: string;
+    private processingWakeScheduled = false;
 
     constructor(
         private readonly prisma: PrismaService,
         private readonly config: ConfigService,
     ) {
         this.defaultQueueName = config.get<string>('BACKEND_QUEUE_NAME', 'backend_events');
+        this.processUrl = config.get<string>('BACKEND_QUEUE_PROCESS_URL');
+        this.internalJobSecret = config.get<string>('INTERNAL_JOB_SECRET');
     }
 
     async publish<TPayload extends QueueEventPayload>(
@@ -138,6 +144,9 @@ export class QueueService {
                 JSON.stringify(event),
                 delaySeconds,
             );
+            if (delaySeconds === 0) {
+                this.scheduleImmediateProcessing();
+            }
         } catch (error) {
             const err = error as Error;
             this.logger.warn(
@@ -184,5 +193,49 @@ export class QueueService {
         const channel = payload.channel || 'IN_APP';
 
         return `${recipientId}:${payload.notificationType}:${subjectId}:${channel}`;
+    }
+
+    private scheduleImmediateProcessing(): void {
+        if (!this.processUrl || !this.internalJobSecret || this.processingWakeScheduled) {
+            return;
+        }
+
+        this.processingWakeScheduled = true;
+        const wakeRequest = this.requestImmediateProcessing()
+            .catch((error: unknown) => {
+                const err = error as Error;
+                this.logger.warn(`Queue immediate processing wake-up failed: ${err.message}`);
+            })
+            .finally(() => {
+                this.processingWakeScheduled = false;
+            });
+
+        waitUntil(wakeRequest);
+    }
+
+    private async requestImmediateProcessing(): Promise<void> {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 10_000);
+
+        try {
+            const response = await fetch(this.processUrl!, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-internal-job-secret': this.internalJobSecret!,
+                },
+                body: JSON.stringify({
+                    visibilityTimeoutSeconds: 60,
+                    quantity: 3,
+                }),
+                signal: controller.signal,
+            });
+
+            if (!response.ok) {
+                throw new Error(`process endpoint returned ${response.status}`);
+            }
+        } finally {
+            clearTimeout(timeout);
+        }
     }
 }

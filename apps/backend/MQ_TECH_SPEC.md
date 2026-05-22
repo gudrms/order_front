@@ -127,6 +127,9 @@ MQ:
 - 최대 시도 횟수: POS/알림 job 기준 5회.
 - backoff: 10초, 30초, 60초, 180초, 300초.
 - 최대 시도 초과 시: job을 `FAILED`로 표시하고 메시지를 archive하며, 로그/관리자 화면에 실패를 노출한다.
+- publish 직후 `BACKEND_QUEUE_PROCESS_URL`이 설정된 Vercel 환경에서는 background wake-up으로 `/queue/process-once`를 먼저 호출한다.
+- GitHub Actions 5분 cron은 background wake-up 누락, queue function 실패, backlog 회수용 fail-safe로 계속 유지한다.
+- `QueueEventLog`의 최초 `PROCESSING` create가 성공한 worker만 새 이벤트를 dispatch한다. 최근 `PROCESSING` 중복 메시지는 archive하고, `FAILED` 또는 lease가 만료된 처리 기록만 재claim한다.
 
 ## 결제 보상 정책
 
@@ -249,4 +252,3 @@ Prisma/application table 후보:
 - Vercel-hosted NestJS로 polling consumer를 충분히 운영할 수 있는지, 별도 scheduled worker/cron 경로가 필요한지?
 - POS/알림 실패와 수동 재시도 control은 관리자 화면 어디에 노출할지?
 - 고객/관리자 알림 provider는 무엇을 사용할지?
-

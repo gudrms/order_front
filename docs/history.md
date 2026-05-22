@@ -164,6 +164,18 @@ Toss Payments 일반 결제 웹훅도 공식 문서와 현재 구현을 대조�
 
 ---
 
+## 14. Android 공개 테스트 안정화 (2026-05-22)
+
+Google Play 공개 테스트 설치본을 실기기에서 처음 확인하면서 Remote WebView 방식의 운영 경계를 다시 확인했다. AAB 자체는 실행되지만 앱이 로드한 운영 `delivery.tacomole.kr` JS가 Capacitor Push Notifications 등록을 즉시 호출했고, 테스트 번들에는 아직 Firebase Android 설정 파일 `google-services.json`이 없었다. Logcat의 `Default FirebaseApp is not initialized`와 `FATAL EXCEPTION: CapacitorPlugins`를 기준으로 원인을 특정했고, Firebase 준비 전에는 `NEXT_PUBLIC_CAPACITOR_PUSH_ENABLED=true`일 때만 네이티브 푸시 초기화를 수행하도록 웹 핫픽스를 적용했다.
+
+이 이슈는 Remote WebView 앱에서 네이티브 배포와 웹 배포를 따로 판단하면 안 된다는 점을 보여줬다. 앱 시작 크래시라도 원인이 운영 웹 JS일 수 있으므로, 공개 테스트 검증 절차에 AAB 버전뿐 아니라 delivery 웹 배포 반영 여부와 Logcat 크래시 필터를 함께 넣었다. Firebase Android 앱을 `com.tacomole.app`으로 등록하고 설정 파일을 번들에 포함하기 전까지 푸시는 명시적으로 꺼 둔다.
+
+카카오 로그인도 앱 경계에서 보강했다. 기존 OAuth redirect는 WebView의 웹 callback으로 돌아가 외부 브라우저에 남거나 앱 홈이 비로그인 상태로 보일 수 있었다. Android Manifest가 이미 처리하는 `taco` custom scheme을 callback으로 사용하고, Supabase Redirect URLs에 `taco://auth/callback`을 등록하는 흐름으로 정리했다. 딥링크가 `code` 또는 토큰 callback으로 돌아오는 경우 모두 세션을 복원하도록 했고, 운영 로그에는 토큰 원문 대신 callback 종류와 세션 복원 여부만 남기도록 `Auth`/`AuthCallback`/`DeepLink` 진단 로그를 추가했다.
+
+공개 테스트 중 스토어 등록정보와 설치본 표현 차이도 발견했다. Play 스토어는 `타코몰리`인데 런처 이름은 `타코 배달`이었고 아이콘도 등록정보 자산과 달랐다. Android 런처 리소스와 PWA/favicons를 Play 등록정보 기준으로 통일했으며, 다음 AAB 제출 때 versionCode를 올려 설치본 표현까지 맞추기로 했다.
+
+---
+
 ## 주요 기술 결정 요약
 
 | 결정 | 선택 | 이유 |
@@ -182,3 +194,5 @@ Toss Payments 일반 결제 웹훅도 공식 문서와 현재 구현을 대조�
 | Vercel Analytics | 프론트엔드 4개 앱 layout에 직접 추가 | Vercel 봇 브랜치(NestJS Swagger 주입 방식)는 방향 오류. 프론트엔드 앱에 올바르게 적용 |
 | 브랜드 메뉴 가격 | 선택값(`price Int?`) | 대표 카탈로그라 실제 가격은 매장별로 다름. 이름·이미지만으로 등록 가능해야 함 |
 | 브랜드 페이지 이미지 | `public/brand/` 고정 파일명 | 코드 수정 없이 파일 교체만으로 사진 갱신 — 대표 제공 사진 반영 용이 |
+| 배달앱 네이티브 푸시 활성화 | Firebase 준비 후 env opt-in | Remote WebView가 Firebase 없는 Android 번들에서 Push 등록을 호출하면 앱 시작 크래시가 날 수 있음 |
+| 배달앱 OAuth 복귀 | `taco://auth/callback` 앱 scheme | 외부 웹 callback에 남지 않고 앱으로 복귀해 WebView 세션을 복원해야 함 |

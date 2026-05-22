@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import OrderCTAButton from './OrderCTAButton';
 import ScrollAnimation from './ScrollAnimation';
@@ -9,7 +10,14 @@ export default function Hero() {
             <div className="absolute inset-0 z-0 opacity-40">
                 <div className="absolute inset-0 bg-gradient-to-t from-brand-black via-transparent to-transparent z-10" />
                 {/* Replace with actual taco image later */}
-                <div className="w-full h-full bg-[url('https://images.unsplash.com/photo-1565299585323-38d6b0865b47?q=80&w=2880&auto=format&fit=crop')] bg-cover bg-center" />
+                <Image
+                    src="https://images.unsplash.com/photo-1565299585323-38d6b0865b47?q=80&w=1920&auto=format&fit=crop"
+                    alt=""
+                    fill
+                    priority
+                    sizes="100vw"
+                    className="object-cover object-center"
+                />
             </div>
 
             <div className="container mx-auto px-4 relative z-20 text-center">

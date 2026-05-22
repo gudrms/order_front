@@ -121,6 +121,18 @@ pnpm --filter delivery-customer exec cap sync android
 # capacitor.config.ts appId와 android/app/build.gradle applicationId는 com.tacomole.app이어야 함
 ```
 
+릴리즈 전에 앱 런처 이름과 아이콘도 스토어 등록정보와 맞는지 확인합니다.
+
+- Android `res/values/strings.xml`의 앱 이름은 Play 등록정보 기준 `타코몰리`
+- Android `mipmap-*` 런처 아이콘은 `store-assets/google-play/icon-512x512.jpg` 기준
+- PWA `manifest.json`, favicon, Apple touch icon도 같은 브랜드 기준 유지
+
+Android 푸시는 Firebase 설정이 준비된 뒤에만 활성화합니다.
+
+- `android/app/google-services.json`이 없으면 `NEXT_PUBLIC_CAPACITOR_PUSH_ENABLED`는 unset 또는 `false`
+- Firebase 설정 없이 원격 WebView에서 `PushNotifications.register()`를 호출하면 Android 프로세스가 종료될 수 있음
+- Firebase Android 앱은 Play 패키지명 `com.tacomole.app` 기준으로 등록
+
 ### Step 4: Android Studio에서 AAB 생성
 
 ```bash
@@ -208,6 +220,37 @@ https://play.google.com/console
 # 스토어 링크 확인
 https://play.google.com/store/apps/details?id=com.tacomole.app
 ```
+
+### Step 7: 공개 테스트 실기기 검증
+
+Remote WebView 앱은 네이티브 AAB와 운영 웹 배포를 함께 봅니다. 앱 시작 직후 종료되면 먼저 `delivery.tacomole.kr`의 최신 웹 배포가 반영됐는지 확인하고 Android Studio Logcat에서 크래시를 확인합니다.
+
+Logcat 추천 필터:
+
+```text
+FATAL EXCEPTION
+AndroidRuntime
+Auth
+DeepLink
+```
+
+`View`, `VRI`, `setRequestedFrameRate` 로그는 WebView 화면 렌더 로그라 로그인 원인 확인에는 거의 도움이 되지 않습니다. 로그인 복귀 검증은 `[Auth]`, `[AuthCallback]`, `[DeepLink]` 로그로 callback 종류와 세션 복원 여부만 확인합니다. 토큰 원문은 로그에 남기지 않습니다.
+
+카카오 OAuth 앱 복귀 검증:
+
+1. Supabase `Authentication` → `URL Configuration` → `Redirect URLs`에 `taco://auth/callback`을 추가합니다.
+2. 앱에서 카카오 로그인을 시작할 때 redirect가 `taco://auth/callback`인지 `[Auth] start Kakao OAuth` 로그로 확인합니다.
+3. 인증 완료 후 외부 웹페이지에 남지 않고 앱이 다시 열리는지 확인합니다.
+4. `[DeepLink] OAuth code session restored` 또는 `[DeepLink] OAuth token session restored`와 `[Auth] state changed` 로그를 확인합니다.
+5. 홈 비로그인 CTA가 사라지고 마이페이지에서 사용자 정보가 보이는지 확인합니다.
+
+공개 테스트 최소 스모크:
+
+- Play 설치본 실행 후 시작 직후 종료되지 않음
+- 매장 목록과 메뉴 로드
+- 카카오 OAuth 앱 복귀와 로그인 세션 유지
+- App Links `adb shell pm get-app-links com.tacomole.app`
+- Firebase 설정 완료 후 FCM 토큰 발급과 잠금화면 푸시 수신
 
 ---
 
@@ -364,7 +407,7 @@ Patch (x.x.3): 버그 수정, 개선
 // capacitor.config.ts
 export default {
   appId: 'com.tacomole.app',
-  appName: '타코 배달',
+  appName: '타코몰리',
   version: '1.0.1',  // 여기만 수정
   // ...
 }

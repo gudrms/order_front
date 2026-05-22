@@ -103,12 +103,16 @@ export default function MenuDetailBottomSheet() {
                         <div className="space-y-6 pb-24">
                             {/* Image */}
                             <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-gray-100">
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img
-                                    src={menu.imageUrl || 'https://via.placeholder.com/300'}
-                                    alt={menu.name}
-                                    className="w-full h-full object-cover"
-                                />
+                                {menu.imageUrl && (
+                                    // eslint-disable-next-line @next/next/no-img-element
+                                    <img
+                                        src={menu.imageUrl}
+                                        alt={menu.name}
+                                        loading="lazy"
+                                        decoding="async"
+                                        className="w-full h-full object-cover"
+                                    />
+                                )}
                             </div>
 
                             {/* Info */}

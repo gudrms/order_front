@@ -8,7 +8,7 @@ const isLocalDevServer = serverUrl?.startsWith('http://') ?? false;
 
 const config: CapacitorConfig = {
   appId: 'com.tacomole.app',
-  appName: '타코 배달',
+  appName: '타코몰리',
   webDir: 'public',
 
   server: serverUrl

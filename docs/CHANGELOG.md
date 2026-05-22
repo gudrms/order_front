@@ -10,6 +10,8 @@
 ## [Unreleased]
 
 ### Added
+- 배달 Android 공개 테스트 운영 메모 추가: Firebase 푸시 활성화 조건, Logcat 필터, 카카오 OAuth 앱 복귀 검증 절차를 배포/인수인계 문서에 정리.
+- 배달앱 카카오 OAuth 앱 복귀 진단 로그 추가: `Auth`, `AuthCallback`, `DeepLink` 로그로 callback과 세션 복원 여부를 확인.
 - ADMIN 전용 관리자 계정 관리 기능 추가: `/admin/accounts` API와 admin `계정 관리` 화면에서 계정 생성, 비밀번호 초기화, 삭제, 매장 OWNER 연결을 처리.
 - 관리자 계정 관리 회귀 테스트 추가: `AdminAccountsService` 단위 테스트와 admin `accounts.spec.ts` E2E.
 - 배달 주문 가격 위변조 회귀 테스트 추가: 서버 DB 가격 재계산과 클라이언트 총액 불일치 거부를 고정.
@@ -25,8 +27,12 @@
 - 브랜드 메뉴 이미지 업로드: `POST /brand-menus/admin/menus/image`로 Supabase Storage `assets` 버킷(`brand-menu/{uuid}`)에 업로드. 매장 메뉴와 같은 `MenuImageUpload` 컴포넌트 재사용.
 - 브랜드 메뉴 admin 관리 보강: 인라인 수정 폼, 메뉴 정렬(`displayOrder`), 카테고리 숨김/노출 토글 및 정렬 편집.
 - 타코몰리 매장 7곳(김포·부천·부평·검단풍무·만수구월·루원시티·검단마전)을 `Store` 테이블에 등록. 카카오 REST API 지오코딩으로 좌표 설정.
+- brand-website 서체 적용: next/font/google로 한글 Noto Sans KR(본문)과 영문 Outfit(디스플레이)을 self-host(`display: swap`).
+- 배달앱 쿼리 전역 에러 토스트: `QueryCache.onError`로 쿼리 실패 시 Capacitor 토스트 안내.
 
 ### Changed
+- 배달앱 네이티브 카카오 OAuth callback을 웹 URL 대신 `taco://auth/callback` 앱 scheme 복귀 흐름으로 보강.
+- 배달앱 표시명과 Android/PWA 아이콘을 Play 스토어 등록정보 기준 `타코몰리` 브랜드로 통일.
 - 관리자 로그인은 마스터가 생성한 계정의 이메일/비밀번호 로그인만 지원하도록 단순화.
 - 관리자/백엔드/전체 흐름 테스트 시나리오를 마스터 직접 계정 관리 모델 기준으로 갱신.
 - Toss 일반 결제 웹훅 검증 방식 문서화: `PAYMENT_STATUS_CHANGED`/`CANCEL_STATUS_CHANGED`는 서명 헤더가 아니라 결제 조회 API 재호출로 검증하는 현재 구현을 유지.
@@ -37,9 +43,20 @@
 - 브랜드 사이트 `/brand` 페이지 Hero·Philosophy 섹션의 이모지 플레이스홀더를 실제 사진으로 교체.
 - admin 사이드바에서 동일 라우트(`/franchise-inquiries`)를 가리키던 중복 메뉴('창업 문의')를 제거.
 - e2e 빈 로그인 폼 테스트를 HTML5 네이티브 유효성 검증 기준으로 수정.
+- 배달앱 매장 클릭 진입 성능 개선: 홈 목록의 store를 상세 캐시에 시드하고 카테고리/메뉴를 prefetch해 전체화면 로딩 워터폴 제거.
+- 배달앱 TanStack Query `refetchOnWindowFocus`를 비활성화해 하이브리드 앱 복귀 시 focus storm을 완화.
+- 배달앱 장바구니 store 구독을 selector로 분리해 장바구니 변경 시 불필요한 리렌더를 축소.
+- 배달앱 메뉴 이미지에 `loading="lazy"`/`decoding="async"`를 적용하고 외부 placeholder 의존을 제거.
+- brand-website 매장 찾기 거리 정렬을 `setStores` 사이드이펙트에서 `sortedStores` useMemo 파생으로 전환.
+- brand-website Hero 배경을 CSS `bg-[url]` 2880px 원본에서 next/image `fill`+`priority`로 전환(2880→1920, webp/리사이즈 최적화).
 
 ### Removed
 - admin 셀프 회원가입, 이메일 인증 콜백(`/auth/callback`), `/setup` 가입 경로, 무인증 `POST /auth/register`, 매장 초대코드 재발급 UI/API 제거.
+- 배달앱 `StoreContext`의 미사용 배달비 헬퍼(`orderTotal`, 정적 `deliveryFee`, `calcDeliveryFee`) 제거. checkout은 `calculateOrderTotals`로 동적 계산.
+
+### Fixed
+- Firebase Android 설정이 없는 공개 테스트 설치본에서 원격 WebView가 네이티브 Push Notifications 등록을 호출해 시작 직후 종료되던 흐름을 opt-in 푸시 초기화로 차단.
+- 배달앱 웹뷰 상단 상태바 겹침: `viewport-fit=cover`와 `safe-area-inset` 패딩을 고정 헤더 전반에 적용해 Android 15 edge-to-edge/iOS 노치에서 핸드폰 상단 정보와 콘텐츠가 겹치던 문제 해소.
 
 ---
 

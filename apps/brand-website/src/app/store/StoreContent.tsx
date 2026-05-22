@@ -20,6 +20,9 @@ interface StoreDisplay {
     estimatedDeliveryMinutes: number | null;
     lat: number | null;
     lng: number | null;
+}
+
+interface StoreWithDistance extends StoreDisplay {
     distance: number;
 }
 
@@ -30,7 +33,7 @@ const KAKAO_MAP_KEY = process.env.NEXT_PUBLIC_KAKAO_MAP_KEY || '';
 // 서울 중심 기본 좌표
 const DEFAULT_CENTER = { lat: 37.5665, lng: 126.978 };
 
-function hasCoordinates(store: StoreDisplay): store is StoreDisplay & { lat: number; lng: number } {
+function hasCoordinates<T extends StoreDisplay>(store: T): store is T & { lat: number; lng: number } {
     return typeof store.lat === 'number' && typeof store.lng === 'number' && store.lat !== 0 && store.lng !== 0;
 }
 
@@ -89,7 +92,7 @@ function StoreCard({
     isSelected,
     onClick,
 }: {
-    store: StoreDisplay;
+    store: StoreWithDistance;
     isSelected: boolean;
     onClick: () => void;
 }) {
@@ -193,7 +196,7 @@ function KakaoMapView({
     fitBoundsKey,
     onMarkerClick,
 }: {
-    stores: StoreDisplay[];
+    stores: StoreWithDistance[];
     selectedId: string | null;
     mapCenter: { lat: number; lng: number };
     fitBoundsKey: string;
@@ -291,41 +294,21 @@ export default function StoreContent() {
             .then((r) => r.json())
             .then((json) => {
                 const list: StoreDisplay[] = Array.isArray(json) ? json : (json.data ?? []);
-                setStores(list.map((s) => ({ ...s, distance: 0 })));
+                setStores(list);
             })
             .catch(() => {})
             .finally(() => setIsLoading(false));
     }, []);
 
     useEffect(() => {
-        if (!geoLoaded || !coordinates || stores.length === 0 || geoError) return;
+        if (!geoLoaded || !coordinates || geoError) return;
         setUserLocation(coordinates);
         setMapCenter(coordinates);
-        setStores((prev) =>
-            [...prev]
-                .map((s) => ({
-                    ...s,
-                    distance: hasCoordinates(s)
-                        ? haversine(coordinates.lat, coordinates.lng, s.lat, s.lng)
-                        : Number.POSITIVE_INFINITY,
-                }))
-                .sort((a, b) => a.distance - b.distance),
-        );
-    }, [geoLoaded, coordinates, geoError, stores.length]);
+    }, [geoLoaded, coordinates, geoError]);
 
     const handleFindNearby = () => {
         if (!userLocation) return;
         setMapCenter(userLocation);
-        setStores((prev) =>
-            [...prev]
-                .map((s) => ({
-                    ...s,
-                    distance: hasCoordinates(s)
-                        ? haversine(userLocation.lat, userLocation.lng, s.lat, s.lng)
-                        : Number.POSITIVE_INFINITY,
-                }))
-                .sort((a, b) => a.distance - b.distance),
-        );
     };
 
     const handleResetMapBounds = () => {
@@ -348,15 +331,29 @@ export default function StoreContent() {
         }
     };
 
+    const sortedStores = useMemo<StoreWithDistance[]>(() => {
+        if (!userLocation) {
+            return stores.map((s) => ({ ...s, distance: 0 }));
+        }
+        return stores
+            .map((s) => ({
+                ...s,
+                distance: hasCoordinates(s)
+                    ? haversine(userLocation.lat, userLocation.lng, s.lat, s.lng)
+                    : Number.POSITIVE_INFINITY,
+            }))
+            .sort((a, b) => a.distance - b.distance);
+    }, [stores, userLocation]);
+
     const filteredStores = useMemo(
         () =>
-            stores.filter(
+            sortedStores.filter(
                 (s) =>
                     s.name.includes(searchQuery) ||
                     s.branchName.includes(searchQuery) ||
                     (s.address ?? '').includes(searchQuery),
             ),
-        [stores, searchQuery],
+        [sortedStores, searchQuery],
     );
     const filteredStoreKey = useMemo(
         () => filteredStores.map((store) => store.id).join(','),

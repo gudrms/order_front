@@ -64,6 +64,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     useEffect(() => {
         supabase.auth.getSession().then(({ data: { session } }) => {
+            console.info('[Auth] initial session', {
+                hasSession: !!session,
+                hasUser: !!session?.user,
+                provider: session?.user.app_metadata?.provider ?? null,
+            });
             setAuthCookie(!!session);
             setSession(session);
             setUser(session?.user ?? null);
@@ -75,7 +80,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         const {
             data: { subscription },
-        } = supabase.auth.onAuthStateChange((_event, session) => {
+        } = supabase.auth.onAuthStateChange((event, session) => {
+            console.info('[Auth] state changed', {
+                event,
+                hasSession: !!session,
+                hasUser: !!session?.user,
+                provider: session?.user.app_metadata?.provider ?? null,
+            });
             window.setTimeout(() => {
                 void syncSessionUser(session);
             }, 0);
@@ -89,6 +100,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }, []);
 
     const getRedirectUrl = () => {
+        if (isNative) {
+            return 'taco://auth/callback';
+        }
+
         if (typeof window !== 'undefined') {
             return `${window.location.origin}/auth/callback`;
         }
@@ -104,10 +119,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     const signInWithKakao = async () => {
+        const redirectTo = getRedirectUrl();
+        console.info('[Auth] start Kakao OAuth', {
+            isNative,
+            redirectTo,
+        });
+
         const { error } = await supabase.auth.signInWithOAuth({
             provider: 'kakao',
             options: {
-                redirectTo: getRedirectUrl(),
+                redirectTo,
             },
         });
 

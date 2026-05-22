@@ -7,6 +7,12 @@ const nextConfig: NextConfig = {
   // 정적 사이트로 빌드 가능 (선택)
   // output: 'export',
 
+  images: {
+    remotePatterns: [
+      { protocol: 'https', hostname: 'images.unsplash.com' },
+    ],
+  },
+
   transpilePackages: ['@order/shared'],
 
   experimental: {

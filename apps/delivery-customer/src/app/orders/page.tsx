@@ -45,7 +45,7 @@ export default function OrdersPage() {
 
     return (
         <main className="min-h-screen bg-gray-50">
-            <header className="sticky top-0 z-50 bg-white border-b border-gray-100">
+            <header className="sticky top-0 z-50 bg-white border-b border-gray-100 pt-safe">
                 <div className="flex items-center justify-between px-4 h-14">
                     <button
                         onClick={() => router.back()}

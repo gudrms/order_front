@@ -45,6 +45,7 @@ import { AdminAccountsModule } from './modules/admin-accounts/admin-accounts.mod
                 PORT: Joi.number().default(4000),
                 LOG_LEVEL: Joi.string().default('info'),
                 BACKEND_QUEUE_NAME: Joi.string().default('backend_events'),
+                BACKEND_QUEUE_PROCESS_URL: Joi.string().uri().optional(),
             }),
             validationOptions: { allowUnknown: true, abortEarly: false },
         }),

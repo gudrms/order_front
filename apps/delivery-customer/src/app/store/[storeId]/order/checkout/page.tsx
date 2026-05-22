@@ -32,7 +32,8 @@ export default function CheckoutPage() {
     const { storeId } = useParams<{ storeId: string }>();
     const { store } = useCurrentStore();
     const { user, loading: isAuthLoading } = useAuth();
-    const { items, totalPrice } = useCartStore();
+    const items = useCartStore((s) => s.items);
+    const totalPrice = useCartStore((s) => s.totalPrice);
     const { deliveryInfo, setAddress, setCustomerInfo, setDeliveryRequest } = useDeliveryStore();
     const { data: addresses = [] } = useAddresses(user?.id);
     const createOrderMutation = useCreateOrder();
@@ -202,7 +203,7 @@ export default function CheckoutPage() {
 
     return (
         <main className="min-h-screen bg-gray-50">
-            <header className="sticky top-0 z-50 bg-white border-b border-gray-100">
+            <header className="sticky top-0 z-50 bg-white border-b border-gray-100 pt-safe">
                 <div className="flex items-center justify-between px-4 h-14">
                     <button onClick={() => router.back()} className="p-2 -ml-2 text-brand-black" aria-label="이전 페이지">
                         <ChevronLeft size={24} />

@@ -14,7 +14,7 @@ function SuccessContent() {
     const router = useRouter();
     const { storeId } = useParams<{ storeId: string }>();
     const searchParams = useSearchParams();
-    const { clearCart } = useCartStore();
+    const clearCart = useCartStore((s) => s.clearCart);
     const { store } = useCurrentStore();
     const { deliveryInfo } = useDeliveryStore();
     const confirmTossPaymentMutation = useConfirmTossPayment();

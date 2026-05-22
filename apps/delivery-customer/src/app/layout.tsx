@@ -6,13 +6,13 @@ import PWAInstaller from '@/components/PWAInstaller';
 import DeepLinkHandler from '@/components/DeepLinkHandler';
 
 export const metadata: Metadata = {
-  title: '타코 배달',
+  title: '타코몰리',
   description: '간편한 배달 주문 서비스',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: '타코 배달',
+    title: '타코몰리',
   },
   formatDetection: {
     telephone: false,
@@ -34,6 +34,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  viewportFit: 'cover',
 };
 
 export default function RootLayout({

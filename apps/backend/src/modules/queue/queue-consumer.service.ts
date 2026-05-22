@@ -18,6 +18,7 @@ import { NotificationEventHandler } from './notification-event.handler';
 export class QueueConsumerService {
     private readonly logger = new Logger(QueueConsumerService.name);
     private readonly maxAttempts = Number(process.env.BACKEND_QUEUE_MAX_ATTEMPTS || 5);
+    private readonly processingLeaseMs = Number(process.env.BACKEND_QUEUE_PROCESSING_LEASE_MS || 120_000);
     private readonly backoffSeconds = [10, 30, 60, 180, 300];
 
     constructor(
@@ -49,7 +50,7 @@ export class QueueConsumerService {
                 event = this.parseEvent(record);
                 const log = await this.startProcessing(queueName, record, event);
 
-                if (log.status === 'SUCCEEDED') {
+                if (!log.shouldDispatch) {
                     await this.queueService.archive(options.queueName, Number(record.msg_id));
                     continue;
                 }
@@ -117,27 +118,45 @@ export class QueueConsumerService {
         record: QueueMessageRecord,
         event: BackendQueueEvent<QueueEventPayload>,
     ) {
+        try {
+            const created = await this.prisma.queueEventLog.create({
+                data: {
+                    queueName,
+                    messageId: BigInt(record.msg_id),
+                    eventId: event.eventId,
+                    eventType: event.eventType,
+                    idempotencyKey: event.idempotencyKey,
+                    status: 'PROCESSING',
+                    attemptCount: 1,
+                    payload: this.toJsonPayload(event.payload),
+                },
+            });
+
+            return { ...created, shouldDispatch: true };
+        } catch (error) {
+            if (!this.isUniqueClaimConflict(error)) {
+                throw error;
+            }
+        }
+
         const existing = await this.prisma.queueEventLog.findUnique({
             where: { idempotencyKey: event.idempotencyKey },
         });
 
-        if (existing?.status === 'SUCCEEDED') {
-            return existing;
+        if (!existing || existing.status === 'SUCCEEDED') {
+            return { ...existing, shouldDispatch: false };
         }
 
-        return this.prisma.queueEventLog.upsert({
+        if (existing.status === 'PROCESSING' && !this.isProcessingLeaseExpired(existing.updatedAt)) {
+            this.logger.warn(
+                `Queue event already processing, skipping duplicate: ${event.eventType} (${event.idempotencyKey})`,
+            );
+            return { ...existing, shouldDispatch: false };
+        }
+
+        const reclaimed = await this.prisma.queueEventLog.update({
             where: { idempotencyKey: event.idempotencyKey },
-            create: {
-                queueName,
-                messageId: BigInt(record.msg_id),
-                eventId: event.eventId,
-                eventType: event.eventType,
-                idempotencyKey: event.idempotencyKey,
-                status: 'PROCESSING',
-                attemptCount: 1,
-                payload: this.toJsonPayload(event.payload),
-            },
-            update: {
+            data: {
                 queueName,
                 messageId: BigInt(record.msg_id),
                 eventId: event.eventId,
@@ -148,6 +167,8 @@ export class QueueConsumerService {
                 lastError: null,
             },
         });
+
+        return { ...reclaimed, shouldDispatch: true };
     }
 
     private async markSucceeded(idempotencyKey: string) {
@@ -244,5 +265,22 @@ export class QueueConsumerService {
 
     private getBackoffSeconds(attemptCount: number): number {
         return this.backoffSeconds[Math.min(attemptCount - 1, this.backoffSeconds.length - 1)];
+    }
+
+    private isProcessingLeaseExpired(updatedAt: Date | undefined): boolean {
+        if (!updatedAt) {
+            return false;
+        }
+
+        return Date.now() - updatedAt.getTime() >= this.processingLeaseMs;
+    }
+
+    private isUniqueClaimConflict(error: unknown): boolean {
+        return error instanceof Prisma.PrismaClientKnownRequestError
+            ? error.code === 'P2002'
+            : typeof error === 'object'
+                && error !== null
+                && 'code' in error
+                && error.code === 'P2002';
     }
 }

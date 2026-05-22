@@ -6,25 +6,13 @@ import type { Store } from '@order/shared';
 interface StoreContextValue {
     store: Store;
     storeId: string;
-    deliveryFee: number;
-    orderTotal: (itemsTotal: number) => number;
 }
 
 const StoreContext = createContext<StoreContextValue | null>(null);
 
-function calcDeliveryFee(store: Store, itemsTotal: number): number {
-    if (store.freeDeliveryThreshold && itemsTotal >= store.freeDeliveryThreshold) return 0;
-    return store.deliveryFee || 0;
-}
-
 export function StoreProvider({ store, children }: { store: Store; children: React.ReactNode }) {
     return (
-        <StoreContext.Provider value={{
-            store,
-            storeId: store.id,
-            deliveryFee: calcDeliveryFee(store, 0),
-            orderTotal: (itemsTotal) => itemsTotal + calcDeliveryFee(store, itemsTotal),
-        }}>
+        <StoreContext.Provider value={{ store, storeId: store.id }}>
             {children}
         </StoreContext.Provider>
     );

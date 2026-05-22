@@ -120,7 +120,7 @@ function OrderDetailContent() {
     if (isAuthLoading || isLoading) {
         return (
             <main className="min-h-screen bg-gray-50 pb-20">
-                <header className="sticky top-0 z-50 bg-white border-b border-gray-100">
+                <header className="sticky top-0 z-50 bg-white border-b border-gray-100 pt-safe">
                     <div className="flex items-center justify-between px-4 h-14">
                         <ChevronLeft size={24} className="text-gray-300" />
                         <div className="w-20 h-5 rounded bg-gray-200 animate-pulse" />
@@ -178,7 +178,7 @@ function OrderDetailContent() {
 
     return (
         <main className="min-h-screen bg-gray-50 pb-20">
-            <header className="sticky top-0 z-50 bg-white border-b border-gray-100">
+            <header className="sticky top-0 z-50 bg-white border-b border-gray-100 pt-safe">
                 <div className="flex items-center justify-between px-4 h-14">
                     <button
                         onClick={() => router.back()}

@@ -14,7 +14,8 @@ import { useCartStore } from '@order/order-core';
 export default function MenuPage() {
     const router = useRouter();
     const { store } = useCurrentStore();
-    const { totalQuantity, totalPrice } = useCartStore();
+    const totalQuantity = useCartStore((s) => s.totalQuantity);
+    const totalPrice = useCartStore((s) => s.totalPrice);
     const [isCartOpen, setIsCartOpen] = useState(false);
 
     const handleProceedToOrder = () => {
@@ -23,7 +24,7 @@ export default function MenuPage() {
 
     return (
         <main className="min-h-screen bg-white">
-            <header className="sticky top-0 z-50 bg-white border-b border-gray-100">
+            <header className="sticky top-0 z-50 bg-white border-b border-gray-100 pt-safe">
                 <div className="flex items-center justify-between px-4 h-14">
                     <Link href="/" className="p-2 -ml-2 text-brand-black">
                         <ChevronLeft size={24} />

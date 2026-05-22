@@ -1,6 +1,6 @@
 # Taco Mono 작업 현황
 
-마지막 업데이트: 2026-05-18 (10차)
+마지막 업데이트: 2026-05-22 (11차)
 
 ---
 
@@ -198,8 +198,12 @@
 - [x] Android 예전 패키지 소스 정리 (2026-05-18): `apps/delivery-customer/android/app/src/main/java/com/taco/delivery/MainActivity.java` 제거. 실제 패키지는 `com.tacomole.app`만 유지.
 - [x] Play App Signing SHA-256 확정 및 `assetlinks.json` 교체 (2026-05-16): Play Console 앱 서명 키 SHA-256 `6D:AC:8F:5E:5D:A7:AF:F6:80:01:16:6D:78:17:B6:29:62:F2:DC:82:5F:DC:3D:7C:B7:B3:4B:61:B9:04:F2:80`를 `apps/delivery-customer/public/.well-known/assetlinks.json`에 반영. 업로드 키 SHA-256이 아니라 앱 서명 키 기준.
 - [x] `https://delivery.tacomole.kr/.well-known/assetlinks.json` 운영 배포 및 확인 (2026-05-16): 파일 정상 서빙 확인. `com.tacomole.app` + Play App Signing SHA-256 `6D:AC:...F2:80` 일치.
+- [x] 공개 테스트 설치본 시작 직후 크래시 원인 확인 (2026-05-22): `android/app/google-services.json` 없는 AAB에서 원격 WebView가 `PushNotifications.register()`를 호출해 `Default FirebaseApp is not initialized`로 종료. `NEXT_PUBLIC_CAPACITOR_PUSH_ENABLED=true` opt-in 전까지 네이티브 푸시 초기화를 막는 delivery 웹 핫픽스 반영.
+- [ ] Supabase Redirect URLs에 앱 OAuth 복귀 URL `taco://auth/callback` 추가 후 카카오 로그인 앱 복귀 검증
+- [ ] 앱 표시명/아이콘 통일 AAB 재업로드: Play 스토어 등록정보 기준 `타코몰리`와 `store-assets/google-play/icon-512x512.jpg`를 Android 런처 리소스에 반영한 versionCode 3 번들 제출
 - [ ] `adb shell pm get-app-links com.tacomole.app` App Links 검증
 - [ ] Google 승인 완료 후 관리형 게시에서 공개 테스트 버전 게시
+- [ ] Firebase Android `com.tacomole.app` 설정과 `google-services.json` 추가 후 `NEXT_PUBLIC_CAPACITOR_PUSH_ENABLED=true` 활성화
 - [ ] USB 실기기 테스트: FCM 토큰 발급 확인, 잠금화면 푸시 수신 확인
 - [ ] Vercel 원격 WebView 핫 업데이트 파이프라인 검증
 
@@ -250,6 +254,12 @@
 - [ ] **모바일 네비게이션 사용성 개선**: 모바일 메뉴바 오픈 시 body 배경 스크롤 차단 (`overflow: hidden` 적용)
 - [ ] **주문 CTA 환경변수 Fallback 대비**: `StoreOrderSection`/`StoreContent`는 운영 URL fallback을 사용하지만 `OrderCTAButton.tsx`, `Navbar.tsx`는 `NEXT_PUBLIC_DELIVERY_URL` 누락 시 `http://localhost:3001`로 연결된다. 운영 fallback 또는 명시적 환경변수 검증 필요.
 - [x] **Honeypot(스팸 방지) 필드 서버단 검증 확인** (2026-05-18): `FranchiseContent.tsx`의 `<input name="website" />` 값을 서버 액션 `submitFranchiseInquiry`에서 읽고, 값이 있으면 저장/API 호출 없이 성공 응답만 반환해 봇 제출을 흡수한다.
+- [x] **StoreContent 매장 거리 정렬 useMemo 파생 전환** (2026-05-22): geolocation 좌표 획득·"내 주변" 클릭 시 `setStores`로 목록을 distance 포함해 통째로 변형·정렬하던 사이드이펙트 제거. `stores` 원본 유지 + `userLocation` state만 두고 거리 계산·정렬을 `sortedStores` useMemo로 파생. `hasCoordinates` 타입가드를 제네릭화해 파생 타입에서도 좁혀지도록 보강. `pnpm --filter brand-website build` 통과.
+- [x] **Hero LCP next/image priority 전환** (2026-05-22): 풀스크린 Hero 배경을 CSS `bg-[url]` 2880px 원본에서 next/image `fill`+`priority`로 교체(2880→1920), `images.remotePatterns`에 unsplash 등록. preload + webp/리사이즈 최적화로 LCP 개선.
+- [x] **next/font 서체 적용** (2026-05-22): 기본 Arial 대신 next/font/google로 한글 Noto Sans KR(본문) + Outfit(영문 디스플레이)을 self-host, `display:swap`으로 FOUT 완화. Tailwind `--font-sans`/`--font-display` 변수 노출.
+- [ ] **홈 Hero 실제 브랜드 사진 교체**: 현재 Unsplash 임시 이미지(코드 주석 `Replace with actual taco image later`). 실 브랜드 사진 에셋 확보 후 교체.
+- [ ] **영문 헤딩에 Outfit 적용 (선택)**: `--font-display` 변수는 준비됨. "FIND A STORE" 등 영문 디스플레이 텍스트에 `font-display` 클래스 적용 여부는 디자인 판단.
+- [ ] **홈페이지 Suspense 스트리밍 (보류)**: 자식 컴포넌트가 클라이언트+react-query 페칭이면 정적 뼈대는 이미 비블로킹일 수 있음. 실제 블로킹을 측정한 뒤 서버 컴포넌트 async + Suspense 전환을 검토.
 
 ---
 
@@ -265,7 +275,9 @@
 ## ⚙️ Backend (백엔드 서비스)
 
 - [ ] **대량 트랜잭션 청크(Batch) 분할**: `payments.service.ts`의 `expirePendingTossPayments`에서 수많은 결제를 한 번에 처리할 때 발생하는 Prisma 타임아웃 방지를 위해 `lodash.chunk` 등을 활용한 배치 분할 처리 적용
-- [ ] **Vercel Serverless DB 커넥션 풀러 점검**: 람다 인스턴스 복제 시 Supabase Max Connections 초과 방지를 위해 `.env`의 `DATABASE_URL`에 PgBouncer 커넥션 풀링 포트(6543) 및 `?pgbouncer=true` 파라미터가 적용되어 있는지 점검
+- [ ] **Vercel Serverless DB 커넥션 풀러/limit 재검토**: 람다 인스턴스 복제 시 Supabase Max Connections 초과 방지를 위해 운영 `DATABASE_URL`이 서버리스용 Supabase pooler URL + `pgbouncer=true`를 쓰는지 확인하고 `connection_limit`을 낮은 값부터 계측하며 조정. `.env.example`은 pooler + `connection_limit=1` 시작 예시로 갱신. `3`/`5` 고정 승인은 보류하며 Prisma error DB transport가 별도 `PrismaClient`를 만드는 연결 영향도 함께 점검.
+- [x] **큐 소비 실시간 wake-up 코드 도입** (2026-05-22): publish 직후 `BACKEND_QUEUE_PROCESS_URL`이 설정된 Vercel 환경에서 `@vercel/functions` `waitUntil()`로 내부 `/queue/process-once`를 깨움. 결제 후 `order.paid`를 cron이 소비해야 `pos.send_order`/`notification.send` 2차 이벤트가 발행되던 지연을 줄이고, GitHub Actions 5분 cron은 fail-safe로 유지. 운영 env URL/secret 설정과 실결제 지연 측정은 별도 검증.
+- [x] **큐 멱등성 claim 보강** (2026-05-22): `QueueEventLog` 최초 `PROCESSING` create 성공 워커만 dispatch하고 최근 `PROCESSING` duplicate는 archive하도록 변경. `FAILED` 또는 lease 만료 처리 기록만 재claim하며 동시 duplicate 테스트 추가. 단순 `P2002` bypass로 끝내지 않고 외부 POS/알림 대상 상태 검증은 기존 핸들러 방어와 함께 유지.
 - [x] **Toss 일반 결제 웹훅 검증 방식 확인** (2026-05-18): 공식 문서 기준 `PAYMENT_STATUS_CHANGED`/`CANCEL_STATUS_CHANGED` 일반 결제 웹훅에는 `tosspayments-webhook-signature`가 포함되지 않는다. 현재 구현처럼 웹훅 body의 `orderId` 또는 `paymentKey`로 Toss 결제 조회 API를 재호출해 상태를 검증하는 방식이 맞다. 서명 검증은 `payout.changed`/`seller.changed` 웹훅 도입 시 별도 적용.
 - [x] **주문 생성 시 가격 위변조 검증 확인 및 테스트 보강** (2026-05-18): `prepareOrderItems`가 DB `Menu.price`/`MenuOption.price`로 재계산하고, 배달 주문은 `dto.totalAmount`/`payment.amount`가 서버 계산 금액과 다르면 거부한다. `delivery-order.service.spec.ts`에 총액 위변조 거부 및 클라이언트 item price 무시 테스트 추가.
 
@@ -275,6 +287,17 @@
 
 - [ ] **결제 이탈(Drop-off) 주문 클라이언트 렌더링 시 자동 정리**: success/fail 페이지와 checkout 요청 실패 경로에서는 `PENDING_TOSS_ORDER_ID_KEY`를 제거하지만, 브라우저 종료/뒤로가기 후 앱 재진입(`layout.tsx` 또는 `page.tsx`) 시 남은 pending 주문을 백엔드에 취소 요청하는 로직은 아직 없음.
 - [ ] **Capacitor 빌드 점검**: 모바일 네이티브 환경(iOS/Android)에서 Toss 결제 위젯이 `iframe` 기반이므로 WebView 결제 리다이렉션이 정상적으로 `app scheme`으로 돌아오는지 E2E 테스트 필수
+- [x] **매장 클릭 진입 속도 개선 (렌더 워터폴 제거)** (2026-05-22): 홈에서 매장 클릭 시 `/store/[storeId]/layout.tsx`가 `getStore`를 직렬로 다시 호출하며 "매장 정보를 불러오는 중..." 전체화면으로 차단 → 매장 응답 후에야 메뉴/카테고리 fetch 시작하던 워터폴 제거. 홈(`page.tsx`)의 매장 카드 클릭 핸들러 `handleSelectStore`에서 ① 목록으로 받은 store를 `queryClient.setQueryData(['store', id])`로 시드(layout의 `isLoading` 분기 스킵 → 전체화면 로딩 제거), ② 카테고리/메뉴(`['categories', id]`·`['menus', id, undefined]`)를 `prefetchQuery`로 라우팅과 병렬 요청, ③ layout `useQuery`에 `staleTime: 5분` 추가(재방문 즉시). `pnpm --filter delivery-customer type-check` 통과.
+- [x] **웹뷰 상태바 영역 겹침 (safe-area 미적용)** (2026-05-22): 루트 `layout.tsx` viewport에 `viewportFit: 'cover'` 추가(iOS WebView `env(safe-area-inset-*)` 활성화). `globals.css`에 `.pt-safe`/`.pb-safe` 유틸 추가 후, 상단 고정 헤더 전체에 `pt-safe` 적용 — HomeHeader, 매장 메뉴 헤더, 체크아웃, 주문내역/상세(orders·order-detail·OrderDetailClient), 마이페이지(메인·쿠폰·주소·주소추가·즐겨찾기), PWAInstaller. Android 15(targetSdk 35) edge-to-edge 강제 + iOS 노치 양쪽 대응. `type-check` 통과.
+- [x] **TanStack Query 윈도우 포커스 refetch 비활성화** (2026-05-22): 하이브리드 앱 백그라운드→복귀 시 stale 쿼리가 한꺼번에 refetch되는 focus storm으로 Supabase 부하가 튀던 문제 완화. `providers.tsx` QueryClient 기본 옵션에 `refetchOnWindowFocus: false` 추가. 신선도는 staleTime·Realtime·명시적 invalidate로 보장.
+- [x] **장바구니 store 구독 selector 분리** (2026-05-22): `useCartStore()`를 selector 없이 호출해 장바구니 변경 시 메뉴 페이지 등이 통째로 리렌더되던 병목 완화. 각 호출처(menu·checkout·success·CartBottomSheet)가 필요한 slice만 구독하도록 selector 콜백 적용. 결제 완료 페이지는 `clearCart` action만 구독해 cart 변경에 리렌더되지 않음. (효과 한계: 헤더 배지·하단 바가 같은 컴포넌트라 cart 변경 시 부모 리렌더는 잔존 — 더 줄이려면 cart 의존 UI를 별도 컴포넌트로 분리 필요.)
+- [x] **StoreContext 미사용 배달비 헬퍼 제거** (2026-05-22): `orderTotal`·정적 `deliveryFee`·`calcDeliveryFee`는 어떤 컴포넌트도 구독하지 않는 dead code였고 checkout은 `calculateOrderTotals`로 동적 계산하므로 제거(혼란 소지 제거). "배달비 정적 바인딩 버그"는 실재하지 않았음.
+- [x] **메뉴 이미지 lazy loading + placeholder 정리** (2026-05-22): MenuList·MenuDetailBottomSheet의 raw `<img>`에 `loading="lazy"`/`decoding="async"` 추가, 외부 `via.placeholder.com` 의존 제거(imageUrl 없으면 컨테이너 회색 배경). CLS는 기존 고정 컨테이너(`w-28 h-28`·`aspect-video`)로 이미 방지됨.
+- [x] **쿼리 전역 에러 토스트** (2026-05-22): `providers.tsx` QueryClient `queryCache.onError`로 쿼리 실패(네트워크 단절·서버 점검) 시 Capacitor 토스트 안내(화이트스크린 대신 빈 상태 + 알림). `showToast`는 네이티브만 동작 — 웹 토스트 UI는 미구현.
+- [ ] **쿼리 에러 throwOnError + error boundary 보강 (추후)**: 전역 토스트는 적용됐으나 화면 레벨 에러 UI(재시도 버튼 등)는 라우트별 `error.tsx` + `throwOnError`로 보강 가능. 둘은 반드시 세트로 적용.
+- [ ] **웹 토스트 UI 컴포넌트 (추후)**: `lib/capacitor/toast.ts`의 `showToast`가 웹(브라우저)에서는 무시됨. 데스크톱/PWA 웹용 토스트 컴포넌트 도입 시 전역 에러 안내도 웹에서 노출.
+- [ ] **미들웨어 → 클라이언트 AuthGuard 전환 (보류)**: `middleware.ts`는 `_auth` 쿠키 기반인데 AuthContext가 클라이언트 마운트 후 쿠키를 심어, Remote WebView 첫 진입 시 쿠키 싱크 전에 엣지 미들웨어가 먼저 돌아 `/login`으로 튕기고 깜빡이는 고질 문제. 보호 라우트(/orders·/mypage·order/success|fail)를 클라 `<AuthGuard>`(useAuth().loading 게이트)로 감싸는 방향. 인증 동작 변경이라 실기기 검증 필요해 보류.
+- [ ] **Next Image 최적화 활성화 (unoptimized 해제) (추후)**: 현재 `next.config.ts`가 `images.unoptimized: true`라 Next Image의 리사이즈/webp/srcset이 비활성 → 데이터 절약 효과 없음. 해제 시 Supabase Storage 원본 자동 최적화로 데이터 절감 가능하나, `images.remotePatterns`(Supabase·placeholder 도메인) 등록 + Capacitor Remote WebView에서 `/_next/image` 엔드포인트 동작 검증 필요(잘못 켜면 메뉴 이미지 전부 깨질 위험).
 
 ## 🍽️ Table Order (테이블 오더)
 
@@ -294,6 +317,7 @@
 - [ ] Toss 결제 실패/취소: fail 페이지 안내와 재시도 UX 확인
 - [ ] 관리자 전액 취소/환불 후 배달앱 주문 상태 갱신 확인
 - [ ] 결제 후 POS 전송 큐 처리 + 알림 발송 중복 없는지 확인
+- [ ] backend Vercel `BACKEND_QUEUE_PROCESS_URL` 설정 후 결제 → `order.paid` → POS/알림 큐 wake-up 지연 측정
 - [ ] GitHub Actions cron `POST /queue/process-once` 실제 실행 로그 확인
 - [ ] Queue backlog/failed event가 관리자 `/operations`에서 조회·재시도되는지 운영 데이터로 확인
 - [ ] Vercel Production/Preview 환경변수 분리 상태 확인 (`REDIS_URL`, Firebase, Toss, Sentry)

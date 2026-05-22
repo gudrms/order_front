@@ -63,7 +63,7 @@ export default function MyPage() {
 
     return (
         <main className="min-h-screen bg-gray-50 pb-24">
-            <header className="bg-white px-4 h-14 flex items-center justify-between border-b border-gray-100 sticky top-0 z-50">
+            <header className="bg-white px-4 h-14 flex items-center justify-between border-b border-gray-100 sticky top-0 z-50 pt-safe">
                 <button
                     onClick={() => router.push('/')}
                     className="p-2 -ml-2 text-brand-black"

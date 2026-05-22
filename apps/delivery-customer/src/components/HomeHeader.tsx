@@ -48,7 +48,7 @@ export default function HomeHeader() {
     }, [next]);
 
     return (
-        <header className="bg-white">
+        <header className="bg-white pt-safe">
             {/* 주소 바 */}
             <button
                 type="button"

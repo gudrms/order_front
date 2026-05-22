@@ -24,6 +24,8 @@ Vercel Dashboard → Team Settings → Environment Variables → Import .env
 
 로컬에서는 `pnpm sync:env`로 각 앱의 `.env.local`을 생성한다 ([로컬 세팅 참고](setup.md)).
 
+Backend 운영 `DATABASE_URL`은 Supabase 서버리스용 pooler URL을 사용하고 Prisma가 과도한 per-instance pool을 열지 않도록 `pgbouncer=true`와 낮은 `connection_limit`부터 적용한다. `connection_limit` 값은 DB connection error와 query timeout을 보고 조정한다.
+
 ---
 
 ## 배포 흐름
@@ -78,6 +80,16 @@ open https://api.tacomole.kr/api/docs
 
 ---
 
+## 배달 Android 앱 배포
+
+`order-delivery` 웹 배포와 Play Console AAB 배포는 함께 확인한다. 배달 Android 앱은 운영 `delivery.tacomole.kr`을 원격 WebView로 로드하므로, 네이티브 번들이 같아도 운영 웹 JS 변경으로 시작 크래시나 OAuth 복귀 동작이 달라질 수 있다.
+
+- AAB 생성, Play 테스트 트랙, 카카오 OAuth 앱 복귀, Firebase 푸시 활성화 조건은 `apps/delivery-customer/DEPLOYMENT.md`를 따른다.
+- 앱 표시명과 런처 아이콘은 Play 스토어 등록정보 기준 `타코몰리`로 맞춘 뒤 versionCode를 올려 제출한다.
+- 운영 확인용 로그 필터와 Remote WebView 핫픽스 판단 기준은 `docs/operator-handoff.md`의 Android 앱 운영 메모를 본다.
+
+---
+
 ## GitHub Actions Cron 확인
 
 콜드스타트 완화와 백그라운드 작업 처리는 `.github/workflows/backend-cron.yml`에서 5분마다 실행한다.
@@ -110,6 +122,8 @@ Reconcile Toss Payments
 ```
 
 `curl --fail-with-body`를 사용하므로 4xx/5xx 응답은 workflow 실패로 표시된다.
+
+큐는 publish 직후 Vercel background wake-up도 사용한다. backend Vercel 환경변수 `BACKEND_QUEUE_PROCESS_URL`을 `https://api.tacomole.kr/api/v1/queue/process-once`로 설정하면 지연 없는 처리를 먼저 시도하고, 위 GitHub Actions cron은 wake-up 누락이나 실패 메시지를 회수하는 fail-safe로 유지된다. `INTERNAL_JOB_SECRET`은 두 경로에서 같은 값을 사용한다.
 
 ---
 

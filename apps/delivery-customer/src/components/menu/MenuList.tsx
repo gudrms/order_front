@@ -47,12 +47,16 @@ export default function MenuList() {
                     onClick={() => !item.soldOut && handleMenuClick(item.id)}
                 >
                     <div className="relative w-28 h-28 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                            src={item.imageUrl || 'https://via.placeholder.com/150'}
-                            alt={item.name}
-                            className="w-full h-full object-cover"
-                        />
+                        {item.imageUrl && (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                                src={item.imageUrl}
+                                alt={item.name}
+                                loading="lazy"
+                                decoding="async"
+                                className="w-full h-full object-cover"
+                            />
+                        )}
                         {item.soldOut && (
                             <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-white font-bold text-sm">
                                 품절
