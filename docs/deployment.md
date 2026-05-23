@@ -117,7 +117,9 @@ QStash Schedule:
 1. Upstash Console의 `QStash -> Schedules`로 이동한다.
 2. `https://api.tacomole.kr/api/v1/cron/batch` 스케줄이 Active인지 확인한다.
 3. `QStash -> Logs`에서 최근 실행 응답이 2xx인지 확인한다.
-4. 배포 직후에는 아래 수동 호출로 API가 운영 배포에 반영됐는지 확인한다.
+4. Vercel Runtime Logs에서 `CronBatch` 단계 로그와 500급 오류 여부를 확인한다.
+5. Sentry에서 프론트 사용자 오류와 백엔드 500급 이슈 여부를 확인한다.
+6. 배포 직후에는 아래 수동 호출로 API가 운영 배포에 반영됐는지 확인한다.
 
 ```bash
 curl -X POST https://api.tacomole.kr/api/v1/cron/batch \

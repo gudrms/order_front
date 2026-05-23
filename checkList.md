@@ -231,6 +231,7 @@
   - **연관**: `docs/adr/` "Vercel Serverless 선택 이유" ADR 작성 시 이 분석을 근거로 포함. cron 신뢰성 문제(Backend 섹션)도 같은 서버리스 구조에서 파생.
 - [x] **Vercel Web Analytics 도입** (2026-05-17): `admin`, `delivery-customer`, `brand-website`, `table-order` 4개 Next.js 앱 루트 layout에 `<Analytics />` 컴포넌트 추가. 백엔드가 아닌 프론트엔드 앱에 올바르게 적용. Speed Insights는 추후 검토.
 - [ ] **제품 퍼널 분석 도구 검토(PostHog 등)**: 주문 퍼널(QR 진입 → 장바구니 → 주문 완료), 배달 결제 이탈, 창업 문의 전환처럼 이벤트 기반 분석이 필요해질 때 PostHog 도입 여부 검토.
+- [x] **백엔드 Sentry 선별 전송 기준 정리** (2026-05-23): 프론트 사용자 오류는 Sentry 중심, 백엔드 요청/배치 상태는 Vercel Logs 중심으로 본다. 백엔드 전역 HTTP 필터는 500 이상 예외만 Sentry에 전송하고, 400/401/404는 운영 노이즈로 보지 않도록 Vercel Logs에만 남긴다.
 - [ ] **Sentry → Slack/Discord 에러율 알림**: 웹훅 연결.
 - [ ] **Queue 실패/백로그 운영 알림**: `QueueEventLog` 기준 FAILED 누적, retry 초과, 오래된 PROCESSING, POS sync 실패 급증 시 Slack/Discord 또는 Sentry alert로 통지.
 - [ ] **결제 운영 알림**: Toss 승인 후 로컬 DB 확정 실패, reconcile 실패, pending payment 만료 급증, 관리자 환불 실패를 별도 alert 조건으로 분리.
@@ -346,6 +347,8 @@
 - [ ] 결제 후 POS 전송 큐 처리 + 알림 발송 중복 없는지 확인
 - [ ] backend Vercel `BACKEND_QUEUE_PROCESS_URL` 설정 후 결제 → `order.paid` → POS/알림 큐 wake-up 지연 측정
 - [ ] QStash `POST /cron/batch` 스케줄 Active + Logs 2xx 확인
+- [ ] Vercel Runtime Logs에서 `CronBatch` 단계 로그와 백엔드 500급 오류 확인
+- [ ] Sentry에서 프론트 사용자 오류와 백엔드 500급 이슈 확인
 - [ ] Queue backlog/failed event가 관리자 `/operations`에서 조회·재시도되는지 운영 데이터로 확인
 - [ ] Vercel Production/Preview 환경변수 분리 상태 확인 (`REDIS_URL`, Firebase, Toss, Sentry)
 - [ ] Lighthouse 점수 90+ 목표 (LCP, CLS, FID 최적화)

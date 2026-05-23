@@ -7,6 +7,7 @@ import {
     Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import * as Sentry from '@sentry/nestjs';
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
@@ -34,11 +35,19 @@ export class HttpExceptionFilter implements ExceptionFilter {
             message: typeof message === 'string' ? message : (message as any).message || message,
         };
 
-        if (status === HttpStatus.INTERNAL_SERVER_ERROR) {
+        if (status >= HttpStatus.INTERNAL_SERVER_ERROR) {
             this.logger.error(
                 `${request.method} ${request.url}`,
                 exception instanceof Error ? exception.stack : String(exception),
             );
+            Sentry.captureException(exception, {
+                tags: {
+                    source: 'backend-http-filter',
+                    method: request.method,
+                    path: request.url,
+                    statusCode: String(status),
+                },
+            });
         } else {
             this.logger.warn(
                 `${request.method} ${request.url} - ${status} - ${JSON.stringify(message)}`,
