@@ -72,6 +72,13 @@ describe('CronController', () => {
         expect(mockPrismaService.$queryRaw).toHaveBeenCalled();
     });
 
+    it('should accept the internal job secret from the request body as a scheduler fallback', async () => {
+        const result = await controller.runCronBatch(undefined, undefined, 'super-secret-job-key-12345');
+
+        expect(result.success).toBe(true);
+        expect(mockPrismaService.$queryRaw).toHaveBeenCalled();
+    });
+
     it('should successfully execute the unified cron pipeline in sequence', async () => {
         const result = await controller.runCronBatch('super-secret-job-key-12345');
 

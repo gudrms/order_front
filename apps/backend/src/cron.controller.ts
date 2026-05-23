@@ -1,4 +1,4 @@
-import { Controller, Headers, Post, UnauthorizedException, Logger } from '@nestjs/common';
+import { Body, Controller, Headers, Post, UnauthorizedException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ApiHeader, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import * as Sentry from '@sentry/nestjs';
@@ -35,8 +35,9 @@ export class CronController {
     async runCronBatch(
         @Headers('x-internal-job-secret') secret: string | undefined,
         @Headers('upstash-forward-x-internal-job-secret') forwardedSecret?: string,
+        @Body('internalJobSecret') bodySecret?: string,
     ) {
-        this.assertInternalSecret(secret ?? forwardedSecret);
+        this.assertInternalSecret(secret ?? forwardedSecret ?? bodySecret);
         const startTime = Date.now();
         this.logger.log('[CronBatch] Starting unified cron batch pipeline...');
 
