@@ -1,6 +1,6 @@
 # Taco Mono 작업 현황
 
-마지막 업데이트: 2026-05-22 (11차)
+마지막 업데이트: 2026-05-23 (12차)
 
 ---
 
@@ -224,6 +224,11 @@
 - [ ] **Vercel Queues 재검토**: consumer를 Vercel 네이티브 queue function으로 분리할 때 재검토.
 - [ ] **Sentry Releases 연동**: 배포 시 `sentry-cli releases` GitHub Actions 자동 실행.
 - [ ] **Uptime 모니터링**: Better Uptime / UptimeRobot으로 주요 엔드포인트 감시.
+- [ ] **백엔드 cold start 근본 원인 — NestJS on Vercel 서버리스 (2026-05-23 분석)**: 매장 클릭 후 첫 메뉴/카테고리 로드가 ~5초 걸리는 체감 지연의 원인은 Supabase가 아니라 NestJS를 Vercel 서버리스 함수(`apps/backend/api/index.ts` → `src/main.ts` `bootstrap()`)에 올린 구조. 트래픽 공백 후 첫 요청 시 DI 컨테이너 + Prisma 연결 부팅(2~5초)이 매번 발생(`cachedApp` 캐시는 같은 warm 인스턴스에서만 유효). Supabase는 도쿄 리전 + 유료면 pause 없어 원인 아님. Vercel은 `min-instances` 노브가 없어 **유료(Pro/Fluid Compute)로도 cold start "보장 제거"는 불가**(완화만 됨).
+  - **트래픽 의존성**: 트래픽이 꾸준하면 인스턴스가 warm으로 유지돼 cold start가 드물어짐 → 현재 테스트 단계(트래픽 0)가 최악의 상태. 손님이 붙으면 자연 완화되므로 **출시 블로커는 아님**.
+  - **근본 해결**: 백엔드만 상시 기동 인스턴스로 이전(프론트 Next.js는 Vercel 유지, `NEXT_PUBLIC_API_URL`만 새 주소로 교체 + CORS 도메인 이미 허용됨). 후보 — GCP Cloud Run `asia-northeast1` + `min-instances=1`(DB 도쿄와 동일 리전이라 쿼리 지연도 최소, ~$5/월, Dockerfile + `gcloud run deploy`), Fly.io 도쿄(무료 할당, NestJS+Prisma는 256MB 빠듯), Oracle Cloud Always Free VM(영구 무료·VM 직접 관리), NCP(한국·VM 직접 관리, 단 DB 도쿄와 한일 왕복 지연). 모두 컨테이너/VM 이전이라 NestJS 코드 변경 최소.
+  - **DB 위치 고려**: 백엔드는 요청당 DB 쿼리 N회 → 백엔드를 DB(도쿄) 근처에 두는 게 쿼리 지연상 유리. NCP(한국)는 클라이언트엔 가깝지만 백엔드↔DB가 멀어져 쿼리 많은 엔드포인트는 오히려 손해.
+  - **연관**: `docs/adr/` "Vercel Serverless 선택 이유" ADR 작성 시 이 분석을 근거로 포함. cron 신뢰성 문제(Backend 섹션)도 같은 서버리스 구조에서 파생.
 - [x] **Vercel Web Analytics 도입** (2026-05-17): `admin`, `delivery-customer`, `brand-website`, `table-order` 4개 Next.js 앱 루트 layout에 `<Analytics />` 컴포넌트 추가. 백엔드가 아닌 프론트엔드 앱에 올바르게 적용. Speed Insights는 추후 검토.
 - [ ] **제품 퍼널 분석 도구 검토(PostHog 등)**: 주문 퍼널(QR 진입 → 장바구니 → 주문 완료), 배달 결제 이탈, 창업 문의 전환처럼 이벤트 기반 분석이 필요해질 때 PostHog 도입 여부 검토.
 - [ ] **Sentry → Slack/Discord 에러율 알림**: 웹훅 연결.
@@ -294,6 +299,7 @@
 - [x] **큐 멱등성 claim 보강** (2026-05-22): `QueueEventLog` 최초 `PROCESSING` create 성공 워커만 dispatch하고 최근 `PROCESSING` duplicate는 archive하도록 변경. `FAILED` 또는 lease 만료 처리 기록만 재claim하며 동시 duplicate 테스트 추가. 단순 `P2002` bypass로 끝내지 않고 외부 POS/알림 대상 상태 검증은 기존 핸들러 방어와 함께 유지.
 - [x] **Toss 일반 결제 웹훅 검증 방식 확인** (2026-05-18): 공식 문서 기준 `PAYMENT_STATUS_CHANGED`/`CANCEL_STATUS_CHANGED` 일반 결제 웹훅에는 `tosspayments-webhook-signature`가 포함되지 않는다. 현재 구현처럼 웹훅 body의 `orderId` 또는 `paymentKey`로 Toss 결제 조회 API를 재호출해 상태를 검증하는 방식이 맞다. 서명 검증은 `payout.changed`/`seller.changed` 웹훅 도입 시 별도 적용.
 - [x] **주문 생성 시 가격 위변조 검증 확인 및 테스트 보강** (2026-05-18): `prepareOrderItems`가 DB `Menu.price`/`MenuOption.price`로 재계산하고, 배달 주문은 `dto.totalAmount`/`payment.amount`가 서버 계산 금액과 다르면 거부한다. `delivery-order.service.spec.ts`에 총액 위변조 거부 및 클라이언트 item price 무시 테스트 추가.
+- [ ] **GitHub Actions cron 실행 신뢰성 — 스케줄 스로틀링 (2026-05-23 확인)**: `.github/workflows/backend-cron.yml`이 `*/5`(5분)로 설정돼 있으나 GitHub Actions 스케줄 워크플로우는 러너 고부하 시 지연·드롭되어 실제 실행 간격이 1~3시간까지 벌어진다(Actions 로그 확인: 05:51 → 07:06 → 08:18 → 10:21 → 14:00). 영향 ① cold start 워밍업 효과 사실상 없음(warm 윈도우 ~5~15분을 초과), ② **결제 만료/정합성 배치(`POST /payments/toss/expire-pending`·`/reconcile`)가 몇 시간씩 밀려 미결제 주문 정리·결제 정합성 보정이 지연**되는 운영 위험. 큐 처리는 publish 직후 `waitUntil` 실시간 wake-up이 1차로 커버하나 결제 정리 배치는 cron 단독 의존이라 사각지대. 신뢰성 있는 스케줄러(Vercel Cron Pro / cron-job.org / Upstash QStash 등)로 이전 또는 백엔드 상시 서버 이전 시 `@nestjs/schedule` 내장 cron으로 전환 검토.
 
 ---
 
@@ -307,12 +313,14 @@
   - **현재 안전망 / 우선순위**: 백엔드 `payments.service.expirePendingTossPayments` 만료 배치가 시간 경과분을 정리하므로 결제 정합성 버그는 아님(미결제 주문이 일시적으로 쌓이는 위생 문제). 출시 블로커 아님 — 우선순위 중.
 - [ ] **Capacitor 빌드 점검**: 모바일 네이티브 환경(iOS/Android)에서 Toss 결제 위젯이 `iframe` 기반이므로 WebView 결제 리다이렉션이 정상적으로 `app scheme`으로 돌아오는지 E2E 테스트 필수
 - [x] **매장 클릭 진입 속도 개선 (렌더 워터폴 제거)** (2026-05-22): 홈에서 매장 클릭 시 `/store/[storeId]/layout.tsx`가 `getStore`를 직렬로 다시 호출하며 "매장 정보를 불러오는 중..." 전체화면으로 차단 → 매장 응답 후에야 메뉴/카테고리 fetch 시작하던 워터폴 제거. 홈(`page.tsx`)의 매장 카드 클릭 핸들러 `handleSelectStore`에서 ① 목록으로 받은 store를 `queryClient.setQueryData(['store', id])`로 시드(layout의 `isLoading` 분기 스킵 → 전체화면 로딩 제거), ② 카테고리/메뉴(`['categories', id]`·`['menus', id, undefined]`)를 `prefetchQuery`로 라우팅과 병렬 요청, ③ layout `useQuery`에 `staleTime: 5분` 추가(재방문 즉시). `pnpm --filter delivery-customer type-check` 통과.
+- [ ] **메뉴/매장 조회 cold start 우회 (백엔드 이전 전 단기 완화)**: 매장 클릭 진입 워터폴은 제거했으나, 손님이 가장 많이 타는 공개 읽기(`getStores`/`getCategories`/`getMenus`)가 cold NestJS를 거쳐 첫 진입은 여전히 ~5초(근본 원인은 인프라 고도화 "백엔드 cold start" 항목 참조 — Supabase가 아니라 Vercel 서버리스 cold start). 백엔드 상시 서버 이전 전 단기 완화책: ① 공개 읽기 데이터를 프론트에서 Supabase 직접 조회(SDK + RLS public read 정책)해 NestJS 우회, 또는 ② 거의 안 바뀌는 메뉴 데이터를 Next.js ISR/Edge 캐싱으로 정적화, ③ NestJS bootstrap 경량화(무거운 모듈 lazy load, Prisma/Sentry 초기화 최적화)로 cold start 5초→1~2초. 신뢰성 있는 외부 워밍업(cron-job.org → `/health` fast-path 말고 실제 bootstrap 타는 엔드포인트, 2~3분 간격)은 멀티 인스턴스라 부분 효과에 그침. 무거운 NestJS는 결제/주문/POS에만 남기는 게 방향.
 - [x] **웹뷰 상태바 영역 겹침 (safe-area 미적용)** (2026-05-22): 루트 `layout.tsx` viewport에 `viewportFit: 'cover'` 추가(iOS WebView `env(safe-area-inset-*)` 활성화). `globals.css`에 `.pt-safe`/`.pb-safe` 유틸 추가 후, 상단 고정 헤더 전체에 `pt-safe` 적용 — HomeHeader, 매장 메뉴 헤더, 체크아웃, 주문내역/상세(orders·order-detail·OrderDetailClient), 마이페이지(메인·쿠폰·주소·주소추가·즐겨찾기), PWAInstaller. Android 15(targetSdk 35) edge-to-edge 강제 + iOS 노치 양쪽 대응. `type-check` 통과.
 - [x] **TanStack Query 윈도우 포커스 refetch 비활성화** (2026-05-22): 하이브리드 앱 백그라운드→복귀 시 stale 쿼리가 한꺼번에 refetch되는 focus storm으로 Supabase 부하가 튀던 문제 완화. `providers.tsx` QueryClient 기본 옵션에 `refetchOnWindowFocus: false` 추가. 신선도는 staleTime·Realtime·명시적 invalidate로 보장.
 - [x] **장바구니 store 구독 selector 분리** (2026-05-22): `useCartStore()`를 selector 없이 호출해 장바구니 변경 시 메뉴 페이지 등이 통째로 리렌더되던 병목 완화. 각 호출처(menu·checkout·success·CartBottomSheet)가 필요한 slice만 구독하도록 selector 콜백 적용. 결제 완료 페이지는 `clearCart` action만 구독해 cart 변경에 리렌더되지 않음. (효과 한계: 헤더 배지·하단 바가 같은 컴포넌트라 cart 변경 시 부모 리렌더는 잔존 — 더 줄이려면 cart 의존 UI를 별도 컴포넌트로 분리 필요.)
 - [x] **StoreContext 미사용 배달비 헬퍼 제거** (2026-05-22): `orderTotal`·정적 `deliveryFee`·`calcDeliveryFee`는 어떤 컴포넌트도 구독하지 않는 dead code였고 checkout은 `calculateOrderTotals`로 동적 계산하므로 제거(혼란 소지 제거). "배달비 정적 바인딩 버그"는 실재하지 않았음.
 - [x] **메뉴 이미지 lazy loading + placeholder 정리** (2026-05-22): MenuList·MenuDetailBottomSheet의 raw `<img>`에 `loading="lazy"`/`decoding="async"` 추가, 외부 `via.placeholder.com` 의존 제거(imageUrl 없으면 컨테이너 회색 배경). CLS는 기존 고정 컨테이너(`w-28 h-28`·`aspect-video`)로 이미 방지됨.
 - [x] **쿼리 전역 에러 토스트** (2026-05-22): `providers.tsx` QueryClient `queryCache.onError`로 쿼리 실패(네트워크 단절·서버 점검) 시 Capacitor 토스트 안내(화이트스크린 대신 빈 상태 + 알림). `showToast`는 네이티브만 동작 — 웹 토스트 UI는 미구현.
+- [x] **전역 에러 토스트 스팸 수정 (opt-in 전환)** (2026-05-23): 초기 `onError`가 앱 전체 모든 쿼리 에러마다 무차별로 토스트를 띄워, 로그인 상태에서 보조 쿼리(`getFavoriteStores` 등)가 cold start/인증 타이밍에 실패할 때 홈 탭 전환마다 "일시적인 오류" alert가 반복 노출됨. ① `query.meta.errorToast === true`로 opt-in한 화면 핵심 쿼리만(`['delivery-stores']`·`['categories']`·`['menus']`), ② `query.state.data === undefined`(보여줄 캐시 없음 = 진짜 빈 화면)일 때만, ③ 4초 내 중복 억제로 변경. 즐겨찾기·주문 등 보조 쿼리 실패는 토스트 안 뜸. `pnpm --filter delivery-customer type-check` 통과. (근본적으로 `getFavoriteStores` 실패 자체는 백엔드 cold start 이슈와 연관 — 인프라 고도화 항목 참조.)
 - [ ] **쿼리 에러 throwOnError + error boundary 보강 (추후)**: 전역 토스트는 적용됐으나 화면 레벨 에러 UI(재시도 버튼 등)는 라우트별 `error.tsx` + `throwOnError`로 보강 가능. 둘은 반드시 세트로 적용.
 - [ ] **웹 토스트 UI 컴포넌트 (추후)**: `lib/capacitor/toast.ts`의 `showToast`가 웹(브라우저)에서는 무시됨. 데스크톱/PWA 웹용 토스트 컴포넌트 도입 시 전역 에러 안내도 웹에서 노출.
 - [ ] **미들웨어 → 클라이언트 AuthGuard 전환 (보류)**: `middleware.ts`는 `_auth` 쿠키 기반인데 AuthContext가 클라이언트 마운트 후 쿠키를 심어, Remote WebView 첫 진입 시 쿠키 싱크 전에 엣지 미들웨어가 먼저 돌아 `/login`으로 튕기고 깜빡이는 고질 문제. 보호 라우트(/orders·/mypage·order/success|fail)를 클라 `<AuthGuard>`(useAuth().loading 게이트)로 감싸는 방향. 인증 동작 변경이라 실기기 검증 필요해 보류.

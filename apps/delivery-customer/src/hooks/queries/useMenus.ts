@@ -8,6 +8,7 @@ export function useCategories(storeId?: string | null) {
         queryFn: () => api.menu.getCategories(storeId!),
         enabled: !!storeId,
         staleTime: 5 * 60 * 1000,
+        meta: { errorToast: true },
     });
 }
 
@@ -17,6 +18,7 @@ export function useMenus(storeId?: string | null, categoryId?: string) {
         queryFn: () => api.menu.getMenus(storeId!, categoryId),
         enabled: !!storeId,
         staleTime: 5 * 60 * 1000,
+        meta: { errorToast: true },
     });
 }
 

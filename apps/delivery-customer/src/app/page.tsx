@@ -44,6 +44,7 @@ export default function Home() {
         queryKey: ['delivery-stores'],
         queryFn: getAllStores,
         staleTime: 5 * 60 * 1000,
+        meta: { errorToast: true },
     });
 
     const activeStores = stores.filter((s) => s.isActive);
