@@ -8,5 +8,6 @@ import { StorageModule } from '../storage/storage.module';
     imports: [StorageModule],
     controllers: [MenusController, MenuDetailController],
     providers: [MenusService],
+    exports: [MenusService],
 })
 export class MenusModule { }
