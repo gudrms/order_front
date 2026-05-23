@@ -12,6 +12,8 @@
 | `order-delivery` | delivery-customer | repo root | delivery.tacomole.kr |
 | `order-website` | brand-website | repo root | tacomole.kr |
 
+프론트 4개 프로젝트는 repo root의 `vercel.json`에서 Function Region을 `icn1`로 고정한다. 백엔드는 `apps/backend/vercel.json`을 별도로 사용하며, 동일하게 `icn1`로 고정한다.
+
 ---
 
 ## 환경변수
