@@ -34,8 +34,9 @@ export class CronController {
     @ApiResponse({ status: 401, description: '내부 배치 secret 불일치' })
     async runCronBatch(
         @Headers('x-internal-job-secret') secret: string | undefined,
+        @Headers('upstash-forward-x-internal-job-secret') forwardedSecret?: string,
     ) {
-        this.assertInternalSecret(secret);
+        this.assertInternalSecret(secret ?? forwardedSecret);
         const startTime = Date.now();
         this.logger.log('[CronBatch] Starting unified cron batch pipeline...');
 
