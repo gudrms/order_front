@@ -10,6 +10,7 @@
 ## [Unreleased]
 
 ### Added
+- QStash 통합 크론 배치 API `POST /cron/batch` 추가: DB ping, 활성 매장 메뉴 웜업, 큐 처리, Toss pending 결제 만료, 결제 정합성 보정을 단일 호출로 실행.
 - 배달 Android 공개 테스트 운영 메모 추가: Firebase 푸시 활성화 조건, Logcat 필터, 카카오 OAuth 앱 복귀 검증 절차를 배포/인수인계 문서에 정리.
 - 배달앱 카카오 OAuth 앱 복귀 진단 로그 추가: `Auth`, `AuthCallback`, `DeepLink` 로그로 callback과 세션 복원 여부를 확인.
 - ADMIN 전용 관리자 계정 관리 기능 추가: `/admin/accounts` API와 admin `계정 관리` 화면에서 계정 생성, 비밀번호 초기화, 삭제, 매장 OWNER 연결을 처리.
@@ -34,6 +35,7 @@
 - admin-electron 수동 업데이트 IPC(`download-update`/`install-update`)와 업데이트 이벤트 구독을 preload에 노출.
 
 ### Changed
+- 백엔드 운영 배치를 GitHub Actions scheduled workflow 중심에서 Upstash QStash 단일 스케줄(`CRON_TZ=Asia/Seoul */5 10-23 * * *`) 중심으로 전환하도록 문서화.
 - 백엔드 pgmq 소비 경로를 publish 직후 Vercel background wake-up 우선 처리로 보강하고, GitHub Actions 5분 queue cron은 누락 메시지 회수용 fail-safe로 유지.
 - 큐 이벤트 소비 시작 시 `QueueEventLog` claim을 먼저 획득하도록 바꿔 중복 메시지와 재시도 경합이 같은 POS/알림 side effect를 동시에 실행할 가능성을 낮춤.
 - 백엔드 배포 문서와 env 예시를 Supabase serverless pooler + 낮은 `connection_limit`부터 계측하는 기준으로 갱신.

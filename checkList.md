@@ -220,7 +220,7 @@
 
 ## 🔭 인프라 고도화 (추후)
 
-- [ ] **Dev/Prod DB 물리적 분리**: Supabase Dev 인스턴스 별도 생성. Vercel Preview → Dev DB, main branch → Prod DB. GitHub Actions cron도 Dev/Prod 워크플로우 분리.
+- [ ] **Dev/Prod DB 물리적 분리**: Supabase Dev 인스턴스 별도 생성. Vercel Preview → Dev DB, main branch → Prod DB. QStash 스케줄과 GitHub Actions fail-safe도 Dev/Prod로 분리.
 - [ ] **Vercel Queues 재검토**: consumer를 Vercel 네이티브 queue function으로 분리할 때 재검토.
 - [ ] **Sentry Releases 연동**: 배포 시 `sentry-cli releases` GitHub Actions 자동 실행.
 - [ ] **Uptime 모니터링**: Better Uptime / UptimeRobot으로 주요 엔드포인트 감시.
@@ -295,11 +295,11 @@
 
 - [ ] **대량 트랜잭션 청크(Batch) 분할**: `payments.service.ts`의 `expirePendingTossPayments`에서 수많은 결제를 한 번에 처리할 때 발생하는 Prisma 타임아웃 방지를 위해 `lodash.chunk` 등을 활용한 배치 분할 처리 적용
 - [ ] **Vercel Serverless DB 커넥션 풀러/limit 재검토**: 람다 인스턴스 복제 시 Supabase Max Connections 초과 방지를 위해 운영 `DATABASE_URL`이 서버리스용 Supabase pooler URL + `pgbouncer=true`를 쓰는지 확인하고 `connection_limit`을 낮은 값부터 계측하며 조정. `.env.example`은 pooler + `connection_limit=1` 시작 예시로 갱신. `3`/`5` 고정 승인은 보류하며 Prisma error DB transport가 별도 `PrismaClient`를 만드는 연결 영향도 함께 점검.
-- [x] **큐 소비 실시간 wake-up 코드 도입** (2026-05-22): publish 직후 `BACKEND_QUEUE_PROCESS_URL`이 설정된 Vercel 환경에서 `@vercel/functions` `waitUntil()`로 내부 `/queue/process-once`를 깨움. 결제 후 `order.paid`를 cron이 소비해야 `pos.send_order`/`notification.send` 2차 이벤트가 발행되던 지연을 줄이고, GitHub Actions 5분 cron은 fail-safe로 유지. 운영 env URL/secret 설정과 실결제 지연 측정은 별도 검증.
+- [x] **큐 소비 실시간 wake-up 코드 도입** (2026-05-22): publish 직후 `BACKEND_QUEUE_PROCESS_URL`이 설정된 Vercel 환경에서 `@vercel/functions` `waitUntil()`로 내부 `/queue/process-once`를 깨움. 결제 후 `order.paid`를 cron이 소비해야 `pos.send_order`/`notification.send` 2차 이벤트가 발행되던 지연을 줄이고, QStash 통합 배치(`/cron/batch`)가 wake-up 누락과 backlog 회수를 보강한다. 운영 env URL/secret 설정과 실결제 지연 측정은 별도 검증.
 - [x] **큐 멱등성 claim 보강** (2026-05-22): `QueueEventLog` 최초 `PROCESSING` create 성공 워커만 dispatch하고 최근 `PROCESSING` duplicate는 archive하도록 변경. `FAILED` 또는 lease 만료 처리 기록만 재claim하며 동시 duplicate 테스트 추가. 단순 `P2002` bypass로 끝내지 않고 외부 POS/알림 대상 상태 검증은 기존 핸들러 방어와 함께 유지.
 - [x] **Toss 일반 결제 웹훅 검증 방식 확인** (2026-05-18): 공식 문서 기준 `PAYMENT_STATUS_CHANGED`/`CANCEL_STATUS_CHANGED` 일반 결제 웹훅에는 `tosspayments-webhook-signature`가 포함되지 않는다. 현재 구현처럼 웹훅 body의 `orderId` 또는 `paymentKey`로 Toss 결제 조회 API를 재호출해 상태를 검증하는 방식이 맞다. 서명 검증은 `payout.changed`/`seller.changed` 웹훅 도입 시 별도 적용.
 - [x] **주문 생성 시 가격 위변조 검증 확인 및 테스트 보강** (2026-05-18): `prepareOrderItems`가 DB `Menu.price`/`MenuOption.price`로 재계산하고, 배달 주문은 `dto.totalAmount`/`payment.amount`가 서버 계산 금액과 다르면 거부한다. `delivery-order.service.spec.ts`에 총액 위변조 거부 및 클라이언트 item price 무시 테스트 추가.
-- [x] **GitHub Actions cron 실행 신뢰성 — 스케줄 스로틀링 해결 (2026-05-23 완료)**: GitHub Actions의 지연/드롭 스케줄링 문제를 해소하기 위해 **Upstash QStash**를 도입. 단 한 번의 호출로 웜업, 큐 소비, 미승인 결제 만료, 결제 정합성 보정을 순차 실행하는 **통합 크론 배치 API (`POST /cron/batch`)**를 구현함. QStash 스케줄을 매장 운영 시간인 **10:00 ~ 00:00 KST (Asia/Seoul 타임존 설정)** 동안 5분 주기로 단일화하여 하루 168회 실행(Upstash 무료 티어 일 500회 제한 내 안착)으로 안정적인 무중단 배치 및 비용 절감을 동시 달성.
+- [x] **GitHub Actions cron 실행 신뢰성 — 스케줄 스로틀링 해결 (2026-05-23 완료)**: GitHub Actions의 지연/드롭 스케줄링 문제를 해소하기 위해 **Upstash QStash**를 도입. 단 한 번의 호출로 웜업, 큐 소비, 미승인 결제 만료, 결제 정합성 보정을 순차 실행하는 **통합 크론 배치 API (`POST /cron/batch`)**를 구현함. QStash 스케줄을 `CRON_TZ=Asia/Seoul */5 10-23 * * *`로 설정해 매장 운영 시간인 **10:00 ~ 00:00 KST** 동안 5분 주기로 단일화하고, 하루 168회 실행으로 Upstash QStash 무료 티어(일 1,000회) 안에서 운영하도록 정리.
 
 ---
 
@@ -345,7 +345,7 @@
 - [ ] 관리자 전액 취소/환불 후 배달앱 주문 상태 갱신 확인
 - [ ] 결제 후 POS 전송 큐 처리 + 알림 발송 중복 없는지 확인
 - [ ] backend Vercel `BACKEND_QUEUE_PROCESS_URL` 설정 후 결제 → `order.paid` → POS/알림 큐 wake-up 지연 측정
-- [ ] GitHub Actions cron `POST /queue/process-once` 실제 실행 로그 확인
+- [ ] QStash `POST /cron/batch` 스케줄 Active + Logs 2xx 확인
 - [ ] Queue backlog/failed event가 관리자 `/operations`에서 조회·재시도되는지 운영 데이터로 확인
 - [ ] Vercel Production/Preview 환경변수 분리 상태 확인 (`REDIS_URL`, Firebase, Toss, Sentry)
 - [ ] Lighthouse 점수 90+ 목표 (LCP, CLS, FID 최적화)
@@ -413,7 +413,7 @@
 - Electron admin 앱 초기 구조 (`apps/admin-electron`)
 
 ### 2026-05-04
-- MQ consumer cron 트리거: GitHub Actions `backend-cron.yml` 5분 주기
+- MQ consumer cron 트리거: 초기에는 GitHub Actions `backend-cron.yml` 5분 주기로 운영, 2026-05-23 QStash `/cron/batch`로 전환
 - CORS 다중 origin 환경변수 지원 (`FRONTEND_URLS`)
 - Capacitor `allowMixedContent` 운영 빌드 차단
 - Firebase 백엔드 연동: `UserDevice` 테이블 + `firebase-admin` + FCM 발송

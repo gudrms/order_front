@@ -96,6 +96,7 @@ POST   /stores/:storeId/tables/:tableNumber/reset            테이블 초기화
 POST   /payments/toss/confirm   결제 승인
 POST   /payments/toss/fail      결제 실패
 POST   /payments/toss/webhook   Toss Payments 상태 변경 웹훅 보정
+POST   /cron/batch              QStash 통합 배치/웜업
 
 GET    /stores/:storeId/categories
 GET    /stores/:storeId/menus          (공개)
@@ -214,7 +215,7 @@ admin과 table-order, Toss POS 플러그인이 Supabase Realtime WebSocket을 �
 |---|---|---|
 | `SupabaseGuard` | admin·delivery-customer 엔드포인트 | `Authorization: Bearer <supabase_jwt>` |
 | `PosIntegrationGuard` | `/pos/*` 엔드포인트 | API 키 헤더 |
-| 내부 배치 secret | `/queue/process-once`, `/payments/toss/expire-pending`, `/payments/toss/reconcile` | `x-internal-job-secret` |
+| 내부 배치 secret | `/cron/batch`, `/queue/process-once`, `/payments/toss/expire-pending`, `/payments/toss/reconcile` | `x-internal-job-secret` |
 | 인증 없음 | 공개 매장/메뉴 조회, table-order 주문 생성/조회 일부 | - |
 
 ---

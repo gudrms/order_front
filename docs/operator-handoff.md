@@ -27,8 +27,8 @@
 
 Vercel 서버리스 환경의 콜드스타트 완화(메뉴 조회 예열)와 결제/큐 보정 등 핵심 백그라운드 배치는 **Upstash QStash** 스케줄러를 사용하여 **오전 10시 ~ 밤 12시(00시) KST** 동안 5분마다 단일 통합 배치 API로 일괄 실행합니다.
 
-* **실행 주기:** `*/5 10-23 * * *` (Timezone: `Asia/Seoul`)
-* **장점:** 러너 고부하로 지연되던 GitHub Actions와 달리 100% 실행 신뢰성을 보장하며, 비영업 시간에는 크론이 잠들도록 설정하여 Upstash 무료 티어(일 500회) 안에서 하루 168회 호출로 안전하게 무중단 운영됩니다.
+* **실행 주기:** `CRON_TZ=Asia/Seoul */5 10-23 * * *`
+* **장점:** 러너 고부하로 지연되던 GitHub Actions scheduled workflow보다 실행 지연/드롭 가능성을 낮추고, 비영업 시간에는 크론이 잠들도록 설정하여 Upstash QStash 무료 티어(일 1,000회) 안에서 하루 168회 호출로 운영합니다.
 
 실행 파이프라인 단계:
 
@@ -41,8 +41,7 @@ Vercel 서버리스 환경의 콜드스타트 완화(메뉴 조회 예열)와 �
 ### QStash 스케줄 세팅 정보
 
 * **Destination URL:** `POST https://api.tacomole.kr/api/v1/cron/batch`
-* **Cron Expression:** `*/5 10-23 * * *`
-* **Timezone:** `Asia/Seoul`
+* **Cron Expression:** `CRON_TZ=Asia/Seoul */5 10-23 * * *`
 * **Required Header:**
   * `x-internal-job-secret`: 백엔드 환경변수 `INTERNAL_JOB_SECRET`와 일치하는 값
 
