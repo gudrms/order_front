@@ -90,40 +90,41 @@ open https://api.tacomole.kr/api/docs
 
 ---
 
-## GitHub Actions Cron 확인
+## QStash Cron 확인
 
-콜드스타트 완화와 백그라운드 작업 처리는 `.github/workflows/backend-cron.yml`에서 5분마다 실행한다.
+콜드스타트 완화와 백그라운드 작업 처리는 Upstash QStash가 단일 통합 배치 API를 호출하는 방식으로 실행한다.
 
-필수 GitHub Actions Secrets:
+QStash Schedule:
 
-- `API_BASE_URL`: `https://api.tacomole.kr/api/v1`
-- `INTERNAL_JOB_SECRET`: 백엔드 `INTERNAL_JOB_SECRET` 환경변수와 같은 값
+- Destination: `https://api.tacomole.kr/api/v1/cron/batch`
+- Method: `POST`
+- Cron: `CRON_TZ=Asia/Seoul */5 10-23 * * *`
+- Header: `Upstash-Forward-x-internal-job-secret: <backend INTERNAL_JOB_SECRET>`
+- Body: `{}`
 
 실행 작업:
 
-- `GET ${API_BASE_URL}/health`
-- `POST ${API_BASE_URL}/queue/process-once`
-- `POST ${API_BASE_URL}/payments/toss/expire-pending`
-- `POST ${API_BASE_URL}/payments/toss/reconcile`
+- DB 연결 확인
+- 활성 매장 메뉴 조회 웜업
+- 큐 1회 처리 (`quantity: 3`)
+- 오래된 미승인 Toss 결제 정리
+- Toss/로컬 DB 결제 상태 보정
 
 확인 절차:
 
-1. GitHub 저장소의 `Actions` 탭으로 이동한다.
-2. `Backend Cron Jobs` workflow를 선택한다.
-3. `Run workflow`로 수동 실행한다.
-4. 아래 step이 모두 성공하는지 확인한다.
+1. Upstash Console의 `QStash -> Schedules`로 이동한다.
+2. `https://api.tacomole.kr/api/v1/cron/batch` 스케줄이 Active인지 확인한다.
+3. `QStash -> Logs`에서 최근 실행 응답이 2xx인지 확인한다.
+4. 배포 직후에는 아래 수동 호출로 API가 운영 배포에 반영됐는지 확인한다.
 
-```text
-Validate cron secrets
-Health check
-Process Queue (MQ Consumer)
-Expire Pending Toss Payments
-Reconcile Toss Payments
+```bash
+curl -X POST https://api.tacomole.kr/api/v1/cron/batch \
+  -H "x-internal-job-secret: ${INTERNAL_JOB_SECRET}" \
+  -H "Content-Type: application/json" \
+  -d "{}"
 ```
 
-`curl --fail-with-body`를 사용하므로 4xx/5xx 응답은 workflow 실패로 표시된다.
-
-큐는 publish 직후 Vercel background wake-up도 사용한다. backend Vercel 환경변수 `BACKEND_QUEUE_PROCESS_URL`을 `https://api.tacomole.kr/api/v1/queue/process-once`로 설정하면 지연 없는 처리를 먼저 시도하고, 위 GitHub Actions cron은 wake-up 누락이나 실패 메시지를 회수하는 fail-safe로 유지된다. `INTERNAL_JOB_SECRET`은 두 경로에서 같은 값을 사용한다.
+큐는 publish 직후 Vercel background wake-up도 사용한다. backend Vercel 환경변수 `BACKEND_QUEUE_PROCESS_URL`을 `https://api.tacomole.kr/api/v1/queue/process-once`로 설정하면 지연 없는 처리를 먼저 시도하고, QStash 통합 배치는 wake-up 누락이나 실패 메시지를 회수하는 fail-safe 역할도 함께 수행한다. `INTERNAL_JOB_SECRET`은 두 경로에서 같은 값을 사용한다.
 
 ---
 

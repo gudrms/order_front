@@ -128,7 +128,7 @@ MQ:
 - backoff: 10초, 30초, 60초, 180초, 300초.
 - 최대 시도 초과 시: job을 `FAILED`로 표시하고 메시지를 archive하며, 로그/관리자 화면에 실패를 노출한다.
 - publish 직후 `BACKEND_QUEUE_PROCESS_URL`이 설정된 Vercel 환경에서는 background wake-up으로 `/queue/process-once`를 먼저 호출한다.
-- GitHub Actions 5분 cron은 background wake-up 누락, queue function 실패, backlog 회수용 fail-safe로 계속 유지한다.
+- QStash 통합 배치(`/cron/batch`)는 background wake-up 누락, queue function 실패, backlog 회수용 fail-safe로 유지한다.
 - `QueueEventLog`의 최초 `PROCESSING` create가 성공한 worker만 새 이벤트를 dispatch한다. 최근 `PROCESSING` 중복 메시지는 archive하고, `FAILED` 또는 lease가 만료된 처리 기록만 재claim한다.
 
 ## 결제 보상 정책

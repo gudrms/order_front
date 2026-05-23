@@ -15,6 +15,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { LoggerModule } from './common/logger';
 import { AppController } from './app.controller';
 import { HealthController } from './health.controller';
+import { CronController } from './cron.controller';
 import { ErrorLogsModule } from './modules/error-logs/error-logs.module';
 import { TossModule } from './modules/integrations/toss/toss.module';
 import { UsersModule } from './modules/users/users.module';
@@ -96,7 +97,7 @@ import { AdminAccountsModule } from './modules/admin-accounts/admin-accounts.mod
         FranchiseInquiriesModule,
         AdminAccountsModule,
     ],
-    controllers: [AppController, HealthController],
+    controllers: [AppController, HealthController, CronController],
     providers: [
         // Global Rate Limiting Guard
         {

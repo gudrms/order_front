@@ -2,59 +2,61 @@
 
 ## Current Status
 
-Vercel Cron is not active for this project. Backend warm-up and background jobs are currently handled by GitHub Actions.
+Vercel Cron is not active for this project. Backend warm-up and background jobs are handled by Upstash QStash.
 
-Workflow file:
+Primary schedule:
 
 ```text
-.github/workflows/backend-cron.yml
+POST https://api.tacomole.kr/api/v1/cron/batch
 ```
 
 Schedule:
 
-```yaml
-cron: '*/5 * * * *'
+```text
+CRON_TZ=Asia/Seoul */5 10-23 * * *
 ```
 
-## Required GitHub Actions Secrets
+This runs every 5 minutes from 10:00 through 23:55 KST.
 
-Configure these in `GitHub repository -> Settings -> Secrets and variables -> Actions`.
+## Required Secret
 
 ```text
-API_BASE_URL=https://api.tacomole.kr/api/v1
-INTERNAL_JOB_SECRET=<same value as backend INTERNAL_JOB_SECRET>
+INTERNAL_JOB_SECRET=<backend INTERNAL_JOB_SECRET>
 ```
 
-`API_BASE_URL` must include `/api/v1`.
+In the QStash console, forward it with this header:
+
+```text
+Upstash-Forward-x-internal-job-secret: <backend INTERNAL_JOB_SECRET>
+```
 
 ## Cron Jobs
 
-The workflow runs these requests:
+The unified batch endpoint runs these steps:
 
 ```text
-GET  ${API_BASE_URL}/health
-POST ${API_BASE_URL}/queue/process-once
-POST ${API_BASE_URL}/payments/toss/expire-pending
-POST ${API_BASE_URL}/payments/toss/reconcile
+SELECT 1
+MenusService.getMenus(storeId) for active stores
+QueueConsumerService.processOnce({ quantity: 3 })
+PaymentsService.expirePendingTossPayments({})
+PaymentsService.reconcileTossPayments({})
 ```
-
-Each request uses `curl --fail-with-body`, so 4xx/5xx responses fail the GitHub Actions run.
 
 ## How To Verify
 
-1. Open the GitHub repository.
-2. Go to `Actions`.
-3. Select `Backend Cron Jobs`.
-4. Check that scheduled runs are created roughly every 5 minutes.
-5. Click `Run workflow` to trigger a manual run.
-6. Confirm all steps are green:
+1. Open Upstash Console.
+2. Go to `QStash -> Schedules`.
+3. Confirm the `/cron/batch` schedule is active.
+4. Go to `QStash -> Logs`.
+5. Confirm recent runs return 2xx responses.
 
-```text
-Validate cron secrets
-Health check
-Process Queue (MQ Consumer)
-Expire Pending Toss Payments
-Reconcile Toss Payments
+Manual smoke test:
+
+```bash
+curl -X POST https://api.tacomole.kr/api/v1/cron/batch \
+  -H "x-internal-job-secret: ${INTERNAL_JOB_SECRET}" \
+  -H "Content-Type: application/json" \
+  -d "{}"
 ```
 
 ## Health Check URL
@@ -78,6 +80,7 @@ The admin app is a Next.js frontend and does not provide `/health`.
 - Add an external uptime monitor, such as UptimeRobot or Better Stack, against `https://api.tacomole.kr/api/v1/health`.
 - If the Vercel plan supports Cron Jobs, move simple warm-up pings to Vercel Cron.
 - Keep queue and payment maintenance jobs protected by `INTERNAL_JOB_SECRET`.
+- Keep `.github/workflows/backend-cron.yml` only as a legacy/manual fail-safe if needed.
 
 ## Vercel Cron Example
 

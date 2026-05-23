@@ -10,6 +10,7 @@
 ## [Unreleased]
 
 ### Added
+- QStash 통합 크론 배치 API `POST /cron/batch` 추가: DB ping, 활성 매장 메뉴 웜업, 큐 처리, Toss pending 결제 만료, 결제 정합성 보정을 단일 호출로 실행.
 - 배달 Android 공개 테스트 운영 메모 추가: Firebase 푸시 활성화 조건, Logcat 필터, 카카오 OAuth 앱 복귀 검증 절차를 배포/인수인계 문서에 정리.
 - 배달앱 카카오 OAuth 앱 복귀 진단 로그 추가: `Auth`, `AuthCallback`, `DeepLink` 로그로 callback과 세션 복원 여부를 확인.
 - ADMIN 전용 관리자 계정 관리 기능 추가: `/admin/accounts` API와 admin `계정 관리` 화면에서 계정 생성, 비밀번호 초기화, 삭제, 매장 OWNER 연결을 처리.
@@ -34,6 +35,7 @@
 - admin-electron 수동 업데이트 IPC(`download-update`/`install-update`)와 업데이트 이벤트 구독을 preload에 노출.
 
 ### Changed
+- 백엔드 운영 배치를 GitHub Actions scheduled workflow 중심에서 Upstash QStash 단일 스케줄(`CRON_TZ=Asia/Seoul */5 10-23 * * *`) 중심으로 전환하도록 문서화.
 - 백엔드 pgmq 소비 경로를 publish 직후 Vercel background wake-up 우선 처리로 보강하고, GitHub Actions 5분 queue cron은 누락 메시지 회수용 fail-safe로 유지.
 - 큐 이벤트 소비 시작 시 `QueueEventLog` claim을 먼저 획득하도록 바꿔 중복 메시지와 재시도 경합이 같은 POS/알림 side effect를 동시에 실행할 가능성을 낮춤.
 - 백엔드 배포 문서와 env 예시를 Supabase serverless pooler + 낮은 `connection_limit`부터 계측하는 기준으로 갱신.
@@ -59,12 +61,15 @@
 - admin-electron 업데이트를 `autoDownload=false` 수동 승인 방식으로 전환(영업 중 강제 다운로드/재시작 방지).
 - admin-electron 트레이 종료를 `win.destroy()`에서 `app.quit()`로 바꿔 프로세스를 완전 해제.
 - admin 매장 조회 쿼리를 `enabled:!!authHeaders`로 가드해 토큰 미탑재 상태의 401 경쟁을 방지.
+- 백엔드 cold start 원인 분석 기록: 매장/메뉴 첫 로드 ~5초 지연이 Supabase가 아니라 NestJS를 Vercel 서버리스에 올린 구조의 cold start(DI 컨테이너 + Prisma 부팅 2~5초)임을 확인. Vercel은 `min-instances` 노브가 없어 유료(Pro/Fluid Compute)로도 보장 제거 불가. 트래픽이 붙으면 인스턴스 warm 유지로 자연 완화되므로 출시 블로커는 아니나, 근본 해결은 백엔드만 상시 기동 인스턴스(Cloud Run `min-instances=1` 도쿄 등)로 이전(프론트 Next.js는 Vercel 유지). 체크리스트 인프라 고도화/Delivery Customer 항목에 정리.
+- GitHub Actions 5분 cron 실행 신뢰성 문제 기록: `backend-cron.yml`이 `*/5` 설정이나 스케줄 스로틀링으로 실제 1~3시간 간격 실행됨을 Actions 로그로 확인. cold start 워밍업 효과가 없을 뿐 아니라 결제 만료/정합성 배치(`/payments/toss/expire-pending`·`/reconcile`)가 지연되는 운영 위험이 있어, 신뢰성 있는 스케줄러로 이전 검토 항목을 체크리스트에 추가.
 
 ### Removed
 - admin 셀프 회원가입, 이메일 인증 콜백(`/auth/callback`), `/setup` 가입 경로, 무인증 `POST /auth/register`, 매장 초대코드 재발급 UI/API 제거.
 - 배달앱 `StoreContext`의 미사용 배달비 헬퍼(`orderTotal`, 정적 `deliveryFee`, `calcDeliveryFee`) 제거. checkout은 `calculateOrderTotals`로 동적 계산.
 
 ### Fixed
+- 배달앱 전역 에러 토스트 스팸: `QueryCache.onError`가 모든 쿼리 에러에 무차별로 토스트를 띄워, 로그인 상태에서 보조 쿼리(즐겨찾기 등) 실패 시 홈 탭 전환마다 "일시적인 오류" 알림이 반복되던 문제를 `meta.errorToast` opt-in + 캐시 데이터 없음 조건 + 중복 억제로 해소(화면 핵심 쿼리만 알림).
 - Firebase Android 설정이 없는 공개 테스트 설치본에서 원격 WebView가 네이티브 Push Notifications 등록을 호출해 시작 직후 종료되던 흐름을 opt-in 푸시 초기화로 차단.
 - 배달앱 웹뷰 상단 상태바 겹침: `viewport-fit=cover`와 `safe-area-inset` 패딩을 고정 헤더 전반에 적용해 Android 15 edge-to-edge/iOS 노치에서 핸드폰 상단 정보와 콘텐츠가 겹치던 문제 해소.
 
