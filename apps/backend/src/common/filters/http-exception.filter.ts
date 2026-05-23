@@ -13,7 +13,7 @@ import * as Sentry from '@sentry/nestjs';
 export class HttpExceptionFilter implements ExceptionFilter {
     private readonly logger = new Logger(HttpExceptionFilter.name);
 
-    catch(exception: unknown, host: ArgumentsHost) {
+    async catch(exception: unknown, host: ArgumentsHost) {
         const ctx = host.switchToHttp();
         const response = ctx.getResponse<Response>();
         const request = ctx.getRequest<Request>();
@@ -48,6 +48,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
                     statusCode: String(status),
                 },
             });
+            await Sentry.flush(2000);
         } else {
             this.logger.warn(
                 `${request.method} ${request.url} - ${status} - ${JSON.stringify(message)}`,

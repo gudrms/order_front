@@ -2,12 +2,14 @@ import { ArgumentsHost, HttpException, InternalServerErrorException, Unauthorize
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { HttpExceptionFilter } from './http-exception.filter';
 
-const { captureException } = vi.hoisted(() => ({
+const { captureException, flush } = vi.hoisted(() => ({
     captureException: vi.fn(),
+    flush: vi.fn().mockResolvedValue(true),
 }));
 
 vi.mock('@sentry/nestjs', () => ({
     captureException,
+    flush,
 }));
 
 function createHost(exceptionPath = '/api/v1/test') {
@@ -38,11 +40,11 @@ describe('HttpExceptionFilter', () => {
         filter = new HttpExceptionFilter();
     });
 
-    it('captures 500-level exceptions in Sentry and preserves the response shape', () => {
+    it('captures 500-level exceptions in Sentry and preserves the response shape', async () => {
         const { host, response } = createHost('/api/v1/boom');
         const error = new InternalServerErrorException('boom');
 
-        filter.catch(error, host);
+        await filter.catch(error, host);
 
         expect(captureException).toHaveBeenCalledWith(error, {
             tags: {
@@ -52,6 +54,7 @@ describe('HttpExceptionFilter', () => {
                 statusCode: '500',
             },
         });
+        expect(flush).toHaveBeenCalledWith(2000);
         expect(response.status).toHaveBeenCalledWith(500);
         expect(response.json).toHaveBeenCalledWith(expect.objectContaining({
             statusCode: 500,
@@ -60,12 +63,13 @@ describe('HttpExceptionFilter', () => {
         }));
     });
 
-    it('does not capture expected 4xx control-flow errors in Sentry', () => {
+    it('does not capture expected 4xx control-flow errors in Sentry', async () => {
         const { host, response } = createHost('/api/v1/cron/batch');
 
-        filter.catch(new UnauthorizedException('Invalid internal job secret'), host);
+        await filter.catch(new UnauthorizedException('Invalid internal job secret'), host);
 
         expect(captureException).not.toHaveBeenCalled();
+        expect(flush).not.toHaveBeenCalled();
         expect(response.status).toHaveBeenCalledWith(401);
         expect(response.json).toHaveBeenCalledWith(expect.objectContaining({
             statusCode: 401,
@@ -74,11 +78,11 @@ describe('HttpExceptionFilter', () => {
         }));
     });
 
-    it('captures other 5xx HTTP exceptions in Sentry', () => {
+    it('captures other 5xx HTTP exceptions in Sentry', async () => {
         const { host, response } = createHost('/api/v1/upstream');
         const error = new HttpException('upstream unavailable', 503);
 
-        filter.catch(error, host);
+        await filter.catch(error, host);
 
         expect(captureException).toHaveBeenCalledWith(error, expect.objectContaining({
             tags: expect.objectContaining({ statusCode: '503' }),
