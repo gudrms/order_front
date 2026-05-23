@@ -299,7 +299,12 @@
 
 ## 📱 Delivery Customer (배달앱)
 
-- [ ] **결제 이탈(Drop-off) 주문 클라이언트 렌더링 시 자동 정리**: success/fail 페이지와 checkout 요청 실패 경로에서는 `PENDING_TOSS_ORDER_ID_KEY`를 제거하지만, 브라우저 종료/뒤로가기 후 앱 재진입(`layout.tsx` 또는 `page.tsx`) 시 남은 pending 주문을 백엔드에 취소 요청하는 로직은 아직 없음.
+- [ ] **결제 이탈(Drop-off) 주문 클라이언트 렌더링 시 자동 정리**: 결제 직전 백엔드에 `PENDING_PAYMENT` 주문을 먼저 생성하므로, 결제창에서 이탈하면 미결제 주문이 방치된다.
+  - **흐름**: `checkout/page.tsx` `handlePayment()`(:151) → `createOrderMutation`으로 주문 생성(:167) → `orderId`를 `sessionStorage['delivery.pendingTossOrderId']`(상수 `PENDING_TOSS_ORDER_ID_KEY`, :28)에 저장(:169) → `paymentWidget.requestPayment()`로 Toss 결제창 호출.
+  - **정상 정리 경로**: ① 성공 → success 페이지에서 키 제거, ② 실패/취소 → fail 페이지에서 제거, ③ checkout 내부 catch → `reportPaymentAbort()`(:139)가 `failTossPaymentMutation`(code `PAYMENT_WIDGET_ABORTED`)으로 백엔드에 실패 신고 + 키 제거(:182-184).
+  - **누락(이탈) 경로**: Toss 결제창이 떠 있는 상태에서 앱 강제 종료 / 뒤로가기 / 브라우저 종료 시 success·fail·catch 어디도 타지 않아 `sessionStorage` 키가 남고 백엔드 주문이 `PENDING_PAYMENT`로 방치됨. 재진입 시 정리 로직 없음.
+  - **해결안**: 앱 재진입 시점(`store/[storeId]/layout.tsx` 또는 루트 진입)에서 `sessionStorage['delivery.pendingTossOrderId']` 확인 → 해당 주문이 여전히 PENDING이면 `failTossPaymentMutation`(또는 `cancelOrder`) 호출로 정리 + 키 제거. success/fail의 기존 정리 로직을 공용 헬퍼로 추출해 재사용 권장.
+  - **현재 안전망 / 우선순위**: 백엔드 `payments.service.expirePendingTossPayments` 만료 배치가 시간 경과분을 정리하므로 결제 정합성 버그는 아님(미결제 주문이 일시적으로 쌓이는 위생 문제). 출시 블로커 아님 — 우선순위 중.
 - [ ] **Capacitor 빌드 점검**: 모바일 네이티브 환경(iOS/Android)에서 Toss 결제 위젯이 `iframe` 기반이므로 WebView 결제 리다이렉션이 정상적으로 `app scheme`으로 돌아오는지 E2E 테스트 필수
 - [x] **매장 클릭 진입 속도 개선 (렌더 워터폴 제거)** (2026-05-22): 홈에서 매장 클릭 시 `/store/[storeId]/layout.tsx`가 `getStore`를 직렬로 다시 호출하며 "매장 정보를 불러오는 중..." 전체화면으로 차단 → 매장 응답 후에야 메뉴/카테고리 fetch 시작하던 워터폴 제거. 홈(`page.tsx`)의 매장 카드 클릭 핸들러 `handleSelectStore`에서 ① 목록으로 받은 store를 `queryClient.setQueryData(['store', id])`로 시드(layout의 `isLoading` 분기 스킵 → 전체화면 로딩 제거), ② 카테고리/메뉴(`['categories', id]`·`['menus', id, undefined]`)를 `prefetchQuery`로 라우팅과 병렬 요청, ③ layout `useQuery`에 `staleTime: 5분` 추가(재방문 즉시). `pnpm --filter delivery-customer type-check` 통과.
 - [x] **웹뷰 상태바 영역 겹침 (safe-area 미적용)** (2026-05-22): 루트 `layout.tsx` viewport에 `viewportFit: 'cover'` 추가(iOS WebView `env(safe-area-inset-*)` 활성화). `globals.css`에 `.pt-safe`/`.pb-safe` 유틸 추가 후, 상단 고정 헤더 전체에 `pt-safe` 적용 — HomeHeader, 매장 메뉴 헤더, 체크아웃, 주문내역/상세(orders·order-detail·OrderDetailClient), 마이페이지(메인·쿠폰·주소·주소추가·즐겨찾기), PWAInstaller. Android 15(targetSdk 35) edge-to-edge 강제 + iOS 노치 양쪽 대응. `type-check` 통과.
