@@ -25,31 +25,36 @@
 
 ## 백그라운드 작업
 
-콜드스타트 완화와 결제/큐 보정은 `.github/workflows/backend-cron.yml`에서 5분마다 실행합니다.
+Vercel 서버리스 환경의 콜드스타트 완화(메뉴 조회 예열)와 결제/큐 보정 등 핵심 백그라운드 배치는 **Upstash QStash** 스케줄러를 사용하여 **오전 10시 ~ 밤 12시(00시) KST** 동안 5분마다 단일 통합 배치 API로 일괄 실행합니다.
 
-실행 작업:
+* **실행 주기:** `*/5 10-23 * * *` (Timezone: `Asia/Seoul`)
+* **장점:** 러너 고부하로 지연되던 GitHub Actions와 달리 100% 실행 신뢰성을 보장하며, 비영업 시간에는 크론이 잠들도록 설정하여 Upstash 무료 티어(일 500회) 안에서 하루 168회 호출로 안전하게 무중단 운영됩니다.
 
-```text
-GET  ${API_BASE_URL}/health
-POST ${API_BASE_URL}/queue/process-once
-POST ${API_BASE_URL}/payments/toss/expire-pending
-POST ${API_BASE_URL}/payments/toss/reconcile
-```
+실행 파이프라인 단계:
 
-필수 GitHub Actions Secrets:
+1. **DB 연결 확인** (`SELECT 1`)
+2. **매장 메뉴 조회 웜업** (`MenusService.getMenus(storeId)`로 쿼리 엔진 및 커넥션 예열)
+3. **백엔드 큐 소비** (quantity: 3으로 1회 처리)
+4. **대기 결제 만료 정리**
+5. **결제 불일치 보정**
 
-| Secret | 값 |
-|---|---|
-| `API_BASE_URL` | `https://api.tacomole.kr/api/v1` |
-| `INTERNAL_JOB_SECRET` | 백엔드 환경변수 `INTERNAL_JOB_SECRET`와 같은 값 |
+### QStash 스케줄 세팅 정보
 
-수동 확인:
+* **Destination URL:** `POST https://api.tacomole.kr/api/v1/cron/batch`
+* **Cron Expression:** `*/5 10-23 * * *`
+* **Timezone:** `Asia/Seoul`
+* **Required Header:**
+  * `x-internal-job-secret`: 백엔드 환경변수 `INTERNAL_JOB_SECRET`와 일치하는 값
 
-1. GitHub 저장소 `Actions`로 이동합니다.
-2. `Backend Cron Jobs` workflow를 선택합니다.
-3. 최신 실행이 초록색인지 확인합니다.
-4. 필요하면 `Run workflow`로 수동 실행합니다.
-5. `Validate cron secrets`, `Health check`, `Process Queue`, `Expire Pending Toss Payments`, `Reconcile Toss Payments` 단계가 모두 성공했는지 확인합니다.
+### 수동 확인 및 장애 조치:
+
+1. **Upstash Console**의 **QStash → Schedules** 메뉴로 이동합니다.
+2. `https://api.tacomole.kr/api/v1/cron/batch` 스케줄의 상태(최근 실행 결과)가 성공인지 확인합니다.
+3. 즉시 배치 실행이 필요하거나 강제 복구를 하려면 대시보드에서 즉시 트리거하거나 아래와 같이 `curl` 명령어로 수동 호출합니다:
+   ```bash
+   curl -X POST https://api.tacomole.kr/api/v1/cron/batch \
+     -H "x-internal-job-secret: [INTERNAL_JOB_SECRET_값]"
+   ```
 
 ## 운영 엔드포인트
 
@@ -58,9 +63,10 @@ POST ${API_BASE_URL}/payments/toss/reconcile
 | Method | Path | 목적 | 인증 |
 |---|---|---|---|
 | `GET` | `/health` | API 상태 확인 | 없음 |
-| `POST` | `/queue/process-once` | 큐 1회 처리 | `x-internal-job-secret` |
-| `POST` | `/payments/toss/expire-pending` | 오래된 미승인 결제 정리 | `x-internal-job-secret` |
-| `POST` | `/payments/toss/reconcile` | Toss 승인/로컬 DB 불일치 보정 | `x-internal-job-secret` |
+| `POST` | `/cron/batch` | **통합 배치 & 웜업 파이프라인 (추천)** | `x-internal-job-secret` |
+| `POST` | `/queue/process-once` | 큐 1회 단독 처리 | `x-internal-job-secret` |
+| `POST` | `/payments/toss/expire-pending` | 오래된 미승인 결제 단독 정리 | `x-internal-job-secret` |
+| `POST` | `/payments/toss/reconcile` | Toss 승인/로컬 DB 불일치 단독 보정 | `x-internal-job-secret` |
 
 헤더 이름은 `x-internal-job-secret`입니다.
 
