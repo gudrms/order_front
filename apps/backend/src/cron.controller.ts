@@ -60,7 +60,7 @@ export class CronController {
             this.logger.log('[CronBatch] Step 1: Database ping successful.');
 
             // Step 2: Store & Menu Query Warm-up
-            // Vercel 서버리스 콜드 스타트를 완화하기 위해 실제 메뉴 읽기 로직을 타게 함.
+            // QStash 운영 배치가 실제 메뉴 읽기 경로를 주기적으로 타게 해 Vercel 서버리스 콜드 스타트를 완화한다.
             const activeStores = await this.prisma.store.findMany({
                 where: { isActive: true },
                 select: { id: true, name: true },
