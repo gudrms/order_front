@@ -19,9 +19,16 @@
 
 1. `https://api.tacomole.kr/api/v1/health` 응답을 확인합니다.
 2. Vercel Dashboard에서 실패한 최신 배포와 Runtime Logs를 확인합니다.
-3. GitHub Actions의 `Backend Cron Jobs` 최근 실행 결과를 확인합니다.
+3. Upstash QStash Logs에서 `/cron/batch` 최근 실행 결과가 2xx인지 확인합니다.
 4. 관리자 `주문/운영` 화면에서 주문 상태, 결제 상태, 큐 처리 여부를 확인합니다.
 5. 결제 장애는 Toss 승인 상태와 로컬 DB의 payment/order 상태가 같은지 확인합니다.
+
+## 관측 도구 기준
+
+- **프론트엔드 사용자 오류**: Sentry를 1차로 확인합니다. Hydration error, WebView 런타임 오류, 브라우저별 예외처럼 Vercel Runtime Logs에 남지 않는 문제를 추적합니다.
+- **백엔드 요청/배치 상태**: Vercel Runtime Logs를 1차로 확인합니다. `CronBatch`, HTTP status, Nest 부팅 오류, QStash 호출 결과를 빠르게 확인합니다.
+- **백엔드 치명 오류**: Sentry를 함께 확인합니다. 전역 HTTP 필터는 500 이상 예외만 Sentry로 전송하며, 400/401/404 같은 제어 흐름 오류는 Vercel Logs에만 남깁니다.
+- **결제/큐/알림 보정 실패**: Sentry와 Vercel Logs를 함께 봅니다. `CronBatch` 단계 실패와 queue/payment handler 예외는 Sentry 태그로 분리됩니다.
 
 ## 백그라운드 작업
 
