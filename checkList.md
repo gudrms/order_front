@@ -346,9 +346,11 @@
 - [ ] 관리자 전액 취소/환불 후 배달앱 주문 상태 갱신 확인
 - [ ] 결제 후 POS 전송 큐 처리 + 알림 발송 중복 없는지 확인
 - [ ] backend Vercel `BACKEND_QUEUE_PROCESS_URL` 설정 후 결제 → `order.paid` → POS/알림 큐 wake-up 지연 측정
-- [ ] QStash `POST /cron/batch` 스케줄 Active + Logs 2xx 확인
-- [ ] Vercel Runtime Logs에서 `CronBatch` 단계 로그와 백엔드 500급 오류 확인
-- [ ] Sentry에서 프론트 사용자 오류와 백엔드 500급 이슈 확인
+- [x] QStash `POST /cron/batch` 스케줄 Active + Logs 2xx 확인 (2026-05-23)
+- [x] Vercel Runtime Logs에서 `CronBatch` 단계 로그와 백엔드 500급 오류 확인 (2026-05-23)
+- [x] Sentry에서 백엔드 500급 이슈 확인: `/api/v1/sentry/error`, `source=backend-http-filter`, Vercel region `icn1` (2026-05-23)
+- [x] Sentry에서 프론트 사용자 오류 전송 확인: `admin`, `delivery-customer` envelope 200 응답 (2026-05-23)
+- [ ] brand-website Sentry 클라이언트 전송 확인: `https://tacomole.kr/sentry/error`는 버튼 에러는 발생하나 Sentry envelope 요청 0건. `NEXT_PUBLIC_SENTRY_DSN`/Vercel env/재배포 확인 필요.
 - [ ] Queue backlog/failed event가 관리자 `/operations`에서 조회·재시도되는지 운영 데이터로 확인
 - [ ] Vercel Production/Preview 환경변수 분리 상태 확인 (`REDIS_URL`, Firebase, Toss, Sentry)
 - [ ] Lighthouse 점수 90+ 목표 (LCP, CLS, FID 최적화)

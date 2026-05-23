@@ -36,7 +36,9 @@
 
 ### Changed
 - 백엔드 관측 기준을 정리: Vercel Runtime Logs를 요청/배치 1차 확인 경로로 두고, 전역 HTTP 필터는 500 이상 예외만 Sentry로 전송하도록 보강.
+- 백엔드 Sentry 전송 안정화: Vercel Serverless에서 500 응답 직후 이벤트가 유실되지 않도록 전역 HTTP 필터에서 `Sentry.captureException` 후 `Sentry.flush(2000)`을 수행하도록 보강.
 - 백엔드 운영 배치를 GitHub Actions scheduled workflow 중심에서 Upstash QStash 단일 스케줄(`CRON_TZ=Asia/Seoul */5 10-23 * * *`) 중심으로 전환하도록 문서화.
+- QStash 운영 세팅 기준 갱신: `Upstash-Forward-X-Internal-Job-Secret` 헤더 fallback은 유지하되, 운영 스케줄은 body의 `internalJobSecret` 전달을 기준으로 문서화.
 - 백엔드 pgmq 소비 경로를 publish 직후 Vercel background wake-up 우선 처리로 보강하고, GitHub Actions 5분 queue cron은 누락 메시지 회수용 fail-safe로 유지.
 - 큐 이벤트 소비 시작 시 `QueueEventLog` claim을 먼저 획득하도록 바꿔 중복 메시지와 재시도 경합이 같은 POS/알림 side effect를 동시에 실행할 가능성을 낮춤.
 - 백엔드 배포 문서와 env 예시를 Supabase serverless pooler + 낮은 `connection_limit`부터 계측하는 기준으로 갱신.

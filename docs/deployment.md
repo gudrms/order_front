@@ -101,8 +101,10 @@ QStash Schedule:
 - Destination: `https://api.tacomole.kr/api/v1/cron/batch`
 - Method: `POST`
 - Cron: `CRON_TZ=Asia/Seoul */5 10-23 * * *`
-- Header: `Upstash-Forward-x-internal-job-secret: <backend INTERNAL_JOB_SECRET>`
-- Body: `{}`
+- Header: `Content-Type: application/json`
+- Body: `{ "internalJobSecret": "<backend INTERNAL_JOB_SECRET>" }`
+
+QStash의 `Upstash-Forward-X-Internal-Job-Secret` 헤더도 백엔드가 fallback으로 허용하지만, 운영 스케줄은 body에 `internalJobSecret`을 넣는 방식을 기준으로 둔다. QStash Console의 Edit Schedule 화면에서는 forwarded header가 다시 보이지 않을 수 있으므로 `Request -> Meta -> HEADERS`에서 확인한다.
 
 실행 작업:
 
@@ -118,14 +120,14 @@ QStash Schedule:
 2. `https://api.tacomole.kr/api/v1/cron/batch` 스케줄이 Active인지 확인한다.
 3. `QStash -> Logs`에서 최근 실행 응답이 2xx인지 확인한다.
 4. Vercel Runtime Logs에서 `CronBatch` 단계 로그와 500급 오류 여부를 확인한다.
-5. Sentry에서 프론트 사용자 오류와 백엔드 500급 이슈 여부를 확인한다.
+5. Sentry에서 프론트 사용자 오류와 백엔드 500급 이슈 여부를 확인한다. 2026-05-23 기준 백엔드 `/api/v1/sentry/error`는 `source=backend-http-filter`, region `icn1`로 수집 확인 완료. 프론트는 `admin`, `delivery-customer` 전송 확인 완료, `brand-website`는 Sentry envelope 요청 0건으로 Vercel env/재배포 점검 대상이다.
 6. 배포 직후에는 아래 수동 호출로 API가 운영 배포에 반영됐는지 확인한다.
 
 ```bash
 curl -X POST https://api.tacomole.kr/api/v1/cron/batch \
   -H "x-internal-job-secret: ${INTERNAL_JOB_SECRET}" \
   -H "Content-Type: application/json" \
-  -d "{}"
+  -d "{\"internalJobSecret\":\"${INTERNAL_JOB_SECRET}\"}"
 ```
 
 큐는 publish 직후 Vercel background wake-up도 사용한다. backend Vercel 환경변수 `BACKEND_QUEUE_PROCESS_URL`을 `https://api.tacomole.kr/api/v1/queue/process-once`로 설정하면 지연 없는 처리를 먼저 시도하고, QStash 통합 배치는 wake-up 누락이나 실패 메시지를 회수하는 fail-safe 역할도 함께 수행한다. `INTERNAL_JOB_SECRET`은 두 경로에서 같은 값을 사용한다.

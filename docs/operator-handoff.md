@@ -49,8 +49,13 @@ Vercel 서버리스 환경의 콜드스타트 완화(메뉴 조회 예열)와 �
 
 * **Destination URL:** `POST https://api.tacomole.kr/api/v1/cron/batch`
 * **Cron Expression:** `CRON_TZ=Asia/Seoul */5 10-23 * * *`
-* **Required Header:**
-  * `x-internal-job-secret`: 백엔드 환경변수 `INTERNAL_JOB_SECRET`와 일치하는 값
+* **Required Body:**
+  * `{ "internalJobSecret": "[INTERNAL_JOB_SECRET_값]" }`
+* **Allowed fallback headers:**
+  * `x-internal-job-secret`
+  * `Upstash-Forward-X-Internal-Job-Secret`
+
+QStash Console의 Edit Schedule 화면에서는 forwarded header가 다시 보이지 않을 수 있습니다. 실제 전송값은 스케줄 상세의 **Request → Meta → HEADERS/BODY**에서 확인합니다.
 
 ### 수동 확인 및 장애 조치:
 
@@ -59,8 +64,16 @@ Vercel 서버리스 환경의 콜드스타트 완화(메뉴 조회 예열)와 �
 3. 즉시 배치 실행이 필요하거나 강제 복구를 하려면 대시보드에서 즉시 트리거하거나 아래와 같이 `curl` 명령어로 수동 호출합니다:
    ```bash
    curl -X POST https://api.tacomole.kr/api/v1/cron/batch \
-     -H "x-internal-job-secret: [INTERNAL_JOB_SECRET_값]"
+     -H "Content-Type: application/json" \
+     -d "{\"internalJobSecret\":\"[INTERNAL_JOB_SECRET_값]\"}"
    ```
+
+2026-05-23 운영 확인:
+
+- QStash 스케줄 Active 및 2xx 실행 확인 완료.
+- Vercel Runtime Logs에서 `CronBatch` 단계 로그 확인 완료.
+- 백엔드 Sentry 500 수집 확인 완료: `/api/v1/sentry/error`, `source=backend-http-filter`, Vercel region `icn1`.
+- 프론트 Sentry 전송 확인: `admin`, `delivery-customer`는 envelope 200 응답 확인. `brand-website`는 `/sentry/error` 버튼 에러는 발생하지만 envelope 요청이 없어 `NEXT_PUBLIC_SENTRY_DSN`/Vercel env/재배포 점검 필요.
 
 ## 운영 엔드포인트
 
@@ -69,12 +82,12 @@ Vercel 서버리스 환경의 콜드스타트 완화(메뉴 조회 예열)와 �
 | Method | Path | 목적 | 인증 |
 |---|---|---|---|
 | `GET` | `/health` | API 상태 확인 | 없음 |
-| `POST` | `/cron/batch` | **통합 배치 & 웜업 파이프라인 (추천)** | `x-internal-job-secret` |
+| `POST` | `/cron/batch` | **통합 배치 & 웜업 파이프라인 (추천)** | `internalJobSecret` body 또는 내부 secret 헤더 |
 | `POST` | `/queue/process-once` | 큐 1회 단독 처리 | `x-internal-job-secret` |
 | `POST` | `/payments/toss/expire-pending` | 오래된 미승인 결제 단독 정리 | `x-internal-job-secret` |
 | `POST` | `/payments/toss/reconcile` | Toss 승인/로컬 DB 불일치 단독 보정 | `x-internal-job-secret` |
 
-헤더 이름은 `x-internal-job-secret`입니다.
+단독 운영 엔드포인트의 헤더 이름은 `x-internal-job-secret`입니다. `/cron/batch`는 QStash 운영 편의를 위해 body의 `internalJobSecret`도 허용합니다.
 
 ## 배포 확인
 
@@ -90,7 +103,7 @@ Vercel 서버리스 환경의 콜드스타트 완화(메뉴 조회 예열)와 �
 3. 매장/메뉴 조회
 4. 테이블오더 QR 진입
 5. 배달 주문 결제 모듈 진입
-6. GitHub Actions `Backend Cron Jobs` 성공 여부
+6. QStash `POST /cron/batch` 최근 실행 2xx 여부
 
 ## 결제/주문 운영 기준
 
