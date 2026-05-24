@@ -495,6 +495,32 @@ model BrandMenu {
   @@index([isFeatured, isActive, displayOrder])
 }
 
+/// 배달앱 메인 홈 배너 정보
+model BrandBanner {
+  id           String     @id @default(uuid())
+  title        String     // 배너 메인 제목
+  subtitle     String?    // 배너 서브 타이틀
+  badge        String?    // 배너 뱃지 텍스트
+  
+  bgType       String     // 배경 유형 ("GRADIENT" | "IMAGE")
+  bgStartColor String?    // 그라디언트 시작 색상 HEX
+  bgEndColor   String?    // 그라디언트 종료 색상 HEX
+  imageUrl     String?    // 배경 이미지 URL
+  
+  linkType     String     // 클릭 시 동작 유형 ("NONE" | "STORE" | "EXTERNAL")
+  linkUrl      String?    // 일반 URL 링크 주소
+  storeId      String?    // 이동할 매장 ID
+  
+  displayOrder Int        @default(0)
+  isActive     Boolean    @default(true)
+  
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@index([isActive, displayOrder])
+}
+
+
 model TableSession {
   id            String        @id @default(uuid())
   storeId       String
