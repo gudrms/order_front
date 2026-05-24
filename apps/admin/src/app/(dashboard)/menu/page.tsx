@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import axios from 'axios';
+import { adminApi } from '@/lib/adminApi';
 import {
   ChevronDown,
   ChevronUp,
@@ -101,8 +101,8 @@ export default function MenuListPage() {
   const categoriesQuery = useQuery<MenuCategory[]>({
     queryKey: ['admin-categories', selectedStoreId],
     queryFn: async () => {
-      const response = await axios.get(`${API_URL}/stores/${selectedStoreId}/categories`);
-      return response.data.data || response.data;
+      const response = await adminApi.get(`${API_URL}/stores/${selectedStoreId}/categories`);
+      return response.data;
     },
     enabled: !!selectedStoreId,
   });
@@ -110,10 +110,10 @@ export default function MenuListPage() {
   const menusQuery = useQuery<MenuWithCategory[]>({
     queryKey: ['admin-menus', selectedStoreId],
     queryFn: async () => {
-      const response = await axios.get(`${API_URL}/stores/${selectedStoreId}/admin/menus`, {
+      const response = await adminApi.get(`${API_URL}/stores/${selectedStoreId}/admin/menus`, {
         headers: authHeaders,
       });
-      return response.data.data || response.data;
+      return response.data;
     },
     enabled: !!selectedStoreId && !!authHeaders,
   });

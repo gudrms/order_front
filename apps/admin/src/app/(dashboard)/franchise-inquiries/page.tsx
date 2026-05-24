@@ -71,7 +71,7 @@ export default function FranchiseInquiriesPage() {
         { status, adminNote },
         { headers: authHeaders }
       );
-      return response.data.data || response.data;
+      return response.data;
     },
     onSuccess: () => {
       setFeedback({ type: 'success', message: '가맹 문의가 업데이트되었습니다.' });
