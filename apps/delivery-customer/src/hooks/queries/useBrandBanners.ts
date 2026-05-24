@@ -16,13 +16,11 @@ export type BrandBanner = {
   isActive: boolean;
 };
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.tacomole.kr/api/v1';
-
 export function useBrandBanners() {
   return useQuery<BrandBanner[]>({
     queryKey: ['brand-banners'],
     queryFn: async () => {
-      const response = await fetch(`${API_URL}/brand-banners`, {
+      const response = await fetch('/api/banners', {
         headers: { Accept: 'application/json' },
       });
       if (!response.ok) {

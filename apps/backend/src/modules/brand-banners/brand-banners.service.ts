@@ -1,11 +1,14 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { assertPlatformAdmin } from '../../common/auth/permissions';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
 import { CreateBrandBannerDto, UpdateBrandBannerDto } from './dto/brand-banner.dto';
+import { revalidateDeliveryCache } from '../../common/utils/delivery-cache';
 
 @Injectable()
 export class BrandBannersService {
+    private readonly logger = new Logger(BrandBannersService.name);
+
     constructor(
         private readonly prisma: PrismaService,
         private readonly storage: StorageService,
@@ -31,22 +34,28 @@ export class BrandBannersService {
 
     async createBanner(userId: string, dto: CreateBrandBannerDto) {
         await this.assertAdmin(userId);
-        return this.brandBanner.create({ data: dto });
+        const banner = await this.brandBanner.create({ data: dto });
+        await revalidateDeliveryCache({ tags: ['delivery:banners'] }, this.logger);
+        return banner;
     }
 
     async updateBanner(userId: string, bannerId: string, dto: UpdateBrandBannerDto) {
         await this.assertAdmin(userId);
         await this.ensureBanner(bannerId);
-        return this.brandBanner.update({
+        const banner = await this.brandBanner.update({
             where: { id: bannerId },
             data: dto,
         });
+        await revalidateDeliveryCache({ tags: ['delivery:banners'] }, this.logger);
+        return banner;
     }
 
     async deleteBanner(userId: string, bannerId: string) {
         await this.assertAdmin(userId);
         await this.ensureBanner(bannerId);
-        return this.brandBanner.delete({ where: { id: bannerId } });
+        const banner = await this.brandBanner.delete({ where: { id: bannerId } });
+        await revalidateDeliveryCache({ tags: ['delivery:banners'] }, this.logger);
+        return banner;
     }
 
     async uploadBannerImage(

@@ -13,6 +13,7 @@ type CachedFetchOptions = {
 };
 
 export const publicCacheTags = {
+    banners: 'delivery:banners',
     stores: 'delivery:stores',
     store: (storeId: string) => `delivery:store:${storeId}`,
     categories: (storeId: string) => `delivery:store:${storeId}:categories`,
