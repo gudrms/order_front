@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import axios from 'axios';
+import { adminApi } from '@/lib/adminApi';
 import { Plus, Save } from 'lucide-react';
 import type { MenuManagementMode } from '@order/shared';
 import { useAdminStore } from '@/contexts/AdminStoreContext';
@@ -48,7 +48,7 @@ export default function StoreSettingsPage() {
 
   const updateStoreMutation = useMutation({
     mutationFn: async () => {
-      await axios.patch(
+      await adminApi.patch(
         `${API_URL}/stores/${selectedStoreId}`,
         {
           name: form.name.trim(),
@@ -273,7 +273,7 @@ function CreateStoreSection({
 
   const createMutation = useMutation({
     mutationFn: async () => {
-      await axios.post(
+      await adminApi.post(
         `${API_URL}/stores`,
         {
           storeType: form.storeType.trim(),

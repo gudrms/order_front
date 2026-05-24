@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { unregisterWebPush } from '@/hooks/useWebPush';
-import axios from 'axios';
+import { adminApi } from '@/lib/adminApi';
 
 interface AuthContextType {
   user: User | null;
@@ -27,11 +27,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchProfile = async (userId: string, token: string) => {
     try {
-      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
-        headers: { Authorization: `Bearer ${token}` }
+      const response = await adminApi.get(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` },
       });
-      // 백엔드가 { success: true, data: user } 형태로 주면 .data.data 사용, 아니면 .data
-      setProfile(response.data.data || response.data);
+      setProfile(response.data);
     } catch (error) {
       console.error('Profile fetch failed:', error);
       setProfile(null);

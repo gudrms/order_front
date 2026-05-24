@@ -133,7 +133,7 @@ export default function MenuListPage() {
 
   const createCategoryMutation = useMutation({
     mutationFn: async () => {
-      await axios.post(
+      await adminApi.post(
         `${API_URL}/stores/${selectedStoreId}/categories`,
         { name: categoryName.trim() },
         { headers: authHeaders }
@@ -154,7 +154,7 @@ export default function MenuListPage() {
 
   const createMenuMutation = useMutation({
     mutationFn: async () => {
-      await axios.post(
+      await adminApi.post(
         `${API_URL}/stores/${selectedStoreId}/menus`,
         {
           categoryId: defaultCategoryId,
@@ -195,7 +195,7 @@ export default function MenuListPage() {
         isHidden: boolean;
       }>;
     }) => {
-      await axios.patch(
+      await adminApi.patch(
         `${API_URL}/stores/${selectedStoreId}/menus/${menuId}`,
         data,
         { headers: authHeaders }
@@ -216,7 +216,7 @@ export default function MenuListPage() {
 
   const syncTossMenuMutation = useMutation({
     mutationFn: async () => {
-      const response = await axios.post<TossSyncResult>(
+      const response = await adminApi.post<TossSyncResult>(
         `${API_URL}/stores/${selectedStoreId}/integrations/toss/sync-menu`,
         undefined,
         { headers: authHeaders }
@@ -643,7 +643,7 @@ function OptionGroupPanel({
 
   const createGroupMutation = useMutation({
     mutationFn: () =>
-      axios.post(
+      adminApi.post(
         `${API_URL}/stores/${storeId}/menus/${menuId}/option-groups`,
         { name: newGroupName.trim(), minSelect: Number(newGroupMin), maxSelect: Number(newGroupMax) },
         { headers: authHeaders }
@@ -665,7 +665,7 @@ function OptionGroupPanel({
 
   const updateGroupMutation = useMutation({
     mutationFn: ({ groupId, data }: { groupId: string; data: object }) =>
-      axios.patch(
+      adminApi.patch(
         `${API_URL}/stores/${storeId}/menus/${menuId}/option-groups/${groupId}`,
         data,
         { headers: authHeaders }
@@ -685,7 +685,7 @@ function OptionGroupPanel({
 
   const deleteGroupMutation = useMutation({
     mutationFn: (groupId: string) =>
-      axios.delete(
+      adminApi.delete(
         `${API_URL}/stores/${storeId}/menus/${menuId}/option-groups/${groupId}`,
         { headers: authHeaders }
       ),
@@ -703,7 +703,7 @@ function OptionGroupPanel({
 
   const createOptionMutation = useMutation({
     mutationFn: ({ groupId, name, price }: { groupId: string; name: string; price: number }) =>
-      axios.post(
+      adminApi.post(
         `${API_URL}/stores/${storeId}/menus/${menuId}/option-groups/${groupId}/options`,
         { name, price },
         { headers: authHeaders }
@@ -722,7 +722,7 @@ function OptionGroupPanel({
 
   const updateOptionMutation = useMutation({
     mutationFn: ({ groupId, optionId, data }: { groupId: string; optionId: string; data: object }) =>
-      axios.patch(
+      adminApi.patch(
         `${API_URL}/stores/${storeId}/menus/${menuId}/option-groups/${groupId}/options/${optionId}`,
         data,
         { headers: authHeaders }
@@ -741,7 +741,7 @@ function OptionGroupPanel({
 
   const deleteOptionMutation = useMutation({
     mutationFn: ({ groupId, optionId }: { groupId: string; optionId: string }) =>
-      axios.delete(
+      adminApi.delete(
         `${API_URL}/stores/${storeId}/menus/${menuId}/option-groups/${groupId}/options/${optionId}`,
         { headers: authHeaders }
       ),

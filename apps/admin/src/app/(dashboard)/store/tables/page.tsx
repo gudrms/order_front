@@ -2,7 +2,7 @@
 
 import React, { useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import axios from 'axios';
+import { adminApi } from '@/lib/adminApi';
 import { QRCodeSVG } from 'qrcode.react';
 import { useReactToPrint } from 'react-to-print';
 import { Plus, Printer } from 'lucide-react';
@@ -32,17 +32,17 @@ export default function TableManagementPage() {
   const tablesQuery = useQuery<AdminTable[]>({
     queryKey: ['admin-tables', selectedStoreId],
     queryFn: async () => {
-      const response = await axios.get(`${API_URL}/stores/${selectedStoreId}/tables`, {
+      const response = await adminApi.get(`${API_URL}/stores/${selectedStoreId}/tables`, {
         headers: authHeaders,
       });
-      return response.data.data || response.data;
+      return response.data;
     },
     enabled: !!selectedStoreId,
   });
 
   const createTablesMutation = useMutation({
     mutationFn: async () => {
-      await axios.post(
+      await adminApi.post(
         `${API_URL}/stores/${selectedStoreId}/tables/bulk`,
         {
           startNumber: Number(bulkForm.startNumber),

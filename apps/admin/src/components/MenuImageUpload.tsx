@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useState } from 'react';
-import axios from 'axios';
+import { adminApi } from '@/lib/adminApi';
 import imageCompression from 'browser-image-compression';
 import { ImagePlus, Loader2, X } from 'lucide-react';
 import { getHttpErrorMessage } from '@/lib/httpError';
@@ -39,8 +39,8 @@ export function MenuImageUpload({
       const formData = new FormData();
       formData.append('file', compressed, file.name);
 
-      const response = await axios.post(uploadUrl, formData, { headers: authHeaders });
-      const imageUrl = response.data?.data?.imageUrl ?? response.data?.imageUrl;
+      const response = await adminApi.post(uploadUrl, formData, { headers: authHeaders });
+      const imageUrl = response.data?.imageUrl;
       if (!imageUrl) {
         throw new Error('No imageUrl in response');
       }
