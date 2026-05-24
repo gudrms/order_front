@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import axios from 'axios';
+import { adminApi } from '@/lib/adminApi';
 import { AlertTriangle, Bell, RefreshCw, Send } from 'lucide-react';
 import { formatCurrency, formatDate, type Order } from '@order/shared';
 import { Badge } from '@order/ui';
@@ -49,13 +49,11 @@ export default function OperationsPage() {
   const posFailuresQuery = useQuery<PosFailureOrder[]>({
     queryKey: ['admin-pos-sync-failures', storeId],
     queryFn: async () => {
-      const response = await axios.get(`${API_URL}/stores/${storeId}/orders/pos-sync/failed`, {
+      const response = await adminApi.get(`${API_URL}/stores/${storeId}/orders/pos-sync/failed`, {
         headers: authHeaders,
       });
-      // TransformInterceptor: { statusCode, data: ACTUAL }
-      // ACTUAL for paginated endpoints: { data: [...], meta: {...} }
-      const actual = response.data?.data;
-      return Array.isArray(actual) ? actual : (actual?.data ?? actual ?? []);
+      // 페이지네이션 응답: { data: [...], meta: {...} } → data 배열만 추출
+      return response.data?.data ?? response.data;
     },
     enabled: !!session && !!storeId,
   });
@@ -63,20 +61,18 @@ export default function OperationsPage() {
   const notificationFailuresQuery = useQuery<NotificationFailure[]>({
     queryKey: ['admin-notification-failures', storeId],
     queryFn: async () => {
-      const response = await axios.get(`${API_URL}/stores/${storeId}/operations/notifications/failed`, {
+      const response = await adminApi.get(`${API_URL}/stores/${storeId}/operations/notifications/failed`, {
         headers: authHeaders,
       });
-      // TransformInterceptor: { statusCode, data: ACTUAL }
-      // ACTUAL for paginated endpoints: { data: [...], meta: {...} }
-      const actual = response.data?.data;
-      return Array.isArray(actual) ? actual : (actual?.data ?? actual ?? []);
+      // 페이지네이션 응답: { data: [...], meta: {...} } → data 배열만 추출
+      return response.data?.data ?? response.data;
     },
     enabled: !!session && !!storeId,
   });
 
   const retryPosMutation = useMutation({
     mutationFn: async (orderId: string) => {
-      await axios.patch(
+      await adminApi.patch(
         `${API_URL}/stores/${storeId}/orders/${orderId}/pos-sync/retry`,
         undefined,
         { headers: authHeaders }
@@ -96,7 +92,7 @@ export default function OperationsPage() {
 
   const retryNotificationMutation = useMutation({
     mutationFn: async (notificationId: string) => {
-      await axios.patch(
+      await adminApi.patch(
         `${API_URL}/stores/${storeId}/operations/notifications/${notificationId}/retry`,
         undefined,
         { headers: authHeaders }

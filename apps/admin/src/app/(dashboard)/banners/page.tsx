@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import axios from 'axios';
+import { adminApi } from '@/lib/adminApi';
 import { Plus, RefreshCw, Save, Trash2 } from 'lucide-react';
 import { useAdminStore } from '@/contexts/AdminStoreContext';
 import { getHttpErrorMessage } from '@/lib/httpError';
@@ -85,7 +85,7 @@ export default function BannersPage() {
   const bannersQuery = useQuery<BrandBanner[]>({
     queryKey: ['brand-banners-admin'],
     queryFn: async () => {
-      const response = await axios.get(`${API_URL}/brand-banners/admin`, {
+      const response = await adminApi.get(`${API_URL}/brand-banners/admin`, {
         headers: authHeaders,
       });
       return response.data;
@@ -96,10 +96,10 @@ export default function BannersPage() {
   const storesQuery = useQuery<StoreItem[]>({
     queryKey: ['stores-admin-list'],
     queryFn: async () => {
-      const response = await axios.get(`${API_URL}/stores`, {
+      const response = await adminApi.get(`${API_URL}/stores`, {
         headers: authHeaders,
       });
-      return response.data.data || response.data;
+      return response.data;
     },
     enabled: !!authHeaders,
   });
@@ -113,7 +113,7 @@ export default function BannersPage() {
 
   const createBannerMutation = useMutation({
     mutationFn: async () => {
-      await axios.post(
+      await adminApi.post(
         `${API_URL}/brand-banners/admin`,
         {
           title: bannerForm.title.trim(),
@@ -156,7 +156,7 @@ export default function BannersPage() {
   const updateBannerMutation = useMutation({
     mutationFn: async () => {
       if (!editingBannerId) return;
-      await axios.patch(
+      await adminApi.patch(
         `${API_URL}/brand-banners/admin/${editingBannerId}`,
         {
           title: editForm.title.trim(),
@@ -186,7 +186,7 @@ export default function BannersPage() {
 
   const toggleBannerMutation = useMutation({
     mutationFn: async (banner: BrandBanner) => {
-      await axios.patch(
+      await adminApi.patch(
         `${API_URL}/brand-banners/admin/${banner.id}`,
         { isActive: !banner.isActive },
         { headers: authHeaders },
@@ -200,7 +200,7 @@ export default function BannersPage() {
 
   const deleteBannerMutation = useMutation({
     mutationFn: async (bannerId: string) => {
-      await axios.delete(`${API_URL}/brand-banners/admin/${bannerId}`, {
+      await adminApi.delete(`${API_URL}/brand-banners/admin/${bannerId}`, {
         headers: authHeaders,
       });
     },

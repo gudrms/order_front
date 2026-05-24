@@ -2,7 +2,7 @@
 
 import { FormEvent, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import axios from 'axios';
+import { adminApi } from '@/lib/adminApi';
 import { Plus, RefreshCw, Save } from 'lucide-react';
 import { useAdminStore } from '@/contexts/AdminStoreContext';
 import { getHttpErrorMessage } from '@/lib/httpError';
@@ -63,10 +63,10 @@ export default function BrandMenuPage() {
   const categoriesQuery = useQuery<BrandMenuCategory[]>({
     queryKey: ['brand-menu-admin-categories'],
     queryFn: async () => {
-      const response = await axios.get(`${API_URL}/brand-menus/admin/categories`, {
+      const response = await adminApi.get(`${API_URL}/brand-menus/admin/categories`, {
         headers: authHeaders,
       });
-      return response.data.data || response.data;
+      return response.data;
     },
     enabled: !!authHeaders,
   });
@@ -83,7 +83,7 @@ export default function BrandMenuPage() {
 
   const createCategoryMutation = useMutation({
     mutationFn: async () => {
-      await axios.post(
+      await adminApi.post(
         `${API_URL}/brand-menus/admin/categories`,
         { name: categoryName.trim() },
         { headers: authHeaders },
@@ -101,7 +101,7 @@ export default function BrandMenuPage() {
 
   const createMenuMutation = useMutation({
     mutationFn: async () => {
-      await axios.post(
+      await adminApi.post(
         `${API_URL}/brand-menus/admin/menus`,
         {
           categoryId: menuForm.categoryId || categories[0]?.id,
@@ -135,7 +135,7 @@ export default function BrandMenuPage() {
 
   const toggleMenuMutation = useMutation({
     mutationFn: async (menu: BrandMenu) => {
-      await axios.patch(
+      await adminApi.patch(
         `${API_URL}/brand-menus/admin/menus/${menu.id}`,
         { isActive: !menu.isActive },
         { headers: authHeaders },
@@ -149,7 +149,7 @@ export default function BrandMenuPage() {
 
   const updateCategoryMutation = useMutation({
     mutationFn: async ({ categoryId, data }: { categoryId: string; data: Record<string, unknown> }) => {
-      await axios.patch(
+      await adminApi.patch(
         `${API_URL}/brand-menus/admin/categories/${categoryId}`,
         data,
         { headers: authHeaders },
@@ -164,7 +164,7 @@ export default function BrandMenuPage() {
   const updateMenuMutation = useMutation({
     mutationFn: async () => {
       if (!editingMenuId) return;
-      await axios.patch(
+      await adminApi.patch(
         `${API_URL}/brand-menus/admin/menus/${editingMenuId}`,
         {
           categoryId: editForm.categoryId,
