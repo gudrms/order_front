@@ -277,6 +277,7 @@
 - [x] **관리자 부분 환불 제거** (2026-05-18): 초기 운영 안정성을 위해 관리자 환불은 전액 취소만 허용한다. admin UI에서 부분 환불 버튼/금액 입력 제거, 백엔드 `cancelAmount` 요청 거부, 테스트 시나리오를 전액 환불 기준으로 정리.
 - [x] **매장 조회 쿼리 authHeaders 가드** (2026-05-23): `AdminStoreContext`의 매장 조회를 `enabled:!!session` → `enabled:!!authHeaders`로 변경해 토큰 미탑재 상태의 401 경쟁 방지.
 - [ ] **Realtime 주문 무효화 throttle 검토**: `useRealtimeOrders`가 모든 주문 이벤트에 `invalidateQueries`를 호출. status 화이트리스트는 admin 특성상(접수·조리·완료 등 대부분 변경이 UI 반영 필요) 갱신 누락 위험이 커 부적합 — 짧은 시간 다중 변경 시 REST 재조회 폭주를 debounce/throttle로 완화하는 방향 검토.
+- [x] **마스터 어드민 `배너 관리` 화면 추가** (2026-05-24): 마스터 관리자(`ADMIN` 권한)가 메인 배너를 동적으로 생성/수정/삭제하고 배경 이미지 업로드 및 이동 타겟 매장을 매핑할 수 있는 관리 화면 신규 개발
 
 ---
 
@@ -301,6 +302,7 @@
 - [x] **Toss 일반 결제 웹훅 검증 방식 확인** (2026-05-18): 공식 문서 기준 `PAYMENT_STATUS_CHANGED`/`CANCEL_STATUS_CHANGED` 일반 결제 웹훅에는 `tosspayments-webhook-signature`가 포함되지 않는다. 현재 구현처럼 웹훅 body의 `orderId` 또는 `paymentKey`로 Toss 결제 조회 API를 재호출해 상태를 검증하는 방식이 맞다. 서명 검증은 `payout.changed`/`seller.changed` 웹훅 도입 시 별도 적용.
 - [x] **주문 생성 시 가격 위변조 검증 확인 및 테스트 보강** (2026-05-18): `prepareOrderItems`가 DB `Menu.price`/`MenuOption.price`로 재계산하고, 배달 주문은 `dto.totalAmount`/`payment.amount`가 서버 계산 금액과 다르면 거부한다. `delivery-order.service.spec.ts`에 총액 위변조 거부 및 클라이언트 item price 무시 테스트 추가.
 - [x] **GitHub Actions cron 실행 신뢰성 — 스케줄 스로틀링 해결 (2026-05-23 완료)**: GitHub Actions의 지연/드롭 스케줄링 문제를 해소하기 위해 **Upstash QStash**를 도입. 단 한 번의 호출로 웜업, 큐 소비, 미승인 결제 만료, 결제 정합성 보정을 순차 실행하는 **통합 크론 배치 API (`POST /cron/batch`)**를 구현함. QStash 스케줄을 `CRON_TZ=Asia/Seoul */5 10-23 * * *`로 설정해 매장 운영 시간인 **10:00 ~ 00:00 KST** 동안 5분 주기로 단일화하고, 하루 168회 실행으로 Upstash QStash 무료 티어(일 1,000회) 안에서 운영하도록 정리.
+- [x] **동적 배너 `BrandBanner` 데이터 모델 및 CRUD API 구현** (2026-05-24): 제목, 서브 타이틀, 배경 유형(그라데이션/이미지), 링크 유형(매장 연동/외부 이동/없음), 노출 순서 등을 포함하는 DB 스키마 모델을 생성하고, 공개 목록 API 및 ADMIN 전용 CRUD API와 이미지 업로드 서비스 구현
 
 ---
 
@@ -337,6 +339,8 @@
 - [ ] **웹 토스트 UI 컴포넌트 (추후)**: `lib/capacitor/toast.ts`의 `showToast`가 웹(브라우저)에서는 무시됨. 데스크톱/PWA 웹용 토스트 컴포넌트 도입 시 전역 에러 안내도 웹에서 노출.
 - [ ] **미들웨어 → 클라이언트 AuthGuard 전환 (보류)**: `middleware.ts`는 `_auth` 쿠키 기반인데 AuthContext가 클라이언트 마운트 후 쿠키를 심어, Remote WebView 첫 진입 시 쿠키 싱크 전에 엣지 미들웨어가 먼저 돌아 `/login`으로 튕기고 깜빡이는 고질 문제. 보호 라우트(/orders·/mypage·order/success|fail)를 클라 `<AuthGuard>`(useAuth().loading 게이트)로 감싸는 방향. 인증 동작 변경이라 실기기 검증 필요해 보류.
 - [ ] **Next Image 최적화 활성화 (unoptimized 해제) (추후)**: 현재 `next.config.ts`가 `images.unoptimized: true`라 Next Image의 리사이즈/webp/srcset이 비활성 → 데이터 절약 효과 없음. 해제 시 Supabase Storage 원본 자동 최적화로 데이터 절감 가능하나, `images.remotePatterns`(Supabase·placeholder 도메인) 등록 + Capacitor Remote WebView에서 `/_next/image` 엔드포인트 동작 검증 필요(잘못 켜면 메뉴 이미지 전부 깨질 위험).
+- [x] **실시간 동적 배너 연동 및 터치 스와이프(햅틱 드래그) 캐러셀 구현** (2026-05-24): 로컬 하드코딩 배너를 API 데이터 연동으로 교체하고, Framer Motion 기반의 햅틱 드래그 제스처 및 임계값 연산 드래그 슬라이드 이식
+- [x] **배너 클릭 링크 리다이렉트 연동** (2026-05-24): 배너를 링크 유형에 따라 특정 매장 상세(`/store/[storeId]/menu`) 혹은 외부 주소로 연동하는 라우팅 추가
 
 ## 🍽️ Table Order (테이블 오더)
 
