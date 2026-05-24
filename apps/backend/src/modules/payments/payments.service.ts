@@ -28,6 +28,22 @@ export class PaymentsService {
         @Optional() private readonly queueService?: QueueService,
     ) { }
 
+    async warmUpCheckout(storeId?: string) {
+        await this.prisma.$queryRaw`SELECT 1`;
+
+        const store = storeId
+            ? await this.prisma.store.findUnique({
+                where: { id: storeId },
+                select: { id: true },
+            })
+            : null;
+
+        return {
+            ok: true,
+            storeFound: storeId ? !!store : undefined,
+        };
+    }
+
     async confirmTossPayment(dto: ConfirmTossPaymentDto) {
         const payment = await this.prisma.payment.findFirst({
             where: {

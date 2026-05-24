@@ -42,6 +42,7 @@ describe('PaymentsService', () => {
             store: {
                 findUnique: vi.fn(),
             },
+            $queryRaw: vi.fn(),
             $transaction: vi.fn(async (operations) => operations),
         };
 
@@ -60,6 +61,23 @@ describe('PaymentsService', () => {
         };
 
         service = new PaymentsService(prisma, tossApiService, queueService);
+    });
+
+    it('warms up checkout without creating orders or calling Toss', async () => {
+        prisma.$queryRaw.mockResolvedValue([{ '?column?': 1 }]);
+        prisma.store.findUnique.mockResolvedValue({ id: 'store-1' });
+
+        const result = await service.warmUpCheckout('store-1');
+
+        expect(result).toEqual({ ok: true, storeFound: true });
+        expect(prisma.$queryRaw).toHaveBeenCalled();
+        expect(prisma.store.findUnique).toHaveBeenCalledWith({
+            where: { id: 'store-1' },
+            select: { id: true },
+        });
+        expect(tossApiService.confirmPayment).not.toHaveBeenCalled();
+        expect(prisma.payment.update).not.toHaveBeenCalled();
+        expect(prisma.order.update).not.toHaveBeenCalled();
     });
 
     it('confirms a pending Toss payment and marks the order as paid', async () => {
