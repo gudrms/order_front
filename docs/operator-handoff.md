@@ -23,6 +23,36 @@
 4. 관리자 `주문/운영` 화면에서 주문 상태, 결제 상태, 큐 처리 여부를 확인합니다.
 5. 결제 장애는 Toss 승인 상태와 로컬 DB의 payment/order 상태가 같은지 확인합니다.
 
+## Delivery 메뉴/매장 캐시 프록시
+
+delivery-customer는 손님용 매장/메뉴 조회를 동일 origin `/api/...` Route Handler로 보낸다. 이 Route Handler는 NestJS 공개 API를 프록시하고 Vercel Data Cache에 60초 저장한다. 캐시 히트 시 `api.tacomole.kr` NestJS 함수가 실행되지 않아 cold start 지연을 피한다.
+
+운영 env:
+
+| 프로젝트 | 변수 | 값 |
+|---|---|---|
+| delivery-customer | `BACKEND_API_URL` | `https://api.tacomole.kr/api/v1` |
+| delivery-customer | `DELIVERY_REVALIDATE_SECRET` | backend와 같은 랜덤 secret |
+| backend | `DELIVERY_REVALIDATE_URL` | `https://delivery.tacomole.kr/api/revalidate` |
+| backend | `DELIVERY_REVALIDATE_SECRET` | delivery와 같은 랜덤 secret |
+
+관리자에서 매장/메뉴/옵션을 수정하거나 Toss/POS 메뉴 동기화가 끝나면 backend가 delivery revalidate endpoint를 호출한다. 실패해도 쓰기 작업은 성공 처리되고 warning 로그만 남는다. 누락 시에도 TTL 60초로 자동 회복된다.
+
+수동 무효화가 필요하면:
+
+```bash
+curl -X POST https://delivery.tacomole.kr/api/revalidate \
+  -H "Content-Type: application/json" \
+  -H "x-revalidate-secret: [DELIVERY_REVALIDATE_SECRET]" \
+  -d "{\"storeId\":\"[STORE_ID]\"}"
+```
+
+확인 포인트:
+
+1. `GET https://delivery.tacomole.kr/api/stores`가 200을 반환하는지 확인한다.
+2. 관리자에서 메뉴 품절/숨김을 바꾼 뒤 delivery 메뉴 목록을 새로고침해 반영되는지 확인한다.
+3. 반영이 늦으면 backend Runtime Logs에서 `Delivery cache revalidate failed` 경고를 확인한다.
+
 ## 관측 도구 기준
 
 - **프론트엔드 사용자 오류**: Sentry를 1차로 확인합니다. Hydration error, WebView 런타임 오류, 브라우저별 예외처럼 Vercel Runtime Logs에 남지 않는 문제를 추적합니다.

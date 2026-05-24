@@ -10,6 +10,8 @@
 ## [Unreleased]
 
 ### Added
+- 배달앱 메뉴/매장 공개 조회 Next 캐시 프록시 추가: delivery Route Handler(`/api/stores`, `/api/stores/[storeId]`, `/api/stores/[storeId]/categories`, `/api/stores/[storeId]/menus`, `/api/menus/[menuId]`)가 기존 NestJS 공개 API를 프록시하고 Vercel Data Cache(`revalidate: 60`, tag 기반 무효화)에 저장해, 캐시 히트 시 NestJS cold start 없이 응답한다.
+- delivery 캐시 무효화 endpoint `POST /api/revalidate` 추가: `DELIVERY_REVALIDATE_SECRET`으로 보호하고 store/menu 태그를 즉시 만료한다. 백엔드 store/menu/category/option 쓰기, Toss sync, POS catalog sync 후 `DELIVERY_REVALIDATE_URL`로 호출한다.
 - QStash 통합 크론 배치 API `POST /cron/batch` 추가: DB ping, 활성 매장 메뉴 웜업, 큐 처리, Toss pending 결제 만료, 결제 정합성 보정을 단일 호출로 실행.
 - 배달 Android 공개 테스트 운영 메모 추가: Firebase 푸시 활성화 조건, Logcat 필터, 카카오 OAuth 앱 복귀 검증 절차를 배포/인수인계 문서에 정리.
 - 배달앱 카카오 OAuth 앱 복귀 진단 로그 추가: `Auth`, `AuthCallback`, `DeepLink` 로그로 callback과 세션 복원 여부를 확인.

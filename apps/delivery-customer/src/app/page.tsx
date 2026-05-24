@@ -4,10 +4,10 @@ import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Search, MapPin, Clock, ChevronRight, Heart, Bike, Gift } from 'lucide-react';
-import { getAllStores, api } from '@order/shared/api';
 import type { Store } from '@order/shared';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFavoriteStores } from '@/hooks/useFavoriteStores';
+import { getDeliveryCategories, getDeliveryMenus, getDeliveryStores } from '@/lib/public-api-client';
 import BottomNav from '@/components/BottomNav';
 import HomeHeader from '@/components/HomeHeader';
 import ServiceButtons from '@/components/ServiceButtons';
@@ -29,12 +29,12 @@ export default function Home() {
         queryClient.setQueryData(['store', store.id], store);
         queryClient.prefetchQuery({
             queryKey: ['categories', store.id],
-            queryFn: () => api.menu.getCategories(store.id),
+            queryFn: () => getDeliveryCategories(store.id),
             staleTime: 5 * 60 * 1000,
         });
         queryClient.prefetchQuery({
             queryKey: ['menus', store.id, undefined],
-            queryFn: () => api.menu.getMenus(store.id),
+            queryFn: () => getDeliveryMenus(store.id),
             staleTime: 5 * 60 * 1000,
         });
         router.push(`/store/${store.id}/menu`);
@@ -42,7 +42,7 @@ export default function Home() {
 
     const { data: stores = [], isLoading } = useQuery({
         queryKey: ['delivery-stores'],
-        queryFn: getAllStores,
+        queryFn: getDeliveryStores,
         staleTime: 5 * 60 * 1000,
         meta: { errorToast: true },
     });

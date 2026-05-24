@@ -111,6 +111,38 @@ POST   /queue/process-once    큐 수동 처리
 
 ---
 
+## Delivery 공개 조회 캐시 경로
+
+배달앱의 손님용 매장/메뉴 조회는 서버리스 NestJS cold start를 줄이기 위해 delivery Next Route Handler를 캐시 프록시로 사용한다. delivery가 DB를 직접 읽거나 Upstash Redis에 메뉴 데이터를 복제하지 않는다. DB 접근과 공개 필터링 책임은 계속 NestJS API에 있고, delivery는 공개 조회 결과만 Vercel Data Cache에 저장한다.
+
+```
+손님 앱 React Query
+  -> delivery.tacomole.kr/api/stores...
+  -> Vercel Data Cache hit: delivery에서 즉시 응답
+  -> cache miss/stale: api.tacomole.kr/api/v1/stores... 호출
+  -> NestJS -> Prisma -> Supabase Postgres
+```
+
+캐시 대상:
+
+- `GET /api/stores`
+- `GET /api/stores/[storeId]`
+- `GET /api/stores/[storeId]/categories`
+- `GET /api/stores/[storeId]/menus?categoryId=...`
+- `GET /api/menus/[menuId]`
+
+캐시 TTL은 60초이며 `stale-while-revalidate=300`을 함께 사용한다. 태그는 `delivery:stores`, `delivery:store:{storeId}`, `delivery:store:{storeId}:categories`, `delivery:store:{storeId}:menus`, `delivery:menus:details`, `delivery:menu:{menuId}`를 쓴다. 백엔드 쓰기 성공 후 `POST /api/revalidate`를 호출해 관련 태그를 즉시 만료한다.
+
+운영 환경변수:
+
+- backend: `DELIVERY_REVALIDATE_URL=https://delivery.tacomole.kr/api/revalidate`
+- backend/delivery: `DELIVERY_REVALIDATE_SECRET` 같은 값
+- delivery: `BACKEND_API_URL=https://api.tacomole.kr/api/v1` (미설정 시 `NEXT_PUBLIC_API_URL` 사용)
+
+주의: 열려 있는 손님 화면의 React Query 메모리 캐시는 `staleTime` 동안 유지될 수 있다. 새 진입/새로고침/재조회는 delivery 캐시 프록시를 거치며, 주문 생성과 결제 전 최종 가격·품절·옵션 검증은 백엔드가 수행한다.
+
+---
+
 ## 주문 흐름
 
 ### 테이블 주문

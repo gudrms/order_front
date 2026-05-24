@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { assertCanCreateStore, assertCanManageStore } from '../../common/auth/permissions';
+import { revalidateDeliveryCache } from '../../common/utils/delivery-cache';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateStoreDto, CreateTablesDto, UpdateStoreDto } from './dto/store-admin.dto';
 
@@ -82,7 +83,7 @@ export class StoresService {
 
         const coords = dto.address ? await this.geocodeAddress(dto.address) : null;
 
-        return this.prisma.store.create({
+        const store = await this.prisma.store.create({
             data: {
                 ...dto,
                 lat: coords?.lat ?? null,
@@ -91,6 +92,9 @@ export class StoresService {
                 theme: dto.theme as Prisma.InputJsonValue,
             },
         });
+
+        await revalidateDeliveryCache({ storeId: store.id }, this.logger);
+        return store;
     }
 
     async updateStore(userId: string, storeId: string, dto: UpdateStoreDto) {
@@ -103,7 +107,7 @@ export class StoresService {
             coordsUpdate.lng = coords?.lng ?? null;
         }
 
-        return this.prisma.store.update({
+        const store = await this.prisma.store.update({
             where: { id: storeId },
             data: {
                 ...dto,
@@ -112,6 +116,9 @@ export class StoresService {
                 theme: dto.theme as Prisma.InputJsonValue,
             },
         });
+
+        await revalidateDeliveryCache({ storeId }, this.logger);
+        return store;
     }
 
     async createTables(userId: string, storeId: string, dto: CreateTablesDto) {

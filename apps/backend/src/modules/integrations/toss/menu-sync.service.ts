@@ -1,10 +1,13 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { revalidateDeliveryCache } from '../../../common/utils/delivery-cache';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TossApiService } from './toss-api.service';
 import { assertCanManageStore } from '../../../common/auth/permissions';
 
 @Injectable()
 export class MenuSyncService {
+    private readonly logger = new Logger(MenuSyncService.name);
+
     constructor(
         private readonly prisma: PrismaService,
         private readonly tossApiService: TossApiService,
@@ -225,6 +228,7 @@ export class MenuSyncService {
             }
         });
 
+        await revalidateDeliveryCache({ storeId }, this.logger);
         return result;
     }
 
