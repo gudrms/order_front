@@ -52,7 +52,10 @@ export default function OperationsPage() {
       const response = await axios.get(`${API_URL}/stores/${storeId}/orders/pos-sync/failed`, {
         headers: authHeaders,
       });
-      return response.data.data || response.data;
+      // TransformInterceptor: { statusCode, data: ACTUAL }
+      // ACTUAL for paginated endpoints: { data: [...], meta: {...} }
+      const actual = response.data?.data;
+      return Array.isArray(actual) ? actual : (actual?.data ?? actual ?? []);
     },
     enabled: !!session && !!storeId,
   });
@@ -63,7 +66,10 @@ export default function OperationsPage() {
       const response = await axios.get(`${API_URL}/stores/${storeId}/operations/notifications/failed`, {
         headers: authHeaders,
       });
-      return response.data.data || response.data;
+      // TransformInterceptor: { statusCode, data: ACTUAL }
+      // ACTUAL for paginated endpoints: { data: [...], meta: {...} }
+      const actual = response.data?.data;
+      return Array.isArray(actual) ? actual : (actual?.data ?? actual ?? []);
     },
     enabled: !!session && !!storeId,
   });
