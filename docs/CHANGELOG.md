@@ -17,7 +17,7 @@
 - **마스터 어드민 배너 관리 UI 추가**: 마스터 권한을 가진 어드민 로그인 시 `배너 관리` 네비게이션 및 실시간 배달앱 Live Preview 미리보기 형상, HEX 컬러 피커와 특정 매장/외부 URL 이동 매핑 제어판 제공.
 - **Capacitor 최적화 터치 드래그 스와이프 캐러셀 구현**: 배달앱 `HomeHeader`에 framer-motion 없이 순수 드래그 햅틱 물리 궤적 연산 제스처 Carousel 구현.
 - **Vercel Data Cache 배너 프록시 추가**: 배달앱 내 `/api/banners` 캐시 프록시 엔드포인트 신설로 배너 목록 1ms 대 초고속 응답 보장.
-- **어드민 공통 `adminApi` Axios 인스턴스 신설**: NestJS 응답 이중 래핑 문제로 인한 pagination 파싱 크래시 예방을 위해 interceptor를 탑재한 통합 API 인스턴스 추가.
+- **어드민 공통 `adminApi` Axios 인스턴스 신설 및 전체 마이그레이션**: NestJS 응답 이중 래핑 문제로 인한 pagination 파싱 크래시 예방을 위해 interceptor를 탑재한 통합 API 인스턴스 추가. accounts·menu·store·orders·franchise-inquiries·contexts(AdminStoreContext·AuthContext)·hooks(useStaffCalls·useWebPush) 등 15개+ 파일의 직접 axios 호출을 모두 `adminApi`로 교체.
 - **배달앱 캐러셀 세로 스크롤 가드 추가**: 사용자가 배너 영역을 세로 방향으로 드래그할 시 가로 슬라이드가 오작동하여 네이티브 상하 스크롤이 잠기는 현상을 방어하기 위한 Y축 스크롤 가드 탑재.
 - **브랜드 사이트 0ms 메뉴 탭 스위칭 최적화**: 탭 클릭 시마다 서버를 재조회하던 구조를 1회 Concurrent fetch (`Promise.all`) 후 클라이언트 메모리 즉시 필터링 방식으로 전환하여 탭 간 로딩 딜레이 완전 제거.
 - 배달앱 메뉴/매장 공개 조회 Next 캐시 프록시 추가: delivery Route Handler(`/api/stores`, `/api/stores/[storeId]`, `/api/stores/[storeId]/categories`, `/api/stores/[storeId]/menus`, `/api/menus/[menuId]`)가 기존 NestJS 공개 API를 프록시하고 Vercel Data Cache(`revalidate: 60`, tag 기반 무효화)에 저장해, 캐시 히트 시 NestJS cold start 없이 응답한다.
@@ -73,6 +73,7 @@
 - admin-electron 업데이트를 `autoDownload=false` 수동 승인 방식으로 전환(영업 중 강제 다운로드/재시작 방지).
 - admin-electron 트레이 종료를 `win.destroy()`에서 `app.quit()`로 바꿔 프로세스를 완전 해제.
 - admin 매장 조회 쿼리를 `enabled:!!authHeaders`로 가드해 토큰 미탑재 상태의 401 경쟁을 방지.
+- `adminApi` 인터셉터 조건을 `shared/api/client.ts handleResponse`와 동일한 `'data' in d` 단일 조건으로 통일 (기존 `typeof d.statusCode === 'number' && 'data' in d` 이중 조건 제거). E2E admin fixture `fulfillJson`이 `statusCode` 없이 `{ data: T }` 형태로 반환하는 원형도 함께 복원.
 - 백엔드 cold start 원인 분석 기록: 매장/메뉴 첫 로드 ~5초 지연이 Supabase가 아니라 NestJS를 Vercel 서버리스에 올린 구조의 cold start(DI 컨테이너 + Prisma 부팅 2~5초)임을 확인. Vercel은 `min-instances` 노브가 없어 유료(Pro/Fluid Compute)로도 보장 제거 불가. 트래픽이 붙으면 인스턴스 warm 유지로 자연 완화되므로 출시 블로커는 아니나, 근본 해결은 백엔드만 상시 기동 인스턴스(Cloud Run `min-instances=1` 도쿄 등)로 이전(프론트 Next.js는 Vercel 유지). 체크리스트 인프라 고도화/Delivery Customer 항목에 정리.
 - GitHub Actions 5분 cron 실행 신뢰성 문제 기록: `backend-cron.yml`이 `*/5` 설정이나 스케줄 스로틀링으로 실제 1~3시간 간격 실행됨을 Actions 로그로 확인. cold start 워밍업 효과가 없을 뿐 아니라 결제 만료/정합성 배치(`/payments/toss/expire-pending`·`/reconcile`)가 지연되는 운영 위험이 있어, 신뢰성 있는 스케줄러로 이전 검토 항목을 체크리스트에 추가.
 
