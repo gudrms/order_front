@@ -14,9 +14,10 @@ export const adminApi = axios.create();
 
 adminApi.interceptors.response.use((response) => {
     const d = response.data;
-    // { statusCode: number, data: T } 형태인 경우에만 래핑 제거
-    if (d !== null && typeof d === 'object' && typeof d.statusCode === 'number' && 'data' in d) {
-        return { ...response, data: d.data };
+    // shared/api/client.ts handleResponse 와 동일한 조건:
+    // 'data' 키가 있으면 래퍼를 벗겨 ACTUAL 값만 반환
+    if (d !== null && typeof d === 'object' && 'data' in d) {
+        return { ...response, data: (d as Record<string, unknown>).data };
     }
     return response;
 });
