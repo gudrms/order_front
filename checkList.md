@@ -1,6 +1,6 @@
 # Taco Mono 작업 현황
 
-마지막 업데이트: 2026-05-23 (12차)
+마지막 업데이트: 2026-05-25 (13차)
 
 ---
 
@@ -273,7 +273,7 @@
 
 - [ ] **`orders/page.tsx` 컴포넌트 분리**: 약 1,000줄에 달하는 거대 단일 컴포넌트를 `RefundDialog.tsx`, `OrderDetailPanel.tsx`, `lib/toss-utils.ts` 등으로 모듈화하여 유지보수성 개선
 - [x] **관리자 주문 중복 폴링 여부 확인** (2026-05-18): admin `orders/page.tsx`는 `useRealtimeOrders(storeId)`로 Realtime invalidate만 수행하고 `refetchInterval`을 쓰지 않는다. 5초 polling은 배달앱 `OrderStatusTracker`가 공유 `useOrderStatus`를 통해 사용자 주문 상세에서만 fallback으로 사용한다.
-- [ ] **API 호출 모듈화**: `orders/page.tsx` 내부의 직접적인 `axios.patch` 호출들을 `@order/shared`의 `apiClient` 인스턴스를 사용하도록 변경하여 인증 및 에러 처리 일원화
+- [x] **API 호출 모듈화** (2026-05-25): admin 전역 `adminApi` Axios 인스턴스 도입 + 인터셉터 조건을 `shared/api/client.ts handleResponse`와 동일한 `'data' in d` 단일 조건으로 통일. accounts·menu·store·orders·contexts·hooks 등 15개+ 파일의 직접 axios 호출을 모두 `adminApi`로 교체하여 NestJS TransformInterceptor 래핑 처리를 일원화.
 - [x] **관리자 부분 환불 제거** (2026-05-18): 초기 운영 안정성을 위해 관리자 환불은 전액 취소만 허용한다. admin UI에서 부분 환불 버튼/금액 입력 제거, 백엔드 `cancelAmount` 요청 거부, 테스트 시나리오를 전액 환불 기준으로 정리.
 - [x] **매장 조회 쿼리 authHeaders 가드** (2026-05-23): `AdminStoreContext`의 매장 조회를 `enabled:!!session` → `enabled:!!authHeaders`로 변경해 토큰 미탑재 상태의 401 경쟁 방지.
 - [ ] **Realtime 주문 무효화 throttle 검토**: `useRealtimeOrders`가 모든 주문 이벤트에 `invalidateQueries`를 호출. status 화이트리스트는 admin 특성상(접수·조리·완료 등 대부분 변경이 UI 반영 필요) 갱신 누락 위험이 커 부적합 — 짧은 시간 다중 변경 시 REST 재조회 폭주를 debounce/throttle로 완화하는 방향 검토.
@@ -373,6 +373,10 @@
 ---
 
 ## 🗓 완료 이력 (마일스톤 요약)
+
+### 2026-05-25
+- **어드민 API 호출 모듈화 완료**: `adminApi` Axios 인스턴스로 어드민 전체 파일(accounts·menu·store·orders·franchise-inquiries·contexts·hooks 등 15개+) 마이그레이션. 인터셉터 조건을 `shared/api/client.ts handleResponse`와 동일한 `'data' in d` 단일 조건으로 통일 — `statusCode` 이중 조건 제거로 E2E fixture 호환성 복원(fulfillJson 원형 유지).
+- **CI E2E 수정**: adminApi 조건 통일 후 E2E admin 전 spec 통과 확인.
 
 ### 2026-05-18
 - **관리자 계정 관리 모델 구현**: 셀프 회원가입·이메일 인증·초대코드 가입 흐름 제거. `ADMIN` 전용 `/admin/accounts` API와 admin `계정 관리` 화면 추가. 마스터가 이메일/초기 비밀번호/역할/매장을 직접 지정하고, 비밀번호 초기화·삭제까지 수행.
