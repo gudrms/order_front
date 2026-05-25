@@ -145,10 +145,15 @@ export async function gotoAdminPage(page: Page, path: string, readyTestId?: stri
 }
 
 export async function fulfillJson(route: Route, body: unknown, status = 200) {
+  // adminApi 인터셉터가 { statusCode, data } 래퍼를 벗기므로 실제 백엔드와 동일한 형태로 응답
+  const wrapped =
+    body !== null && typeof body === 'object'
+      ? { statusCode: status, ...(body as Record<string, unknown>) }
+      : body;
   await route.fulfill({
     status,
     contentType: 'application/json',
-    body: JSON.stringify(body),
+    body: JSON.stringify(wrapped),
   });
 }
 
