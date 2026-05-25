@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import { getToken, onMessage } from 'firebase/messaging';
 import { getFirebaseMessaging, isFirebaseConfigured } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
-import axios from 'axios';
+import { adminApi } from '@/lib/adminApi';
 
 const VAPID_KEY = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -21,7 +21,7 @@ async function registerToken(token: string, accessToken: string) {
     throw new Error('NEXT_PUBLIC_API_URL is required to register web push tokens');
   }
 
-  await axios.post(
+  await adminApi.post(
     `${API_URL}/devices`,
     { fcmToken: token, deviceType: 'ADMIN_WEB' },
     { headers: { Authorization: `Bearer ${accessToken}` } },
@@ -31,7 +31,7 @@ async function registerToken(token: string, accessToken: string) {
 async function unregisterToken(token: string, accessToken: string) {
   if (!API_URL) return;
 
-  await axios.delete(`${API_URL}/devices/${encodeURIComponent(token)}`, {
+  await adminApi.delete(`${API_URL}/devices/${encodeURIComponent(token)}`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
 }

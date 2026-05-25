@@ -1,6 +1,6 @@
-import { Body, Controller, Headers, HttpCode, Param, Post, UnauthorizedException, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Body, Controller, Get, Header, Headers, HttpCode, Param, Post, Query, UnauthorizedException, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ConfirmTossPaymentDto, ExpirePendingTossPaymentsDto, FailTossPaymentDto, CancelTossPaymentDto, ReconcileTossPaymentsDto, TossWebhookDto } from './dto/confirm-toss-payment.dto';
 import { PaymentsService } from './payments.service';
 import { SupabaseGuard } from '../auth/guards/supabase.guard';
@@ -13,6 +13,18 @@ export class PaymentsController {
         private readonly paymentsService: PaymentsService,
         private readonly config: ConfigService,
     ) { }
+
+    @Get('warmup')
+    @Header('Cache-Control', 'no-store')
+    @ApiOperation({
+        summary: 'Checkout backend warmup',
+        description: '체크아웃 화면 진입 시 서버리스 cold start를 미리 흡수하기 위한 lightweight endpoint입니다. 주문 생성이나 Toss 승인 호출은 수행하지 않습니다.',
+    })
+    @ApiQuery({ name: 'storeId', required: false, description: '선택 매장 ID. 전달되면 매장 row를 가볍게 조회합니다.' })
+    @ApiResponse({ status: 200, description: 'Warmup completed' })
+    async warmUpCheckout(@Query('storeId') storeId?: string) {
+        return this.paymentsService.warmUpCheckout(storeId);
+    }
 
     @Post('toss/confirm')
     @UsePipes(new ValidationPipe({ transform: true }))

@@ -53,6 +53,12 @@ export class StorageService {
         return this.uploadToAssets(`${BRAND_MENU_IMAGE_PREFIX}/${randomUUID()}.${ext}`, file);
     }
 
+    async uploadBrandBannerImage(file: { buffer: Buffer; mimetype: string }): Promise<string> {
+        const ext = EXTENSION_BY_MIME[file.mimetype];
+        return this.uploadToAssets(`brand-banner/${randomUUID()}.${ext}`, file);
+    }
+
+
     private async uploadToAssets(path: string, file: { buffer: Buffer; mimetype: string }): Promise<string> {
         const client = this.getClient();
 

@@ -277,6 +277,7 @@
 - [x] **관리자 부분 환불 제거** (2026-05-18): 초기 운영 안정성을 위해 관리자 환불은 전액 취소만 허용한다. admin UI에서 부분 환불 버튼/금액 입력 제거, 백엔드 `cancelAmount` 요청 거부, 테스트 시나리오를 전액 환불 기준으로 정리.
 - [x] **매장 조회 쿼리 authHeaders 가드** (2026-05-23): `AdminStoreContext`의 매장 조회를 `enabled:!!session` → `enabled:!!authHeaders`로 변경해 토큰 미탑재 상태의 401 경쟁 방지.
 - [ ] **Realtime 주문 무효화 throttle 검토**: `useRealtimeOrders`가 모든 주문 이벤트에 `invalidateQueries`를 호출. status 화이트리스트는 admin 특성상(접수·조리·완료 등 대부분 변경이 UI 반영 필요) 갱신 누락 위험이 커 부적합 — 짧은 시간 다중 변경 시 REST 재조회 폭주를 debounce/throttle로 완화하는 방향 검토.
+- [x] **마스터 어드민 `배너 관리` 화면 추가** (2026-05-24): 마스터 관리자(`ADMIN` 권한)가 메인 배너를 동적으로 생성/수정/삭제하고 배경 이미지 업로드 및 이동 타겟 매장을 매핑할 수 있는 관리 화면 신규 개발
 
 ---
 
@@ -301,6 +302,7 @@
 - [x] **Toss 일반 결제 웹훅 검증 방식 확인** (2026-05-18): 공식 문서 기준 `PAYMENT_STATUS_CHANGED`/`CANCEL_STATUS_CHANGED` 일반 결제 웹훅에는 `tosspayments-webhook-signature`가 포함되지 않는다. 현재 구현처럼 웹훅 body의 `orderId` 또는 `paymentKey`로 Toss 결제 조회 API를 재호출해 상태를 검증하는 방식이 맞다. 서명 검증은 `payout.changed`/`seller.changed` 웹훅 도입 시 별도 적용.
 - [x] **주문 생성 시 가격 위변조 검증 확인 및 테스트 보강** (2026-05-18): `prepareOrderItems`가 DB `Menu.price`/`MenuOption.price`로 재계산하고, 배달 주문은 `dto.totalAmount`/`payment.amount`가 서버 계산 금액과 다르면 거부한다. `delivery-order.service.spec.ts`에 총액 위변조 거부 및 클라이언트 item price 무시 테스트 추가.
 - [x] **GitHub Actions cron 실행 신뢰성 — 스케줄 스로틀링 해결 (2026-05-23 완료)**: GitHub Actions의 지연/드롭 스케줄링 문제를 해소하기 위해 **Upstash QStash**를 도입. 단 한 번의 호출로 웜업, 큐 소비, 미승인 결제 만료, 결제 정합성 보정을 순차 실행하는 **통합 크론 배치 API (`POST /cron/batch`)**를 구현함. QStash 스케줄을 `CRON_TZ=Asia/Seoul */5 10-23 * * *`로 설정해 매장 운영 시간인 **10:00 ~ 00:00 KST** 동안 5분 주기로 단일화하고, 하루 168회 실행으로 Upstash QStash 무료 티어(일 1,000회) 안에서 운영하도록 정리.
+- [x] **동적 배너 `BrandBanner` 데이터 모델 및 CRUD API 구현** (2026-05-24): 제목, 서브 타이틀, 배경 유형(그라데이션/이미지), 링크 유형(매장 연동/외부 이동/없음), 노출 순서 등을 포함하는 DB 스키마 모델을 생성하고, 공개 목록 API 및 ADMIN 전용 CRUD API와 이미지 업로드 서비스 구현
 
 ---
 
@@ -313,8 +315,19 @@
   - **해결안**: 앱 재진입 시점(`store/[storeId]/layout.tsx` 또는 루트 진입)에서 `sessionStorage['delivery.pendingTossOrderId']` 확인 → 해당 주문이 여전히 PENDING이면 `failTossPaymentMutation`(또는 `cancelOrder`) 호출로 정리 + 키 제거. success/fail의 기존 정리 로직을 공용 헬퍼로 추출해 재사용 권장.
   - **현재 안전망 / 우선순위**: 백엔드 `payments.service.expirePendingTossPayments` 만료 배치가 시간 경과분을 정리하므로 결제 정합성 버그는 아님(미결제 주문이 일시적으로 쌓이는 위생 문제). 출시 블로커 아님 — 우선순위 중.
 - [ ] **Capacitor 빌드 점검**: 모바일 네이티브 환경(iOS/Android)에서 Toss 결제 위젯이 `iframe` 기반이므로 WebView 결제 리다이렉션이 정상적으로 `app scheme`으로 돌아오는지 E2E 테스트 필수
+- [x] **체크아웃 진입 시 결제 백엔드 warmup**: 결제/주문 생성은 캐시 우회가 불가능하므로 checkout 화면 진입 직후 lightweight `GET /payments/warmup`을 백그라운드로 호출해 NestJS/Prisma cold start를 사용자가 입력하는 시간 동안 미리 흡수한다. 실제 주문 생성·Toss 승인 호출은 하지 않고, 실패해도 UI를 막지 않는다.
+  - [x] backend: 공개 `GET /payments/warmup` 추가, `Cache-Control: no-store`, DB `SELECT 1` + 선택적 `storeId` 조회만 수행.
+  - [x] shared/delivery: `warmUpPaymentBackend(storeId)` API 추가 후 checkout page mount 시 1회 fire-and-forget 호출.
+  - [x] 검증: `backend tsc`, `delivery type-check/build`, payments 관련 테스트 확인.
 - [x] **매장 클릭 진입 속도 개선 (렌더 워터폴 제거)** (2026-05-22): 홈에서 매장 클릭 시 `/store/[storeId]/layout.tsx`가 `getStore`를 직렬로 다시 호출하며 "매장 정보를 불러오는 중..." 전체화면으로 차단 → 매장 응답 후에야 메뉴/카테고리 fetch 시작하던 워터폴 제거. 홈(`page.tsx`)의 매장 카드 클릭 핸들러 `handleSelectStore`에서 ① 목록으로 받은 store를 `queryClient.setQueryData(['store', id])`로 시드(layout의 `isLoading` 분기 스킵 → 전체화면 로딩 제거), ② 카테고리/메뉴(`['categories', id]`·`['menus', id, undefined]`)를 `prefetchQuery`로 라우팅과 병렬 요청, ③ layout `useQuery`에 `staleTime: 5분` 추가(재방문 즉시). `pnpm --filter delivery-customer type-check` 통과.
 - [x] **메뉴/매장 조회 cold start 우회 및 웜업 해결 (2026-05-23 완료)**: 서버리스 환경의 콜드 스타트로 첫 메뉴 진입 시 ~5초 지연이 발생하던 문제를 해결하기 위해, Upstash QStash 통합 크론(`POST /cron/batch`) 파이프라인의 **Step 2 단계로 메뉴 웜업 로직을 직접 통합**. 5분 간격 크론(영업 시간 10~00시만 동작) 실행 시 활성 매장들의 메뉴 서비스(`MenusService.getMenus(storeId)`)를 강제 호출하도록 하여, Prisma 쿼리 엔진 및 DB 커넥션 풀을 실질적으로 예열(Warm) 상태로 유지함으로써 손님의 첫 진입 지연 속도를 획기적으로 개선함.
+- [x] **메뉴/매장 조회 Next 캐시 프록시 (Vercel Data Cache, 서버리스 cold start 우회)**: 서버리스 NestJS 유지 방침이면 QStash 웜업만으로는 멀티 인스턴스·영업시간 외·트래픽 스파이크 cold start 빈틈이 남는다. delivery Next Route Handler가 기존 NestJS 공개 조회 API를 프록시하고 `fetch(..., { next: { revalidate: 60, tags } })`로 Vercel Data Cache에 저장한다. **캐시 히트 시 NestJS/Prisma/Supabase 호출 없이 delivery에서 응답**하므로 손님 첫 진입 체감 지연을 줄인다. DB 직접 조회나 Upstash Redis read 복제는 정합성 비용이 커서 제외.
+  - [x] delivery 캐시 Route Handler 추가: `GET /api/stores`, `GET /api/stores/[storeId]`, `GET /api/stores/[storeId]/categories`, `GET /api/stores/[storeId]/menus?categoryId=...`, `GET /api/menus/[menuId]`. 각 핸들러는 NestJS API 응답의 `data`만 unwrap해 기존 클라이언트 타입과 맞춘다.
+  - [x] 태그/TTL 설계: `delivery:stores`, `delivery:store:{storeId}`, `delivery:store:{storeId}:categories`, `delivery:store:{storeId}:menus`, `delivery:menus:details`, `delivery:menu:{menuId}`. 기본 TTL은 60초, `Cache-Control: s-maxage=60, stale-while-revalidate=300` 병행.
+  - [x] 클라이언트 전환: delivery 홈 `getAllStores`, store layout `getStore`, `useMenus`의 categories/menus/menu detail을 NestJS 직접 호출에서 동일-origin `/api/...` 호출로 전환. React Query `staleTime` 5분은 브라우저 메모리 캐시로 유지.
+  - [x] 재검증 endpoint 추가: `POST /api/revalidate`를 `DELIVERY_REVALIDATE_SECRET`으로 보호하고 `revalidateTag(tag, { expire: 0 })` 지원. `storeId` 기반 호출 시 stores/store/categories/menus 태그를 한번에 무효화.
+  - [x] 백엔드 쓰기 후 무효화 연동: store update/create, admin direct category/menu/option CRUD, Toss sync, POS catalog sync가 DB 쓰기 성공 후 delivery revalidate webhook을 호출하도록 `DELIVERY_REVALIDATE_URL`/secret 추가.
+  - [x] 안전 원칙: 메뉴/품절/옵션/가격은 조회 캐시가 60초 stale일 수 있음을 전제로 주문 생성·결제 직전 백엔드에서 최종 검증한다. 온디맨드 무효화 누락은 TTL 60초로 자가 치유한다.
 - [x] **웹뷰 상태바 영역 겹침 (safe-area 미적용)** (2026-05-22): 루트 `layout.tsx` viewport에 `viewportFit: 'cover'` 추가(iOS WebView `env(safe-area-inset-*)` 활성화). `globals.css`에 `.pt-safe`/`.pb-safe` 유틸 추가 후, 상단 고정 헤더 전체에 `pt-safe` 적용 — HomeHeader, 매장 메뉴 헤더, 체크아웃, 주문내역/상세(orders·order-detail·OrderDetailClient), 마이페이지(메인·쿠폰·주소·주소추가·즐겨찾기), PWAInstaller. Android 15(targetSdk 35) edge-to-edge 강제 + iOS 노치 양쪽 대응. `type-check` 통과.
 - [x] **TanStack Query 윈도우 포커스 refetch 비활성화** (2026-05-22): 하이브리드 앱 백그라운드→복귀 시 stale 쿼리가 한꺼번에 refetch되는 focus storm으로 Supabase 부하가 튀던 문제 완화. `providers.tsx` QueryClient 기본 옵션에 `refetchOnWindowFocus: false` 추가. 신선도는 staleTime·Realtime·명시적 invalidate로 보장.
 - [x] **장바구니 store 구독 selector 분리** (2026-05-22): `useCartStore()`를 selector 없이 호출해 장바구니 변경 시 메뉴 페이지 등이 통째로 리렌더되던 병목 완화. 각 호출처(menu·checkout·success·CartBottomSheet)가 필요한 slice만 구독하도록 selector 콜백 적용. 결제 완료 페이지는 `clearCart` action만 구독해 cart 변경에 리렌더되지 않음. (효과 한계: 헤더 배지·하단 바가 같은 컴포넌트라 cart 변경 시 부모 리렌더는 잔존 — 더 줄이려면 cart 의존 UI를 별도 컴포넌트로 분리 필요.)
@@ -326,6 +339,8 @@
 - [ ] **웹 토스트 UI 컴포넌트 (추후)**: `lib/capacitor/toast.ts`의 `showToast`가 웹(브라우저)에서는 무시됨. 데스크톱/PWA 웹용 토스트 컴포넌트 도입 시 전역 에러 안내도 웹에서 노출.
 - [ ] **미들웨어 → 클라이언트 AuthGuard 전환 (보류)**: `middleware.ts`는 `_auth` 쿠키 기반인데 AuthContext가 클라이언트 마운트 후 쿠키를 심어, Remote WebView 첫 진입 시 쿠키 싱크 전에 엣지 미들웨어가 먼저 돌아 `/login`으로 튕기고 깜빡이는 고질 문제. 보호 라우트(/orders·/mypage·order/success|fail)를 클라 `<AuthGuard>`(useAuth().loading 게이트)로 감싸는 방향. 인증 동작 변경이라 실기기 검증 필요해 보류.
 - [ ] **Next Image 최적화 활성화 (unoptimized 해제) (추후)**: 현재 `next.config.ts`가 `images.unoptimized: true`라 Next Image의 리사이즈/webp/srcset이 비활성 → 데이터 절약 효과 없음. 해제 시 Supabase Storage 원본 자동 최적화로 데이터 절감 가능하나, `images.remotePatterns`(Supabase·placeholder 도메인) 등록 + Capacitor Remote WebView에서 `/_next/image` 엔드포인트 동작 검증 필요(잘못 켜면 메뉴 이미지 전부 깨질 위험).
+- [x] **실시간 동적 배너 연동 및 터치 스와이프(햅틱 드래그) 캐러셀 구현** (2026-05-24): 로컬 하드코딩 배너를 API 데이터 연동으로 교체하고, Framer Motion 기반의 햅틱 드래그 제스처 및 임계값 연산 드래그 슬라이드 이식
+- [x] **배너 클릭 링크 리다이렉트 연동** (2026-05-24): 배너를 링크 유형에 따라 특정 매장 상세(`/store/[storeId]/menu`) 혹은 외부 주소로 연동하는 라우팅 추가
 
 ## 🍽️ Table Order (테이블 오더)
 
@@ -346,9 +361,11 @@
 - [ ] 관리자 전액 취소/환불 후 배달앱 주문 상태 갱신 확인
 - [ ] 결제 후 POS 전송 큐 처리 + 알림 발송 중복 없는지 확인
 - [ ] backend Vercel `BACKEND_QUEUE_PROCESS_URL` 설정 후 결제 → `order.paid` → POS/알림 큐 wake-up 지연 측정
-- [ ] QStash `POST /cron/batch` 스케줄 Active + Logs 2xx 확인
-- [ ] Vercel Runtime Logs에서 `CronBatch` 단계 로그와 백엔드 500급 오류 확인
-- [ ] Sentry에서 프론트 사용자 오류와 백엔드 500급 이슈 확인
+- [x] QStash `POST /cron/batch` 스케줄 Active + Logs 2xx 확인 (2026-05-23)
+- [x] Vercel Runtime Logs에서 `CronBatch` 단계 로그와 백엔드 500급 오류 확인 (2026-05-23)
+- [x] Sentry에서 백엔드 500급 이슈 확인: `/api/v1/sentry/error`, `source=backend-http-filter`, Vercel region `icn1` (2026-05-23)
+- [x] Sentry에서 프론트 사용자 오류 전송 확인: `admin`, `delivery-customer` envelope 200 응답 (2026-05-23)
+- [ ] brand-website Sentry 클라이언트 전송 확인: `https://tacomole.kr/sentry/error`는 버튼 에러는 발생하나 Sentry envelope 요청 0건. `NEXT_PUBLIC_SENTRY_DSN`/Vercel env/재배포 확인 필요.
 - [ ] Queue backlog/failed event가 관리자 `/operations`에서 조회·재시도되는지 운영 데이터로 확인
 - [ ] Vercel Production/Preview 환경변수 분리 상태 확인 (`REDIS_URL`, Firebase, Toss, Sentry)
 - [ ] Lighthouse 점수 90+ 목표 (LCP, CLS, FID 최적화)

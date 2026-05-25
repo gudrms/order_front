@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Patch, Param, Body, Query, Headers, ConflictException, Logger, NotFoundException, UseGuards } from '@nestjs/common';
 import { Prisma, OrderStatus } from '@prisma/client';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody, ApiQuery, ApiHeader } from '@nestjs/swagger';
+import { revalidateDeliveryCache } from '../../../common/utils/delivery-cache';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PosIntegrationGuard } from './pos-integration.guard';
 
@@ -434,6 +435,7 @@ export class PosController {
             }
         });
 
+        await revalidateDeliveryCache({ storeId }, this.logger);
         return { success: true, synced: body.catalogs.length };
     }
 }

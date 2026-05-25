@@ -14,6 +14,7 @@ const TossPaymentWidget = dynamic(
     { ssr: false },
 );
 import type { CreateOrderRequest, OrderItemInput as PaymentOrderItemInput, UserCoupon } from '@order/shared';
+import { warmUpPaymentBackend } from '@order/shared/api';
 import type { PaymentWidgetInstance } from '@tosspayments/payment-widget-sdk';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCurrentStore } from '@/contexts/StoreContext';
@@ -43,6 +44,7 @@ export default function CheckoutPage() {
     const [selectedCoupon, setSelectedCoupon] = useState<UserCoupon | null>(null);
     const [showCouponSheet, setShowCouponSheet] = useState(false);
     const paymentWidgetRef = useRef<PaymentWidgetInstance | null>(null);
+    const warmupRequestedRef = useRef(false);
 
     const { data: availableCoupons = [] } = useAvailableCoupons(user?.id);
 
@@ -92,6 +94,15 @@ export default function CheckoutPage() {
         }
         if (defaultAddress.deliveryMemo) setDeliveryRequest(defaultAddress.deliveryMemo);
     }, [addresses, deliveryInfo.address?.address, setAddress, setCustomerInfo, setDeliveryRequest]);
+
+    useEffect(() => {
+        if (warmupRequestedRef.current) return;
+        warmupRequestedRef.current = true;
+
+        void warmUpPaymentBackend(storeId).catch((error) => {
+            console.warn('Checkout backend warmup failed:', error);
+        });
+    }, [storeId]);
 
     useEffect(() => {
         if (items.length === 0) router.replace(`/store/${storeId}/menu`);

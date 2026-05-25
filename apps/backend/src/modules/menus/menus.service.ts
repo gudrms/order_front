@@ -1,6 +1,7 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { MenuManagementMode } from '@prisma/client';
 import { assertCanManageStore } from '../../common/auth/permissions';
+import { revalidateDeliveryCache } from '../../common/utils/delivery-cache';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
 import {
@@ -15,6 +16,8 @@ import {
 
 @Injectable()
 export class MenusService {
+    private readonly logger = new Logger(MenusService.name);
+
     constructor(
         private readonly prisma: PrismaService,
         private readonly storage: StorageService,
@@ -153,13 +156,16 @@ export class MenusService {
     async createCategory(userId: string, storeId: string, dto: CreateMenuCategoryDto) {
         await this.assertCanManageAdminDirectMenus(userId, storeId);
 
-        return this.prisma.menuCategory.create({
+        const category = await this.prisma.menuCategory.create({
             data: {
                 storeId,
                 name: dto.name,
                 displayOrder: dto.displayOrder ?? 0,
             },
         });
+
+        await revalidateDeliveryCache({ storeId }, this.logger);
+        return category;
     }
 
     async getAdminMenus(userId: string, storeId: string, categoryId?: string) {
@@ -213,7 +219,7 @@ export class MenusService {
             throw new NotFoundException('Menu category not found');
         }
 
-        return this.prisma.menu.create({
+        const menu = await this.prisma.menu.create({
             data: {
                 storeId,
                 categoryId: dto.categoryId,
@@ -231,6 +237,9 @@ export class MenusService {
                 tags: { include: { tag: true } },
             },
         });
+
+        await revalidateDeliveryCache({ storeId, menuId: menu.id }, this.logger);
+        return menu;
     }
 
     async updateMenu(userId: string, storeId: string, menuId: string, dto: UpdateMenuDto) {
@@ -259,7 +268,7 @@ export class MenusService {
             }
         }
 
-        return this.prisma.menu.update({
+        const updatedMenu = await this.prisma.menu.update({
             where: { id: menuId },
             data: dto,
             include: {
@@ -268,6 +277,9 @@ export class MenusService {
                 tags: { include: { tag: true } },
             },
         });
+
+        await revalidateDeliveryCache({ storeId, menuId }, this.logger);
+        return updatedMenu;
     }
 
     async createOptionGroup(userId: string, storeId: string, menuId: string, dto: CreateOptionGroupDto) {
@@ -279,7 +291,7 @@ export class MenusService {
         if (!menu) throw new NotFoundException('Menu not found');
         if (menu.tossMenuCode) throw new BadRequestException('Toss POS synced menus must be edited in Toss POS');
 
-        return this.prisma.menuOptionGroup.create({
+        const optionGroup = await this.prisma.menuOptionGroup.create({
             data: {
                 menuId,
                 name: dto.name,
@@ -289,6 +301,9 @@ export class MenusService {
             },
             include: { options: { orderBy: { displayOrder: 'asc' } } },
         });
+
+        await revalidateDeliveryCache({ storeId, menuId }, this.logger);
+        return optionGroup;
     }
 
     async updateOptionGroup(userId: string, storeId: string, menuId: string, groupId: string, dto: UpdateOptionGroupDto) {
@@ -298,11 +313,14 @@ export class MenusService {
         });
         if (!group) throw new NotFoundException('Option group not found');
 
-        return this.prisma.menuOptionGroup.update({
+        const optionGroup = await this.prisma.menuOptionGroup.update({
             where: { id: groupId },
             data: dto,
             include: { options: { orderBy: { displayOrder: 'asc' } } },
         });
+
+        await revalidateDeliveryCache({ storeId, menuId }, this.logger);
+        return optionGroup;
     }
 
     async deleteOptionGroup(userId: string, storeId: string, menuId: string, groupId: string) {
@@ -313,6 +331,7 @@ export class MenusService {
         if (!group) throw new NotFoundException('Option group not found');
 
         await this.prisma.menuOptionGroup.delete({ where: { id: groupId } });
+        await revalidateDeliveryCache({ storeId, menuId }, this.logger);
     }
 
     async createOption(userId: string, storeId: string, menuId: string, groupId: string, dto: CreateMenuOptionDto) {
@@ -322,7 +341,7 @@ export class MenusService {
         });
         if (!group) throw new NotFoundException('Option group not found');
 
-        return this.prisma.menuOption.create({
+        const option = await this.prisma.menuOption.create({
             data: {
                 optionGroupId: groupId,
                 name: dto.name,
@@ -331,6 +350,9 @@ export class MenusService {
                 isSoldOut: dto.isSoldOut ?? false,
             },
         });
+
+        await revalidateDeliveryCache({ storeId, menuId }, this.logger);
+        return option;
     }
 
     async updateOption(userId: string, storeId: string, menuId: string, groupId: string, optionId: string, dto: UpdateMenuOptionDto) {
@@ -341,7 +363,9 @@ export class MenusService {
         if (!option) throw new NotFoundException('Option not found');
         if (option.tossOptionCode) throw new BadRequestException('Toss POS synced options must be edited in Toss POS');
 
-        return this.prisma.menuOption.update({ where: { id: optionId }, data: dto });
+        const updatedOption = await this.prisma.menuOption.update({ where: { id: optionId }, data: dto });
+        await revalidateDeliveryCache({ storeId, menuId }, this.logger);
+        return updatedOption;
     }
 
     async deleteOption(userId: string, storeId: string, menuId: string, groupId: string, optionId: string) {
@@ -353,6 +377,7 @@ export class MenusService {
         if (option.tossOptionCode) throw new BadRequestException('Toss POS synced options must be edited in Toss POS');
 
         await this.prisma.menuOption.delete({ where: { id: optionId } });
+        await revalidateDeliveryCache({ storeId, menuId }, this.logger);
     }
 
     private async assertCanManageStore(userId: string, storeId: string) {

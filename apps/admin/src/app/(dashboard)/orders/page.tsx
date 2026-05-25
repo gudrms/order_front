@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import axios from 'axios';
+import { adminApi } from '@/lib/adminApi';
 import {
   CheckCircle2,
   ChefHat,
@@ -115,17 +115,18 @@ export default function OrdersPage() {
   const { data: orders = [], isLoading: isOrdersLoading } = useQuery<Order[]>({
     queryKey: ['admin-orders', storeId],
     queryFn: async () => {
-      const response = await axios.get(`${API_URL}/stores/${storeId}/orders`, {
+      const response = await adminApi.get(`${API_URL}/stores/${storeId}/orders`, {
         headers: authHeaders,
       });
-      return response.data.data || response.data;
+      // 페이지네이션 응답: { data: [...], meta: {...} } → data 배열만 추출
+      return response.data?.data ?? response.data;
     },
     enabled: !!session && !!storeId,
   });
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ orderId, status }: { orderId: string; status: OrderStatus }) => {
-      await axios.patch(
+      await adminApi.patch(
         `${API_URL}/stores/${storeId}/orders/${orderId}/status`,
         { status },
         { headers: authHeaders }
@@ -154,7 +155,7 @@ export default function OrdersPage() {
       status: DeliveryStatus;
       riderMemo?: string;
     }) => {
-      await axios.patch(
+      await adminApi.patch(
         `${API_URL}/stores/${storeId}/orders/${orderId}/delivery-status`,
         { status, riderMemo },
         { headers: authHeaders }
@@ -180,7 +181,7 @@ export default function OrdersPage() {
       orderId: string;
       cancelReason: string;
     }) => {
-      await axios.post(
+      await adminApi.post(
         `${API_URL}/payments/orders/${orderId}/toss/cancel`,
         { cancelReason },
         { headers: authHeaders }

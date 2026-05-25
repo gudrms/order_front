@@ -23,6 +23,36 @@
 4. 관리자 `주문/운영` 화면에서 주문 상태, 결제 상태, 큐 처리 여부를 확인합니다.
 5. 결제 장애는 Toss 승인 상태와 로컬 DB의 payment/order 상태가 같은지 확인합니다.
 
+## Delivery 메뉴/매장 캐시 프록시
+
+delivery-customer는 손님용 매장/메뉴 조회를 동일 origin `/api/...` Route Handler로 보낸다. 이 Route Handler는 NestJS 공개 API를 프록시하고 Vercel Data Cache에 60초 저장한다. 캐시 히트 시 `api.tacomole.kr` NestJS 함수가 실행되지 않아 cold start 지연을 피한다.
+
+운영 env:
+
+| 프로젝트 | 변수 | 값 |
+|---|---|---|
+| delivery-customer | `BACKEND_API_URL` | `https://api.tacomole.kr/api/v1` |
+| delivery-customer | `DELIVERY_REVALIDATE_SECRET` | backend와 같은 랜덤 secret |
+| backend | `DELIVERY_REVALIDATE_URL` | `https://delivery.tacomole.kr/api/revalidate` |
+| backend | `DELIVERY_REVALIDATE_SECRET` | delivery와 같은 랜덤 secret |
+
+관리자에서 매장/메뉴/옵션을 수정하거나 Toss/POS 메뉴 동기화가 끝나면 backend가 delivery revalidate endpoint를 호출한다. 실패해도 쓰기 작업은 성공 처리되고 warning 로그만 남는다. 누락 시에도 TTL 60초로 자동 회복된다.
+
+수동 무효화가 필요하면:
+
+```bash
+curl -X POST https://delivery.tacomole.kr/api/revalidate \
+  -H "Content-Type: application/json" \
+  -H "x-revalidate-secret: [DELIVERY_REVALIDATE_SECRET]" \
+  -d "{\"storeId\":\"[STORE_ID]\"}"
+```
+
+확인 포인트:
+
+1. `GET https://delivery.tacomole.kr/api/stores`가 200을 반환하는지 확인한다.
+2. 관리자에서 메뉴 품절/숨김을 바꾼 뒤 delivery 메뉴 목록을 새로고침해 반영되는지 확인한다.
+3. 반영이 늦으면 backend Runtime Logs에서 `Delivery cache revalidate failed` 경고를 확인한다.
+
 ## 관측 도구 기준
 
 - **프론트엔드 사용자 오류**: Sentry를 1차로 확인합니다. Hydration error, WebView 런타임 오류, 브라우저별 예외처럼 Vercel Runtime Logs에 남지 않는 문제를 추적합니다.
@@ -49,8 +79,13 @@ Vercel 서버리스 환경의 콜드스타트 완화(메뉴 조회 예열)와 �
 
 * **Destination URL:** `POST https://api.tacomole.kr/api/v1/cron/batch`
 * **Cron Expression:** `CRON_TZ=Asia/Seoul */5 10-23 * * *`
-* **Required Header:**
-  * `x-internal-job-secret`: 백엔드 환경변수 `INTERNAL_JOB_SECRET`와 일치하는 값
+* **Required Body:**
+  * `{ "internalJobSecret": "[INTERNAL_JOB_SECRET_값]" }`
+* **Allowed fallback headers:**
+  * `x-internal-job-secret`
+  * `Upstash-Forward-X-Internal-Job-Secret`
+
+QStash Console의 Edit Schedule 화면에서는 forwarded header가 다시 보이지 않을 수 있습니다. 실제 전송값은 스케줄 상세의 **Request → Meta → HEADERS/BODY**에서 확인합니다.
 
 ### 수동 확인 및 장애 조치:
 
@@ -59,8 +94,16 @@ Vercel 서버리스 환경의 콜드스타트 완화(메뉴 조회 예열)와 �
 3. 즉시 배치 실행이 필요하거나 강제 복구를 하려면 대시보드에서 즉시 트리거하거나 아래와 같이 `curl` 명령어로 수동 호출합니다:
    ```bash
    curl -X POST https://api.tacomole.kr/api/v1/cron/batch \
-     -H "x-internal-job-secret: [INTERNAL_JOB_SECRET_값]"
+     -H "Content-Type: application/json" \
+     -d "{\"internalJobSecret\":\"[INTERNAL_JOB_SECRET_값]\"}"
    ```
+
+2026-05-23 운영 확인:
+
+- QStash 스케줄 Active 및 2xx 실행 확인 완료.
+- Vercel Runtime Logs에서 `CronBatch` 단계 로그 확인 완료.
+- 백엔드 Sentry 500 수집 확인 완료: `/api/v1/sentry/error`, `source=backend-http-filter`, Vercel region `icn1`.
+- 프론트 Sentry 전송 확인: `admin`, `delivery-customer`는 envelope 200 응답 확인. `brand-website`는 `/sentry/error` 버튼 에러는 발생하지만 envelope 요청이 없어 `NEXT_PUBLIC_SENTRY_DSN`/Vercel env/재배포 점검 필요.
 
 ## 운영 엔드포인트
 
@@ -69,12 +112,12 @@ Vercel 서버리스 환경의 콜드스타트 완화(메뉴 조회 예열)와 �
 | Method | Path | 목적 | 인증 |
 |---|---|---|---|
 | `GET` | `/health` | API 상태 확인 | 없음 |
-| `POST` | `/cron/batch` | **통합 배치 & 웜업 파이프라인 (추천)** | `x-internal-job-secret` |
+| `POST` | `/cron/batch` | **통합 배치 & 웜업 파이프라인 (추천)** | `internalJobSecret` body 또는 내부 secret 헤더 |
 | `POST` | `/queue/process-once` | 큐 1회 단독 처리 | `x-internal-job-secret` |
 | `POST` | `/payments/toss/expire-pending` | 오래된 미승인 결제 단독 정리 | `x-internal-job-secret` |
 | `POST` | `/payments/toss/reconcile` | Toss 승인/로컬 DB 불일치 단독 보정 | `x-internal-job-secret` |
 
-헤더 이름은 `x-internal-job-secret`입니다.
+단독 운영 엔드포인트의 헤더 이름은 `x-internal-job-secret`입니다. `/cron/batch`는 QStash 운영 편의를 위해 body의 `internalJobSecret`도 허용합니다.
 
 ## 배포 확인
 
@@ -90,7 +133,7 @@ Vercel 서버리스 환경의 콜드스타트 완화(메뉴 조회 예열)와 �
 3. 매장/메뉴 조회
 4. 테이블오더 QR 진입
 5. 배달 주문 결제 모듈 진입
-6. GitHub Actions `Backend Cron Jobs` 성공 여부
+6. QStash `POST /cron/batch` 최근 실행 2xx 여부
 
 ## 결제/주문 운영 기준
 

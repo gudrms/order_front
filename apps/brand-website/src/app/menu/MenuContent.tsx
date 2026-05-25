@@ -40,42 +40,33 @@ function isSpicy(name: string, desc: string | null): boolean {
 
 export default function MenuContent() {
     const [categories, setCategories] = useState<BrandMenuCategory[]>([]);
-    const [menuItems, setMenuItems] = useState<BrandMenuItem[]>([]);
-    const [activeCategory, setActiveCategory] = useState<string>('');
+    const [allMenuItems, setAllMenuItems] = useState<BrandMenuItem[]>([]);
+    const [activeCategory, setActiveCategory] = useState<string>('all');
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         setIsLoading(true);
-        fetch(`${API_URL}/brand-menus/categories`)
-            .then((response) => response.json())
-            .then((json) => {
-                const sorted = unwrapList<BrandMenuCategory>(json).sort(
+        Promise.all([
+            fetch(`${API_URL}/brand-menus/categories`).then((r) => r.json()),
+            fetch(`${API_URL}/brand-menus`).then((r) => r.json()),
+        ])
+            .then(([catJson, menuJson]) => {
+                const sorted = unwrapList<BrandMenuCategory>(catJson).sort(
                     (a, b) => a.displayOrder - b.displayOrder,
                 );
                 setCategories(sorted);
-                setActiveCategory(sorted[0]?.id ?? '');
+                setAllMenuItems(unwrapList<BrandMenuItem>(menuJson));
             })
             .catch(() => {
                 setCategories([]);
-                setActiveCategory('');
-                setIsLoading(false);
-            });
+                setAllMenuItems([]);
+            })
+            .finally(() => setIsLoading(false));
     }, []);
 
-    useEffect(() => {
-        if (!activeCategory) {
-            setMenuItems([]);
-            setIsLoading(false);
-            return;
-        }
-
-        setIsLoading(true);
-        fetch(`${API_URL}/brand-menus?categoryId=${encodeURIComponent(activeCategory)}`)
-            .then((response) => response.json())
-            .then((json) => setMenuItems(unwrapList<BrandMenuItem>(json)))
-            .catch(() => setMenuItems([]))
-            .finally(() => setIsLoading(false));
-    }, [activeCategory]);
+    const filteredMenuItems = activeCategory === 'all'
+        ? allMenuItems
+        : allMenuItems.filter((item) => item.categoryId === activeCategory);
 
     return (
         <main className="min-h-screen bg-white text-brand-black pt-10 pb-20">
@@ -87,6 +78,16 @@ export default function MenuContent() {
 
                 {categories.length > 0 && (
                     <div className="flex flex-wrap justify-center gap-3 mb-10">
+                        <button
+                            onClick={() => setActiveCategory('all')}
+                            className={`px-5 py-2.5 rounded-full font-bold text-sm transition-all ${
+                                activeCategory === 'all'
+                                    ? 'bg-brand-black text-white shadow-md'
+                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                            }`}
+                        >
+                            전체보기
+                        </button>
                         {categories.map((category) => (
                             <button
                                 key={category.id}
@@ -95,7 +96,7 @@ export default function MenuContent() {
                                     activeCategory === category.id
                                         ? 'bg-brand-black text-white shadow-md'
                                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                }`}
+                                }}`}
                             >
                                 {category.name}
                             </button>
@@ -123,7 +124,7 @@ export default function MenuContent() {
 
                 {!isLoading && (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        {menuItems.map((item, index) => (
+                        {filteredMenuItems.map((item, index) => (
                             <ScrollAnimation key={item.id} delay={index * 0.05}>
                                 <div className="bg-white rounded-2xl overflow-hidden border border-gray-200 hover:border-brand-yellow hover:shadow-lg transition-all group">
                                     <div className="h-48 bg-gray-50 flex items-center justify-center overflow-hidden group-hover:scale-105 transition-transform duration-500">
@@ -165,7 +166,7 @@ export default function MenuContent() {
                             </ScrollAnimation>
                         ))}
 
-                        {menuItems.length === 0 && (
+                        {filteredMenuItems.length === 0 && (
                             <p className="col-span-full text-center text-gray-400 py-16">
                                 브랜드 메뉴 정보가 아직 등록되지 않았습니다.
                             </p>

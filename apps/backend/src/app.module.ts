@@ -8,6 +8,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { PrismaModule } from './modules/prisma/prisma.module';
 import { MenusModule } from './modules/menus/menus.module';
 import { BrandMenusModule } from './modules/brand-menus/brand-menus.module';
+import { BrandBannersModule } from './modules/brand-banners/brand-banners.module';
 import { StoresModule } from './modules/stores/stores.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { SessionsModule } from './modules/sessions/sessions.module';
@@ -82,6 +83,7 @@ import { AdminAccountsModule } from './modules/admin-accounts/admin-accounts.mod
         PrismaModule,
         MenusModule,
         BrandMenusModule,
+        BrandBannersModule,
         StoresModule,
         OrdersModule,
         SessionsModule,

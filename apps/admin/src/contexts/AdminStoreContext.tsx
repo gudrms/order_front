@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import axios from 'axios';
+import { adminApi } from '@/lib/adminApi';
 import type { Store } from '@order/shared';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAdminStoreState } from '@/stores/adminStore';
@@ -31,10 +31,10 @@ export function AdminStoreProvider({ children }: { children: React.ReactNode }) 
   const storesQuery = useQuery<Store[]>({
     queryKey: ['admin-stores'],
     queryFn: async () => {
-      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/stores/me`, {
+      const response = await adminApi.get(`${process.env.NEXT_PUBLIC_API_URL}/stores/me`, {
         headers: authHeaders,
       });
-      return response.data.data || response.data;
+      return response.data;
     },
     // 토큰이 실린 authHeaders가 준비된 시점에만 조회 — 토큰 미탑재 401 경쟁 방지
     enabled: !!authHeaders,

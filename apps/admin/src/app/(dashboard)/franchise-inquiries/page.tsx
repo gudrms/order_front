@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import axios from 'axios';
+import { adminApi } from '@/lib/adminApi';
 import { CheckCircle2, Clock, MessageSquareText, RefreshCw } from 'lucide-react';
 import { Badge } from '@order/ui';
 import { useAuth } from '@/contexts/AuthContext';
@@ -48,10 +48,10 @@ export default function FranchiseInquiriesPage() {
     queryKey: ['franchise-inquiries', statusFilter],
     queryFn: async () => {
       const query = statusFilter === 'ALL' ? '' : `?status=${statusFilter}`;
-      const response = await axios.get(`${API_URL}/franchise-inquiries${query}`, {
+      const response = await adminApi.get(`${API_URL}/franchise-inquiries${query}`, {
         headers: authHeaders,
       });
-      return response.data.data || response.data;
+      return response.data;
     },
     enabled: !!session && profile?.role === 'ADMIN',
   });
@@ -66,12 +66,12 @@ export default function FranchiseInquiriesPage() {
       status?: FranchiseInquiryStatus;
       adminNote?: string;
     }) => {
-      const response = await axios.patch(
+      const response = await adminApi.patch(
         `${API_URL}/franchise-inquiries/${inquiryId}`,
         { status, adminNote },
         { headers: authHeaders }
       );
-      return response.data.data || response.data;
+      return response.data;
     },
     onSuccess: () => {
       setFeedback({ type: 'success', message: '가맹 문의가 업데이트되었습니다.' });

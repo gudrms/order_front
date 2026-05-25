@@ -1,6 +1,11 @@
 import type { CancelPaymentRequest, ConfirmTossPaymentRequest, FailTossPaymentRequest, OrderResponse } from '../../types';
 import { apiClient } from '../client';
 
+export async function warmUpPaymentBackend(storeId?: string): Promise<void> {
+    const query = storeId ? `?storeId=${encodeURIComponent(storeId)}` : '';
+    await apiClient.get<{ ok: boolean }>(`/payments/warmup${query}`, { timeout: 5000 });
+}
+
 export async function confirmTossPayment(
     request: ConfirmTossPaymentRequest
 ): Promise<OrderResponse> {

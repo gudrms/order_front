@@ -3,8 +3,8 @@
 import { useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { getStore } from '@order/shared/api';
 import { StoreProvider } from '@/contexts/StoreContext';
+import { getDeliveryStore } from '@/lib/public-api-client';
 
 export default function StoreLayout({ children }: { children: React.ReactNode }) {
     const { storeId } = useParams<{ storeId: string }>();
@@ -12,7 +12,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
 
     const { data: store, isLoading } = useQuery({
         queryKey: ['store', storeId],
-        queryFn: () => getStore(storeId),
+        queryFn: () => getDeliveryStore(storeId),
         retry: false,
         staleTime: 5 * 60 * 1000,
     });

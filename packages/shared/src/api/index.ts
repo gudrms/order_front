@@ -17,7 +17,7 @@ import * as favoriteStoreApi from './endpoints/favorite-store';
 
 export { apiClient, ApiClientError } from './client';
 export { cancelOrder, createOrder, getDeliveryOrders, getOrder, getOrdersByTable, updateDeliveryStatus, updateOrderStatus } from './endpoints/order';
-export { cancelOrderTossPayment, confirmTossPayment, failTossPayment } from './endpoints/payment';
+export { cancelOrderTossPayment, confirmTossPayment, failTossPayment, warmUpPaymentBackend } from './endpoints/payment';
 export { getCategories, getMenus, getMenuDetail } from './endpoints/menu';
 export { getStore, getStoreByIdentifier, getAllStores } from './endpoints/store';
 export { syncCurrentUser } from './endpoints/auth';

@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import axios from 'axios';
+import { adminApi } from '@/lib/adminApi';
 import { supabase } from '@/lib/supabase';
 import { useAdminStore } from '@/contexts/AdminStoreContext';
 
@@ -38,11 +38,11 @@ export function useStaffCalls() {
     const query = useQuery<StaffCall[]>({
         queryKey: ['staff-calls', selectedStoreId],
         queryFn: async () => {
-            const res = await axios.get(
+            const res = await adminApi.get(
                 `${process.env.NEXT_PUBLIC_API_URL}/stores/${selectedStoreId}/calls`,
                 { headers: authHeaders }
             );
-            return res.data.data ?? res.data;
+            return res.data;
         },
         enabled: !!selectedStoreId && !!authHeaders,
         refetchInterval: 30_000,
@@ -81,7 +81,7 @@ export async function completeStaffCall(
     callId: string,
     authHeaders: Record<string, string>
 ): Promise<void> {
-    await axios.patch(
+    await adminApi.patch(
         `${process.env.NEXT_PUBLIC_API_URL}/stores/${storeId}/calls/${callId}/complete`,
         {},
         { headers: authHeaders }

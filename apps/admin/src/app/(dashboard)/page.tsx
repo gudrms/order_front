@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import axios from 'axios';
+import { adminApi } from '@/lib/adminApi';
 import { ShoppingBag, Menu as MenuIcon, Users, TrendingUp } from 'lucide-react';
 import { useAdminStore } from '@/contexts/AdminStoreContext';
 
@@ -23,11 +23,11 @@ export default function DashboardHome() {
   const { data: stats, isLoading } = useQuery<StoreStats>({
     queryKey: ['store-stats-daily', selectedStoreId],
     queryFn: async () => {
-      const response = await axios.get(
+      const response = await adminApi.get(
         `${process.env.NEXT_PUBLIC_API_URL}/stores/${selectedStoreId}/stats/daily`,
         { headers: authHeaders }
       );
-      return response.data.data ?? response.data;
+      return response.data;
     },
     enabled: !!selectedStoreId && !!authHeaders,
     // 1분마다 갱신

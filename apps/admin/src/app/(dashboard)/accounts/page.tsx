@@ -1,7 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
-import axios from 'axios';
+import { adminApi } from '@/lib/adminApi';
 import { KeyRound, Plus, Trash2 } from 'lucide-react';
 import { useAdminStore } from '@/contexts/AdminStoreContext';
 
@@ -45,12 +45,12 @@ export default function AccountsPage() {
     if (!apiUrl || !authHeaders) return;
 
     const [accountsRes, storesRes] = await Promise.all([
-      axios.get(`${apiUrl}/admin/accounts`, requestConfig),
-      axios.get(`${apiUrl}/stores`, requestConfig),
+      adminApi.get(`${apiUrl}/admin/accounts`, requestConfig),
+      adminApi.get(`${apiUrl}/stores`, requestConfig),
     ]);
 
-    setAccounts(accountsRes.data.data || accountsRes.data);
-    setStores(storesRes.data.data || storesRes.data);
+    setAccounts(accountsRes.data);
+    setStores(storesRes.data);
   };
 
   useEffect(() => {
@@ -68,7 +68,7 @@ export default function AccountsPage() {
     setMessage(null);
 
     try {
-      await axios.post(
+      await adminApi.post(
         `${apiUrl}/admin/accounts`,
         {
           email,
@@ -107,7 +107,7 @@ export default function AccountsPage() {
     setMessage(null);
 
     try {
-      await axios.patch(
+      await adminApi.patch(
         `${apiUrl}/admin/accounts/${accountId}/password`,
         { password: nextPassword },
         requestConfig,
@@ -130,7 +130,7 @@ export default function AccountsPage() {
     setMessage(null);
 
     try {
-      await axios.delete(`${apiUrl}/admin/accounts/${accountId}`, requestConfig);
+      await adminApi.delete(`${apiUrl}/admin/accounts/${accountId}`, requestConfig);
       setMessage('계정을 삭제했습니다.');
       await load();
     } catch (err: any) {

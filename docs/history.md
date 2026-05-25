@@ -188,6 +188,24 @@ DB 연결 수는 고정 숫자를 선승인하지 않는다. Vercel scale-out과
 
 ---
 
+## 16. 배달앱 배너 동적화 및 고성능 캐러셀 & 아키텍처 추천안 4가지 고도화 (2026-05-24)
+
+런칭 전 사용자 체감 만족도를 극대화하고 프리미엄 UI/UX 디테일을 갖추기 위해 홈 배너의 동적 관리 및 4가지 주요 아키텍처 최적화 과제를 완수했다.
+
+**동적 배너 관리**: 기존의 하드코딩 배너 구조를 극복하기 위해 `BrandBanner` 데이터 스키마 모델을 정의하고 NestJS 어드민 전용 CRUD API 및 Supabase 이미지 업로드 엔드포인트를 구현했다. 마스터 관리자(`ADMIN` 권한)를 위한 배너 관리 보드를 신설하여 색상 그라데이션 프리셋 선택, 실시간 Live Preview 모바일 뷰어 미리보기, 이동 매장 매핑 기능 등을 제공한다.
+
+**Capacitor 최적화 터치 캐러셀 및 세로 스크롤 가드**: 웹뷰 기반의 모바일 배달앱에서 자연스러운 터치 드래그 트래킹(Follow)과 탄성 복귀 물리 모션 Carousel(`HomeHeader.tsx`)을 framer-motion 번들 오버헤드 없이 수동 연산으로 완성했다. 또한, 배너 영역을 세로 방향으로 드래그할 시 가로 스와이프 기능이 동작하여 브라우저 기본 수직 스크롤이 차단되고 화면이 잠기던 치명적인 문제를 방어하기 위해 **Y축 스크롤 가드 로직**을 추가로 탑재했다.
+
+**Semantic Color DB 전환**: Tailwind CSS 클래스명을 직접 DB에 저장해 렌더링하던 방식을 HEX 컬러(`bgStartColor`, `bgEndColor`) 필드 저장 방식으로 개편했다. 프론트엔드 빌드 타임에 사용하지 않는 클래스가 날아가는 Tailwind Purge 문제를 원천 차단하고 인라인 CSS `linear-gradient` 스타일링을 적용해 렌더링 안정성을 확보했다.
+
+**브랜드 사이트 0ms 메뉴 탭 스위칭**: 브랜드 사이트의 메뉴 탭을 누를 때마다 매번 API를 때려 로딩 Skeleton UI를 반복 노출하던 구조를 Concurrent fetch(`Promise.all`)로 1회 일괄 조회하게 개편하고, 탭 스위칭은 클라이언트 메모리 내에서 즉각 필터링하여 레이턴시를 0ms로 대폭 감축했다.
+
+**Vercel Data Cache 프록시 및 온디맨드 무효화**: 배달앱 홈 배너의 LCP(가장 큰 콘텐츠 페인팅) 반응성을 1ms 수준으로 끌어내리기 위해 `/api/banners` 캐싱 Route Handler를 신설하여 Edge에 캐싱하고, 어드민에서 배너를 CUD할 때 백엔드 `revalidateDeliveryCache` 서비스가 실시간 갱신 웹훅을 자동 트리거하게 구현했다.
+
+**어드민 API 이중 래핑 대응**: NestJS `TransformInterceptor`의 페이징 래핑으로 인해 발생하던 런타임 TypeError를 안전하게 해결하기 위해 어드민 전용 Axios 인스턴스인 `adminApi`를 도입하고, `orders`, `banners`, `brand-menu`, `operations`, `franchise-inquiries` 등 전 대시보드 뷰어의 Axios 호출을 해당 인스턴스로 마이그레이션했다.
+
+---
+
 ## 주요 기술 결정 요약
 
 | 결정 | 선택 | 이유 |

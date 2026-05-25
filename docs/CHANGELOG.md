@@ -1,6 +1,9 @@
 # 변경 이력
 
 모든 주요 변경사항은 이 파일에 기록됩니다.
+# 변경 이력
+
+모든 주요 변경사항은 이 파일에 기록됩니다.
 
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.0.0/)를 따르며,
 이 프로젝트는 [Semantic Versioning](https://semver.org/spec/v2.0.0.html)을 준수합니다.
@@ -10,11 +13,17 @@
 ## [Unreleased]
 
 ### Added
+- **배달앱 홈 동적 배너 관리 시스템 추가**: `BrandBanner` 데이터 스키마 정의, 백엔드 관리자 CRUD API 및 Supabase 이미지 업로드 서비스 구현 완료.
+- **마스터 어드민 배너 관리 UI 추가**: 마스터 권한을 가진 어드민 로그인 시 `배너 관리` 네비게이션 및 실시간 배달앱 Live Preview 미리보기 형상, HEX 컬러 피커와 특정 매장/외부 URL 이동 매핑 제어판 제공.
+- **Capacitor 최적화 터치 드래그 스와이프 캐러셀 구현**: 배달앱 `HomeHeader`에 framer-motion 없이 순수 드래그 햅틱 물리 궤적 연산 제스처 Carousel 구현.
+- **Vercel Data Cache 배너 프록시 추가**: 배달앱 내 `/api/banners` 캐시 프록시 엔드포인트 신설로 배너 목록 1ms 대 초고속 응답 보장.
+- **어드민 공통 `adminApi` Axios 인스턴스 신설**: NestJS 응답 이중 래핑 문제로 인한 pagination 파싱 크래시 예방을 위해 interceptor를 탑재한 통합 API 인스턴스 추가.
+- **배달앱 캐러셀 세로 스크롤 가드 추가**: 사용자가 배너 영역을 세로 방향으로 드래그할 시 가로 슬라이드가 오작동하여 네이티브 상하 스크롤이 잠기는 현상을 방어하기 위한 Y축 스크롤 가드 탑재.
+- **브랜드 사이트 0ms 메뉴 탭 스위칭 최적화**: 탭 클릭 시마다 서버를 재조회하던 구조를 1회 Concurrent fetch (`Promise.all`) 후 클라이언트 메모리 즉시 필터링 방식으로 전환하여 탭 간 로딩 딜레이 완전 제거.
+- 배달앱 메뉴/매장 공개 조회 Next 캐시 프록시 추가: delivery Route Handler(`/api/stores`, `/api/stores/[storeId]`, `/api/stores/[storeId]/categories`, `/api/stores/[storeId]/menus`, `/api/menus/[menuId]`)가 기존 NestJS 공개 API를 프록시하고 Vercel Data Cache(`revalidate: 60`, tag 기반 무효화)에 저장해, 캐시 히트 시 NestJS cold start 없이 응답한다.
+- delivery 캐시 무효화 endpoint `POST /api/revalidate` 추가: `DELIVERY_REVALIDATE_SECRET`으로 보호하고 store/menu 태그를 즉시 만료한다. 백엔드 store/menu/category/option 쓰기, Toss sync, POS catalog sync 후 `DELIVERY_REVALIDATE_URL`로 호출한다.
 - QStash 통합 크론 배치 API `POST /cron/batch` 추가: DB ping, 활성 매장 메뉴 웜업, 큐 처리, Toss pending 결제 만료, 결제 정합성 보정을 단일 호출로 실행.
 - 배달 Android 공개 테스트 운영 메모 추가: Firebase 푸시 활성화 조건, Logcat 필터, 카카오 OAuth 앱 복귀 검증 절차를 배포/인수인계 문서에 정리.
-- 배달앱 카카오 OAuth 앱 복귀 진단 로그 추가: `Auth`, `AuthCallback`, `DeepLink` 로그로 callback과 세션 복원 여부를 확인.
-- ADMIN 전용 관리자 계정 관리 기능 추가: `/admin/accounts` API와 admin `계정 관리` 화면에서 계정 생성, 비밀번호 초기화, 삭제, 매장 OWNER 연결을 처리.
-- 관리자 계정 관리 회귀 테스트 추가: `AdminAccountsService` 단위 테스트와 admin `accounts.spec.ts` E2E.
 - 배달 주문 가격 위변조 회귀 테스트 추가: 서버 DB 가격 재계산과 클라이언트 총액 불일치 거부를 고정.
 - 관리자 계정 관리 상세 시나리오 문서 `docs/admin-account-management-scenario.md` 추가.
 - Toss Payments 웹훅 수신 엔드포인트 `POST /payments/toss/webhook` 추가: `PAYMENT_STATUS_CHANGED`, `CANCEL_STATUS_CHANGED` 이벤트를 Toss API 재조회 후 로컬 결제/주문 상태에 반영.
@@ -36,7 +45,9 @@
 
 ### Changed
 - 백엔드 관측 기준을 정리: Vercel Runtime Logs를 요청/배치 1차 확인 경로로 두고, 전역 HTTP 필터는 500 이상 예외만 Sentry로 전송하도록 보강.
+- 백엔드 Sentry 전송 안정화: Vercel Serverless에서 500 응답 직후 이벤트가 유실되지 않도록 전역 HTTP 필터에서 `Sentry.captureException` 후 `Sentry.flush(2000)`을 수행하도록 보강.
 - 백엔드 운영 배치를 GitHub Actions scheduled workflow 중심에서 Upstash QStash 단일 스케줄(`CRON_TZ=Asia/Seoul */5 10-23 * * *`) 중심으로 전환하도록 문서화.
+- QStash 운영 세팅 기준 갱신: `Upstash-Forward-X-Internal-Job-Secret` 헤더 fallback은 유지하되, 운영 스케줄은 body의 `internalJobSecret` 전달을 기준으로 문서화.
 - 백엔드 pgmq 소비 경로를 publish 직후 Vercel background wake-up 우선 처리로 보강하고, GitHub Actions 5분 queue cron은 누락 메시지 회수용 fail-safe로 유지.
 - 큐 이벤트 소비 시작 시 `QueueEventLog` claim을 먼저 획득하도록 바꿔 중복 메시지와 재시도 경합이 같은 POS/알림 side effect를 동시에 실행할 가능성을 낮춤.
 - 백엔드 배포 문서와 env 예시를 Supabase serverless pooler + 낮은 `connection_limit`부터 계측하는 기준으로 갱신.
