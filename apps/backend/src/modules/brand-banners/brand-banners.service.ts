@@ -15,7 +15,7 @@ export class BrandBannersService {
     ) {}
 
     private get brandBanner() {
-        return (this.prisma as any).brandBanner;
+        return this.prisma.brandBanner;
     }
 
     async getPublicBanners() {
