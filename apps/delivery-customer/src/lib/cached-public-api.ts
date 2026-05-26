@@ -1,5 +1,8 @@
-const DEFAULT_REVALIDATE_SECONDS = 60;
-const DEFAULT_STALE_WHILE_REVALIDATE_SECONDS = 300;
+// 백엔드 쓰기 시 POST /api/revalidate로 태그를 즉시 무효화하므로(on-demand revalidation)
+// TTL을 길게 잡아도 신선도 손실이 없다. TTL을 늘려 캐시 miss 빈도(=백엔드 cold start 호출)를 낮춘다.
+const DEFAULT_REVALIDATE_SECONDS = 300;
+// 만료 후에도 stale 응답을 즉시 주고 백그라운드 갱신 → 사용자가 cold start를 체감하지 않게 한다.
+const DEFAULT_STALE_WHILE_REVALIDATE_SECONDS = 3600;
 
 type ApiEnvelope<T> = {
     data?: T;

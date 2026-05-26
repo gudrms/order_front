@@ -125,13 +125,14 @@ POST   /queue/process-once    큐 수동 처리
 
 캐시 대상:
 
+- `GET /api/banners`
 - `GET /api/stores`
 - `GET /api/stores/[storeId]`
 - `GET /api/stores/[storeId]/categories`
 - `GET /api/stores/[storeId]/menus?categoryId=...`
 - `GET /api/menus/[menuId]`
 
-캐시 TTL은 60초이며 `stale-while-revalidate=300`을 함께 사용한다. 태그는 `delivery:stores`, `delivery:store:{storeId}`, `delivery:store:{storeId}:categories`, `delivery:store:{storeId}:menus`, `delivery:menus:details`, `delivery:menu:{menuId}`를 쓴다. 백엔드 쓰기 성공 후 `POST /api/revalidate`를 호출해 관련 태그를 즉시 만료한다.
+캐시 TTL은 300초이며 `stale-while-revalidate=3600`을 함께 사용한다. 백엔드 쓰기 시 `POST /api/revalidate`로 관련 태그를 즉시 무효화하므로(on-demand revalidation) TTL을 길게 잡아도 신선도 손실이 없고, 캐시 miss로 인한 백엔드 cold start 호출 빈도를 낮춘다. 태그는 `delivery:banners`, `delivery:stores`, `delivery:store:{storeId}`, `delivery:store:{storeId}:categories`, `delivery:store:{storeId}:menus`, `delivery:menus:details`, `delivery:menu:{menuId}`를 쓴다.
 
 운영 환경변수:
 
@@ -273,6 +274,6 @@ admin과 table-order, Toss POS 플러그인이 Supabase Realtime WebSocket을 �
 | 결제 | Toss Payments (`@tosspayments/payment-widget-sdk`) | 0.12.x |
 | POS | Toss POS (okpos) REST API | - |
 | 푸시 | Firebase Cloud Messaging | 12.x |
-| 모니터링 | Sentry | 10.x |
-| 배포 | Vercel Serverless | - |
+| 모니터링 | Sentry (error tracking + tracing) | 10.x |
+| 배포 | Vercel Serverless (Fluid Compute) | - |
 | 모바일 | Capacitor | 6.x |
