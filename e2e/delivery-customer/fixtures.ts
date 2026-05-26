@@ -70,6 +70,31 @@ export const test = base.extend({
       await route.fulfill({ json: { data: [STUB_STORE] } });
     });
 
+    // delivery 공개 조회는 Next Route Handler(캐시 프록시) 경유로 바뀌어
+    // 브라우저는 `/api/v1/...` 가 아닌 `/api/...` 로 요청한다. route handler 경로도 가로채야
+    // stub 데이터가 주입된다. route handler는 백엔드 envelope를 벗긴(unwrap) 형태로 응답하므로
+    // `{ data }` 로 감싸지 않고 데이터를 직접 반환한다.
+    // (구체적 경로를 먼저 등록 — Playwright route는 나중 등록분이 우선)
+    await page.route('**/api/stores/*/categories**', async (route) => {
+      await route.fulfill({ json: STUB_CATEGORIES });
+    });
+
+    await page.route('**/api/stores/*/menus**', async (route) => {
+      await route.fulfill({ json: STUB_MENUS });
+    });
+
+    await page.route('**/api/menus/*', async (route) => {
+      await route.fulfill({ json: STUB_MENUS[0] });
+    });
+
+    await page.route(`**/api/stores/${STUB_STORE.id}`, async (route) => {
+      await route.fulfill({ json: STUB_STORE });
+    });
+
+    await page.route('**/api/stores', async (route) => {
+      await route.fulfill({ json: [STUB_STORE] });
+    });
+
     await use(page);
   },
 });

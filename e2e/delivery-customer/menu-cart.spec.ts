@@ -2,6 +2,27 @@ import { expect, test } from './fixtures';
 
 const STUB_STORE_ID = 'store-e2e-1';
 
+// dev 서버(next dev)는 라우트를 on-demand로 처음 컴파일한다. checkout 세션 첫 진입 시
+// 컴파일 타이밍으로 workspace 패키지 cartStore 모듈 인스턴스가 분리돼 카트가 빈 것으로
+// 읽히고, checkout 가드(items.length===0)가 menu로 되돌려보내 테스트가 깨진다.
+// → 테스트 시작 전 checkout 라우트를 한 번 방문해 미리 컴파일해 둔다. (prod 빌드에선 불필요)
+test.beforeAll(async ({ browser }) => {
+    const page = await browser.newPage();
+    try {
+        // 컴파일 트리거가 목적이므로 redirect/실패는 무시하고 가볍게 방문만 한다.
+        await page.goto(`http://localhost:3001/store/${STUB_STORE_ID}/order/checkout`, {
+            waitUntil: 'domcontentloaded',
+            timeout: 20_000,
+        });
+        // 청크 컴파일·평가가 끝나도록 잠시 대기
+        await page.waitForTimeout(1500);
+    } catch {
+        // 컴파일만 되면 충분하므로 예외는 무시한다.
+    } finally {
+        await page.close();
+    }
+});
+
 /**
  * 메뉴 → 장바구니 → 결제하기 E2E 플로우
  *
