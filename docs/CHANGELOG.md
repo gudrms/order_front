@@ -44,6 +44,7 @@
 - admin-electron 수동 업데이트 IPC(`download-update`/`install-update`)와 업데이트 이벤트 구독을 preload에 노출.
 
 ### Changed
+- 서버리스 cold start 최적화: (1) OpenAPI 문서(`SwaggerModule.createDocument`)를 bootstrap에서 제거하고 첫 `/api/docs-json` 요청 시에만 lazy 생성·캐싱하여 매 cold start 부팅 비용 제거, (2) Sentry `nodeProfilingIntegration`/`profilesSampleRate` 제거(error tracking·tracing은 유지)로 native 모듈 로드 부팅 비용 제거, (3) 공개 조회 캐시 TTL을 60→300초, `stale-while-revalidate`를 300→3600초로 상향. on-demand 무효화(`POST /api/revalidate`)가 완비돼 있어 신선도 손실 없이 캐시 miss(=백엔드 cold start 호출) 빈도를 낮춘다. Vercel Fluid Compute는 활성화 상태 확인.
 - 백엔드 관측 기준을 정리: Vercel Runtime Logs를 요청/배치 1차 확인 경로로 두고, 전역 HTTP 필터는 500 이상 예외만 Sentry로 전송하도록 보강.
 - 백엔드 Sentry 전송 안정화: Vercel Serverless에서 500 응답 직후 이벤트가 유실되지 않도록 전역 HTTP 필터에서 `Sentry.captureException` 후 `Sentry.flush(2000)`을 수행하도록 보강.
 - 백엔드 운영 배치를 GitHub Actions scheduled workflow 중심에서 Upstash QStash 단일 스케줄(`CRON_TZ=Asia/Seoul */5 10-23 * * *`) 중심으로 전환하도록 문서화.

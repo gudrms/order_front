@@ -206,6 +206,18 @@ DB 연결 수는 고정 숫자를 선승인하지 않는다. Vercel scale-out과
 
 ---
 
+## 17. 서버리스 cold start 최적화 (2026-05-26)
+
+배달앱 첫 진입의 배너·매장 조회가 서버리스 NestJS cold start를 탈 수 있어, 16번에서 갖춘 캐시 프록시 위에 cold start 자체를 줄이는 작업을 더했다. 캐시 hit 트래픽은 백엔드를 깨우지 않으므로 남은 비용은 "캐시 만료 후 첫 요청"이 맞는 cold start와 그 부팅 시간이며, 빈도·부팅시간·체감 세 측면을 각각 줄였다.
+
+빈도 측면에서는 Vercel **Fluid Compute**가 이미 활성화돼 있음을 확인했다. Fluid Compute는 함수 인스턴스를 적극 재사용해 `cachedApp`(모듈 스코프 NestJS 인스턴스 캐시)의 재사용률을 높이고 bootstrap 횟수를 낮춘다.
+
+부팅 시간은 두 가지로 줄였다. 기존에는 cold start마다 `SwaggerModule.createDocument()`가 전체 컨트롤러·DTO를 스캔해 OpenAPI 스펙을 생성했는데, 이를 bootstrap에서 제거하고 첫 `/api/docs-json` 요청 시에만 생성·캐싱하도록 lazy화했다. 운영 트래픽은 문서를 거의 호출하지 않으므로 사실상 매 cold start에서 이 비용이 사라진다. 또한 Sentry `nodeProfilingIntegration`은 native 모듈 로드로 부팅을 무겁게 해 제거했고, error tracking과 tracing(`tracesSampleRate`)은 유지해 장애 가시성은 잃지 않았다. 무료 플랜에서 profiling 용량은 어차피 제한적이라 손실 대비 이득이 명확했다.
+
+체감 측면에서는 공개 조회 캐시 TTL을 60초에서 300초로, `stale-while-revalidate`를 300초에서 3600초로 올렸다. 배너·매장·메뉴 쓰기 시 백엔드가 `POST /api/revalidate`로 태그를 즉시 무효화하는 on-demand 경로가 이미 완비돼 있어, TTL을 길게 잡아도 신선도 손실 없이 캐시 miss 빈도(=백엔드 cold start 호출)만 낮출 수 있다. SWR 구간을 늘려 만료 직후에도 stale 응답을 즉시 주고 백그라운드에서 갱신하므로 사용자는 cold start를 체감하지 않는다.
+
+---
+
 ## 주요 기술 결정 요약
 
 | 결정 | 선택 | 이유 |
@@ -227,3 +239,4 @@ DB 연결 수는 고정 숫자를 선승인하지 않는다. Vercel scale-out과
 | 배달앱 네이티브 푸시 활성화 | Firebase 준비 후 env opt-in | Remote WebView가 Firebase 없는 Android 번들에서 Push 등록을 호출하면 앱 시작 크래시가 날 수 있음 |
 | 배달앱 OAuth 복귀 | `taco://auth/callback` 앱 scheme | 외부 웹 callback에 남지 않고 앱으로 복귀해 WebView 세션을 복원해야 함 |
 | 결제 후 큐 깨우기 | Vercel background wake-up + cron fail-safe | POS/알림 지연을 줄이되 publish 직후 wake-up 누락과 queue backlog 회수 경로를 남김 |
+| 서버리스 cold start | Fluid Compute + Swagger lazy 생성 + Sentry profiling 제거 + 캐시 TTL 상향 | 캐시가 대부분 우회, 남은 cold start는 빈도·부팅시간·체감을 각각 축소. 무효화 완비로 TTL 상향이 안전 |
