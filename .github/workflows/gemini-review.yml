@@ -99,7 +99,7 @@ jobs:
           settings: |-
             {
               "model": {
-                "maxSessionTurns": 25
+                "maxSessionTurns": 8
               },
               "telemetry": {
                 "enabled": true,
