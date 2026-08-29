@@ -82,19 +82,6 @@ export default function OrdersPage() {
                             메뉴 먼저 둘러보기
                         </button>
                     </div>
-                ) : !storeId ? (
-                    <div className="bg-white rounded-xl p-8 text-center shadow-sm border border-gray-100">
-                        <h2 className="text-lg font-bold mb-2">매장을 먼저 선택해주세요</h2>
-                        <p className="text-gray-500 mb-6">
-                            주문 내역은 선택한 매장 기준으로 조회됩니다.
-                        </p>
-                        <button
-                            onClick={() => router.push('/')}
-                            className="bg-brand-black text-white px-6 py-3 rounded-xl font-bold"
-                        >
-                            매장 선택하기
-                        </button>
-                    </div>
                 ) : isLoading ? (
                     <OrdersPageSkeleton />
                 ) : isError ? (

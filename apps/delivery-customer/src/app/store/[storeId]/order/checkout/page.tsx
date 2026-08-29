@@ -99,11 +99,15 @@ export default function CheckoutPage() {
             detailAddress: defaultAddress.detailAddress || undefined,
             zipCode: defaultAddress.zipCode || undefined,
         });
-        if (defaultAddress.recipientName || defaultAddress.recipientPhone) {
-            setCustomerInfo(defaultAddress.recipientName || '', defaultAddress.recipientPhone || '');
+        // 배송지에 수령인 정보가 비어 있으면 로그인 프로필 값으로 채운다.
+        const meta = user?.user_metadata ?? {};
+        const nextName = defaultAddress.recipientName || meta.name || meta.full_name || meta.nickname || '';
+        const nextPhone = defaultAddress.recipientPhone || user?.phone || meta.phone_number || meta.phone || '';
+        if (nextName || nextPhone) {
+            setCustomerInfo(nextName, nextPhone);
         }
         if (defaultAddress.deliveryMemo) setDeliveryRequest(defaultAddress.deliveryMemo);
-    }, [addresses, deliveryInfo.address?.address, setAddress, setCustomerInfo, setDeliveryRequest]);
+    }, [addresses, deliveryInfo.address?.address, user, setAddress, setCustomerInfo, setDeliveryRequest]);
 
     useEffect(() => {
         if (warmupRequestedRef.current) return;
