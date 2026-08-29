@@ -17,6 +17,7 @@ interface AuthContextType {
     loading: boolean;
     signInWithKakao: () => Promise<void>;
     signInWithApple: () => Promise<void>;
+    signInWithEmail: (email: string, password: string) => Promise<void>;
     signOut: () => Promise<void>;
 }
 
@@ -152,6 +153,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
+    const signInWithEmail = async (email: string, password: string) => {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) {
+            console.error('이메일 로그인 오류:', error);
+            throw error;
+        }
+    };
+
     const signOut = async () => {
         // 로그아웃 전 FCM 디바이스 토큰 삭제 (네이티브만)
         if (isNative) {
@@ -181,6 +190,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 loading,
                 signInWithKakao,
                 signInWithApple,
+                signInWithEmail,
                 signOut,
             }}
         >
