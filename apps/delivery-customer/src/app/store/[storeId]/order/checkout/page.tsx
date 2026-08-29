@@ -28,6 +28,7 @@ import { useAvailableCoupons } from '@/hooks/queries/useCoupons';
 const TOSS_CLIENT_KEY = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY;
 const isTossWidgetClientKey = (key?: string): key is string => !!key && (key.startsWith('test_gck_') || key.startsWith('live_gck_'));
 const PENDING_TOSS_ORDER_ID_KEY = 'delivery.pendingTossOrderId';
+const PENDING_TOSS_ORDER_ADDRESS_KEY = 'delivery.pendingTossOrderAddress';
 
 // 결제창이 안 뜰 때 빌드에 박힌 키 타입을 콘솔에서 바로 확인할 수 있게 남긴다.
 // NEXT_PUBLIC_TOSS_CLIENT_KEY 는 결제위젯 키(test_gck_/live_gck_)여야 한다.
@@ -192,6 +193,12 @@ export default function CheckoutPage() {
             await createOrderMutation.mutateAsync(orderRequest);
             pendingTossOrderId = orderId;
             sessionStorage.setItem(PENDING_TOSS_ORDER_ID_KEY, orderId);
+            // 토스 결제창 리다이렉트 후 success 페이지에서 Zustand 상태가 초기화되므로
+            // 배달 주소를 sessionStorage에 스냅샷으로 남긴다.
+            sessionStorage.setItem(
+                PENDING_TOSS_ORDER_ADDRESS_KEY,
+                [deliveryInfo.address?.address, deliveryInfo.address?.detailAddress].filter(Boolean).join(' '),
+            );
 
             const origin = typeof window !== 'undefined' ? window.location.origin : '';
             await paymentWidget.requestPayment({

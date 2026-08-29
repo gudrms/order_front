@@ -9,6 +9,7 @@ import { useCurrentStore } from '@/contexts/StoreContext';
 import { useDeliveryStore } from '@/stores/deliveryStore';
 
 const PENDING_TOSS_ORDER_ID_KEY = 'delivery.pendingTossOrderId';
+const PENDING_TOSS_ORDER_ADDRESS_KEY = 'delivery.pendingTossOrderAddress';
 
 function SuccessContent() {
     const router = useRouter();
@@ -24,6 +25,10 @@ function SuccessContent() {
     const [orderNumber, setOrderNumber] = useState<string | null>(null);
     const [confirmedOrderId, setConfirmedOrderId] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
+    // 결제창 리다이렉트로 Zustand 상태가 날아가므로 checkout에서 남긴 스냅샷을 쓴다.
+    const [snapshotAddress] = useState<string | null>(() =>
+        typeof window !== 'undefined' ? sessionStorage.getItem(PENDING_TOSS_ORDER_ADDRESS_KEY) : null,
+    );
 
     const processPayment = async (force = false) => {
         if (hasProcessedRef.current && !force) return;
@@ -46,6 +51,7 @@ function SuccessContent() {
             const result = await confirmTossPaymentMutation.mutateAsync({ orderId, paymentKey, amount: parsedAmount });
             clearCart();
             sessionStorage.removeItem(PENDING_TOSS_ORDER_ID_KEY);
+            sessionStorage.removeItem(PENDING_TOSS_ORDER_ADDRESS_KEY);
             setConfirmedOrderId(result.id);
             setOrderNumber(result.orderNumber);
         } catch (err) {
@@ -116,7 +122,7 @@ function SuccessContent() {
                     <div className="flex justify-between mb-2 gap-4">
                         <span className="text-gray-500">배달 주소</span>
                         <span className="font-medium text-sm text-right">
-                            {deliveryInfo.address?.address || '-'}
+                            {deliveryInfo.address?.address || snapshotAddress || '-'}
                         </span>
                     </div>
                     <div className="flex justify-between">
