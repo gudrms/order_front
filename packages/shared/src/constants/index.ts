@@ -5,3 +5,5 @@
 export * from './order';
 export * from './table';
 export * from './call';
+export * from './company';
+export * from './legal';

@@ -1,13 +1,9 @@
 import Link from 'next/link';
+import { COMPANY_INFO_ROWS } from '@order/shared/constants/company';
 
-const BUSINESS_INFO = [
-    { label: '가맹문의', value: '010-4593-0731' },
-    { label: '이메일', value: 'tacomole26@gmail.com' },
-    // 대표자, 사업자등록번호, 본사 주소는 확정 후 value를 채우면 자동 노출한다.
-    { label: '대표자', value: '' },
-    { label: '사업자등록번호', value: '' },
-    { label: '주소', value: '' },
-].filter((item) => item.value);
+// 사업자정보는 packages/shared/src/constants/company.ts 단일 소스에서 관리한다.
+// 값이 빈 항목(유선번호, 통신판매업신고번호 등)은 자동으로 제외된다.
+const BUSINESS_INFO = COMPANY_INFO_ROWS.map(([label, value]) => ({ label, value }));
 
 export default function Footer() {
     return (
@@ -53,9 +49,14 @@ export default function Footer() {
                 <div className="border-t border-gray-200 pt-8 flex flex-col md:flex-row justify-between items-center text-sm text-gray-500">
                     <p>&copy; 2024 TACO MOLE. All rights reserved.</p>
                     <div className="flex gap-6 mt-4 md:mt-0">
-                        <span className="cursor-pointer hover:text-brand-black">이용약관</span>
+                        <Link href="/terms" className="hover:text-brand-black transition-colors">
+                            이용약관
+                        </Link>
                         <Link href="/privacy" className="hover:text-brand-black transition-colors">
                             개인정보처리방침
+                        </Link>
+                        <Link href="/refund-policy" className="hover:text-brand-black transition-colors">
+                            취소·환불 정책
                         </Link>
                     </div>
                 </div>

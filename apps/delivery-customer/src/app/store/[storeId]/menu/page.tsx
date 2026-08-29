@@ -8,6 +8,7 @@ import CategoryTabs from '@/components/menu/CategoryTabs';
 import MenuList from '@/components/menu/MenuList';
 import CartBottomSheet from '@/components/cart/CartBottomSheet';
 import MenuDetailBottomSheet from '@/components/menu/MenuDetailBottomSheet';
+import SiteFooter from '@/components/SiteFooter';
 import { useCurrentStore } from '@/contexts/StoreContext';
 import { useCartStore } from '@order/order-core';
 
@@ -23,7 +24,7 @@ export default function MenuPage() {
     };
 
     return (
-        <main className="min-h-screen bg-white">
+        <main className="min-h-screen bg-white pb-28">
             <header className="sticky top-0 z-50 bg-white border-b border-gray-100 pt-safe">
                 <div className="flex items-center justify-between px-4 h-14">
                     <Link href="/" className="p-2 -ml-2 text-brand-black">
@@ -57,6 +58,15 @@ export default function MenuPage() {
 
             <CategoryTabs />
             <MenuList />
+
+            <p className="px-4 py-3 text-xs leading-relaxed text-gray-500 bg-gray-50 border-t border-gray-100">
+                {store.estimatedDeliveryMinutes
+                    ? `예상 배달 시간: 약 ${store.estimatedDeliveryMinutes}분 (주문 당일 수령). `
+                    : '결제 완료 후 조리를 시작하며 주문 당일 수령합니다. '}
+                매장 상황·주문량·배달 거리에 따라 달라질 수 있습니다.
+            </p>
+
+            <SiteFooter />
 
             {totalQuantity > 0 && (
                 <div className="fixed bottom-6 left-4 right-4 z-40 max-w-[568px] mx-auto">

@@ -11,6 +11,7 @@ import { getDeliveryCategories, getDeliveryMenus, getDeliveryStores } from '@/li
 import BottomNav from '@/components/BottomNav';
 import HomeHeader from '@/components/HomeHeader';
 import ServiceButtons from '@/components/ServiceButtons';
+import SiteFooter from '@/components/SiteFooter';
 
 type OrderType = 'delivery' | 'takeout';
 
@@ -70,7 +71,7 @@ export default function Home() {
     };
 
     return (
-        <main className="min-h-screen bg-gray-50 pb-20">
+        <main className="min-h-screen bg-gray-50 pb-24">
             <HomeHeader />
 
             {/* 비로그인 CTA */}
@@ -193,6 +194,8 @@ export default function Home() {
                     </div>
                 )}
             </div>
+
+            <SiteFooter />
 
             <BottomNav />
         </main>

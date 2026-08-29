@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight, CreditCard, Tag, X } from 'lucide-react';
 import { calculateOrderTotals, validateOrder, type OrderItemInput as CoreOrderItemInput } from '@order/order-core';
@@ -364,6 +365,21 @@ export default function CheckoutPage() {
                             <span className="font-bold text-brand-yellow">{paymentAmount.toLocaleString()}원</span>
                         </div>
                     </div>
+                </section>
+
+                <section className="bg-white rounded-xl p-4 space-y-2 text-xs leading-relaxed text-gray-500">
+                    <p>
+                        {store.estimatedDeliveryMinutes
+                            ? `예상 배달 시간은 약 ${store.estimatedDeliveryMinutes}분이며, 주문 당일 수령합니다. `
+                            : '결제 완료 후 조리를 시작하며 주문 당일 수령합니다. '}
+                        매장 상황·주문량·배달 거리에 따라 달라질 수 있습니다.
+                    </p>
+                    <p>
+                        결제를 진행하면{' '}
+                        <Link href="/terms" className="underline">이용약관</Link> 및{' '}
+                        <Link href="/refund-policy" className="underline">취소·환불 정책</Link>
+                        에 동의하는 것으로 간주합니다. 조리 착수 이후에는 단순 변심에 의한 취소·환불이 제한됩니다.
+                    </p>
                 </section>
             </div>
 
