@@ -2,12 +2,18 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useEffect } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 
 function LoginContent() {
-    const { user, loading, signInWithKakao, signInWithApple } = useAuth();
+    const { user, loading, signInWithKakao, signInWithApple, signInWithEmail } = useAuth();
     const router = useRouter();
     const searchParams = useSearchParams();
+
+    const [showEmailForm, setShowEmailForm] = useState(false);
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [emailSubmitting, setEmailSubmitting] = useState(false);
+    const [emailError, setEmailError] = useState('');
 
     useEffect(() => {
         if (user && !loading) {
@@ -38,6 +44,20 @@ function LoginContent() {
         } catch (error) {
             console.error('Apple 로그인 실패:', error);
             alert('로그인에 실패했습니다. 다시 시도해주세요.');
+        }
+    };
+
+    const handleEmailLogin = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setEmailError('');
+        setEmailSubmitting(true);
+        try {
+            storeRedirect();
+            await signInWithEmail(email.trim(), password);
+        } catch {
+            setEmailError('이메일 또는 비밀번호를 확인해 주세요.');
+        } finally {
+            setEmailSubmitting(false);
         }
     };
 
@@ -102,6 +122,47 @@ function LoginContent() {
                         로그인 없이 둘러보기
                     </button>
                 </div>
+
+                {/* 이메일 로그인 (심사/테스트용) */}
+                <div className="mt-6 text-center">
+                    <button
+                        onClick={() => setShowEmailForm((v) => !v)}
+                        className="text-gray-400 text-xs underline"
+                    >
+                        이메일로 로그인
+                    </button>
+                </div>
+
+                {showEmailForm && (
+                    <form onSubmit={handleEmailLogin} className="mt-3 space-y-2">
+                        <input
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            placeholder="이메일"
+                            autoComplete="email"
+                            required
+                            className="w-full p-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-yellow"
+                        />
+                        <input
+                            type="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            placeholder="비밀번호"
+                            autoComplete="current-password"
+                            required
+                            className="w-full p-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-yellow"
+                        />
+                        {emailError && <p className="text-xs text-red-500">{emailError}</p>}
+                        <button
+                            type="submit"
+                            disabled={emailSubmitting}
+                            className="w-full bg-brand-black text-white p-3 rounded-xl font-bold text-sm disabled:opacity-50"
+                        >
+                            {emailSubmitting ? '로그인 중...' : '로그인'}
+                        </button>
+                    </form>
+                )}
             </div>
         </main>
     );
