@@ -29,6 +29,15 @@ const TOSS_CLIENT_KEY = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY;
 const isTossWidgetClientKey = (key?: string): key is string => !!key && (key.startsWith('test_gck_') || key.startsWith('live_gck_'));
 const PENDING_TOSS_ORDER_ID_KEY = 'delivery.pendingTossOrderId';
 
+// 결제창이 안 뜰 때 빌드에 박힌 키 타입을 콘솔에서 바로 확인할 수 있게 남긴다.
+// NEXT_PUBLIC_TOSS_CLIENT_KEY 는 결제위젯 키(test_gck_/live_gck_)여야 한다.
+if (typeof window !== 'undefined' && !isTossWidgetClientKey(TOSS_CLIENT_KEY)) {
+    const rawKey = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY;
+    console.warn(
+        `[checkout] NEXT_PUBLIC_TOSS_CLIENT_KEY 가 결제위젯 키가 아닙니다. prefix=${rawKey ? rawKey.slice(0, 9) : '(없음)'}`,
+    );
+}
+
 export default function CheckoutPage() {
     const router = useRouter();
     const { storeId } = useParams<{ storeId: string }>();
