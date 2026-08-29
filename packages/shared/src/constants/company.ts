@@ -35,11 +35,3 @@ export const COMPANY_INFO_ROWS: readonly (readonly [string, string])[] = (
         ['이메일', COMPANY.email],
     ] as const
 ).filter(([, value]) => value !== '');
-
-/**
- * 배달 소요기간 / 최대 서비스제공기간 안내 문구.
- * 전자상거래법상 구매자가 결제 전 배송기간을 인지할 수 있도록 상품·결제 페이지에 노출한다.
- * 매장별 예상 시간은 store.estimatedDeliveryMinutes 를 우선 사용한다.
- */
-export const DELIVERY_TIME_NOTICE =
-    '결제 완료 후 매장에서 즉시 조리를 시작하며, 조리 완료 후 순차 배달됩니다. 상품은 모두 주문 당일 수령하며, 매장 상황·주문량·배달 거리에 따라 소요 시간이 달라질 수 있습니다.';
