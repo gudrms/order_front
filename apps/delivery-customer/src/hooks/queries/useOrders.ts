@@ -8,7 +8,9 @@ export function useOrders(params: {
     return useQuery({
         queryKey: ['delivery-orders', params.storeId, params.userId],
         queryFn: () => api.order.getDeliveryOrders({ storeId: params.storeId }),
-        enabled: !!params.storeId && !!params.userId,
+        // 주문 내역은 로그인 사용자 기준으로 조회한다. 매장 선택은 선택적 필터일 뿐이라
+        // storeId 없이도(홈 탭에서 진입) 조회되어야 한다.
+        enabled: !!params.userId,
     });
 }
 
