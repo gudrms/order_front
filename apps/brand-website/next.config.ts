@@ -13,7 +13,7 @@ const nextConfig: NextConfig = {
     ],
   },
 
-  transpilePackages: ['@order/shared'],
+  transpilePackages: ['@order/shared', '@order/ui'],
 
   experimental: {
     optimizePackageImports: ['lucide-react'],
