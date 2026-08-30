@@ -21,12 +21,10 @@
 | 상점아이디(MID) | `tacomom5cx` |
 | 신청 결제수단 | 기본(신용카드, 계좌이체, 휴대폰결제) + 간편결제 |
 | 고객센터 | 010-4593-0731 |
+| 통신판매업신고번호 | 제2026-인천서구-2059호 |
 | 이메일 | tacomole26@gmail.com |
 
 ### 미확보 / TODO
-- **통신판매업신고번호**: 미신고. 자체 앱에서 직접 결제받으므로 신고 대상(법인이라 간이과세 예외 아님).
-  정부24에서 신고 → `제2026-인천서구-00000호` 형식. 확보 후
-  `packages/shared/src/constants/company.ts` `mailOrderNo` 에 입력하면 전 화면 자동 노출(현재는 빈 값이라 숨김).
 - **업태에 음식점업/통신판매업 추가** 권장 (판매 상품과 업태 불일치 지적 가능).
 - 계약 완료 후 **live 키 교체** (아래 3절).
 - **결제경로 PPT** 제작 (상품선택 → 장바구니 → 주문서 → 결제창 → 완료 화면 캡처).
@@ -89,8 +87,9 @@
    매장별 예상 배달 소요 시간은 메뉴·결제 페이지에 안내하고 있습니다.
 
 3) 앱 서비스
-iOS: [App Store 링크] / Android: [Google Play 링크]
-(스토어 미등록 시: 현재 스토어 심사 준비 중이며, 웹(PWA) https://delivery.tacomole.kr 에서
+Android: https://play.google.com/store/apps/details?id=com.tacomole.app
+iOS: [App Store Connect에서 Apple ID(숫자) 확인 후 https://apps.apple.com/kr/app/id{숫자}]
+(iOS 미출시 시: 현재 App Store 심사 준비 중이며, 웹(PWA) https://delivery.tacomole.kr 에서
  동일 서비스 이용 가능합니다. 등록 완료 시 링크 회신드리겠습니다.)
 
 4) 결제모듈 직접 연동 여부: Y (직접 연동)
@@ -105,7 +104,7 @@ iOS: [App Store 링크] / Android: [Google Play 링크]
  - 사업자등록번호: 179-88-02490
  - 사업장 주소: 인천광역시 서구 보듬로 158, 2층 202호 (오류동, 블루빌)
  - 유선번호: 010-4593-0731
- - (통신판매업신고번호: 신고 완료 후 즉시 반영 예정)
+ - 통신판매업신고번호: 제2026-인천서구-2059호
 3) 결제창(토스페이먼츠 결제위젯) 연동을 완료했습니다.
 4) 이용약관: https://delivery.tacomole.kr/terms
    취소·환불 정책: https://delivery.tacomole.kr/refund-policy
@@ -239,4 +238,11 @@ iOS: [App Store 링크] / Android: [Google Play 링크]
 | 브랜드 이용약관 / 환불정책 | https://www.tacomole.kr/terms , /refund-policy |
 | 개인정보처리방침 | https://www.tacomole.kr/privacy |
 | API | https://api.tacomole.kr |
+| Google Play (Android) | https://play.google.com/store/apps/details?id=com.tacomole.app |
+| App Store (iOS) | App Store Connect에서 Apple ID 확인 필요 (bundle id: `com.taco.delivery`) |
 | 토스페이먼츠 개발자센터 | https://developers.tosspayments.com |
+
+## 10. 결제경로 파일(PPT)
+
+카드사 심사 제출용. 별도 문서 참조: [`결제경로_PPT_초안.md`](./결제경로_PPT_초안.md)
+(토스 원본 가이드: `토스페이먼츠_APP_결제경로_제작_가이드.pdf`)
