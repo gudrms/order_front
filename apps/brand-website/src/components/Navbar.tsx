@@ -6,7 +6,7 @@ import { Menu, X, MapPin, Phone } from 'lucide-react';
 
 export default function Navbar() {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    const deliveryUrl = process.env.NEXT_PUBLIC_DELIVERY_URL || 'http://localhost:3001';
+    const deliveryUrl = process.env.NEXT_PUBLIC_DELIVERY_URL || 'https://delivery.tacomole.kr';
 
     return (
         <header className="sticky top-0 z-50 w-full bg-white text-brand-black border-b border-gray-100 shadow-sm">

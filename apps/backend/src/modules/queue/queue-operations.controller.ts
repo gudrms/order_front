@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Patch, Query, UseGuards } from '@nestjs/common';
+import { Controller, DefaultValuePipe, Get, Param, ParseIntPipe, Patch, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../../common/decorators/user.decorator';
 import { SupabaseGuard } from '../auth/guards/supabase.guard';
@@ -22,9 +22,9 @@ export class QueueOperationsController {
     async getNotificationFailures(
         @CurrentUser() user: { id: string },
         @Param('storeId') storeId: string,
-        @Query('page') page: number = 1,
+        @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number = 1,
     ) {
-        return this.queueOperationsService.getNotificationFailures(user.id, storeId, Number(page) || 1);
+        return this.queueOperationsService.getNotificationFailures(user.id, storeId, page);
     }
 
     @Patch('notifications/:notificationId/retry')

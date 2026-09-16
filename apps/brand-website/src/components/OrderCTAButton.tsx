@@ -21,7 +21,7 @@ function isMobileUA(): boolean {
  * 일정 시간 내 응답이 없으면 배달앱 웹 URL로 fallback 한다.
  */
 export default function OrderCTAButton({ className, children, onClick }: OrderCTAButtonProps) {
-    const deliveryUrl = process.env.NEXT_PUBLIC_DELIVERY_URL || 'http://localhost:3001';
+    const deliveryUrl = process.env.NEXT_PUBLIC_DELIVERY_URL || 'https://delivery.tacomole.kr';
 
     const handleClick = useCallback(() => {
         onClick?.();

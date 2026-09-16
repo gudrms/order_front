@@ -3,6 +3,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
+import { sanitizeRedirect } from '@/lib/safeRedirect';
 
 function LoginContent() {
     const { user, loading, signInWithKakao, signInWithApple, signInWithEmail } = useAuth();
@@ -17,8 +18,7 @@ function LoginContent() {
 
     useEffect(() => {
         if (user && !loading) {
-            const redirect = searchParams.get('redirect');
-            router.push(redirect || '/');
+            router.push(sanitizeRedirect(searchParams.get('redirect')));
         }
     }, [user, loading, router, searchParams]);
 

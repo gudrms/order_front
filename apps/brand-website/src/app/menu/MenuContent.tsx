@@ -96,7 +96,7 @@ export default function MenuContent() {
                                     activeCategory === category.id
                                         ? 'bg-brand-black text-white shadow-md'
                                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                }}`}
+                                }`}
                             >
                                 {category.name}
                             </button>

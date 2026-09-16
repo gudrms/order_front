@@ -199,9 +199,9 @@ export class OrdersController {
     async getPosSyncFailures(
         @CurrentUser() user: { id: string },
         @Param('storeId') storeId: string,
-        @Query('page') page: number = 1,
+        @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number = 1,
     ) {
-        return this.ordersService.getPosSyncFailures(storeId, Number(page) || 1, user.id);
+        return this.ordersService.getPosSyncFailures(storeId, page, user.id);
     }
 
     @Patch(':orderId/pos-sync/retry')
@@ -320,13 +320,13 @@ export class RootOrdersController {
     @ApiQuery({ name: 'page', required: false, type: Number, description: '페이지 번호' })
     async getDeliveryOrders(
         @Query('storeId') storeId?: string,
-        @Query('page') page: number = 1,
+        @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number = 1,
         @CurrentUser() user?: { id: string },
     ) {
         return this.deliveryOrderService.getDeliveryOrders({
             storeId,
             userId: user?.id,
-            page: Number(page) || 1,
+            page,
         });
     }
 

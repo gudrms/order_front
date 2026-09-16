@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@order/shared/lib/supabase';
+import { sanitizeRedirect } from '@/lib/safeRedirect';
 
 export default function AuthCallbackPage() {
     const router = useRouter();
@@ -42,7 +43,7 @@ export default function AuthCallbackPage() {
             } else {
                 const redirect = sessionStorage.getItem('auth_redirect');
                 sessionStorage.removeItem('auth_redirect');
-                router.push(redirect || '/');
+                router.push(sanitizeRedirect(redirect));
             }
         };
 

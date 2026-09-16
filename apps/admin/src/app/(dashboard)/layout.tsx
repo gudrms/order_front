@@ -29,7 +29,7 @@ export default function DashboardLayout({
   const { user, profile, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-  const { selectedStoreId } = useAdminStore();
+  const { selectedStoreId, isStoresError, refetchStores } = useAdminStore();
 
   useEffect(() => {
     if (!loading && !user) {
@@ -69,6 +69,21 @@ export default function DashboardLayout({
             <h1 className="text-2xl font-bold text-gray-800">관리자 대시보드</h1>
             <OrderAlertControls />
           </header>
+        )}
+        {!isSetupPage && isStoresError && (
+          <div
+            className="mb-6 flex items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+            data-testid="admin-stores-fetch-error"
+          >
+            <span>매장 목록을 불러오지 못했습니다. 이 화면과 다른 모든 화면이 "매장 없음"/빈 목록으로 보이는 건 실제로 매장이 없어서가 아니라 조회가 실패한 상태일 수 있습니다.</span>
+            <button
+              type="button"
+              onClick={() => refetchStores()}
+              className="rounded px-2 py-1 text-xs font-semibold opacity-70 hover:bg-white/60 hover:opacity-100"
+            >
+              다시 시도
+            </button>
+          </div>
         )}
         {children}
       </main>
