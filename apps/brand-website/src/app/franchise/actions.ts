@@ -1,14 +1,14 @@
 'use server';
 
 import { cookies } from 'next/headers';
-import { sendEmail } from '../../../../../packages/shared/src/utils/email';
+import { sendEmail } from '@order/shared/utils/email';
 
 interface FranchiseInquiryState {
   success: boolean;
   message: string;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.tacomole.kr/api/v1';
 
 function escapeHtml(value: string) {
   return value
