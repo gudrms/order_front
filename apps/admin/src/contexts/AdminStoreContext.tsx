@@ -50,12 +50,14 @@ export function AdminStoreProvider({ children }: { children: React.ReactNode }) 
   const value = useMemo<AdminStoreContextValue>(() => ({
     stores,
     selectedStore,
-    selectedStoreId: selectedStore?.id || null,
+    // stores/me 응답을 기다리지 않고 localStorage에 저장된 storeId를 즉시 반환한다.
+    // 이렇게 해야 주문/통계 등 storeId 의존 쿼리가 매장 목록 조회와 순차가 아닌 병렬로 시작된다.
+    selectedStoreId: effectiveStoreId,
     setSelectedStoreId,
     isLoading: storesQuery.isLoading,
     refetchStores: storesQuery.refetch,
     authHeaders,
-  }), [stores, selectedStore, storesQuery.isLoading, storesQuery.refetch, authHeaders]);
+  }), [stores, selectedStore, effectiveStoreId, storesQuery.isLoading, storesQuery.refetch, authHeaders]);
 
   return (
     <AdminStoreContext.Provider value={value}>
