@@ -310,6 +310,25 @@ export default function MenuListPage() {
         />
       )}
 
+      {(categoriesQuery.isError || menusQuery.isError) && (
+        <div
+          className="flex items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+          data-testid="admin-menu-fetch-error"
+        >
+          <span>카테고리/메뉴 목록을 불러오지 못했습니다. 실제로 메뉴가 없는 게 아니라 조회가 실패한 상태이니, 새 카테고리를 만들기 전에 새로고침해주세요.</span>
+          <button
+            type="button"
+            onClick={() => {
+              categoriesQuery.refetch();
+              menusQuery.refetch();
+            }}
+            className="rounded px-2 py-1 text-xs font-semibold opacity-70 hover:bg-white/60 hover:opacity-100"
+          >
+            다시 시도
+          </button>
+        </div>
+      )}
+
       <div className="flex items-start gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">
         <Info className="mt-0.5 h-5 w-5 flex-shrink-0" />
         <div>

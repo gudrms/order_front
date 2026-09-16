@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Param, Body, Query } from '@nestjs/common';
+import { Controller, Get, Post, Param, Body, Query, ParseIntPipe } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -58,9 +58,9 @@ export class SessionsController {
   })
   async getCurrentSession(
     @Param('storeId') storeId: string,
-    @Param('tableNumber') tableNumber: string,
+    @Param('tableNumber', ParseIntPipe) tableNumber: number,
   ) {
-    return this.sessionsService.getCurrentSession(storeId, parseInt(tableNumber));
+    return this.sessionsService.getCurrentSession(storeId, tableNumber);
   }
 
   @Get('sessions/:sessionId')
@@ -137,11 +137,11 @@ export class SessionsController {
   })
   async resetTable(
     @Param('storeId') storeId: string,
-    @Param('tableNumber') tableNumber: string,
+    @Param('tableNumber', ParseIntPipe) tableNumber: number,
   ) {
     const session = await this.sessionsService.getCurrentSession(
       storeId,
-      parseInt(tableNumber),
+      tableNumber,
     );
 
     if (!session) return null;

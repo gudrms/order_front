@@ -112,7 +112,7 @@ export default function OrdersPage() {
   const [operationMessage, setOperationMessage] = useState<OperationMessage | null>(null);
   useRealtimeOrders(storeId || '');
 
-  const { data: orders = [], isLoading: isOrdersLoading } = useQuery<Order[]>({
+  const { data: orders = [], isLoading: isOrdersLoading, isError: isOrdersError, refetch: refetchOrders } = useQuery<Order[]>({
     queryKey: ['admin-orders', storeId],
     queryFn: async () => {
       const response = await adminApi.get(`${API_URL}/stores/${storeId}/orders`, {
@@ -242,6 +242,22 @@ export default function OrdersPage() {
           message={operationMessage.message}
           onClose={() => setOperationMessage(null)}
         />
+      )}
+
+      {isOrdersError && (
+        <div
+          className="flex items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+          data-testid="admin-orders-fetch-error"
+        >
+          <span>주문 목록을 불러오지 못했습니다. 실제로 주문이 없는 게 아니라 조회가 실패한 상태입니다.</span>
+          <button
+            type="button"
+            onClick={() => refetchOrders()}
+            className="rounded px-2 py-1 text-xs font-semibold opacity-70 hover:bg-white/60 hover:opacity-100"
+          >
+            다시 시도
+          </button>
+        </div>
       )}
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
