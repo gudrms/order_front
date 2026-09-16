@@ -13,7 +13,7 @@ export default function MenuList() {
     const setSelectedMenuId = useUIStore((state) => state.setSelectedMenuId);
     const { storeId } = useCurrentStore();
 
-    const { data: allMenus, isLoading } = useMenus(storeId);
+    const { data: allMenus, isLoading, isError, refetch } = useMenus(storeId);
     const { isFavorited, toggleFavorite } = useFavorites();
 
     const filteredMenus = useMemo(() => {
@@ -28,6 +28,21 @@ export default function MenuList() {
 
     if (isLoading) {
         return <MenuListSkeleton />;
+    }
+
+    if (isError) {
+        return (
+            <div className="p-8 text-center text-gray-500">
+                <p>메뉴를 불러오지 못했습니다.</p>
+                <button
+                    type="button"
+                    onClick={() => refetch()}
+                    className="mt-3 rounded-full border border-gray-300 px-4 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                    다시 시도
+                </button>
+            </div>
+        );
     }
 
     if (!filteredMenus || filteredMenus.length === 0) {
