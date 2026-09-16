@@ -133,7 +133,7 @@ export default async function StoreOrderSection() {
                         <ScrollAnimation className="md:col-span-3">
                             <div className="bg-white border border-gray-200 rounded-2xl p-8 text-center">
                                 <p className="text-lg font-bold text-brand-black mb-2">
-                                    매장 정보를 불러오는 중입니다.
+                                    지금은 매장 정보를 표시할 수 없습니다.
                                 </p>
                                 <p className="text-gray-600 mb-6">
                                     전체 매장 페이지에서 현재 운영 매장과 주문 링크를 확인할 수 있습니다.
