@@ -5,6 +5,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { api } from '@order/shared/api';
 import { supabase } from '@order/shared/lib/supabase';
 import type { Session, User } from '@supabase/supabase-js';
+import { useCartStore } from '@order/order-core';
+import { useDeliveryStore } from '@/stores/deliveryStore';
 import {
     cleanupPushNotifications,
     getCurrentPushToken,
@@ -180,6 +182,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             console.error('로그아웃 오류:', error);
             throw error;
         }
+
+        // 공유/키오스크 기기에서 다음 사용자가 로그인했을 때 이전 사용자의
+        // 장바구니·배송지·연락처가 그대로 남아있지 않도록 로그아웃 시 초기화한다.
+        useCartStore.getState().clearCart();
+        useDeliveryStore.getState().clearDeliveryInfo();
     };
 
     return (
