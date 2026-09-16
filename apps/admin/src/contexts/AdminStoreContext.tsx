@@ -13,6 +13,7 @@ interface AdminStoreContextValue {
   selectedStoreId: string | null;
   setSelectedStoreId: (storeId: string) => void;
   isLoading: boolean;
+  isStoresError: boolean;
   refetchStores: () => Promise<unknown>;
   authHeaders?: { Authorization: string };
 }
@@ -55,9 +56,10 @@ export function AdminStoreProvider({ children }: { children: React.ReactNode }) 
     selectedStoreId: effectiveStoreId,
     setSelectedStoreId,
     isLoading: storesQuery.isLoading,
+    isStoresError: storesQuery.isError,
     refetchStores: storesQuery.refetch,
     authHeaders,
-  }), [stores, selectedStore, effectiveStoreId, storesQuery.isLoading, storesQuery.refetch, authHeaders]);
+  }), [stores, selectedStore, effectiveStoreId, storesQuery.isLoading, storesQuery.isError, storesQuery.refetch, authHeaders]);
 
   return (
     <AdminStoreContext.Provider value={value}>
