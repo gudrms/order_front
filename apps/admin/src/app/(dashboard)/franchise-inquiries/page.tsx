@@ -146,6 +146,22 @@ export default function FranchiseInquiriesPage() {
         </div>
       )}
 
+      {inquiriesQuery.isError && (
+        <div
+          className="flex items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+          data-testid="admin-franchise-inquiries-fetch-error"
+        >
+          <span>가맹 문의 목록을 불러오지 못했습니다. 실제로 문의가 없는 게 아니라 조회가 실패한 상태입니다.</span>
+          <button
+            type="button"
+            onClick={() => inquiriesQuery.refetch()}
+            className="rounded px-2 py-1 text-xs font-semibold opacity-70 hover:bg-white/60 hover:opacity-100"
+          >
+            다시 시도
+          </button>
+        </div>
+      )}
+
       <div className="grid gap-4 md:grid-cols-3">
         <SummaryCard icon={<Clock size={20} />} label="신규" value={summary.NEW} tone="blue" />
         <SummaryCard icon={<MessageSquareText size={20} />} label="연락 완료" value={summary.CONTACTED} tone="green" />

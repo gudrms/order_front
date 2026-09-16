@@ -281,6 +281,25 @@ export default function BannersPage() {
         </div>
       )}
 
+      {(bannersQuery.isError || storesQuery.isError) && (
+        <div
+          className="flex items-center justify-between gap-3 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+          data-testid="admin-banners-fetch-error"
+        >
+          <span>배너/매장 목록을 불러오지 못했습니다. 목록이 비어있는 게 아니라 조회가 실패한 상태입니다.</span>
+          <button
+            type="button"
+            onClick={() => {
+              bannersQuery.refetch();
+              storesQuery.refetch();
+            }}
+            className="rounded px-2 py-1 text-xs font-semibold opacity-70 hover:bg-white/60 hover:opacity-100"
+          >
+            다시 시도
+          </button>
+        </div>
+      )}
+
       <section className="grid gap-6 lg:grid-cols-[380px_1fr]">
         {/* 생성 및 미리보기 영역 */}
         <div className="space-y-6">

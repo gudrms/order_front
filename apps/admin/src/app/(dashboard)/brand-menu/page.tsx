@@ -250,6 +250,22 @@ export default function BrandMenuPage() {
         </div>
       )}
 
+      {categoriesQuery.isError && (
+        <div
+          className="flex items-center justify-between gap-3 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+          data-testid="admin-brand-menu-fetch-error"
+        >
+          <span>브랜드 메뉴 카테고리를 불러오지 못했습니다. 실제로 없는 게 아니라 조회가 실패한 상태입니다.</span>
+          <button
+            type="button"
+            onClick={() => categoriesQuery.refetch()}
+            className="rounded px-2 py-1 text-xs font-semibold opacity-70 hover:bg-white/60 hover:opacity-100"
+          >
+            다시 시도
+          </button>
+        </div>
+      )}
+
       <section className="grid gap-6 lg:grid-cols-[320px_1fr]">
         <div className="space-y-6">
           <form onSubmit={handleCreateCategory} className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">

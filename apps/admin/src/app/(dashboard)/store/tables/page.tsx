@@ -103,6 +103,22 @@ export default function TableManagementPage() {
         </button>
       </div>
 
+      {tablesQuery.isError && (
+        <div
+          className="flex items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+          data-testid="admin-tables-fetch-error"
+        >
+          <span>테이블 목록을 불러오지 못했습니다. 실제로 테이블이 없는 게 아니라 조회가 실패한 상태입니다.</span>
+          <button
+            type="button"
+            onClick={() => tablesQuery.refetch()}
+            className="rounded px-2 py-1 text-xs font-semibold opacity-70 hover:bg-white/60 hover:opacity-100"
+          >
+            다시 시도
+          </button>
+        </div>
+      )}
+
       <section className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
         <h3 className="mb-4 font-bold text-gray-800">테이블 일괄 생성</h3>
         <div className="grid gap-3 md:grid-cols-[1fr_1fr_1fr_auto]">

@@ -170,6 +170,22 @@ export default function OperationsPage() {
         />
       )}
 
+      {(posFailuresQuery.isError || notificationFailuresQuery.isError) && (
+        <div
+          className="flex items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+          data-testid="admin-operations-fetch-error"
+        >
+          <span>운영 현황을 불러오지 못했습니다. 실제로는 실패가 없는 게 아니라 조회 자체가 실패한 상태입니다.</span>
+          <button
+            type="button"
+            onClick={refreshAll}
+            className="rounded px-2 py-1 text-xs font-semibold opacity-70 hover:bg-white/60 hover:opacity-100"
+          >
+            다시 시도
+          </button>
+        </div>
+      )}
+
       <div className="grid gap-4 md:grid-cols-3">
         <SummaryPanel label="전체 실패" value={`${totalFailures}건`} tone={totalFailures > 0 ? 'danger' : 'default'} />
         <SummaryPanel label="POS 전송 실패" value={`${posFailures.length}건`} tone={posFailures.length > 0 ? 'danger' : 'default'} />
