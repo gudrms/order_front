@@ -25,17 +25,19 @@ export function emitStaffCallAlert(call: Partial<StaffCall>) {
 }
 
 /**
- * 직원 호출 목록 조회 + Realtime 구독 훅.
+ * 직원 호출 목록 조회 훅 (Realtime 구독 없음).
  *
  * - GET /stores/:storeId/calls → PENDING/PROCESSING 호출 목록
- * - Supabase Realtime INSERT → 쿼리 무효화 + STAFF_CALL_EVENT 발생
  * - 30초 자동 갱신
+ *
+ * Realtime 구독(새 호출 토스트)은 레이아웃에 한 번만 마운트되는
+ * useStaffCallRealtimeSubscription()이 전담한다. 이 훅을 호출하는
+ * 페이지가 늘어나도 Supabase 채널 구독이 중복되지 않는다.
  */
 export function useStaffCalls() {
     const { selectedStoreId, authHeaders } = useAdminStore();
-    const queryClient = useQueryClient();
 
-    const query = useQuery<StaffCall[]>({
+    return useQuery<StaffCall[]>({
         queryKey: ['staff-calls', selectedStoreId],
         queryFn: async () => {
             const res = await adminApi.get(
@@ -48,6 +50,15 @@ export function useStaffCalls() {
         refetchInterval: 30_000,
         refetchIntervalInBackground: false,
     });
+}
+
+/**
+ * 새 직원 호출 Realtime 구독 (레이아웃에 한 번만 마운트해서 사용).
+ * INSERT 수신 시 staff-calls 쿼리를 무효화하고 STAFF_CALL_EVENT를 발생시킨다.
+ */
+export function useStaffCallRealtimeSubscription() {
+    const { selectedStoreId } = useAdminStore();
+    const queryClient = useQueryClient();
 
     useEffect(() => {
         if (!selectedStoreId) return;
@@ -71,8 +82,6 @@ export function useStaffCalls() {
 
         return () => { void supabase.removeChannel(channel); };
     }, [selectedStoreId, queryClient]);
-
-    return query;
 }
 
 /** 호출 완료 처리 */

@@ -8,12 +8,16 @@ import { usePathname } from 'next/navigation';
 import { canAccessAdmin, canAccessPath } from '@/lib/adminPermissions';
 import { OrderAlertControls } from '@/components/dashboard/OrderAlertControls';
 import { StaffCallNotification } from '@/components/dashboard/StaffCallNotification';
-import { useStaffCalls } from '@/hooks/useStaffCalls';
+import { useStaffCallRealtimeSubscription } from '@/hooks/useStaffCalls';
 import { useAdminStore } from '@/contexts/AdminStoreContext';
 
-/** Realtime 구독은 레이아웃 마운트 시 한 번만 시작 */
+/**
+ * Realtime 구독은 레이아웃 마운트 시 한 번만 시작.
+ * /calls 페이지 등이 별도로 useStaffCalls()(쿼리 전용)를 호출해도
+ * Supabase 채널 구독은 여기서만 생겨 새 호출 토스트가 중복되지 않는다.
+ */
 function StaffCallRealtimeSubscriber() {
-  useStaffCalls(); // 구독 + 쿼리 — 결과는 페이지에서 별도 useStaffCalls()로 소비
+  useStaffCallRealtimeSubscription();
   return null;
 }
 
