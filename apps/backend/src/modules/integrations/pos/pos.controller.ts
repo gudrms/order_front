@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Param, Body, Query, Headers, ConflictException, Logger, NotFoundException, UseGuards } from '@nestjs/common';
+import { BadRequestException, Controller, Get, Post, Patch, Param, Body, Query, Headers, ConflictException, Logger, NotFoundException, UseGuards } from '@nestjs/common';
 import { Prisma, OrderStatus } from '@prisma/client';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody, ApiQuery, ApiHeader } from '@nestjs/swagger';
 import { revalidateDeliveryCache } from '../../../common/utils/delivery-cache';
@@ -227,6 +227,10 @@ export class PosController {
         @Headers('idempotency-key') idempotencyKey?: string,
     ) {
         const { status, tossOrderId } = body;
+
+        if (!Object.values(OrderStatus).includes(status as OrderStatus)) {
+            throw new BadRequestException(`Invalid status: ${status}`);
+        }
 
         const order = await this.prisma.order.findUnique({
             where: { id: orderId },
