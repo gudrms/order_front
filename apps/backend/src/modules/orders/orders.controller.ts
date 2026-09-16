@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Param, ValidationPipe, UsePipes, Get, Query, Patch, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, Param, ValidationPipe, UsePipes, Get, Query, Patch, UseGuards, DefaultValuePipe, ParseIntPipe } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 import { OrdersService } from './orders.service';
 import { DeliveryOrderService } from './delivery-order.service';
@@ -182,7 +182,7 @@ export class OrdersController {
     async getOrders(
         @Param('storeId') storeId: string,
         @Query('status') status?: OrderStatus,
-        @Query('page') page: number = 1,
+        @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number = 1,
     ) {
         return this.ordersService.getOrders(storeId, status, page);
     }
