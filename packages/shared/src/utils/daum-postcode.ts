@@ -58,16 +58,21 @@ export function loadDaumPostcodeScript(): Promise<void> {
     });
 }
 
+export interface DaumPostcodeHandle {
+    /** 팝업을 프로그래밍적으로 닫는다 (예: 네이티브 뒤로가기 버튼 처리용) */
+    close: () => void;
+}
+
 /**
  * 주소 검색 팝업 열기
  */
 export async function openDaumPostcode(
     onComplete: (data: DaumAddress) => void,
     onClose?: () => void
-): Promise<void> {
+): Promise<DaumPostcodeHandle> {
     await loadDaumPostcodeScript();
 
-    new (window as any).daum.Postcode({
+    const postcode = new (window as any).daum.Postcode({
         oncomplete: function (data: DaumAddress) {
             onComplete(data);
         },
@@ -86,5 +91,20 @@ export async function openDaumPostcode(
         animation: true,
         hideMapBtn: false,
         hideEngBtn: true,
-    }).open();
+    });
+
+    postcode.open();
+
+    // Daum 팝업은 앱 레이아웃 바깥(document.body)에 자체 iframe으로 렌더링되어
+    // 앱의 safe-area 패딩이 적용되지 않는다. 렌더링 직후 iframe에 직접 여백을 준다.
+    requestAnimationFrame(() => {
+        const iframe = document.querySelector<HTMLIFrameElement>('iframe[src*="postcode.map.daum.net"]');
+        if (iframe) {
+            iframe.style.marginTop = 'env(safe-area-inset-top)';
+        }
+    });
+
+    return {
+        close: () => postcode.close(),
+    };
 }

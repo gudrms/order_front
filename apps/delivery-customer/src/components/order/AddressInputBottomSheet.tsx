@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useDeliveryStore } from '@/stores/deliveryStore';
 import { useAddresses } from '@/hooks/queries/useAddresses';
 import { openDaumPostcode, type DaumAddress } from '@order/shared/utils/daum-postcode';
+import { addBackButtonListener } from '@/lib/capacitor/app';
 
 interface AddressInputBottomSheetProps {
     isOpen: boolean;
@@ -118,11 +119,25 @@ export default function AddressInputBottomSheet({
 
     const handleSearchAddress = async () => {
         try {
-            await openDaumPostcode((data: DaumAddress) => {
-                const selectedAddress = data.roadAddress || data.jibunAddress || data.address;
-                setSelectedAddressId('');
-                setAddressInput(selectedAddress);
-                setZipCode(data.zonecode);
+            let removeBackListener: (() => void) | undefined;
+
+            const postcode = await openDaumPostcode(
+                (data: DaumAddress) => {
+                    removeBackListener?.();
+                    const selectedAddress = data.roadAddress || data.jibunAddress || data.address;
+                    setSelectedAddressId('');
+                    setAddressInput(selectedAddress);
+                    setZipCode(data.zonecode);
+                },
+                () => {
+                    removeBackListener?.();
+                }
+            );
+
+            // 팝업이 열려있는 동안은 네이티브 뒤로가기가 밑에 있는 페이지를 이동시키지 않고
+            // 팝업만 닫도록 가로챈다.
+            removeBackListener = addBackButtonListener(() => {
+                postcode.close();
             });
         } catch (error) {
             console.error('주소 검색 오류:', error);
