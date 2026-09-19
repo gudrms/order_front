@@ -206,12 +206,10 @@ export default function AddressInputBottomSheet({
                             <input
                                 type="text"
                                 value={address}
-                                onChange={(e) => {
-                                    setSelectedAddressId('');
-                                    setAddressInput(e.target.value);
-                                }}
+                                readOnly
+                                onClick={handleSearchAddress}
                                 placeholder="기본 주소 입력"
-                                className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-yellow"
+                                className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-yellow cursor-pointer"
                             />
                             <button
                                 onClick={handleSearchAddress}
