@@ -64,7 +64,7 @@ export default function NewAddressPage() {
 
     if (isOpenPostcode) {
         return (
-            <div className="fixed inset-0 z-50 bg-white flex flex-col">
+            <div className="fixed inset-0 z-50 bg-white flex flex-col pt-safe">
                 <header className="h-14 flex items-center px-4 border-b border-gray-100">
                     <button onClick={() => setIsOpenPostcode(false)} className="p-2 -ml-2">
                         <ChevronLeft size={24} />
