@@ -1,13 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { CheckCircle2, ChevronDown, MapPin } from 'lucide-react';
+import { CheckCircle2, ChevronDown, ChevronLeft, MapPin } from 'lucide-react';
 import type { UserAddress } from '@order/shared';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDeliveryStore } from '@/stores/deliveryStore';
 import { useAddresses } from '@/hooks/queries/useAddresses';
-import { openDaumPostcode, type DaumAddress } from '@order/shared/utils/daum-postcode';
+import DaumPostcodeEmbed from 'react-daum-postcode';
+import type { Address as DaumAddress } from 'react-daum-postcode';
 import { addBackButtonListener } from '@/lib/capacitor/app';
 
 interface AddressInputBottomSheetProps {
@@ -50,6 +51,7 @@ export default function AddressInputBottomSheet({
     const [customerName, setCustomerName] = useState(deliveryInfo.customerName || kakaoName);
     const [customerPhone, setCustomerPhone] = useState(deliveryInfo.customerPhone || kakaoPhone);
     const [deliveryRequest, setDeliveryRequestInput] = useState(deliveryInfo.deliveryRequest || '');
+    const [isAddressSearchOpen, setIsAddressSearchOpen] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
@@ -69,6 +71,13 @@ export default function AddressInputBottomSheet({
         const defaultAddress = savedAddresses.find((item) => item.isDefault) || savedAddresses[0];
         applySavedAddress(defaultAddress);
     }, [deliveryInfo.address?.address, isOpen, savedAddresses]);
+
+    useEffect(() => {
+        if (!isAddressSearchOpen) return;
+        // 주소 검색 화면이 열려있는 동안은 네이티브 뒤로가기가 배달 정보 입력 시트 전체를
+        // 닫아버리지 않고, 주소 검색 화면만 닫도록 가로챈다.
+        return addBackButtonListener(() => setIsAddressSearchOpen(false));
+    }, [isAddressSearchOpen]);
 
     const handleClose = () => {
         setIsClosing(true);
@@ -117,37 +126,22 @@ export default function AddressInputBottomSheet({
         onConfirm();
     };
 
-    const handleSearchAddress = async () => {
-        try {
-            let removeBackListener: (() => void) | undefined;
+    const handleSearchAddress = () => {
+        setIsAddressSearchOpen(true);
+    };
 
-            const postcode = await openDaumPostcode(
-                (data: DaumAddress) => {
-                    removeBackListener?.();
-                    const selectedAddress = data.roadAddress || data.jibunAddress || data.address;
-                    setSelectedAddressId('');
-                    setAddressInput(selectedAddress);
-                    setZipCode(data.zonecode);
-                },
-                () => {
-                    removeBackListener?.();
-                }
-            );
-
-            // 팝업이 열려있는 동안은 네이티브 뒤로가기가 밑에 있는 페이지를 이동시키지 않고
-            // 팝업만 닫도록 가로챈다.
-            removeBackListener = addBackButtonListener(() => {
-                postcode.close();
-            });
-        } catch (error) {
-            console.error('주소 검색 오류:', error);
-            alert('주소 검색 중 오류가 발생했습니다.');
-        }
+    const handleCompletePostcode = (data: DaumAddress) => {
+        const selectedAddress = data.roadAddress || data.jibunAddress || data.address;
+        setSelectedAddressId('');
+        setAddressInput(selectedAddress);
+        setZipCode(data.zonecode);
+        setIsAddressSearchOpen(false);
     };
 
     if (!isOpen && !isClosing) return null;
 
     return (
+        <>
         <div className="fixed inset-0 z-50 flex items-end justify-center">
             <div
                 className={cn(
@@ -285,5 +279,38 @@ export default function AddressInputBottomSheet({
                 </div>
             </div>
         </div>
+
+        {isAddressSearchOpen && (
+            <div className="fixed inset-0 z-[60] bg-white flex flex-col pt-safe">
+                <header className="h-14 flex items-center px-4 border-b border-gray-100 flex-shrink-0">
+                    <button
+                        onClick={() => setIsAddressSearchOpen(false)}
+                        className="p-2 -ml-2 text-gray-700"
+                        aria-label="닫기"
+                    >
+                        <ChevronLeft size={24} />
+                    </button>
+                    <h2 className="font-bold text-lg ml-2">주소 검색</h2>
+                </header>
+                <div className="flex-1 overflow-hidden">
+                    <DaumPostcodeEmbed
+                        onComplete={handleCompletePostcode}
+                        style={{ height: '100%' }}
+                        theme={{
+                            bgColor: '#FFFFFF',
+                            searchBgColor: '#FFD700',
+                            contentBgColor: '#FFFFFF',
+                            pageBgColor: '#FFFFFF',
+                            textColor: '#000000',
+                            queryTextColor: '#000000',
+                            emphTextColor: '#000000',
+                        }}
+                        hideMapBtn={false}
+                        hideEngBtn
+                    />
+                </div>
+            </div>
+        )}
+        </>
     );
 }
