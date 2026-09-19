@@ -166,28 +166,30 @@ test.describe('장바구니 시트', () => {
 // ── 결제하기 페이지 이동 ───────────────────────────────────────────────────
 
 test.describe('결제하기 페이지 이동', () => {
-    // 주소 입력창이 readOnly로 바뀌어 클릭 시 Daum 우편번호 팝업을 연다.
-    // CI에서 외부 Daum 서비스에 의존하지 않도록 window.daum.Postcode를 스텁으로 대체해
-    // open() 호출 시 즉시 고정 주소를 반환하게 한다.
+    // 주소 입력창이 readOnly로 바뀌어 클릭 시 Daum 우편번호 검색 화면(react-daum-postcode의
+    // DaumPostcodeEmbed)을 연다. 이 라이브러리는 window.daum.Postcode 존재 여부와 무관하게
+    // 항상 실제 CDN에서 스크립트를 새로 불러오므로, addInitScript로 전역 객체를 미리 채워둬도
+    // 무시된다. 그 스크립트 요청 자체를 가로채 가짜 스크립트로 응답해 CI에서 외부 Daum
+    // 서비스 없이도 embed() 호출 시 즉시 고정 주소를 반환하게 한다.
     test.beforeEach(async ({ page }) => {
-        await page.addInitScript(() => {
-            (window as unknown as { daum: unknown }).daum = {
-                Postcode: class {
-                    private opts: { oncomplete: (data: Record<string, string>) => void };
-                    constructor(opts: { oncomplete: (data: Record<string, string>) => void }) {
-                        this.opts = opts;
-                    }
-                    open() {
+        await page.route('**/mapjsapi/bundle/postcode/**/postcode*.js', (route) => {
+            route.fulfill({
+                status: 200,
+                contentType: 'application/javascript',
+                body: `
+                    window.daum = window.daum || {};
+                    window.daum.Postcode = function (opts) { this.opts = opts; };
+                    window.daum.Postcode.prototype.embed = function () {
                         this.opts.oncomplete({
                             roadAddress: '서울 강남구 테헤란로 1',
                             jibunAddress: '서울 강남구 역삼동 1',
                             address: '서울 강남구 테헤란로 1',
                             zonecode: '06134',
                         });
-                    }
-                    close() {}
-                },
-            };
+                    };
+                    window.daum.Postcode.prototype.open = window.daum.Postcode.prototype.embed;
+                `,
+            });
         });
     });
 
