@@ -166,6 +166,31 @@ test.describe('장바구니 시트', () => {
 // ── 결제하기 페이지 이동 ───────────────────────────────────────────────────
 
 test.describe('결제하기 페이지 이동', () => {
+    // 주소 입력창이 readOnly로 바뀌어 클릭 시 Daum 우편번호 팝업을 연다.
+    // CI에서 외부 Daum 서비스에 의존하지 않도록 window.daum.Postcode를 스텁으로 대체해
+    // open() 호출 시 즉시 고정 주소를 반환하게 한다.
+    test.beforeEach(async ({ page }) => {
+        await page.addInitScript(() => {
+            (window as unknown as { daum: unknown }).daum = {
+                Postcode: class {
+                    private opts: { oncomplete: (data: Record<string, string>) => void };
+                    constructor(opts: { oncomplete: (data: Record<string, string>) => void }) {
+                        this.opts = opts;
+                    }
+                    open() {
+                        this.opts.oncomplete({
+                            roadAddress: '서울 강남구 테헤란로 1',
+                            jibunAddress: '서울 강남구 역삼동 1',
+                            address: '서울 강남구 테헤란로 1',
+                            zonecode: '06134',
+                        });
+                    }
+                    close() {}
+                },
+            };
+        });
+    });
+
     test('배달 정보 입력 후 결제하기 페이지로 이동한다', async ({ page }) => {
         await addTacoToCart(page);
 
@@ -177,8 +202,9 @@ test.describe('결제하기 페이지 이동', () => {
         await page.getByRole('button', { name: /1개 주문하기/ }).click();
         await expect(page.getByText('배달 정보 입력')).toBeVisible({ timeout: 8_000 });
 
-        // 배달 정보 입력
-        await page.getByPlaceholder('기본 주소 입력').fill('서울 강남구 테헤란로 1');
+        // 배달 정보 입력 (주소는 readOnly라 클릭해서 스텁된 Daum 팝업으로 채운다)
+        await page.getByPlaceholder('기본 주소 입력').click();
+        await expect(page.getByPlaceholder('기본 주소 입력')).toHaveValue('서울 강남구 테헤란로 1');
         await page.getByPlaceholder('이름 입력').fill('홍길동');
         await page.getByPlaceholder('010-1234-5678').fill('010-1234-5678');
 
@@ -202,7 +228,8 @@ test.describe('결제하기 페이지 이동', () => {
         await expect(page.getByText('장바구니')).toBeVisible({ timeout: 8_000 });
         await page.getByRole('button', { name: /1개 주문하기/ }).click();
         await expect(page.getByText('배달 정보 입력')).toBeVisible({ timeout: 8_000 });
-        await page.getByPlaceholder('기본 주소 입력').fill('서울 강남구 테헤란로 1');
+        await page.getByPlaceholder('기본 주소 입력').click();
+        await expect(page.getByPlaceholder('기본 주소 입력')).toHaveValue('서울 강남구 테헤란로 1');
         await page.getByPlaceholder('이름 입력').fill('홍길동');
         await page.getByPlaceholder('010-1234-5678').fill('010-1234-5678');
         await page.getByRole('button', { name: '다음' }).click();
