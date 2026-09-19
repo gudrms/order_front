@@ -95,14 +95,28 @@ export async function openDaumPostcode(
 
     postcode.open();
 
-    // Daum 팝업은 앱 레이아웃 바깥(document.body)에 자체 iframe으로 렌더링되어
-    // 앱의 safe-area 패딩이 적용되지 않는다. 렌더링 직후 iframe에 직접 여백을 준다.
-    requestAnimationFrame(() => {
-        const iframe = document.querySelector<HTMLIFrameElement>('iframe[src*="postcode.map.daum.net"]');
-        if (iframe) {
-            iframe.style.marginTop = 'env(safe-area-inset-top)';
-        }
-    });
+    // Daum 팝업은 앱 레이아웃 바깥(document.body)에 자체 iframe을 비동기로 생성해
+    // 앱의 safe-area 패딩이 적용되지 않는다. rAF 한 틱만으로는 iframe이 아직 없을 수
+    // 있어(생성 타이밍이 늦어질 수 있음), MutationObserver로 실제 삽입 시점을 감지한다.
+    const applyInsetMargin = (iframe: HTMLIFrameElement) => {
+        iframe.style.marginTop = 'env(safe-area-inset-top)';
+    };
+
+    const existingIframe = document.querySelector<HTMLIFrameElement>('iframe[src*="daum"]');
+    if (existingIframe) {
+        applyInsetMargin(existingIframe);
+    } else {
+        const observer = new MutationObserver(() => {
+            const iframe = document.querySelector<HTMLIFrameElement>('iframe[src*="daum"]');
+            if (iframe) {
+                applyInsetMargin(iframe);
+                observer.disconnect();
+            }
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+        // 팝업이 끝내 열리지 않는 경우를 대비해 관찰을 무한정 유지하지 않는다.
+        setTimeout(() => observer.disconnect(), 10000);
+    }
 
     return {
         close: () => postcode.close(),
