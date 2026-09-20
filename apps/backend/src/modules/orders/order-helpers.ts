@@ -39,7 +39,14 @@ export async function prepareOrderItems(tx: Prisma.TransactionClient, storeId: s
             throw new NotFoundException(`Menu not found: ${itemDto.menuId}`);
         }
         if (!menu.isActive || menu.soldOut) {
-            throw new BadRequestException(`Menu is not available: ${menu.name}`);
+            // 고객 화면은 캐시된 메뉴를 보여주므로 장바구니에 담은 뒤 품절될 수 있다.
+            // 어느 메뉴를 빼야 하는지 알려주려고 menuId를 함께 내려준다.
+            throw new BadRequestException({
+                statusCode: 400,
+                code: 'MENU_UNAVAILABLE',
+                message: `품절되었거나 판매하지 않는 메뉴입니다: ${menu.name}`,
+                menuId: menu.id,
+            });
         }
 
         let itemPrice = menu.price;
