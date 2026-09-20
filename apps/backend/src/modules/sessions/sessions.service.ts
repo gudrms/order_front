@@ -54,15 +54,15 @@ export class SessionsService {
     ]);
 
     if (!store || !store.isActive) {
-      throw new NotFoundException('Store not found or inactive');
+      throw new NotFoundException('매장을 찾을 수 없거나 운영하지 않는 매장입니다');
     }
 
     if (!table) {
-      throw new NotFoundException('Table not found');
+      throw new NotFoundException('테이블을 찾을 수 없습니다');
     }
 
     if (table.status === 'RESERVED') {
-      throw new BadRequestException('Table is reserved');
+      throw new BadRequestException('예약된 테이블입니다');
     }
 
     // 기존 활성 세션이 있는지 확인
@@ -109,7 +109,7 @@ export class SessionsService {
     });
 
     if (!session) {
-      throw new NotFoundException('Session not found');
+      throw new NotFoundException('주문 세션을 찾을 수 없습니다');
     }
 
     if (session.status !== SessionStatus.ACTIVE) {
@@ -190,7 +190,7 @@ export class SessionsService {
     });
 
     if (!session) {
-      throw new NotFoundException('Session not found');
+      throw new NotFoundException('주문 세션을 찾을 수 없습니다');
     }
 
     return session;

@@ -21,13 +21,13 @@ export class CallsService {
         ]);
 
         if (!store || !store.isActive) {
-            throw new NotFoundException('Store not found or inactive');
+            throw new NotFoundException('매장을 찾을 수 없거나 운영하지 않는 매장입니다');
         }
         if (!table) {
-            throw new NotFoundException('Table not found');
+            throw new NotFoundException('테이블을 찾을 수 없습니다');
         }
         if (table.status === TableStatus.RESERVED) {
-            throw new BadRequestException('Table is reserved');
+            throw new BadRequestException('예약된 테이블입니다');
         }
 
         return this.prisma.staffCall.create({
@@ -63,7 +63,7 @@ export class CallsService {
         const call = await this.prisma.staffCall.findFirst({
             where: { id: callId, storeId },
         });
-        if (!call) throw new NotFoundException('Call not found');
+        if (!call) throw new NotFoundException('호출 내역을 찾을 수 없습니다');
 
         return this.prisma.staffCall.update({
             where: { id: callId },

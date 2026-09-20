@@ -60,18 +60,18 @@ export class PaymentsService {
         });
 
         if (!payment) {
-            throw new NotFoundException(`Pending payment not found: ${dto.orderId}`);
+            throw new NotFoundException('결제 대기 중인 주문을 찾을 수 없습니다');
         }
 
         if (payment.amount !== dto.amount || payment.order.totalAmount !== dto.amount) {
-            throw new BadRequestException('Payment amount does not match the order amount');
+            throw new BadRequestException('결제 금액이 주문 금액과 일치하지 않습니다');
         }
 
         if (payment.status === 'PAID') {
             return this.getOrderResponse(payment.orderId);
         }
         if (payment.status !== 'READY' && payment.status !== 'PENDING') {
-            throw new BadRequestException('Payment is not confirmable');
+            throw new BadRequestException('이미 처리되었거나 승인할 수 없는 결제입니다');
         }
 
         // Atomic claim: only one concurrent request proceeds when paymentKey is not yet set.
@@ -91,7 +91,7 @@ export class PaymentsService {
             // If it finished, return the confirmed order; otherwise surface a conflict.
             const current = await this.prisma.payment.findUnique({ where: { id: payment.id } });
             if (current?.status === 'PAID') return this.getOrderResponse(payment.orderId);
-            throw new ConflictException('Payment confirmation already in progress');
+            throw new ConflictException('결제 승인이 진행 중입니다. 잠시 후 다시 확인해 주세요');
         }
 
         const tossPayment = await this.tossApiService.confirmPayment({
@@ -207,7 +207,7 @@ export class PaymentsService {
         });
 
         if (!payment) {
-            throw new NotFoundException(`Pending payment not found: ${dto.orderId}`);
+            throw new NotFoundException('결제 대기 중인 주문을 찾을 수 없습니다');
         }
 
         if (payment.status === 'PAID') {

@@ -19,27 +19,27 @@ export class DeliveryOrderService {
             });
 
             if (!store) {
-                throw new NotFoundException(`Store not found: ${storeId}`);
+                throw new NotFoundException('매장을 찾을 수 없습니다');
             }
             if (!store.isActive) {
-                throw new BadRequestException('Store is not active');
+                throw new BadRequestException('현재 운영하지 않는 매장입니다');
             }
             if (!store.isDeliveryEnabled) {
-                throw new BadRequestException('Store is not accepting delivery orders');
+                throw new BadRequestException('현재 배달 주문을 받지 않는 매장입니다');
             }
             if (!dto.userId) {
-                throw new BadRequestException('Delivery orders require an authenticated user');
+                throw new BadRequestException('배달 주문은 로그인 후 이용할 수 있습니다');
             }
             const paymentMethod = dto.payment.method as string | undefined;
             if (paymentMethod === 'CASH' || dto.payment.paymentKey?.startsWith('CASH_')) {
-                throw new BadRequestException('Delivery orders only support prepaid Toss Payments');
+                throw new BadRequestException('배달 주문은 카드 결제만 이용할 수 있습니다');
             }
 
             const { totalPrice, orderItemsData } = await prepareOrderItems(tx, storeId, dto.items);
 
             if (store.minimumOrderAmount && totalPrice < store.minimumOrderAmount) {
                 throw new BadRequestException(
-                    `Order amount is below the store minimum of ${store.minimumOrderAmount}`,
+                    `최소 주문금액 ${store.minimumOrderAmount.toLocaleString()}원 이상부터 주문할 수 있습니다`,
                 );
             }
 
@@ -50,7 +50,7 @@ export class DeliveryOrderService {
 
             let discountAmount = 0;
             if (dto.userCouponId && !dto.userId) {
-                throw new BadRequestException('Coupons require an authenticated user');
+                throw new BadRequestException('쿠폰은 로그인 후 사용할 수 있습니다');
             }
             if (dto.userCouponId && dto.userId) {
                 // 쿠폰 할인은 배달비를 제외한 상품 금액 기준으로 계산한다.
@@ -65,7 +65,7 @@ export class DeliveryOrderService {
             const finalAmount = expectedAmount - discountAmount;
 
             if (dto.totalAmount !== expectedAmount || dto.payment.amount !== finalAmount) {
-                throw new BadRequestException('Order amount does not match current menu and delivery fee');
+                throw new BadRequestException('주문 금액이 현재 메뉴 가격·배달비와 맞지 않습니다. 장바구니를 다시 확인해 주세요');
             }
 
             const order = await tx.order.create({
@@ -130,7 +130,7 @@ export class DeliveryOrderService {
 
     async getDeliveryOrders(params: { storeId?: string; userId?: string; page?: number }) {
         if (!params.userId) {
-            throw new BadRequestException('userId is required to lookup delivery orders');
+            throw new BadRequestException('로그인 후 이용할 수 있습니다');
         }
 
         const take = 20;
@@ -170,7 +170,7 @@ export class DeliveryOrderService {
 
     async getOrderById(orderId: string, lookup?: { userId?: string }) {
         if (!lookup?.userId) {
-            throw new BadRequestException('userId is required to lookup a delivery order');
+            throw new BadRequestException('로그인 후 이용할 수 있습니다');
         }
 
         const order = await this.prisma.order.findUnique({
@@ -179,11 +179,11 @@ export class DeliveryOrderService {
         });
 
         if (!order) {
-            throw new NotFoundException(`Order not found: ${orderId}`);
+            throw new NotFoundException('주문을 찾을 수 없습니다');
         }
 
         if (order.userId !== lookup.userId) {
-            throw new NotFoundException(`Order not found: ${orderId}`);
+            throw new NotFoundException('주문을 찾을 수 없습니다');
         }
 
         return order;
@@ -191,7 +191,7 @@ export class DeliveryOrderService {
 
     async cancelDeliveryOrder(orderId: string, params: { userId?: string; reason?: string }) {
         if (!params.userId) {
-            throw new BadRequestException('userId is required to cancel a delivery order');
+            throw new BadRequestException('로그인 후 이용할 수 있습니다');
         }
 
         return this.prisma.$transaction(async (tx) => {
@@ -201,7 +201,7 @@ export class DeliveryOrderService {
             });
 
             if (!order || order.type !== 'DELIVERY' || order.userId !== params.userId) {
-                throw new NotFoundException(`Order not found: ${orderId}`);
+                throw new NotFoundException('주문을 찾을 수 없습니다');
             }
 
             if (order.status === 'CANCELLED') {
@@ -209,12 +209,12 @@ export class DeliveryOrderService {
             }
 
             if (order.paymentStatus === 'PAID') {
-                throw new BadRequestException('Paid delivery orders require refund approval before cancellation');
+                throw new BadRequestException('결제가 완료된 주문입니다. 취소·환불은 매장에 문의해 주세요');
             }
 
             // 배달 주문은 항상 PENDING_PAYMENT로 생성된다. (PENDING은 테이블 주문 전용)
             if (order.status !== 'PENDING_PAYMENT') {
-                throw new BadRequestException('This order can no longer be cancelled by the customer');
+                throw new BadRequestException('이미 접수된 주문이라 직접 취소할 수 없습니다. 매장에 문의해 주세요');
             }
 
             const now = new Date();
