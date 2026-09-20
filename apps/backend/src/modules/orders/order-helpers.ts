@@ -21,7 +21,7 @@ export function orderInclude() {
 
 export async function prepareOrderItems(tx: Prisma.TransactionClient, storeId: string, items: OrderItemDto[]) {
     if (!items?.length) {
-        throw new BadRequestException('Order must include at least one item');
+        throw new BadRequestException('주문할 메뉴를 한 개 이상 담아 주세요');
     }
 
     const menuIds = items.map((item) => item.menuId);
@@ -36,7 +36,14 @@ export async function prepareOrderItems(tx: Prisma.TransactionClient, storeId: s
     for (const itemDto of items) {
         const menu = menus.find((m) => m.id === itemDto.menuId);
         if (!menu) {
-            throw new NotFoundException(`Menu not found: ${itemDto.menuId}`);
+            // 장바구니에 담은 뒤 메뉴가 삭제·변경됐을 수 있다. 품절과 같은 방식으로
+            // menuId를 내려 고객 화면이 해당 메뉴를 장바구니에서 빼도록 한다.
+            throw new NotFoundException({
+                statusCode: 404,
+                code: 'MENU_UNAVAILABLE',
+                message: '판매하지 않는 메뉴가 담겨 있습니다. 메뉴가 변경되었을 수 있습니다',
+                menuId: itemDto.menuId,
+            });
         }
         if (!menu.isActive || menu.soldOut) {
             // 고객 화면은 캐시된 메뉴를 보여주므로 장바구니에 담은 뒤 품절될 수 있다.
@@ -55,7 +62,7 @@ export async function prepareOrderItems(tx: Prisma.TransactionClient, storeId: s
         if (itemDto.options) {
             for (const optDto of itemDto.options) {
                 if (!optDto.optionId) {
-                    throw new BadRequestException('Option ID is required for server-side price validation');
+                    throw new BadRequestException('옵션 정보가 올바르지 않습니다. 메뉴를 다시 담아 주세요');
                 }
 
                 const option = menu.optionGroups
@@ -63,10 +70,10 @@ export async function prepareOrderItems(tx: Prisma.TransactionClient, storeId: s
                     .find((candidate) => candidate.id === optDto.optionId);
 
                 if (!option) {
-                    throw new NotFoundException(`Option not found: ${optDto.optionId}`);
+                    throw new NotFoundException('선택한 옵션을 찾을 수 없습니다. 메뉴를 다시 담아 주세요');
                 }
                 if (option.isSoldOut) {
-                    throw new BadRequestException(`Option is sold out: ${option.name}`);
+                    throw new BadRequestException(`품절된 옵션입니다: ${option.name}`);
                 }
 
                 itemPrice += option.price;
