@@ -377,8 +377,10 @@
   - 검증: `/stores` 배달 매장 1건(`타코몰리 김포점`, 주소·좌표 정상, fee 3000), `/stores/:id/menus` 공개 5건, 배달앱 `/store/:id/menu` 렌더 확인. `OrderItem`은 메뉴를 FK로 참조하지 않고 `menuName`/`menuPrice`를 스냅샷하므로 주문 이력 영향 없음
   - Toss POS는 당분간 사용하지 않기로 함. POS 연동 완료 시 `menuManagementMode`를 되돌려야 한다
 - [ ] **김포점 배달 메뉴 채우기**: 카테고리는 11개(Tacos·Burritos·Quesadilla·Chicken·Fries·Salad·side·Drink 등)인데 등록된 메뉴가 6건(공개 5건)뿐이다. 배달 오픈 전 실제 판매 메뉴 등록 필요
-- [ ] **배달앱 빈 카테고리 노출 정리**: `테스트 카테고리`가 메뉴 0건인데도 고객 카테고리 탭에 보인다. 빈 카테고리를 숨기거나 해당 카테고리를 삭제할 것
-- [ ] **테스트 매장 잔여 정리**: `test-admin-direct-store`의 `address`에 전화번호(`0507-1410-8774`)가 그대로 남아 있고 좌표가 없다. 주문 이력·테이블이 남아 있어 삭제 전 확인 필요
+- [x] **배달앱 빈 카테고리 노출 정리** (2026-09-21, `c468fcd`): `CategoryTabs`가 `MenuList`와 같은 `useMenus` 쿼리(동일 키라 추가 요청 없음)로 노출 메뉴 유무를 보고 탭을 거르도록 수정. 숨김 메뉴만 있는 카테고리도 함께 처리된다. 메뉴 로딩 중에는 탭 깜빡임을 피하려고 기존대로 노출. E2E 1건 추가, delivery-customer 12건 통과
+- [ ] **테스트 매장 잔여 정리**: `test-admin-direct-store`의 `address`에 전화번호(`0507-1410-8774`)가 그대로 남아 있고 좌표가 없다. 배달은 껐으므로 고객 노출 영향은 없다. 주문 이력·테이블이 남아 있어 삭제 전 확인 필요
+  - 주소를 고칠 때는 SQL이 아니라 관리자 화면에서 수정할 것. `updateStore`가 주소 변경 시 카카오 지오코딩을 돌려 `lat`/`lng`까지 채우는데([stores.service.ts](apps/backend/src/modules/stores/stores.service.ts)), raw SQL로 바꾸면 좌표가 null로 남는다
+- [x] **마스터 관리자의 전 매장 접근** (2026-09-21, `5cdf73e`): `getMyStores`가 ADMIN 여부와 무관하게 `ownerId`로만 조회해 마스터가 소유 매장 하나만 볼 수 있었다. 매장 전환 드롭다운도 `stores.length > 1`에서만 뜨므로 다른 매장은 관리 자체가 불가능했다. `canManageStore`는 이미 ADMIN에게 소유권을 묻지 않으므로 그 기준에 맞춤. 백엔드 175건 통과
 - [ ] Toss 테스트 카드 결제 성공: 주문 생성 → 결제 승인 → `PAID` → 주문 상세 갱신
 - [ ] Toss 결제 실패/취소: fail 페이지 안내와 재시도 UX 확인
 - [ ] 관리자 전액 취소/환불 후 배달앱 주문 상태 갱신 확인
