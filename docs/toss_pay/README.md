@@ -143,7 +143,26 @@ iOS: [App Store Connect에서 Apple ID(숫자) 확인 후 https://apps.apple.com
 - 백엔드 시크릿 해석 순서: `TOSS_PAYMENTS_SECRET_KEY` → `TOSS_SECRET_KEY` → `TOSS_ACCESS_SECRET`
   (`apps/backend/src/modules/integrations/toss/toss-api.service.ts`).
 
-### 4-3. 계약 완료 후 교체
+### 4-3. 네이티브 앱에서 결제창이 밖으로 나가는 문제 (`appScheme` 필수)
+
+`requestPayment()` 호출 시 **`appScheme: 'taco://'`을 반드시 넘겨야 한다.**
+
+이 값이 없으면 안드로이드 앱에서 결제하기를 눌렀을 때 결제창이 앱 안이 아니라
+**외부 브라우저(크롬)로 열린다.** 토스가 이 값으로 네이티브 앱 환경인지 판단하는
+것으로 보인다. (분기는 토스 서버 쪽에서 일어나 SDK 번들에서는 확인 불가.
+2026-09-20에 이 값 하나만 추가해서 증상이 해소된 것으로 A/B 확인함.)
+
+- 위치: `apps/delivery-customer/src/app/store/[storeId]/order/checkout/page.tsx`
+- `taco://` 는 `android/app/src/main/AndroidManifest.xml`에 등록된 커스텀 스킴이며,
+  ISP/앱카드 등 카드사 앱 인증 후 앱으로 복귀하는 데에도 쓰인다.
+
+> 참고: 이 문제를 Capacitor `server.allowNavigation`(결제 도메인 허용 목록)이나
+> 인앱 브라우저(`@capacitor/browser`)로 우회하려 했으나 둘 다 불필요했다.
+> allowNavigation은 Capacitor 공식 문서가 프로덕션 비권장으로 명시하고 있고,
+> `@capacitor/browser`는 안드로이드에서 Chrome Custom Tabs를 띄우므로
+> 결국 크롬 창이 뜬 것처럼 보인다.
+
+### 4-4. 계약 완료 후 교체
 
 1. 개발자센터에서 상점 선택을 "개발 연동 체험 상점" → 본인 상점(tacomom5cx)으로 변경
 2. `order-delivery` `NEXT_PUBLIC_TOSS_CLIENT_KEY` → `live_gck_...` (본인 상점)
