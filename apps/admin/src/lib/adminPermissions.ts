@@ -8,6 +8,7 @@ import {
   MessageSquareText,
   ShoppingBag,
   Store,
+  Ticket,
   Users,
   type LucideIcon,
 } from 'lucide-react';
@@ -33,6 +34,7 @@ export const adminNavItems: AdminNavItem[] = [
   { name: '메뉴 관리', href: '/menu', icon: MenuIcon, roles: ['ADMIN', 'OWNER'] },
   { name: '브랜드 메뉴', href: '/brand-menu', icon: BookOpen, roles: ['ADMIN'] },
   { name: '배너 관리', href: '/banners', icon: Image, roles: ['ADMIN'] },
+  { name: '쿠폰 관리', href: '/coupons', icon: Ticket, roles: ['ADMIN'] },
   { name: '계정 관리', href: '/accounts', icon: Users, roles: ['ADMIN'] },
   { name: '매장 관리', href: '/store', icon: Store, roles: ['ADMIN', 'OWNER'] },
   { name: '가맹 문의', href: '/franchise-inquiries', icon: MessageSquareText, roles: ['ADMIN'] },

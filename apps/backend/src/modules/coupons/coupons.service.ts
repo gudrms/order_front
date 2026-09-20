@@ -39,6 +39,8 @@ export class CouponsService {
         const user = await this.prisma.user.findUnique({ where: { id: dto.userId } });
         if (!user) throw new NotFoundException('사용자를 찾을 수 없습니다');
 
+        await this.assertIssuable(coupon, dto.userId);
+
         const expiryDays = dto.expiryDays ?? coupon.defaultExpiryDays;
         const expiresAt = new Date(Date.now() + expiryDays * 24 * 60 * 60 * 1000);
 
@@ -62,14 +64,7 @@ export class CouponsService {
         const coupon = await this.prisma.coupon.findUnique({ where: { code: dto.code } });
         if (!coupon || !coupon.isActive) throw new NotFoundException('유효하지 않은 쿠폰 코드입니다');
 
-        if (coupon.maxUses !== null && coupon.usedCount >= coupon.maxUses) {
-            throw new BadRequestException('발급 한도가 초과된 쿠폰입니다');
-        }
-
-        const already = await this.prisma.userCoupon.findUnique({
-            where: { userId_couponId: { userId, couponId: coupon.id } },
-        });
-        if (already) throw new BadRequestException('이미 보유한 쿠폰입니다');
+        await this.assertIssuable(coupon, userId);
 
         const expiresAt = new Date(Date.now() + coupon.defaultExpiryDays * 24 * 60 * 60 * 1000);
 
@@ -162,6 +157,35 @@ export class CouponsService {
     // ────────────────────────────────────────────────────────────────
     // 내부 유틸
     // ────────────────────────────────────────────────────────────────
+
+    /**
+     * 쿠폰을 한 사람에게 더 발급해도 되는지 검사한다. (관리자 직접 발급 / 프로모 코드 등록 공용)
+     *
+     * maxUses는 스키마상 "총 발급 한도"이므로 이미 발급된 UserCoupon 수를 기준으로 본다.
+     * (예전에는 usedCount 즉 "실제 결제에 사용된 수"를 봐서, 발급만 하고 안 쓰면 한도가
+     *  올라가지 않아 한도를 훨씬 넘겨 발급될 수 있었다.)
+     *
+     * 동시 요청이 겹치면 한도를 1~2장 넘길 수 있다. 예산 통제 목적에는 충분하다고 보고
+     * 별도 잠금은 두지 않는다. 엄격히 막아야 하면 발급 수 컬럼 + 조건부 증가가 필요하다.
+     */
+    private async assertIssuable(
+        coupon: { id: string; maxUses: number | null },
+        userId: string,
+    ) {
+        const already = await this.prisma.userCoupon.findUnique({
+            where: { userId_couponId: { userId, couponId: coupon.id } },
+        });
+        if (already) throw new BadRequestException('이미 보유한 쿠폰입니다');
+
+        if (coupon.maxUses !== null) {
+            const issuedCount = await this.prisma.userCoupon.count({
+                where: { couponId: coupon.id },
+            });
+            if (issuedCount >= coupon.maxUses) {
+                throw new BadRequestException('발급 한도가 초과된 쿠폰입니다');
+            }
+        }
+    }
 
     private async assertAdmin(userId: string) {
         const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
