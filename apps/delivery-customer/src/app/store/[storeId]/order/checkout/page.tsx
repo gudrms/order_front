@@ -18,6 +18,7 @@ import type { CreateOrderRequest, OrderItemInput as PaymentOrderItemInput, UserC
 import { warmUpPaymentBackend } from '@order/shared/api';
 import type { PaymentWidgetInstance } from '@tosspayments/payment-widget-sdk';
 import { Browser } from '@capacitor/browser';
+import type { PluginListenerHandle } from '@capacitor/core';
 import { isNative } from '@/lib/capacitor';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCurrentStore } from '@/contexts/StoreContext';
@@ -58,6 +59,14 @@ export default function CheckoutPage() {
     const [showCouponSheet, setShowCouponSheet] = useState(false);
     const paymentWidgetRef = useRef<PaymentWidgetInstance | null>(null);
     const warmupRequestedRef = useRef(false);
+    // 인앱 결제창이 열려 있는 동안 결제 버튼을 잠가 중복 주문을 막는다.
+    const isNativeBrowserOpenRef = useRef(false);
+    const browserFinishedListenerRef = useRef<PluginListenerHandle | null>(null);
+
+    useEffect(() => () => {
+        browserFinishedListenerRef.current?.remove();
+        browserFinishedListenerRef.current = null;
+    }, []);
 
     const { data: availableCoupons = [] } = useAvailableCoupons(user?.id);
 
@@ -196,12 +205,16 @@ export default function CheckoutPage() {
         // 인앱 브라우저가 닫히는 시점엔 결제 성공/취소를 구분할 수 없다.
         // (성공해도 앱으로 복귀하면서 브라우저가 닫히기 때문) 여기서 섣불리 실패 처리하면
         // 정상 결제를 취소로 기록할 수 있으므로, 결제되지 않은 주문 정리는 백엔드의
-        // expire-pending 배치에 맡기고 여기서는 버튼 상태만 되돌린다.
-        const listener = await Browser.addListener('browserFinished', () => {
+        // expire-pending 배치에 맡기고 여기서는 버튼 잠금만 해제한다.
+        browserFinishedListenerRef.current?.remove();
+        browserFinishedListenerRef.current = await Browser.addListener('browserFinished', () => {
+            isNativeBrowserOpenRef.current = false;
             setIsProcessing(false);
-            void listener.remove();
+            browserFinishedListenerRef.current?.remove();
+            browserFinishedListenerRef.current = null;
         });
 
+        isNativeBrowserOpenRef.current = true;
         await Browser.open({
             url: `${window.location.origin}/store/${storeId}/order/pay?${query.toString()}`,
             toolbarColor: '#1A1A1A',
@@ -272,8 +285,14 @@ export default function CheckoutPage() {
                 sessionStorage.removeItem(PENDING_TOSS_ORDER_ID_KEY);
             }
             alert(error instanceof Error ? error.message : '결제 처리 중 오류가 발생했습니다.');
+            isNativeBrowserOpenRef.current = false;
         } finally {
-            setIsProcessing(false);
+            // 인앱 결제창이 열려 있는 동안에는 버튼을 잠근 상태로 둔다.
+            // Browser.open()은 창이 뜨는 즉시 resolve되므로 여기서 바로 풀어버리면
+            // 결제 중에 앱으로 돌아와 다시 누를 때 주문이 중복 생성된다.
+            if (!isNativeBrowserOpenRef.current) {
+                setIsProcessing(false);
+            }
         }
     };
 
