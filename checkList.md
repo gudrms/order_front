@@ -282,7 +282,7 @@
   - 쿠폰 생성: 타입(정액/정률), 할인값, 최소주문금액, 정률 상한(`maxDiscountAmount`), 총 발급 한도, 유효기간(`defaultExpiryDays`), 프로모 코드(선택)
   - 쿠폰 목록: 발급수/사용수(`usedCount`/`maxUses`), 활성 토글
   - 사용자 발급: 특정 고객에게 직접 발급
-  - 쿠폰 운영 기준은 [docs/coupon-strategy.md](docs/coupon-strategy.md) 참고
+  - 쿠폰 운영 기준은 [docs/coupon-strategy.md](docs/coupon-strategy.md), 개발 요청서는 [docs/prd/admin-coupon-management.md](docs/prd/admin-coupon-management.md) 참고
 
 ---
 
