@@ -17,6 +17,8 @@ const TossPaymentWidget = dynamic(
 import type { CreateOrderRequest, OrderItemInput as PaymentOrderItemInput, UserCoupon } from '@order/shared';
 import { warmUpPaymentBackend } from '@order/shared/api';
 import type { PaymentWidgetInstance } from '@tosspayments/payment-widget-sdk';
+import { Browser } from '@capacitor/browser';
+import { isNative } from '@/lib/capacitor';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCurrentStore } from '@/contexts/StoreContext';
 import { useDeliveryStore } from '@/stores/deliveryStore';
@@ -174,6 +176,38 @@ export default function CheckoutPage() {
         }
     };
 
+    const openNativePaymentBrowser = async (params: {
+        orderId: string;
+        orderName: string;
+        amount: number;
+        customerKey: string;
+        customerName?: string;
+        customerEmail?: string;
+    }) => {
+        const query = new URLSearchParams({
+            orderId: params.orderId,
+            orderName: params.orderName,
+            amount: String(params.amount),
+            customerKey: params.customerKey,
+        });
+        if (params.customerName) query.set('customerName', params.customerName);
+        if (params.customerEmail) query.set('customerEmail', params.customerEmail);
+
+        // 인앱 브라우저가 닫히는 시점엔 결제 성공/취소를 구분할 수 없다.
+        // (성공해도 앱으로 복귀하면서 브라우저가 닫히기 때문) 여기서 섣불리 실패 처리하면
+        // 정상 결제를 취소로 기록할 수 있으므로, 결제되지 않은 주문 정리는 백엔드의
+        // expire-pending 배치에 맡기고 여기서는 버튼 상태만 되돌린다.
+        const listener = await Browser.addListener('browserFinished', () => {
+            setIsProcessing(false);
+            void listener.remove();
+        });
+
+        await Browser.open({
+            url: `${window.location.origin}/store/${storeId}/order/pay?${query.toString()}`,
+            toolbarColor: '#1A1A1A',
+        });
+    };
+
     const handlePayment = async () => {
         if (!canOrder) return;
 
@@ -183,9 +217,11 @@ export default function CheckoutPage() {
             setIsProcessing(true);
             const orderId = generateOrderId();
             const orderRequest = buildOrderRequest(orderId);
+            // 네이티브에서는 결제수단 선택을 인앱 브라우저의 결제 페이지에서 하므로
+            // 이 화면의 위젯 인스턴스가 필요 없다.
             const paymentWidget = paymentWidgetRef.current;
 
-            if (!paymentWidget) {
+            if (!isNative && !paymentWidget) {
                 alert('결제 위젯이 아직 준비되지 않았습니다. 잠시 후 다시 시도해 주세요.');
                 return;
             }
@@ -201,9 +237,29 @@ export default function CheckoutPage() {
             );
 
             const origin = typeof window !== 'undefined' ? window.location.origin : '';
-            await paymentWidget.requestPayment({
+            const orderName = items.length > 1 ? `${items[0].menuName} 외 ${items.length - 1}건` : items[0].menuName;
+
+            if (isNative) {
+                // 네이티브 앱에서는 결제창을 앱 웹뷰에서 직접 띄우면 안 된다.
+                // 토스 결제창이 카드사·은행 도메인으로 최상위 이동을 하는데, Capacitor는
+                // 외부 도메인 이동을 시스템 브라우저로 넘겨버려 앱을 이탈하기 때문이다.
+                // 결제 전용 페이지를 인앱 브라우저로 열어 그 안에서 전부 처리한다.
+                await openNativePaymentBrowser({
+                    orderId,
+                    orderName,
+                    amount: paymentAmount,
+                    customerKey: user?.id || 'ANONYMOUS',
+                    customerName: deliveryInfo.customerName,
+                    customerEmail: user?.email || undefined,
+                });
+                return;
+            }
+
+            // 웹 경로. 네이티브는 위에서 분기 후 종료되고, 웹은 주문 생성 전에
+            // 위젯 준비 여부를 이미 확인했으므로 여기서는 non-null이 보장된다.
+            await paymentWidget!.requestPayment({
                 orderId,
-                orderName: items.length > 1 ? `${items[0].menuName} 외 ${items.length - 1}건` : items[0].menuName,
+                orderName,
                 customerName: deliveryInfo.customerName,
                 customerEmail: user?.email || undefined,
                 successUrl: `${origin}/store/${storeId}/order/success`,
@@ -307,14 +363,20 @@ export default function CheckoutPage() {
                         <CreditCard size={24} />
                         <span className="font-medium">토스페이먼츠 카드 결제</span>
                     </div>
-                    {isPaymentKeyConfigured ? (
+                    {!isPaymentKeyConfigured ? null : isNative ? (
+                        // 네이티브에서는 결제수단 선택을 인앱 브라우저의 결제 페이지에서 한다.
+                        <p className="text-sm text-gray-500">
+                            결제수단은 다음 화면에서 선택합니다.
+                        </p>
+                    ) : (
                         <TossPaymentWidget
                             clientKey={TOSS_CLIENT_KEY}
                             customerKey={user?.id || 'ANONYMOUS'}
                             amount={paymentAmount}
                             onWidgetReady={(widget) => { paymentWidgetRef.current = widget; }}
                         />
-                    ) : (
+                    )}
+                    {!isPaymentKeyConfigured && (
                         <p className="text-sm text-red-500">
                             결제 설정이 준비되지 않았습니다. 관리자에게 문의해 주세요.
                         </p>
