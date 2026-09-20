@@ -1,8 +1,7 @@
-// 백엔드 쓰기 시 POST /api/revalidate로 태그를 즉시 무효화하므로(on-demand revalidation)
-// TTL을 길게 잡아도 신선도 손실이 없다. TTL을 늘려 캐시 miss 빈도(=백엔드 cold start 호출)를 낮춘다.
+// Next 데이터 캐시 TTL. 백엔드 쓰기 시 POST /api/revalidate로 태그를 즉시 무효화하므로
+// (on-demand revalidation) 길게 잡아도 신선도 손실이 없고, 캐시 miss 빈도
+// (=백엔드 cold start 호출)를 낮춘다.
 const DEFAULT_REVALIDATE_SECONDS = 300;
-// 만료 후에도 stale 응답을 즉시 주고 백그라운드 갱신 → 사용자가 cold start를 체감하지 않게 한다.
-const DEFAULT_STALE_WHILE_REVALIDATE_SECONDS = 3600;
 
 type ApiEnvelope<T> = {
     data?: T;
@@ -25,8 +24,17 @@ export const publicCacheTags = {
     menu: (menuId: string) => `delivery:menu:${menuId}`,
 };
 
-export function publicCacheControl(revalidate = DEFAULT_REVALIDATE_SECONDS) {
-    return `s-maxage=${revalidate}, stale-while-revalidate=${DEFAULT_STALE_WHILE_REVALIDATE_SECONDS}`;
+/**
+ * CDN(Vercel 엣지) 응답 캐시는 `revalidateTag`가 닿지 않는다. s-maxage를 주면
+ * 태그를 무효화해도 옛 응답이 s-maxage 동안 그대로 서빙된다.
+ * (실측: 메뉴를 바꾸고 태그를 지워도 `X-Vercel-Cache: HIT`로 5분간 옛 메뉴가 나갔다)
+ *
+ * 품절 처리가 즉시 반영되지 않으면 고객이 주소까지 입력한 뒤 주문 단계에서 막히므로,
+ * 엣지에는 캐시하지 않고 Next 데이터 캐시에만 의존한다. 데이터 캐시는 그대로라
+ * 백엔드 cold start 방어는 유지된다.
+ */
+export function publicCacheControl() {
+    return 'no-store';
 }
 
 export async function fetchCachedPublicData<T>(
@@ -45,7 +53,6 @@ export async function fetchCachedPublicData<T>(
             ok: false as const,
             status: response.status,
             body: normalizeError(payload, response.status),
-            revalidate,
         };
     }
 
@@ -53,7 +60,6 @@ export async function fetchCachedPublicData<T>(
         ok: true as const,
         status: response.status,
         data: unwrapData(payload),
-        revalidate,
     };
 }
 

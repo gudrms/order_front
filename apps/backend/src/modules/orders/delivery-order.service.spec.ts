@@ -92,6 +92,21 @@ describe('DeliveryOrderService', () => {
         expect(tx.order.create).not.toHaveBeenCalled();
     });
 
+    it('rejects sold out menus with the menuId so the client can clear its cart', async () => {
+        tx.store.findUnique.mockResolvedValue(store);
+        tx.menu.findMany.mockResolvedValue([{ ...menu, soldOut: true }]);
+
+        await expect(service.createDeliveryOrder('store-1', dto)).rejects.toMatchObject({
+            response: {
+                code: 'MENU_UNAVAILABLE',
+                menuId: 'menu-1',
+                message: '품절되었거나 판매하지 않는 메뉴입니다: Taco',
+            },
+        });
+
+        expect(tx.order.create).not.toHaveBeenCalled();
+    });
+
     it('rejects cash delivery orders', async () => {
         tx.store.findUnique.mockResolvedValue(store);
 

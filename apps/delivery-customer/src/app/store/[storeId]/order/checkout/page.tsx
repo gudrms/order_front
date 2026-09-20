@@ -39,6 +39,13 @@ if (typeof window !== 'undefined' && !isTossWidgetClientKey(TOSS_CLIENT_KEY)) {
     );
 }
 
+/** 주문 생성이 품절로 막혔을 때 백엔드가 실어 보낸 menuId를 꺼낸다. (order-helpers.ts) */
+function getUnavailableMenuId(error: unknown): string | null {
+    if (!error || typeof error !== 'object') return null;
+    const data = (error as { data?: { code?: string; menuId?: string } }).data;
+    return data?.code === 'MENU_UNAVAILABLE' && data.menuId ? data.menuId : null;
+}
+
 export default function CheckoutPage() {
     const router = useRouter();
     const { storeId } = useParams<{ storeId: string }>();
@@ -46,6 +53,7 @@ export default function CheckoutPage() {
     const { user, loading: isAuthLoading } = useAuth();
     const items = useCartStore((s) => s.items);
     const totalPrice = useCartStore((s) => s.totalPrice);
+    const removeItem = useCartStore((s) => s.removeItem);
     const { deliveryInfo, setAddress, setCustomerInfo, setDeliveryRequest } = useDeliveryStore();
     const { data: addresses = [] } = useAddresses(user?.id);
     const createOrderMutation = useCreateOrder();
@@ -222,6 +230,20 @@ export default function CheckoutPage() {
                 await reportPaymentAbort(pendingTossOrderId, error);
                 sessionStorage.removeItem(PENDING_TOSS_ORDER_ID_KEY);
             }
+
+            // 품절 메뉴는 그대로 두면 다시 눌러도 같은 자리에서 막히므로 장바구니에서 빼준다.
+            const unavailableMenuId = getUnavailableMenuId(error);
+            if (unavailableMenuId) {
+                // 옵션 조합마다 장바구니 항목이 따로 생기므로 같은 메뉴를 전부 뺀다.
+                items
+                    .filter((item) => item.menuId === unavailableMenuId)
+                    .forEach((item) => removeItem(item.id));
+                alert(
+                    `${error instanceof Error ? error.message : '품절된 메뉴가 있습니다.'}\n장바구니에서 해당 메뉴를 빼드렸습니다.`,
+                );
+                return;
+            }
+
             alert(error instanceof Error ? error.message : '결제 처리 중 오류가 발생했습니다.');
         } finally {
             setIsProcessing(false);

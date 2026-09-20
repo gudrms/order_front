@@ -21,6 +21,6 @@ export async function GET(_request: Request, { params }: RouteContext) {
     }
 
     return NextResponse.json(result.data, {
-        headers: { 'Cache-Control': publicCacheControl(result.revalidate) },
+        headers: { 'Cache-Control': publicCacheControl() },
     });
 }
