@@ -212,8 +212,8 @@ export class DeliveryOrderService {
                 throw new BadRequestException('Paid delivery orders require refund approval before cancellation');
             }
 
-            const cancellableStatuses = ['PENDING_PAYMENT', 'PENDING'];
-            if (!cancellableStatuses.includes(order.status)) {
+            // 배달 주문은 항상 PENDING_PAYMENT로 생성된다. (PENDING은 테이블 주문 전용)
+            if (order.status !== 'PENDING_PAYMENT') {
                 throw new BadRequestException('This order can no longer be cancelled by the customer');
             }
 
