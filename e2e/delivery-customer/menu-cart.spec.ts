@@ -61,6 +61,23 @@ test.describe('메뉴 목록', () => {
         await expect(page.getByText('E2E Taco')).toBeVisible({ timeout: 10_000 });
     });
 
+    test('노출 메뉴가 없는 카테고리는 탭에 표시되지 않는다', async ({ page }) => {
+        // fixtures보다 나중에 등록한 route가 우선한다. 메뉴가 0건인 카테고리를 하나 더 끼워 넣는다.
+        await page.route('**/api/stores/*/categories**', async (route) => {
+            await route.fulfill({
+                json: [
+                    { id: 'category-e2e-1', storeId: STUB_STORE_ID, name: 'Main', displayOrder: 1, isActive: true },
+                    { id: 'category-e2e-empty', storeId: STUB_STORE_ID, name: '빈 카테고리', displayOrder: 2, isActive: true },
+                ],
+            });
+        });
+
+        await page.goto(`/store/${STUB_STORE_ID}/menu`);
+
+        await expect(page.getByRole('button', { name: 'Main', exact: true })).toBeVisible({ timeout: 10_000 });
+        await expect(page.getByRole('button', { name: '빈 카테고리', exact: true })).toHaveCount(0);
+    });
+
     test('메뉴 클릭 시 상세 시트가 열린다', async ({ page }) => {
         await page.goto(`/store/${STUB_STORE_ID}/menu`);
         await page.getByText('E2E Taco').first().click();
