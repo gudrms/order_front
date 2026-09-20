@@ -161,6 +161,7 @@ describe('StoresService', () => {
     });
 
     it('lists stores owned by the authenticated user', async () => {
+        prisma.user.findUnique.mockResolvedValue(owner);
         prisma.store.findMany.mockResolvedValue([store]);
 
         const result = await service.getMyStores('owner-1');
@@ -168,6 +169,20 @@ describe('StoresService', () => {
         expect(result).toEqual([store]);
         expect(prisma.store.findMany).toHaveBeenCalledWith({
             where: { ownerId: 'owner-1' },
+            orderBy: { createdAt: 'desc' },
+        });
+    });
+
+    it('lists every store for a platform admin regardless of ownership', async () => {
+        const otherStore = { ...store, id: 'store-2', ownerId: 'owner-9' };
+        prisma.user.findUnique.mockResolvedValue(admin);
+        prisma.store.findMany.mockResolvedValue([store, otherStore]);
+
+        const result = await service.getMyStores('admin-1');
+
+        expect(result).toEqual([store, otherStore]);
+        expect(prisma.store.findMany).toHaveBeenCalledWith({
+            where: {},
             orderBy: { createdAt: 'desc' },
         });
     });
