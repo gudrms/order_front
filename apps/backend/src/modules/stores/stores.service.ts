@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { assertCanCreateStore, assertCanManageStore } from '../../common/auth/permissions';
+import { assertCanCreateStore, assertCanManageStore, isPlatformAdmin } from '../../common/auth/permissions';
 import { revalidateDeliveryCache } from '../../common/utils/delivery-cache';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateStoreDto, CreateTablesDto, UpdateStoreDto } from './dto/store-admin.dto';
@@ -72,8 +72,15 @@ export class StoresService {
     }
 
     async getMyStores(userId: string) {
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+            select: { id: true, role: true },
+        });
+
+        // 마스터 관리자는 소유 여부와 무관하게 전 매장을 관리한다.
+        // (canManageStore도 ADMIN에게는 소유권을 묻지 않으므로 기준을 맞춘다)
         return this.prisma.store.findMany({
-            where: { ownerId: userId },
+            where: isPlatformAdmin(user) ? {} : { ownerId: userId },
             orderBy: { createdAt: 'desc' },
         });
     }
