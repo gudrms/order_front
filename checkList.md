@@ -316,7 +316,9 @@
 - [x] **배달 상태 변경이 결제 취소·주문 상태 전이를 우회하던 문제** (2026-09-20): `updateDeliveryStatus`가 `deliveryStatus`만 보고 `order.status`를 직접 덮어썼다. ① 결제 완료(PAID) 주문의 배달 상태를 `CANCELLED`로 바꾸면 **결제는 그대로 둔 채 주문만 취소**됐고(고객 취소 경로에 있던 PAID 가드가 이쪽엔 없었음), ② `ALLOWED_TRANSITIONS`를 참조하지 않아 조리 전 주문이 픽업 처리되면 `COOKING`/`READY`를 건너뛰고 `DELIVERING`이 됐다. 두 경우 모두 어드민 UI로는 도달 불가였으나 API는 열려 있었음. 가드 추가 + 단위 테스트 2건.
 - [x] **쿠폰 할인 기준에서 배달비 제외** (2026-09-20): 정률 쿠폰이 상품금액+배달비 기준으로 계산돼 배달비가 비싼 매장일수록 더 많이 깎였다. 매장 최소주문금액은 상품금액만 보고 있어 기준선도 어긋나 있었음. 서버·앱 결제 계산·쿠폰 목록 미리보기 세 곳을 모두 상품금액 기준으로 통일. 운영 기준은 [docs/coupon-strategy.md](docs/coupon-strategy.md) 참고.
 - [x] **네이티브 앱에서 결제창이 외부 브라우저로 열리던 문제** (2026-09-20): `requestPayment`에 `appScheme`이 빠져 토스가 네이티브 앱 환경으로 인식하지 못했다. `appScheme: 'taco://'` 추가로 해소. 경위는 [docs/toss_pay/README.md](docs/toss_pay/README.md) 4-3절 참고.
-- [ ] **주소 좌표(latitude/longitude) 방치 필드 정리 여부 결정**: `UserAddress`에 좌표 필드가 있고 앱이 읽기는 하지만, Daum 우편번호가 좌표를 반환하지 않아 **채우는 경로가 아예 없다**(항상 `undefined`). 삭제(YAGNI)하거나, 지도 기반 배차를 붙일 거면 카카오 로컬 API 지오코딩을 추가해야 함 — 둘 중 하나로 정리 필요.
+- [ ] **배달 가능 반경 제한 (보류 — 나중에 재검토, 2026-09-20)**: `Store.deliveryRadiusMeters`가 스키마·DTO·공용 타입에 **선언만 되어 있고 이를 사용하는 로직이 없어**, 현재는 거리와 무관하게 모든 주소에서 주문이 들어온다. 구현하려면 고객 주소 좌표가 필요한데 `UserAddress.latitude/longitude`도 채우는 경로가 없어 항상 비어 있다(Daum 우편번호는 좌표를 반환하지 않음).
+  - 다만 지오코딩 자체는 이미 있다 — `stores.service.ts`의 `geocodeAddress()`가 카카오 로컬 API로 **매장** 주소를 좌표로 변환해 브랜드 사이트 지도에 쓰고 있다. 고객 주소에도 같은 함수를 재사용하면 되므로 착수 비용은 낮다.
+  - 거리 기반 배달비·라이더 배차·도착 예정시간도 같은 선행 작업을 공유한다. 배달 정책을 정한 뒤 함께 검토.
 - [ ] **결제 이탈(Drop-off) 주문 클라이언트 렌더링 시 자동 정리**: 결제 직전 백엔드에 `PENDING_PAYMENT` 주문을 먼저 생성하므로, 결제창에서 이탈하면 미결제 주문이 방치된다.
   - **흐름**: `checkout/page.tsx` `handlePayment()`(:151) → `createOrderMutation`으로 주문 생성(:167) → `orderId`를 `sessionStorage['delivery.pendingTossOrderId']`(상수 `PENDING_TOSS_ORDER_ID_KEY`, :28)에 저장(:169) → `paymentWidget.requestPayment()`로 Toss 결제창 호출.
   - **정상 정리 경로**: ① 성공 → success 페이지에서 키 제거, ② 실패/취소 → fail 페이지에서 제거, ③ checkout 내부 catch → `reportPaymentAbort()`(:139)가 `failTossPaymentMutation`(code `PAYMENT_WIDGET_ABORTED`)으로 백엔드에 실패 신고 + 키 제거(:182-184).
