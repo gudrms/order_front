@@ -76,7 +76,11 @@ export default function CheckoutPage() {
     const orderValidation = validateOrder({ flow: 'DELIVERY', items: coreOrderItems, storePolicy });
     const totalAmount = orderTotals.totalAmount;
     const deliveryFee = orderTotals.deliveryFee;
-    const discountAmount = selectedCoupon ? calculateCouponDiscount(selectedCoupon.coupon, totalAmount) : 0;
+    // 쿠폰 할인은 배달비를 제외한 상품 금액 기준. (백엔드 delivery-order.service와 동일해야
+    // 결제 금액 검증을 통과한다)
+    const discountAmount = selectedCoupon
+        ? calculateCouponDiscount(selectedCoupon.coupon, orderTotals.itemsSubtotal)
+        : 0;
     const paymentAmount = totalAmount - discountAmount;
     const isBelowMinimum = orderValidation.issues.some((issue) => issue.code === 'BELOW_MINIMUM_ORDER');
     const isPaymentKeyConfigured = isTossWidgetClientKey(TOSS_CLIENT_KEY);
@@ -431,8 +435,9 @@ export default function CheckoutPage() {
                         </div>
                         <div className="overflow-y-auto p-4 space-y-3">
                             {availableCoupons.map((uc) => {
-                                const discount = calculateCouponDiscount(uc.coupon, totalAmount);
-                                const isDisabled = uc.coupon.minOrderAmount != null && totalAmount < uc.coupon.minOrderAmount;
+                                // 할인액·사용조건 모두 배달비 제외 상품 금액 기준 (서버와 동일)
+                                const discount = calculateCouponDiscount(uc.coupon, orderTotals.itemsSubtotal);
+                                const isDisabled = uc.coupon.minOrderAmount != null && orderTotals.itemsSubtotal < uc.coupon.minOrderAmount;
                                 return (
                                     <button
                                         key={uc.id}

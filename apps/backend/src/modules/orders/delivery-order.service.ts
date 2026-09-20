@@ -53,10 +53,12 @@ export class DeliveryOrderService {
                 throw new BadRequestException('Coupons require an authenticated user');
             }
             if (dto.userCouponId && dto.userId) {
+                // 쿠폰 할인은 배달비를 제외한 상품 금액 기준으로 계산한다.
+                // (매장 최소주문금액도 상품 금액만 보므로 기준선을 맞춘다)
                 const result = await this.couponsService.validateAndCalculateDiscount(
                     dto.userId,
                     dto.userCouponId,
-                    expectedAmount,
+                    totalPrice,
                 );
                 discountAmount = result.discountAmount;
             }
