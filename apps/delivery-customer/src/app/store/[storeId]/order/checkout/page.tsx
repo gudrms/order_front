@@ -60,6 +60,7 @@ export default function CheckoutPage() {
     const failTossPaymentMutation = useFailTossPayment();
 
     const [isProcessing, setIsProcessing] = useState(false);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [selectedCoupon, setSelectedCoupon] = useState<UserCoupon | null>(null);
     const [showCouponSheet, setShowCouponSheet] = useState(false);
     const paymentWidgetRef = useRef<PaymentWidgetInstance | null>(null);
@@ -193,12 +194,13 @@ export default function CheckoutPage() {
 
         try {
             setIsProcessing(true);
+            setErrorMessage(null);
             const orderId = generateOrderId();
             const orderRequest = buildOrderRequest(orderId);
             const paymentWidget = paymentWidgetRef.current;
 
             if (!paymentWidget) {
-                alert('결제 위젯이 아직 준비되지 않았습니다. 잠시 후 다시 시도해 주세요.');
+                setErrorMessage('결제 수단을 불러오는 중입니다. 잠시 후 다시 시도해 주세요.');
                 return;
             }
 
@@ -231,20 +233,19 @@ export default function CheckoutPage() {
                 sessionStorage.removeItem(PENDING_TOSS_ORDER_ID_KEY);
             }
 
-            // 품절 메뉴는 그대로 두면 다시 눌러도 같은 자리에서 막히므로 장바구니에서 빼준다.
+            // 품절·삭제된 메뉴는 그대로 두면 다시 눌러도 같은 자리에서 막히므로 장바구니에서 빼준다.
             const unavailableMenuId = getUnavailableMenuId(error);
             if (unavailableMenuId) {
                 // 옵션 조합마다 장바구니 항목이 따로 생기므로 같은 메뉴를 전부 뺀다.
-                items
-                    .filter((item) => item.menuId === unavailableMenuId)
-                    .forEach((item) => removeItem(item.id));
-                alert(
-                    `${error instanceof Error ? error.message : '품절된 메뉴가 있습니다.'}\n장바구니에서 해당 메뉴를 빼드렸습니다.`,
+                const removed = items.filter((item) => item.menuId === unavailableMenuId);
+                removed.forEach((item) => removeItem(item.id));
+                setErrorMessage(
+                    `${error instanceof Error ? error.message : '주문할 수 없는 메뉴가 있습니다.'} 장바구니에서 ${removed[0]?.menuName ?? '해당 메뉴'}을(를) 빼드렸습니다.`,
                 );
                 return;
             }
 
-            alert(error instanceof Error ? error.message : '결제 처리 중 오류가 발생했습니다.');
+            setErrorMessage(error instanceof Error ? error.message : '결제 처리 중 오류가 발생했습니다.');
         } finally {
             setIsProcessing(false);
         }
@@ -434,6 +435,15 @@ export default function CheckoutPage() {
 
             <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4 pb-8">
                 <div className="max-w-[568px] mx-auto space-y-2">
+                    {errorMessage && (
+                        <p
+                            role="alert"
+                            data-testid="checkout-error"
+                            className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600"
+                        >
+                            {errorMessage}
+                        </p>
+                    )}
                     {disabledReason && <p className="text-center text-sm text-red-500">{disabledReason}</p>}
                     <button
                         onClick={user ? handlePayment : () => router.push('/login')}
