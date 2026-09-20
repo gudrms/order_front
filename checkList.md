@@ -1,6 +1,6 @@
 # Taco Mono 작업 현황
 
-마지막 업데이트: 2026-09-20 (14차)
+마지막 업데이트: 2026-09-20 (15차)
 
 ---
 
@@ -278,11 +278,15 @@
 - [x] **매장 조회 쿼리 authHeaders 가드** (2026-05-23): `AdminStoreContext`의 매장 조회를 `enabled:!!session` → `enabled:!!authHeaders`로 변경해 토큰 미탑재 상태의 401 경쟁 방지.
 - [ ] **Realtime 주문 무효화 throttle 검토**: `useRealtimeOrders`가 모든 주문 이벤트에 `invalidateQueries`를 호출. status 화이트리스트는 admin 특성상(접수·조리·완료 등 대부분 변경이 UI 반영 필요) 갱신 누락 위험이 커 부적합 — 짧은 시간 다중 변경 시 REST 재조회 폭주를 debounce/throttle로 완화하는 방향 검토.
 - [x] **마스터 어드민 `배너 관리` 화면 추가** (2026-05-24): 마스터 관리자(`ADMIN` 권한)가 메인 배너를 동적으로 생성/수정/삭제하고 배경 이미지 업로드 및 이동 타겟 매장을 매핑할 수 있는 관리 화면 신규 개발
-- [ ] **`쿠폰 관리` 화면 신규 개발** (2026-09-20 확인): 백엔드 쿠폰 API는 이미 완성돼 있으나(`POST /coupons` 생성, `GET /coupons` 목록, `POST /coupons/:id/issue` 발급) **어드민에 화면이 없어 지금은 API를 직접 호출하지 않으면 쿠폰을 만들 수 없다.** 고객 쪽(보유 쿠폰 조회·결제 시 적용·`POST /coupons/redeem` 코드 등록)은 이미 동작하므로, 사장님이 쓰는 쪽만 비어 있는 상태. 필요 화면:
-  - 쿠폰 생성: 타입(정액/정률), 할인값, 최소주문금액, 정률 상한(`maxDiscountAmount`), 총 발급 한도, 유효기간(`defaultExpiryDays`), 프로모 코드(선택)
-  - 쿠폰 목록: 발급수/사용수(`usedCount`/`maxUses`), 활성 토글
-  - 사용자 발급: 특정 고객에게 직접 발급
+- [x] **`쿠폰 관리` 화면 신규 개발** (2026-09-20): ADMIN 전용 `/coupons` 생성·목록·사용자 ID 직접 발급 및 메뉴/접근 제한 구현. `80fd615`, `caf9c4e` 커밋을 `origin/master`에 푸시 완료(배포 확인은 별도).
+  - 정액 기본값, 정률 상한 필수 입력, 최소 주문금액·한도·유효기간·프로모 코드 입력 및 코드 복사 지원
+  - 사용 현황(`usedCount / maxUses`), 활성 여부 표시. `usedCount`는 발급 수가 아니라 실제 사용 수
+  - 타입 검사 및 모의 API E2E 4개 통과: 생성 요청·목록 갱신, 발급 실패/성공, 조회 실패/재시도, OWNER 접근 차단. ESLint는 설정 파일 부재로 실행 불가
   - 쿠폰 운영 기준은 [docs/coupon-strategy.md](docs/coupon-strategy.md), 개발 요청서는 [docs/prd/admin-coupon-management.md](docs/prd/admin-coupon-management.md) 참고
+- [ ] **쿠폰 총 발급 한도 보장 — 실운영 전 보완**: 직접 발급은 `maxUses`를 검사하지 않고, 프로모 코드 등록(`POST /users/me/coupons/redeem`)은 발급 수 대신 `usedCount`를 검사한다. 발급 수 기준으로 동시 요청에도 한도를 초과하지 않도록 서버 보완 필요
+- [ ] **쿠폰 중복 오류 안내**: 프로모 코드 중복 생성 및 동일 고객·쿠폰 재발급의 DB 유일성 오류를 명확한 사용자 메시지로 처리
+- [ ] **쿠폰 실 API 연동 검증**: ADMIN 생성·상한 DB 저장 → 사용자 발급 → 고객 마이페이지 노출 → 결제 시 상품 금액 기준 할인(배달비 제외) 확인. 모의 API E2E로는 검증되지 않음
+- [ ] **쿠폰 활성 토글**: 이번 화면은 활성 여부 표시만 지원. 수정 API 추가와 화면 연결 필요(이번 구현 범위 제외)
 
 ---
 
