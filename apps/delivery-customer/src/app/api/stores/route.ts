@@ -16,6 +16,6 @@ export async function GET() {
     }
 
     return NextResponse.json(result.data, {
-        headers: { 'Cache-Control': publicCacheControl(result.revalidate) },
+        headers: { 'Cache-Control': publicCacheControl() },
     });
 }
