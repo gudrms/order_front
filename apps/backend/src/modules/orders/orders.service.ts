@@ -235,6 +235,13 @@ export class OrdersService {
         if (order.status === 'COMPLETED' && deliveryStatus !== 'DELIVERED') {
             throw new BadRequestException('Completed orders cannot change delivery status');
         }
+        // 결제된 주문을 배달 취소만으로 종료하면 돈은 그대로 둔 채 주문만 취소된다.
+        // 결제 취소(환불)는 payments 경로에서 처리해야 하므로 여기서는 막는다.
+        if (deliveryStatus === 'CANCELLED' && order.paymentStatus === 'PAID') {
+            throw new BadRequestException(
+                'Paid orders must be cancelled through the payment cancellation flow so the payment is refunded',
+            );
+        }
 
         const now = new Date();
         const deliveryUpdateData: Prisma.OrderDeliveryUpdateInput = {
@@ -248,16 +255,31 @@ export class OrdersService {
         if (deliveryStatus === 'ASSIGNED') {
             deliveryUpdateData.assignedAt = now;
         }
+        // 배달 상태로 주문 상태를 덮어쓸 때도 주문 상태 전이 규칙을 지켜야 한다.
+        // (예: 조리 시작 전 주문이 픽업 처리되어 COOKING/READY를 건너뛰는 것 방지)
+        const assertOrderTransition = (next: OrderStatus) => {
+            if (order.status === next) return;
+            const allowed = OrdersService.ALLOWED_TRANSITIONS[order.status] ?? [];
+            if (!allowed.includes(next)) {
+                throw new BadRequestException(
+                    `Delivery status ${deliveryStatus} requires order status ${next}, but ${order.status} → ${next} is not allowed`,
+                );
+            }
+        };
+
         if (deliveryStatus === 'PICKED_UP') {
             deliveryUpdateData.pickedUpAt = now;
+            assertOrderTransition('DELIVERING');
             orderUpdateData.status = 'DELIVERING';
         }
         if (deliveryStatus === 'DELIVERING') {
             deliveryUpdateData.pickedUpAt = order.delivery.pickedUpAt || now;
+            assertOrderTransition('DELIVERING');
             orderUpdateData.status = 'DELIVERING';
         }
         if (deliveryStatus === 'DELIVERED') {
             deliveryUpdateData.deliveredAt = now;
+            assertOrderTransition('COMPLETED');
             orderUpdateData.status = 'COMPLETED';
             orderUpdateData.completedAt = now;
         }

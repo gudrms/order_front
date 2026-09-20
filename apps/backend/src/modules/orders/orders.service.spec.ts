@@ -162,4 +162,39 @@ describe('OrdersService', () => {
         await expect(service.updateDeliveryStatus('store-1', 'order-1', 'DELIVERING')).rejects.toBeInstanceOf(BadRequestException);
         expect(prisma.order.update).not.toHaveBeenCalled();
     });
+
+    it('rejects delivery cancellation for paid orders so the payment is not left unrefunded', async () => {
+        prisma.order = {
+            findUnique: vi.fn().mockResolvedValue({
+                id: 'order-1',
+                storeId: 'store-1',
+                type: 'DELIVERY',
+                status: 'CONFIRMED',
+                paymentStatus: 'PAID',
+                delivery: { id: 'delivery-1', status: 'ASSIGNED', pickedUpAt: null },
+            }),
+            update: vi.fn(),
+        };
+
+        await expect(service.updateDeliveryStatus('store-1', 'order-1', 'CANCELLED')).rejects.toBeInstanceOf(BadRequestException);
+        expect(prisma.order.update).not.toHaveBeenCalled();
+    });
+
+    it('rejects pickup that would skip the kitchen steps of the order status flow', async () => {
+        prisma.order = {
+            findUnique: vi.fn().mockResolvedValue({
+                id: 'order-1',
+                storeId: 'store-1',
+                type: 'DELIVERY',
+                // 조리 시작 전(CONFIRMED)이라 DELIVERING으로 바로 갈 수 없다.
+                status: 'CONFIRMED',
+                paymentStatus: 'PAID',
+                delivery: { id: 'delivery-1', status: 'ASSIGNED', pickedUpAt: null },
+            }),
+            update: vi.fn(),
+        };
+
+        await expect(service.updateDeliveryStatus('store-1', 'order-1', 'PICKED_UP')).rejects.toBeInstanceOf(BadRequestException);
+        expect(prisma.order.update).not.toHaveBeenCalled();
+    });
 });
