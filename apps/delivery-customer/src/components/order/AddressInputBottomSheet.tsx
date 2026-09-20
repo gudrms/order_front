@@ -17,6 +17,16 @@ interface AddressInputBottomSheetProps {
     onConfirm: () => void;
 }
 
+/** 입력 중인 휴대폰 번호에 하이픈을 자동으로 넣는다. (010-1234-5678) */
+function formatPhoneNumber(value: string): string {
+    const digits = value.replace(/\D/g, '').slice(0, 11);
+    if (digits.length <= 3) return digits;
+    if (digits.length <= 7) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+    // 11자리는 3-4-4, 10자리는 3-3-4로 끊긴다.
+    const middleLength = digits.length > 10 ? 4 : 3;
+    return `${digits.slice(0, 3)}-${digits.slice(3, 3 + middleLength)}-${digits.slice(3 + middleLength)}`;
+}
+
 function toNumber(value: UserAddress['latitude']): number | undefined {
     if (typeof value === 'number') return value;
     if (typeof value === 'string') {
@@ -49,7 +59,9 @@ export default function AddressInputBottomSheet({
     const [detailAddress, setDetailAddress] = useState(deliveryInfo.address?.detailAddress || '');
     const [zipCode, setZipCode] = useState(deliveryInfo.address?.zipCode || '');
     const [customerName, setCustomerName] = useState(deliveryInfo.customerName || kakaoName);
-    const [customerPhone, setCustomerPhone] = useState(deliveryInfo.customerPhone || kakaoPhone);
+    const [customerPhone, setCustomerPhone] = useState(
+        formatPhoneNumber(deliveryInfo.customerPhone || kakaoPhone),
+    );
     const [deliveryRequest, setDeliveryRequestInput] = useState(deliveryInfo.deliveryRequest || '');
     const [isAddressSearchOpen, setIsAddressSearchOpen] = useState(false);
 
@@ -93,7 +105,7 @@ export default function AddressInputBottomSheet({
         setDetailAddress(savedAddress.detailAddress || '');
         setZipCode(savedAddress.zipCode || '');
         setCustomerName(savedAddress.recipientName || customerName);
-        setCustomerPhone(savedAddress.recipientPhone || customerPhone);
+        setCustomerPhone(formatPhoneNumber(savedAddress.recipientPhone || customerPhone));
         setDeliveryRequestInput(savedAddress.deliveryMemo || deliveryRequest);
     };
 
@@ -245,8 +257,9 @@ export default function AddressInputBottomSheet({
                         </label>
                         <input
                             type="tel"
+                            inputMode="numeric"
                             value={customerPhone}
-                            onChange={(e) => setCustomerPhone(e.target.value)}
+                            onChange={(e) => setCustomerPhone(formatPhoneNumber(e.target.value))}
                             placeholder="010-1234-5678"
                             className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-yellow"
                         />
