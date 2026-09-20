@@ -6,7 +6,7 @@ import { CouponsService } from './coupons.service';
 const mockPrisma = {
     user: { findUnique: vi.fn() },
     coupon: { create: vi.fn(), findUnique: vi.fn(), findMany: vi.fn(), update: vi.fn() },
-    userCoupon: { create: vi.fn(), findUnique: vi.fn(), findMany: vi.fn(), update: vi.fn() },
+    userCoupon: { create: vi.fn(), findUnique: vi.fn(), findMany: vi.fn(), update: vi.fn(), count: vi.fn() },
 };
 
 const adminUser = { id: 'admin-1', role: 'ADMIN' };
@@ -43,6 +43,8 @@ describe('CouponsService', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
+        // 발급 한도는 이미 발급된 수를 기준으로 판정한다. 별도 지정이 없으면 0장 발급 상태.
+        mockPrisma.userCoupon.count.mockResolvedValue(0);
         service = new CouponsService(mockPrisma as any);
     });
 
@@ -97,7 +99,10 @@ describe('CouponsService', () => {
         });
 
         it('발급 한도 초과 → BadRequestException', async () => {
-            mockPrisma.coupon.findUnique.mockResolvedValue({ ...fixedCoupon, maxUses: 3, usedCount: 3 });
+            // 아직 아무도 사용하지 않았어도(usedCount 0) 이미 한도만큼 발급됐으면 막아야 한다.
+            mockPrisma.coupon.findUnique.mockResolvedValue({ ...fixedCoupon, maxUses: 3, usedCount: 0 });
+            mockPrisma.userCoupon.findUnique.mockResolvedValue(null);
+            mockPrisma.userCoupon.count.mockResolvedValue(3);
 
             await expect(service.redeemCode('user-1', { code: 'FIXED3000' })).rejects.toBeInstanceOf(BadRequestException);
         });
@@ -107,6 +112,42 @@ describe('CouponsService', () => {
             mockPrisma.userCoupon.findUnique.mockResolvedValue({ id: 'uc-existing' });
 
             await expect(service.redeemCode('user-1', { code: 'FIXED3000' })).rejects.toBeInstanceOf(BadRequestException);
+        });
+    });
+
+    // ─── Admin: issueCouponToUser ──────────────────────────────────────
+
+    describe('issueCouponToUser', () => {
+        const issueArgs = ['admin-1', 'coupon-2', { userId: 'user-1' }] as const;
+
+        beforeEach(() => {
+            mockPrisma.user.findUnique.mockImplementation(({ where }: { where: { id: string } }) =>
+                Promise.resolve(where.id === adminUser.id ? adminUser : regularUser),
+            );
+            mockPrisma.coupon.findUnique.mockResolvedValue(fixedCoupon);
+            mockPrisma.userCoupon.findUnique.mockResolvedValue(null);
+        });
+
+        it('관리자가 사용자에게 발급', async () => {
+            const issued = { id: 'uc-1', coupon: fixedCoupon };
+            mockPrisma.userCoupon.create.mockResolvedValue(issued);
+
+            await expect(service.issueCouponToUser(...issueArgs)).resolves.toEqual(issued);
+        });
+
+        it('발급 한도에 도달했으면 → BadRequestException', async () => {
+            mockPrisma.coupon.findUnique.mockResolvedValue({ ...fixedCoupon, maxUses: 2, usedCount: 0 });
+            mockPrisma.userCoupon.count.mockResolvedValue(2);
+
+            await expect(service.issueCouponToUser(...issueArgs)).rejects.toBeInstanceOf(BadRequestException);
+            expect(mockPrisma.userCoupon.create).not.toHaveBeenCalled();
+        });
+
+        it('이미 보유한 사용자에게 재발급 → BadRequestException (DB 유니크 오류 대신)', async () => {
+            mockPrisma.userCoupon.findUnique.mockResolvedValue({ id: 'uc-existing' });
+
+            await expect(service.issueCouponToUser(...issueArgs)).rejects.toBeInstanceOf(BadRequestException);
+            expect(mockPrisma.userCoupon.create).not.toHaveBeenCalled();
         });
     });
 
