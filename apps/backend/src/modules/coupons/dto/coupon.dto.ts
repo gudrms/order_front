@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { CouponType } from '@prisma/client';
-import { IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsBoolean, IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, Max, Min } from 'class-validator';
 
 export class CreateCouponDto {
     @ApiProperty({ description: '쿠폰 이름', example: '신규 가입 쿠폰' })
@@ -38,6 +38,12 @@ export class CreateCouponDto {
     @ApiPropertyOptional({ description: '만료일 기준 (일 수, 기본 30)', example: 30 })
     @IsOptional() @IsInt() @Min(1) @Max(365)
     defaultExpiryDays?: number;
+}
+
+export class UpdateCouponActiveDto {
+    @ApiProperty({ description: '활성 여부', example: false })
+    @IsBoolean()
+    isActive: boolean;
 }
 
 export class RedeemCouponDto {

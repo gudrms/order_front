@@ -70,6 +70,16 @@ describe('CouponsService', () => {
             ).rejects.toBeInstanceOf(BadRequestException);
         });
 
+        it('이미 쓰는 프로모 코드 → BadRequestException (DB 유니크 오류 대신)', async () => {
+            mockPrisma.user.findUnique.mockResolvedValue(adminUser);
+            mockPrisma.coupon.findUnique.mockResolvedValue({ id: 'coupon-existing' });
+
+            await expect(service.createCoupon('admin-1', {
+                name: '중복 코드', code: 'WELCOME', type: CouponType.FIXED_AMOUNT, discountValue: 3000,
+            } as any)).rejects.toBeInstanceOf(BadRequestException);
+            expect(mockPrisma.coupon.create).not.toHaveBeenCalled();
+        });
+
         it('관리자 아닌 사용자 → ForbiddenException', async () => {
             mockPrisma.user.findUnique.mockResolvedValue(regularUser);
 
@@ -112,6 +122,37 @@ describe('CouponsService', () => {
             mockPrisma.userCoupon.findUnique.mockResolvedValue({ id: 'uc-existing' });
 
             await expect(service.redeemCode('user-1', { code: 'FIXED3000' })).rejects.toBeInstanceOf(BadRequestException);
+        });
+    });
+
+    // ─── Admin: setCouponActive ────────────────────────────────────────
+
+    describe('setCouponActive', () => {
+        it('관리자가 쿠폰을 비활성으로 전환', async () => {
+            mockPrisma.user.findUnique.mockResolvedValue(adminUser);
+            mockPrisma.coupon.findUnique.mockResolvedValue(fixedCoupon);
+            mockPrisma.coupon.update.mockResolvedValue({ ...fixedCoupon, isActive: false });
+
+            await expect(service.setCouponActive('admin-1', 'coupon-2', false))
+                .resolves.toMatchObject({ isActive: false });
+            expect(mockPrisma.coupon.update).toHaveBeenCalledWith({
+                where: { id: 'coupon-2' },
+                data: { isActive: false },
+            });
+        });
+
+        it('없는 쿠폰 → NotFoundException', async () => {
+            mockPrisma.user.findUnique.mockResolvedValue(adminUser);
+            mockPrisma.coupon.findUnique.mockResolvedValue(null);
+
+            await expect(service.setCouponActive('admin-1', 'nope', false)).rejects.toBeInstanceOf(NotFoundException);
+        });
+
+        it('관리자 아닌 사용자 → ForbiddenException', async () => {
+            mockPrisma.user.findUnique.mockResolvedValue(regularUser);
+
+            await expect(service.setCouponActive('user-1', 'coupon-2', false)).rejects.toBeInstanceOf(ForbiddenException);
+            expect(mockPrisma.coupon.update).not.toHaveBeenCalled();
         });
     });
 
