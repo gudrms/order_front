@@ -1,6 +1,6 @@
 # Taco Mono 작업 현황
 
-마지막 업데이트: 2026-09-21 (16차)
+마지막 업데이트: 2026-09-21 (17차)
 
 ---
 
@@ -372,6 +372,13 @@
 
 ## 📊 운영 검증 (1차 런칭 전)
 
+- [x] **배달 운영 매장을 테스트 매장 → 실 김포점으로 이전** (2026-09-21): 배달이 켜진 유일한 매장이 `test-admin-direct-store`(storeType `test`, 주소 필드에 전화번호, 좌표 없음)라 고객 URL에 `test`가 노출되고 있었음. 실 김포점(`tacomolle/gimpo`)은 메뉴 29건이 있었으나 매장이 `TOSS_POS` 모드인데 전 건 `tossMenuCode`가 비어 [menus.service.ts](apps/backend/src/modules/menus/menus.service.ts) 필터에 전부 걸려 공개 0건이었다.
+  - 조치: 실 김포점의 예전 메뉴 29건(카테고리·태그 포함) 삭제 → 테스트 매장의 카테고리 11건·메뉴 6건 이전 → 실 김포점 `ADMIN_DIRECT` 전환·배달 ON·배달비 3,000원 → 테스트 매장 배달 OFF. 운영 DB에서 단일 트랜잭션으로 실행
+  - 검증: `/stores` 배달 매장 1건(`타코몰리 김포점`, 주소·좌표 정상, fee 3000), `/stores/:id/menus` 공개 5건, 배달앱 `/store/:id/menu` 렌더 확인. `OrderItem`은 메뉴를 FK로 참조하지 않고 `menuName`/`menuPrice`를 스냅샷하므로 주문 이력 영향 없음
+  - Toss POS는 당분간 사용하지 않기로 함. POS 연동 완료 시 `menuManagementMode`를 되돌려야 한다
+- [ ] **김포점 배달 메뉴 채우기**: 카테고리는 11개(Tacos·Burritos·Quesadilla·Chicken·Fries·Salad·side·Drink 등)인데 등록된 메뉴가 6건(공개 5건)뿐이다. 배달 오픈 전 실제 판매 메뉴 등록 필요
+- [ ] **배달앱 빈 카테고리 노출 정리**: `테스트 카테고리`가 메뉴 0건인데도 고객 카테고리 탭에 보인다. 빈 카테고리를 숨기거나 해당 카테고리를 삭제할 것
+- [ ] **테스트 매장 잔여 정리**: `test-admin-direct-store`의 `address`에 전화번호(`0507-1410-8774`)가 그대로 남아 있고 좌표가 없다. 주문 이력·테이블이 남아 있어 삭제 전 확인 필요
 - [ ] Toss 테스트 카드 결제 성공: 주문 생성 → 결제 승인 → `PAID` → 주문 상세 갱신
 - [ ] Toss 결제 실패/취소: fail 페이지 안내와 재시도 UX 확인
 - [ ] 관리자 전액 취소/환불 후 배달앱 주문 상태 갱신 확인
