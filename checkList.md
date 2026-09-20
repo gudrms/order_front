@@ -1,6 +1,6 @@
 # Taco Mono 작업 현황
 
-마지막 업데이트: 2026-05-25 (13차)
+마지막 업데이트: 2026-09-20 (14차)
 
 ---
 
@@ -278,6 +278,11 @@
 - [x] **매장 조회 쿼리 authHeaders 가드** (2026-05-23): `AdminStoreContext`의 매장 조회를 `enabled:!!session` → `enabled:!!authHeaders`로 변경해 토큰 미탑재 상태의 401 경쟁 방지.
 - [ ] **Realtime 주문 무효화 throttle 검토**: `useRealtimeOrders`가 모든 주문 이벤트에 `invalidateQueries`를 호출. status 화이트리스트는 admin 특성상(접수·조리·완료 등 대부분 변경이 UI 반영 필요) 갱신 누락 위험이 커 부적합 — 짧은 시간 다중 변경 시 REST 재조회 폭주를 debounce/throttle로 완화하는 방향 검토.
 - [x] **마스터 어드민 `배너 관리` 화면 추가** (2026-05-24): 마스터 관리자(`ADMIN` 권한)가 메인 배너를 동적으로 생성/수정/삭제하고 배경 이미지 업로드 및 이동 타겟 매장을 매핑할 수 있는 관리 화면 신규 개발
+- [ ] **`쿠폰 관리` 화면 신규 개발** (2026-09-20 확인): 백엔드 쿠폰 API는 이미 완성돼 있으나(`POST /coupons` 생성, `GET /coupons` 목록, `POST /coupons/:id/issue` 발급) **어드민에 화면이 없어 지금은 API를 직접 호출하지 않으면 쿠폰을 만들 수 없다.** 고객 쪽(보유 쿠폰 조회·결제 시 적용·`POST /coupons/redeem` 코드 등록)은 이미 동작하므로, 사장님이 쓰는 쪽만 비어 있는 상태. 필요 화면:
+  - 쿠폰 생성: 타입(정액/정률), 할인값, 최소주문금액, 정률 상한(`maxDiscountAmount`), 총 발급 한도, 유효기간(`defaultExpiryDays`), 프로모 코드(선택)
+  - 쿠폰 목록: 발급수/사용수(`usedCount`/`maxUses`), 활성 토글
+  - 사용자 발급: 특정 고객에게 직접 발급
+  - 쿠폰 운영 기준은 [docs/coupon-strategy.md](docs/coupon-strategy.md) 참고
 
 ---
 
@@ -308,6 +313,10 @@
 
 ## 📱 Delivery Customer (배달앱)
 
+- [x] **배달 상태 변경이 결제 취소·주문 상태 전이를 우회하던 문제** (2026-09-20): `updateDeliveryStatus`가 `deliveryStatus`만 보고 `order.status`를 직접 덮어썼다. ① 결제 완료(PAID) 주문의 배달 상태를 `CANCELLED`로 바꾸면 **결제는 그대로 둔 채 주문만 취소**됐고(고객 취소 경로에 있던 PAID 가드가 이쪽엔 없었음), ② `ALLOWED_TRANSITIONS`를 참조하지 않아 조리 전 주문이 픽업 처리되면 `COOKING`/`READY`를 건너뛰고 `DELIVERING`이 됐다. 두 경우 모두 어드민 UI로는 도달 불가였으나 API는 열려 있었음. 가드 추가 + 단위 테스트 2건.
+- [x] **쿠폰 할인 기준에서 배달비 제외** (2026-09-20): 정률 쿠폰이 상품금액+배달비 기준으로 계산돼 배달비가 비싼 매장일수록 더 많이 깎였다. 매장 최소주문금액은 상품금액만 보고 있어 기준선도 어긋나 있었음. 서버·앱 결제 계산·쿠폰 목록 미리보기 세 곳을 모두 상품금액 기준으로 통일. 운영 기준은 [docs/coupon-strategy.md](docs/coupon-strategy.md) 참고.
+- [x] **네이티브 앱에서 결제창이 외부 브라우저로 열리던 문제** (2026-09-20): `requestPayment`에 `appScheme`이 빠져 토스가 네이티브 앱 환경으로 인식하지 못했다. `appScheme: 'taco://'` 추가로 해소. 경위는 [docs/toss_pay/README.md](docs/toss_pay/README.md) 4-3절 참고.
+- [ ] **주소 좌표(latitude/longitude) 방치 필드 정리 여부 결정**: `UserAddress`에 좌표 필드가 있고 앱이 읽기는 하지만, Daum 우편번호가 좌표를 반환하지 않아 **채우는 경로가 아예 없다**(항상 `undefined`). 삭제(YAGNI)하거나, 지도 기반 배차를 붙일 거면 카카오 로컬 API 지오코딩을 추가해야 함 — 둘 중 하나로 정리 필요.
 - [ ] **결제 이탈(Drop-off) 주문 클라이언트 렌더링 시 자동 정리**: 결제 직전 백엔드에 `PENDING_PAYMENT` 주문을 먼저 생성하므로, 결제창에서 이탈하면 미결제 주문이 방치된다.
   - **흐름**: `checkout/page.tsx` `handlePayment()`(:151) → `createOrderMutation`으로 주문 생성(:167) → `orderId`를 `sessionStorage['delivery.pendingTossOrderId']`(상수 `PENDING_TOSS_ORDER_ID_KEY`, :28)에 저장(:169) → `paymentWidget.requestPayment()`로 Toss 결제창 호출.
   - **정상 정리 경로**: ① 성공 → success 페이지에서 키 제거, ② 실패/취소 → fail 페이지에서 제거, ③ checkout 내부 catch → `reportPaymentAbort()`(:139)가 `failTossPaymentMutation`(code `PAYMENT_WIDGET_ABORTED`)으로 백엔드에 실패 신고 + 키 제거(:182-184).
