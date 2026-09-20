@@ -20,24 +20,30 @@ import { useSearchParams } from 'next/navigation';
 function ReturnBridge() {
     const searchParams = useSearchParams();
 
+    const params = new URLSearchParams(searchParams.toString());
+    const target = params.get('target');
+    params.delete('target');
+    const query = params.toString();
+    const appUrl = target ? `taco://${target}${query ? `?${query}` : ''}` : null;
+
     useEffect(() => {
-        const params = new URLSearchParams(searchParams.toString());
-        const target = params.get('target');
-        params.delete('target');
-
-        if (!target) return;
-
-        const query = params.toString();
-        window.location.replace(`taco://${target}${query ? `?${query}` : ''}`);
-    }, [searchParams]);
+        if (!appUrl) return;
+        window.location.replace(appUrl);
+    }, [appUrl]);
 
     return (
         <main className="min-h-screen flex flex-col items-center justify-center gap-3 px-6 text-center">
             <div className="h-10 w-10 animate-spin rounded-full border-2 border-gray-200 border-t-brand-yellow" />
             <p className="text-sm text-gray-600">앱으로 돌아가는 중입니다...</p>
-            <p className="text-xs text-gray-400">
-                자동으로 이동하지 않으면 이 창을 닫고 앱에서 주문 내역을 확인해 주세요.
-            </p>
+            {appUrl ? (
+                <a href={appUrl} className="text-xs text-gray-500 underline" data-testid="return-app-link">
+                    자동으로 이동하지 않으면 여기를 눌러 앱으로 돌아가세요.
+                </a>
+            ) : (
+                <p className="text-xs text-gray-400">
+                    이 창을 닫고 앱에서 주문 내역을 확인해 주세요.
+                </p>
+            )}
         </main>
     );
 }

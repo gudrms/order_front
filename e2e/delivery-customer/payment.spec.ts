@@ -273,3 +273,65 @@ test.describe('결제하기 페이지 (/store/:id/order/checkout)', () => {
     });
 
 });
+
+// ── 네이티브 전용 결제 페이지 ───────────────────────────────────────────────
+
+test.describe('결제 페이지 (/store/:id/order/pay)', () => {
+    const payUrl = (query: string) => `/store/${STUB_STORE_ID}/order/pay?${query}`;
+
+    test('필수 파라미터가 없으면 안내 메시지를 표시한다', async ({ page }) => {
+        await mockStoreApi(page);
+        await page.goto(payUrl('orderName=테스트'));
+
+        await expect(
+            page.getByText('결제 정보가 올바르지 않습니다. 앱에서 다시 시도해 주세요.')
+        ).toBeVisible({ timeout: 8_000 });
+    });
+
+    test('금액이 0 이하이면 안내 메시지를 표시한다', async ({ page }) => {
+        await mockStoreApi(page);
+        await page.goto(payUrl('orderId=ord-e2e-001&amount=0'));
+
+        await expect(
+            page.getByText('결제 정보가 올바르지 않습니다. 앱에서 다시 시도해 주세요.')
+        ).toBeVisible({ timeout: 8_000 });
+    });
+
+    // 결제위젯 렌더링은 NEXT_PUBLIC_TOSS_CLIENT_KEY 주입 여부에 따라 달라지므로
+    // 여기서는 이 페이지가 책임지는 파라미터 검증 분기만 확인한다.
+    test('유효한 파라미터면 파라미터 오류 안내가 뜨지 않는다', async ({ page }) => {
+        await mockStoreApi(page);
+        await page.goto(payUrl('orderId=ord-e2e-001&amount=15000&orderName=E2E+Taco+외+1건'));
+
+        await expect(page.locator('main')).toBeVisible({ timeout: 8_000 });
+        await expect(
+            page.getByText('결제 정보가 올바르지 않습니다. 앱에서 다시 시도해 주세요.')
+        ).toHaveCount(0);
+    });
+});
+
+// ── 결제 복귀 브리지 ────────────────────────────────────────────────────────
+
+test.describe('결제 복귀 브리지 (/order/return)', () => {
+    // 커스텀 스킴(taco://)은 브라우저에서 실제로 이동할 수 없고 location.replace도
+    // 덮어쓸 수 없으므로, 같은 값으로 만들어지는 수동 복귀 링크의 href로 검증한다.
+    test('target과 결제 파라미터를 taco:// 스킴으로 넘긴다', async ({ page }) => {
+        await page.goto(
+            `/order/return?target=${encodeURIComponent(`store/${STUB_STORE_ID}/order/success`)}` +
+            '&paymentKey=test_pk_xxx&orderId=ord-e2e-001&amount=15000'
+        );
+
+        await expect(page.getByTestId('return-app-link')).toHaveAttribute(
+            'href',
+            `taco://store/${STUB_STORE_ID}/order/success?paymentKey=test_pk_xxx&orderId=ord-e2e-001&amount=15000`,
+            { timeout: 8_000 }
+        );
+    });
+
+    test('target이 없으면 복귀 링크 없이 안내만 표시한다', async ({ page }) => {
+        await page.goto('/order/return');
+
+        await expect(page.getByText('앱으로 돌아가는 중입니다...')).toBeVisible({ timeout: 8_000 });
+        await expect(page.getByTestId('return-app-link')).toHaveCount(0);
+    });
+});
