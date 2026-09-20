@@ -165,19 +165,19 @@ export default function AddressInputBottomSheet({
 
             <div
                 className={cn(
-                    'relative w-full max-w-[568px] bg-white rounded-t-2xl shadow-xl transition-transform duration-300 transform',
+                    'relative flex w-full max-w-[568px] flex-col bg-white rounded-t-2xl shadow-xl transition-transform duration-300 transform',
                     isClosing ? 'translate-y-full' : 'translate-y-0'
                 )}
                 style={{ maxHeight: '90vh' }}
             >
-                <div className="flex items-center justify-between p-4 border-b border-gray-100">
+                <div className="flex flex-shrink-0 items-center justify-between p-4 border-b border-gray-100">
                     <h2 className="font-bold text-lg">배달 정보 입력</h2>
                     <button onClick={handleClose} className="p-2 -mr-2 text-gray-500" aria-label="닫기">
                         <ChevronDown size={24} />
                     </button>
                 </div>
 
-                <div className="overflow-y-auto p-4 space-y-4" style={{ maxHeight: 'calc(90vh - 140px)' }}>
+                <div className="flex-1 overflow-y-auto p-4 space-y-4">
                     {savedAddresses.length > 0 && (
                         <section className="space-y-2">
                             <p className="text-sm font-bold text-gray-800">저장된 주소</p>
@@ -282,7 +282,11 @@ export default function AddressInputBottomSheet({
                     </div>
                 </div>
 
-                <div className="p-4 border-t border-gray-100 bg-white pb-8">
+                {/* 제스처바/홈 인디케이터에 버튼이 가리지 않도록 안전영역만큼 여백을 더한다. */}
+                <div
+                    className="flex-shrink-0 p-4 border-t border-gray-100 bg-white"
+                    style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 1rem)' }}
+                >
                     <button
                         onClick={handleConfirm}
                         className="w-full bg-brand-black text-white p-4 rounded-xl font-bold text-lg"
