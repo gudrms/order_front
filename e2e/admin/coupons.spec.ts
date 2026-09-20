@@ -3,7 +3,7 @@ import { API_URL, expect, fulfillJson, gotoAdminPage, test } from './fixtures';
 const coupon = {
   id: 'coupon-e2e', name: '신규 가입 쿠폰', description: '첫 주문 혜택', code: 'WELCOME',
   type: 'FIXED_AMOUNT', discountValue: 3000, maxDiscountAmount: null,
-  minOrderAmount: 15000, maxUses: null, usedCount: 12, defaultExpiryDays: 30,
+  minOrderAmount: 15000, maxUses: 100, usedCount: 12, issuedCount: 40, defaultExpiryDays: 30,
   isActive: true, createdAt: '2026-09-20T00:00:00.000Z',
 };
 
@@ -50,7 +50,8 @@ test('issues a coupon, preserves failed input, and disables inactive coupons', a
   });
   await gotoAdminPage(page, '/coupons', 'admin-coupons-page');
   const card = page.getByRole('article').filter({ has: page.getByRole('heading', { name: coupon.name, exact: true }) });
-  await expect(card).toContainText('12 / 무제한');
+  await expect(card).toContainText('발급: 40장 / 한도 100장');
+  await expect(card).toContainText('사용: 12장');
   await expect(page.getByRole('article').filter({ hasText: '종료 쿠폰' }).getByRole('button', { name: '발급', exact: true })).toBeDisabled();
   await card.getByRole('button', { name: '발급', exact: true }).click();
   await page.getByLabel('사용자 ID *', { exact: true }).fill('customer-e2e');
@@ -63,6 +64,32 @@ test('issues a coupon, preserves failed input, and disables inactive coupons', a
   await page.getByRole('button', { name: '발급 확인' }).click();
   await expect(page.getByRole('status')).toContainText('사용자에게 쿠폰을 발급했습니다.');
   expect(issueBody).toEqual({ userId: 'customer-e2e', expiryDays: 7 });
+});
+
+test('toggles a coupon between active and inactive', async ({ adminPage: page }) => {
+  let isActive = true;
+  let patchBody: unknown;
+  await page.route(`${API_URL}/coupons`, (route) => fulfillJson(route, { data: [{ ...coupon, isActive }] }));
+  await page.route(`${API_URL}/coupons/${coupon.id}/active`, async (route) => {
+    patchBody = route.request().postDataJSON();
+    isActive = (patchBody as { isActive: boolean }).isActive;
+    await fulfillJson(route, { data: { ...coupon, isActive } });
+  });
+
+  await gotoAdminPage(page, '/coupons', 'admin-coupons-page');
+  const card = page.getByRole('article').filter({ has: page.getByRole('heading', { name: coupon.name, exact: true }) });
+  await expect(card).toContainText('활성');
+
+  await card.getByRole('button', { name: '비활성화', exact: true }).click();
+  await expect(page.getByRole('status')).toContainText('쿠폰을 비활성화했습니다.');
+  expect(patchBody).toEqual({ isActive: false });
+
+  // 비활성 쿠폰은 발급이 막히고, 다시 활성화할 수 있어야 한다.
+  await expect(card.getByRole('button', { name: '발급', exact: true })).toBeDisabled();
+  await card.getByRole('button', { name: '활성화', exact: true }).click();
+  await expect(page.getByRole('status')).toContainText('쿠폰을 활성화했습니다.');
+  expect(patchBody).toEqual({ isActive: true });
+  await expect(card.getByRole('button', { name: '발급', exact: true })).toBeEnabled();
 });
 
 test('distinguishes failed queries from empty results and retries', async ({ adminPage: page }) => {

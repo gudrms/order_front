@@ -1,8 +1,8 @@
-import { Body, Controller, Get, Param, Post, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../../common/decorators/user.decorator';
 import { SupabaseGuard } from '../auth/guards/supabase.guard';
-import { CreateCouponDto, IssueCouponDto, RedeemCouponDto } from './dto/coupon.dto';
+import { CreateCouponDto, IssueCouponDto, RedeemCouponDto, UpdateCouponActiveDto } from './dto/coupon.dto';
 import { CouponsService } from './coupons.service';
 
 @ApiTags('Coupons')
@@ -29,6 +29,19 @@ export class CouponsController {
     @ApiOperation({ summary: '쿠폰 목록 조회 (관리자)' })
     async listCoupons(@CurrentUser() user: { id: string }) {
         return this.couponsService.listCoupons(user.id);
+    }
+
+    @Patch(':couponId/active')
+    @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
+    @ApiOperation({ summary: '쿠폰 활성/비활성 전환 (관리자)' })
+    @ApiParam({ name: 'couponId', description: '쿠폰 ID' })
+    @ApiResponse({ status: 200, description: '전환 성공' })
+    async setCouponActive(
+        @CurrentUser() user: { id: string },
+        @Param('couponId') couponId: string,
+        @Body() dto: UpdateCouponActiveDto,
+    ) {
+        return this.couponsService.setCouponActive(user.id, couponId, dto.isActive);
     }
 
     @Post(':couponId/issue')

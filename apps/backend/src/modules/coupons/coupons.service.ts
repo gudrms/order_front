@@ -20,6 +20,14 @@ export class CouponsService {
             }
         }
 
+        // code는 unique 제약이 있어 그냥 두면 DB 오류(500)로 나간다.
+        if (dto.code) {
+            const duplicated = await this.prisma.coupon.findUnique({ where: { code: dto.code } });
+            if (duplicated) {
+                throw new BadRequestException('이미 사용 중인 프로모 코드입니다');
+            }
+        }
+
         return this.prisma.coupon.create({
             data: {
                 ...dto,
@@ -50,9 +58,33 @@ export class CouponsService {
         });
     }
 
+    /** 쿠폰 활성/비활성 전환. 비활성 쿠폰은 발급도, 신규 사용도 되지 않는다. */
+    async setCouponActive(adminId: string, couponId: string, isActive: boolean) {
+        await this.assertAdmin(adminId);
+
+        const coupon = await this.prisma.coupon.findUnique({ where: { id: couponId } });
+        if (!coupon) throw new NotFoundException('쿠폰을 찾을 수 없습니다');
+
+        return this.prisma.coupon.update({
+            where: { id: couponId },
+            data: { isActive },
+        });
+    }
+
     async listCoupons(adminId: string) {
         await this.assertAdmin(adminId);
-        return this.prisma.coupon.findMany({ orderBy: { createdAt: 'desc' } });
+
+        // maxUses는 발급 수 기준 한도이므로, 한도까지 얼마나 남았는지 보려면
+        // 사용 수(usedCount)가 아니라 발급된 장수가 필요하다.
+        const coupons = await this.prisma.coupon.findMany({
+            orderBy: { createdAt: 'desc' },
+            include: { _count: { select: { userCoupons: true } } },
+        });
+
+        return coupons.map(({ _count, ...coupon }) => ({
+            ...coupon,
+            issuedCount: _count.userCoupons,
+        }));
     }
 
     // ────────────────────────────────────────────────────────────────
