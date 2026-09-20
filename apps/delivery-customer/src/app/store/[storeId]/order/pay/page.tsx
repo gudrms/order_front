@@ -60,6 +60,9 @@ function PayContent() {
                 orderName,
                 customerName,
                 customerEmail,
+                // 카드사 앱(ISP/앱카드) 인증 후 우리 앱으로 돌아오기 위한 커스텀 스킴.
+                // AndroidManifest의 taco 스킴 intent-filter와 짝이다.
+                appScheme: 'taco://',
                 successUrl: returnUrl('success'),
                 failUrl: returnUrl('fail'),
             });
