@@ -388,7 +388,10 @@
   - 주소를 고칠 때는 SQL이 아니라 관리자 화면에서 수정할 것. `updateStore`가 주소 변경 시 카카오 지오코딩을 돌려 `lat`/`lng`까지 채우는데([stores.service.ts](apps/backend/src/modules/stores/stores.service.ts)), raw SQL로 바꾸면 좌표가 null로 남는다
 - [x] **배달앱 캐시 무효화가 CDN까지 닿지 않음** (2026-09-21, `7deee08`): `revalidateTag`가 Next 데이터 캐시만 비우고 라우트 핸들러 응답의 `s-maxage=300`(Vercel CDN)은 지우지 못해, 품절·메뉴 변경이 최대 5분 지연됐다. 응답을 `no-store`로 바꿔 엣지에 캐시하지 않고 Next 데이터 캐시(TTL 300초)에만 의존하도록 분리했다. 결정 근거는 [ADR-0001](docs/adr/0001-delivery-edge-cache.md)
 - [x] **고객 오류 메시지 한글화 + `alert()` 제거** (2026-09-21, `1532f88`·`d46d2ed`·`71aa38c`·`d3dba63`): 주문·결제·세션·호출 경로 메시지를 한글로 바꾸고, 네이티브 `alert()` 9곳을 인앱 배너/인라인 안내로 교체. 주문 불가 메뉴는 `code=MENU_UNAVAILABLE`과 `menuId`를 함께 내려 장바구니에서 자동으로 뺀다. [ADR-0002](docs/adr/0002-customer-error-ux.md)
-- [ ] **`order-delivery` Vercel 배포가 멈춤**: `c468fcd` 이후 커밋(`7deee08`~`d3dba63`)에 대해 배달앱 배포가 **생성조차 되지 않는다**. 같은 푸시에서 백엔드는 정상 빌드된다. 위 엣지 캐시·alert 수정이 아직 라이브에 반영되지 않은 상태 — Vercel 대시보드에서 `order-delivery`의 Git 연동을 확인할 것
+- [x] **Vercel 배포 한도 초과** (2026-09-21): 배달앱 배포가 한동안 생성되지 않아 Git 연동 문제로 의심했으나, 실제 원인은 Hobby 플랜의 일일 배포 생성 한도였다(`Deployment rate limited — retry in 24 hours`). 밀린 뒤 최신 커밋 하나로 따라잡아 엣지 캐시·alert 수정은 모두 라이브 반영됐다
+  - 스킵된 배포도 한도를 먹는다. Vercel은 배포를 먼저 생성하고 그 안에서 Ignored Build Step을 돌려 `CANCELED` 처리하므로, 선택 배포는 빌드 시간만 아끼고 생성 수는 줄이지 못한다
+  - `dev` 푸시도 프리뷰 배포를 5건씩 만든다. 그날 50건 중 23건이 dev였다. 대응: 커밋은 작업단위로 나누되 **푸시는 묶어서 1회**, `dev` 동기화는 분리해 나중에
+- [x] **Node 20 → 22** (2026-09-21, `b2ad078`): Vercel이 2026-10-01부터 Node 20 이하 빌드를 실패 처리한다고 예고. 루트 `package.json` engines와 CI `NODE_VERSION`을 22로 올리고, Vercel 프로젝트 5개의 Node.js Version도 22.x로 변경 완료. 전체 7개 앱 로컬 빌드 통과
 - [x] **관리자 화면 영어 메시지** (2026-09-21): 계정 관리·브랜드 배너/메뉴·메뉴 CRUD·매장/테이블·가맹 문의·주문 상태 변경·결제 취소·운영 관리·이미지 업로드·요청 제한을 한글로 바꿨다
   - POS 연동 가드/컨트롤러, Toss 내부 API, 내부 잡 시크릿, 웹훅 금액 불일치는 사람이 읽는 화면이 아니라 로그·연동 시스템으로 나가는 값이라 영어로 남겼다
 - [x] **웹 토스트 UI** (2026-09-21): `lib/webToast.ts`(모듈 스코프 pub/sub) + `components/ui/ToastHost.tsx`를 추가하고 `showToast`가 웹에서 이를 쓰도록 했다. React 밖(쿼리 콜백·훅)에서도 호출 가능하고, 네이티브 Toast처럼 한 번에 하나만 표시한다. `useFavorites`는 로그인 화면 이동 대신 토스트 안내로 되돌렸다. E2E 1건 추가, delivery-customer 36건 통과
