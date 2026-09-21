@@ -155,6 +155,35 @@ describe('MenusService', () => {
 
             expect(result).toBeNull();
         });
+
+        it('ADMIN_DIRECT 매장이면 tossMenuCode가 없어도 그대로 노출한다', async () => {
+            // 2026-09-21: 김포점이 TOSS_POS 모드인데 전 메뉴에 tossMenuCode가 없어
+            // 33건이 통째로 숨겨졌다. 모드별로 갈리는 지점이라 반대 방향도 고정해 둔다.
+            mockPrismaService.store.findUnique.mockResolvedValue(adminDirectStore);
+            const menu = { id: 'menu-3', name: '하리토스', tossMenuCode: null, optionGroups: [] };
+            vi.spyOn(prisma.menu, 'findUnique').mockResolvedValue(menu as any);
+
+            await expect(service.getMenuDetail('menu-3')).resolves.toEqual(menu);
+        });
+
+        it('메뉴가 없으면 예외 대신 null을 준다', async () => {
+            vi.spyOn(prisma.menu, 'findUnique').mockResolvedValue(null as any);
+
+            await expect(service.getMenuDetail('missing')).resolves.toBeNull();
+            // 메뉴를 못 찾았으면 매장을 더 볼 이유가 없다.
+            expect(prisma.store.findUnique).not.toHaveBeenCalled();
+        });
+
+        it('숨김 메뉴도 ID를 알면 조회된다 — 목록에서만 가려질 뿐이다', async () => {
+            // getMenus는 isHidden으로 거르지만 상세 조회는 거르지 않는다.
+            // 주문 생성(prepareOrderItems)도 isActive/soldOut만 보고 isHidden은 보지 않으므로,
+            // ID를 아는 사람은 숨김 메뉴를 주문할 수 있다. 현재 동작을 고정해 둔다.
+            mockPrismaService.store.findUnique.mockResolvedValue(adminDirectStore);
+            const hidden = { id: 'menu-4', name: 'E2E 테스트 타코', price: 10, isHidden: true, tossMenuCode: null, optionGroups: [] };
+            vi.spyOn(prisma.menu, 'findUnique').mockResolvedValue(hidden as any);
+
+            await expect(service.getMenuDetail('menu-4')).resolves.toEqual(hidden);
+        });
     });
 
     describe('createCategory', () => {
