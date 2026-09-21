@@ -19,7 +19,8 @@
     "cap:run:ios": "npm run cap:sync && cap run ios",
     "cap:run:android": "npm run cap:sync && cap run android",
     "android": "npm run cap:run:android",
-    "ios": "npm run cap:run:ios"
+    "ios": "npm run cap:run:ios",
+    "test": "vitest run"
   },
   "dependencies": {
     "@capacitor/android": "^6.2.0",
@@ -65,6 +66,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.1.1",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.0.16"
   }
 }

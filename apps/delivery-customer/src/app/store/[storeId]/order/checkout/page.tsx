@@ -24,6 +24,7 @@ import { useCreateOrder } from '@/hooks/mutations/useCreateOrder';
 import { useFailTossPayment } from '@/hooks/mutations/useFailTossPayment';
 import { useAddresses } from '@/hooks/queries/useAddresses';
 import { useAvailableCoupons } from '@/hooks/queries/useCoupons';
+import { cartItemIdsForMenu, getUnavailableMenuId } from '@/lib/orderError';
 
 const TOSS_CLIENT_KEY = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY;
 const isTossWidgetClientKey = (key?: string): key is string => !!key && (key.startsWith('test_gck_') || key.startsWith('live_gck_'));
@@ -37,13 +38,6 @@ if (typeof window !== 'undefined' && !isTossWidgetClientKey(TOSS_CLIENT_KEY)) {
     console.warn(
         `[checkout] NEXT_PUBLIC_TOSS_CLIENT_KEY 가 결제위젯 키가 아닙니다. prefix=${rawKey ? rawKey.slice(0, 9) : '(없음)'}`,
     );
-}
-
-/** 주문 생성이 품절로 막혔을 때 백엔드가 실어 보낸 menuId를 꺼낸다. (order-helpers.ts) */
-function getUnavailableMenuId(error: unknown): string | null {
-    if (!error || typeof error !== 'object') return null;
-    const data = (error as { data?: { code?: string; menuId?: string } }).data;
-    return data?.code === 'MENU_UNAVAILABLE' && data.menuId ? data.menuId : null;
 }
 
 export default function CheckoutPage() {
@@ -238,9 +232,7 @@ export default function CheckoutPage() {
             if (unavailableMenuId) {
                 // 옵션 조합마다 장바구니 항목이 따로 생기므로 같은 메뉴를 전부 뺀다.
                 // 서버 메시지에 이미 메뉴명이 들어 있으므로 여기서 다시 붙이지 않는다.
-                items
-                    .filter((item) => item.menuId === unavailableMenuId)
-                    .forEach((item) => removeItem(item.id));
+                cartItemIdsForMenu(items, unavailableMenuId).forEach(removeItem);
                 setErrorMessage(
                     `${error instanceof Error ? error.message : '주문할 수 없는 메뉴가 있습니다.'} 장바구니에서 빼드렸으니 다시 주문해 주세요.`,
                 );
