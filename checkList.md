@@ -24,6 +24,10 @@
 - [x] **Backend Cron queue 처리 타임아웃 완화** (2026-05-14): GitHub Actions `Process Queue` curl 제한이 30초라 Vercel queue 함수(maxDuration 60s) cold start/pgmq 처리 중 exit 28 발생. `--max-time 75`, `quantity:3`, retry 제거로 조정해 한 run 내 중복 consumer 기동 가능성을 낮춤.
 - [ ] **Vercel backend 운영 env 누락 보정**: Production/Preview에 `SUPABASE_SERVICE_KEY`, `TOSS_ACCESS_SECRET` 또는 `TOSS_PAYMENTS_SECRET_KEY`, `INTERNAL_JOB_SECRET(11자 이상)` 설정 확인. GitHub Actions `INTERNAL_JOB_SECRET`와 Vercel backend 값 일치 필요.
 - [ ] **Rate Limiting tracker 신뢰 경계 테스트 보강**: `x-forwarded-for` 단일/복수 IP, 빈 헤더, 로컬 fallback, 제한 초과 429 응답을 `CustomThrottlerGuard` 단위 테스트로 고정.
+- [x] **숨김 메뉴가 주문 가능했던 문제** (2026-09-21): 목록 API(`getMenus`)는 `isHidden`으로 거르는데 주문 생성(`prepareOrderItems`)은 `isActive`/`soldOut`만 봐서, `menuId`만 알면 숨김 메뉴를 주문할 수 있었다. 운영에 결제 확인용 `E2E 테스트 타코`가 10원 숨김으로 있어 구체적 위험이었다. `prepareOrderItems`에 `isHidden` 검사를 추가해 품절과 같은 `MENU_UNAVAILABLE`로 막는다
+  - 상세 조회(`getMenuDetail`)는 그대로 열려 있다. 조회는 되지만 주문이 막히는 구조다
+  - 배달·테이블오더 두 주문 경로가 같은 헬퍼를 쓰므로 함께 적용된다. 백엔드 200건, delivery+admin E2E 63건 통과
+- [ ] **`TOSS_PAYMENT_E2E.md` 최신화**: 문서가 `테스트 매장 (이미지 업로드)`을 전제하는데 그 매장은 2026-09-21에 `isActive=false`로 비공개 처리됐다. 또 `E2E 테스트 타코`가 숨김 상태라 이제 주문 자체가 막힌다. 실결제 점검을 하려면 대상 매장과 메뉴 노출 상태를 다시 정해야 한다
 - [ ] **rate limit 트래커가 `x-forwarded-for` 첫 값을 신뢰 — 우회 가능성 점검**: `CustomThrottlerGuard.getTracker`가 `x-forwarded-for`의 첫 번째 값을 버킷 키로 쓴다. 이 헤더는 프록시가 뒤에 덧붙이는 구조라, 클라이언트가 직접 보낸 값이 맨 앞에 오면 그걸 신뢰하게 된다. 그 경우 값을 매 요청 바꿔 rate limit을 무제한 우회할 수 있어 로그인·결제 제한이 무력화된다
   - **미확인**: Vercel이 클라이언트가 보낸 `x-forwarded-for`를 덮어쓰는지 덧붙이는지 확인하지 못했다. 덮어쓴다면 문제 없음. 배포된 엔드포인트에 헤더를 직접 넣어 요청해봐야 결론이 난다
   - 대안: 플랫폼이 설정하는 `x-real-ip` / `x-vercel-forwarded-for` 사용, 또는 프록시 홉 수만큼 뒤에서 세기
