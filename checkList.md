@@ -28,11 +28,10 @@
   - 상세 조회(`getMenuDetail`)는 그대로 열려 있다. 조회는 되지만 주문이 막히는 구조다
   - 배달·테이블오더 두 주문 경로가 같은 헬퍼를 쓰므로 함께 적용된다. 백엔드 200건, delivery+admin E2E 63건 통과
 - [ ] **`TOSS_PAYMENT_E2E.md` 최신화**: 문서가 `테스트 매장 (이미지 업로드)`을 전제하는데 그 매장은 2026-09-21에 `isActive=false`로 비공개 처리됐다. 또 `E2E 테스트 타코`가 숨김 상태라 이제 주문 자체가 막힌다. 실결제 점검을 하려면 대상 매장과 메뉴 노출 상태를 다시 정해야 한다
-- [ ] **rate limit 트래커가 `x-forwarded-for` 첫 값을 신뢰 — 우회 가능성 점검**: `CustomThrottlerGuard.getTracker`가 `x-forwarded-for`의 첫 번째 값을 버킷 키로 쓴다. 이 헤더는 프록시가 뒤에 덧붙이는 구조라, 클라이언트가 직접 보낸 값이 맨 앞에 오면 그걸 신뢰하게 된다. 그 경우 값을 매 요청 바꿔 rate limit을 무제한 우회할 수 있어 로그인·결제 제한이 무력화된다
-  - **미확인**: Vercel이 클라이언트가 보낸 `x-forwarded-for`를 덮어쓰는지 덧붙이는지 확인하지 못했다. 덮어쓴다면 문제 없음. 배포된 엔드포인트에 헤더를 직접 넣어 요청해봐야 결론이 난다
-  - 대안: 플랫폼이 설정하는 `x-real-ip` / `x-vercel-forwarded-for` 사용, 또는 프록시 홉 수만큼 뒤에서 세기
-  - 현재 동작은 `throttler.guard.spec.ts`(2026-09-21, `834f6df`)로 고정해두었다. 바꿀 때 의도적으로 바꾸게 된다
-- [ ] **프록시 헤더 신뢰 정책 문서화**: Vercel/Edge 뒤에서만 `x-forwarded-for`를 신뢰한다는 전제를 `docs/architecture.md` 또는 운영자 문서에 명시. 직접 서버 노출 시 `trust proxy`/WAF 정책 재검토.
+- [x] **rate limit 트래커 우회 가능성 차단** (2026-09-21): `x-forwarded-for`는 프록시가 뒤에 덧붙이는 헤더라 클라이언트가 직접 보내면 첫 값이 조작된다. 값을 매 요청 바꾸면 rate limit을 무제한 우회할 수 있어 로그인·결제 제한이 무력화된다
+  - 플랫폼이 직접 채우는 `x-vercel-forwarded-for` → `x-real-ip`를 먼저 보고, 없을 때만 기존처럼 `x-forwarded-for`로 떨어지게 했다. Vercel의 덮어쓰기 동작을 확인하지 못했지만 **어느 쪽이든 안전한** 순서다
+  - Vercel 외부에 직접 노출하면 `x-forwarded-for`가 유일한 경로가 되므로 앞단에서 덮어쓰도록 설정해야 한다. 경계값은 `throttler.guard.spec.ts` 14건으로 고정
+- [x] **프록시 헤더 신뢰 정책 문서화** (2026-09-21): `docs/architecture.md`에 「프록시 헤더 신뢰 정책」 절 추가. 헤더 우선순위와 각 단계의 신뢰 근거, Vercel 외부 노출 시 주의점을 표로 정리
 
 ### 치명 버그
 

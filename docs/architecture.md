@@ -253,6 +253,29 @@ admin과 table-order, Toss POS 플러그인이 Supabase Realtime WebSocket을 �
 
 ---
 
+## 프록시 헤더 신뢰 정책
+
+rate limit(`CustomThrottlerGuard`)은 클라이언트 IP로 버킷을 나눈다. **어느 헤더를 믿느냐가 곧 신뢰 경계다.**
+
+`x-forwarded-for`는 프록시가 뒤에 덧붙이는 헤더라 클라이언트가 직접 보내면 그 값이 맨 앞에 온다.
+첫 값만 믿으면 값을 매 요청 바꿔 **rate limit을 무제한 우회**할 수 있고, 로그인·결제 제한이 무력화된다.
+
+그래서 플랫폼이 직접 채우는 헤더를 먼저 본다.
+
+| 순위 | 헤더 / 값 | 신뢰 근거 |
+|---|---|---|
+| 1 | `x-vercel-forwarded-for` | Vercel이 채우고 클라이언트가 보낸 동명 헤더를 덮어쓴다 |
+| 2 | `x-real-ip` | 위와 같음 |
+| 3 | `x-forwarded-for` 첫 값 | **클라이언트가 조작할 수 있다.** 1·2가 없는 환경(로컬·자체 호스팅) 전용 폴백 |
+| 4 | `req.ip` → `connection.remoteAddress` → `unknown` | 헤더가 전혀 없을 때 |
+
+**Vercel 외부에 직접 노출하는 경우** 3번이 유일한 경로가 되므로 그대로 두면 안 된다.
+앞단 프록시가 `x-forwarded-for`를 **덮어쓰도록** 설정하거나, 홉 수만큼 뒤에서 세는 방식으로 바꿔야 한다.
+
+경계값은 `apps/backend/src/common/guards/throttler.guard.spec.ts`에 고정돼 있다.
+
+---
+
 ## 기술 스택
 
 | 레이어 | 기술 | 버전 |
