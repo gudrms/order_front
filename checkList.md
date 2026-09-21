@@ -140,7 +140,8 @@
 - [x] **delivery-customer 메뉴→장바구니→결제하기 E2E** (2026-05-16, `menu-cart.spec.ts`): 메뉴 목록·상세 시트·수량 조절·담기(4개), 배지 갱신·최소 주문금액 안내(3개), 장바구니 시트 아이템·닫기(2개), 배달 정보 입력→체크아웃 이동·주문 내역 확인(2개) — 합계 11 tests 통과.
 - [ ] **delivery-customer OAuth 로그인 후 실결제 플로우**: 로그인 세션 시뮬레이션, 주문 추적, 마이페이지. (TossPayments 위젯 외부 SDK는 계속 범위 외)
 - [ ] **admin 메뉴 이미지 업로드 E2E**: 2026-05-16 추가 기능. 회귀 방지용 — 파일 선택→압축→업로드→URL 저장 시나리오.
-- [ ] **admin 미커버 플로우 E2E**: 옵션 그룹 CRUD, 직원 호출 실시간, 가맹 문의 처리.
+- [ ] **admin 미커버 플로우 E2E**: 직원 호출 실시간, 가맹 문의 처리.
+  - [x] 옵션 그룹 CRUD (2026-09-21): `e2e/admin/menu-options.spec.ts` — 그룹 생성(최소/최대 선택 수, 필수 표시) → 옵션 추가 → 그룹 삭제. 요청 페이로드까지 검증. admin E2E 23건 통과
 - [x] **brand-website E2E 도입** (2026-05-16): `e2e/brand-website/fixtures.ts`(매장·메뉴 API 스텁) + `pages.spec.ts`(21 tests, 랜딩·메뉴·브랜드·가맹·매장·개인정보 6페이지). Playwright `brand-website` 프로젝트 port 3000 추가.
 - [x] **delivery-customer E2E 메뉴 경로 수정** (2026-05-16): `/menu` 라우트가 `/store/[storeId]/menu`로 리팩터링되면서 CI E2E 실패. `e2e/delivery-customer/pages.spec.ts` 메뉴 관련 테스트 2개를 `/store/store-e2e-1/menu` 경로로 수정.
 - [x] **admin E2E auth 테스트 — 로그인 페이지 개편 추적** (2026-05-17): ① 회원가입 탭 추가로 '로그인' 버튼이 2개라 strict mode 위반 → `button[type="submit"]`로 교체(8차). ② 이후 로그인 페이지가 `<form>`/submit 버튼 없는 구조(`type="button"` + onClick)로 재개편되며 `button[type="submit"]`이 사라져, `getByRole('button', { name: '로그인' })` + 회원가입 버튼 검증으로 재수정(9차). 로컬 admin auth E2E 10개 통과 확인.
