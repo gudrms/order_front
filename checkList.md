@@ -1,6 +1,6 @@
 # Taco Mono 작업 현황
 
-마지막 업데이트: 2026-09-21 (17차)
+마지막 업데이트: 2026-09-21 (18차)
 
 ---
 
@@ -385,10 +385,12 @@
 - [x] **배달앱 빈 카테고리 노출 정리** (2026-09-21, `c468fcd`): `CategoryTabs`가 `MenuList`와 같은 `useMenus` 쿼리(동일 키라 추가 요청 없음)로 노출 메뉴 유무를 보고 탭을 거르도록 수정. 숨김 메뉴만 있는 카테고리도 함께 처리된다. 메뉴 로딩 중에는 탭 깜빡임을 피하려고 기존대로 노출. E2E 1건 추가, delivery-customer 12건 통과
 - [x] **테스트 매장 공개 노출 차단** (2026-09-21): `isActive=false` 적용. 브랜드 사이트 매장 목록에 김포점이 두 번(하나는 주소 자리에 전화번호) 뜨던 문제 해소. 공개 `/stores`가 8건 → 7건, 전 매장 주소 정상. `getMyStores`는 `isActive`를 거르지 않아 관리자에서는 계속 관리 가능하고, 주문 이력도 그대로다
   - `address`에 전화번호(`0507-1410-8774`)가 남아 있으나 비공개라 고객 영향은 없다. 삭제는 주문 이력 확인 후 판단
-- [ ] **배달앱 캐시 무효화가 CDN까지 닿지 않음**: `revalidateDeliveryCache` → `POST /api/revalidate` → `revalidateTag`는 Next 데이터 캐시만 비우고, 라우트 핸들러가 응답에 직접 붙이는 `s-maxage=300`(Vercel CDN)은 그대로 남는다. 실측: 태그 무효화 후에도 `X-Vercel-Cache: HIT`로 옛 메뉴가 계속 서빙되다 `Age`가 300을 넘겨야 갱신됐다([cached-public-api.ts](apps/delivery-customer/src/lib/cached-public-api.ts) 주석은 '즉시 무효화라 TTL을 길게 잡아도 신선도 손실이 없다'고 전제하는데 실제와 다르다)
-  - 영향: 관리자에서 품절·숨김 처리해도 고객 화면에 최대 5분 반영 지연. **품절이 특히 문제** — 없는 메뉴가 그동안 주문 가능하게 보인다
-  - 선택지: 응답 `Cache-Control`을 `s-maxage=0`으로 낮춰 Next 데이터 캐시에만 의존하거나, 무효화 시 Vercel CDN 퍼지를 함께 호출
   - 주소를 고칠 때는 SQL이 아니라 관리자 화면에서 수정할 것. `updateStore`가 주소 변경 시 카카오 지오코딩을 돌려 `lat`/`lng`까지 채우는데([stores.service.ts](apps/backend/src/modules/stores/stores.service.ts)), raw SQL로 바꾸면 좌표가 null로 남는다
+- [x] **배달앱 캐시 무효화가 CDN까지 닿지 않음** (2026-09-21, `7deee08`): `revalidateTag`가 Next 데이터 캐시만 비우고 라우트 핸들러 응답의 `s-maxage=300`(Vercel CDN)은 지우지 못해, 품절·메뉴 변경이 최대 5분 지연됐다. 응답을 `no-store`로 바꿔 엣지에 캐시하지 않고 Next 데이터 캐시(TTL 300초)에만 의존하도록 분리했다. 결정 근거는 [ADR-0001](docs/adr/0001-delivery-edge-cache.md)
+- [x] **고객 오류 메시지 한글화 + `alert()` 제거** (2026-09-21, `1532f88`·`d46d2ed`·`71aa38c`·`d3dba63`): 주문·결제·세션·호출 경로 메시지를 한글로 바꾸고, 네이티브 `alert()` 9곳을 인앱 배너/인라인 안내로 교체. 주문 불가 메뉴는 `code=MENU_UNAVAILABLE`과 `menuId`를 함께 내려 장바구니에서 자동으로 뺀다. [ADR-0002](docs/adr/0002-customer-error-ux.md)
+- [ ] **`order-delivery` Vercel 배포가 멈춤**: `c468fcd` 이후 커밋(`7deee08`~`d3dba63`)에 대해 배달앱 배포가 **생성조차 되지 않는다**. 같은 푸시에서 백엔드는 정상 빌드된다. 위 엣지 캐시·alert 수정이 아직 라이브에 반영되지 않은 상태 — Vercel 대시보드에서 `order-delivery`의 Git 연동을 확인할 것
+- [ ] **관리자 화면 영어 메시지**: 고객 경로만 한글화했다. 계정 관리·브랜드 메뉴·메뉴 CRUD·POS 연동은 영어로 남아 있다
+- [ ] **웹 토스트 UI 부재**: `lib/capacitor/toast.ts`가 `isNative` 가드로 웹에서는 아무것도 띄우지 않는다. UI가 없는 훅(`useFavorites` 등)에서 안내할 수단이 없어 지금은 로그인 화면 이동으로 대체했다
 - [x] **마스터 관리자의 전 매장 접근** (2026-09-21, `5cdf73e`): `getMyStores`가 ADMIN 여부와 무관하게 `ownerId`로만 조회해 마스터가 소유 매장 하나만 볼 수 있었다. 매장 전환 드롭다운도 `stores.length > 1`에서만 뜨므로 다른 매장은 관리 자체가 불가능했다. `canManageStore`는 이미 ADMIN에게 소유권을 묻지 않으므로 그 기준에 맞춤. 백엔드 175건 통과
 - [ ] Toss 테스트 카드 결제 성공: 주문 생성 → 결제 승인 → `PAID` → 주문 상세 갱신
 - [ ] Toss 결제 실패/취소: fail 페이지 안내와 재시도 UX 확인
