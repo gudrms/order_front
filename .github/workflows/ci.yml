@@ -55,6 +55,9 @@ jobs:
       - name: order-core unit tests
         run: pnpm --filter order-core exec vitest run
 
+      - name: delivery-customer unit tests
+        run: pnpm --filter delivery-customer exec vitest run
+
   # ─────────────────────────────────────────
   # 2. 프론트엔드 타입 체크 (세 앱 병렬)
   # ─────────────────────────────────────────

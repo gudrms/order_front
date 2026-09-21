@@ -62,6 +62,8 @@ throw new BadRequestException({
   `showToast`가 네이티브면 Capacitor Toast, 웹이면 인앱 토스트를 쓰도록 했다. 덕분에 즐겨찾기처럼
   붙일 UI가 없는 훅도 화면을 떠나보내지 않고 안내할 수 있다.
   체크아웃·로그인 등 사용자가 방금 누른 버튼의 실패는 사라지지 않고 남아야 하므로 배너를 그대로 쓴다.
-- 체크아웃 장바구니 정리는 E2E로 덮지 못했다. 결제 버튼이 로그인 게이트 뒤에 있는데
-  delivery E2E 픽스처가 비로그인 전용이고, delivery-customer에는 유닛 테스트 러너가 없다.
-  **서버 계약(`code`/`menuId`)만 백엔드 테스트로 고정했다.**
+- ~~체크아웃 장바구니 정리는 E2E로 덮지 못했다.~~
+  **해소됨 (2026-09-22)**: 결제 버튼이 로그인 게이트 뒤에 있어 E2E로는 여전히 못 타지만,
+  판단 규칙을 `lib/orderError.ts`로 빼고 delivery-customer에 vitest를 붙여 유닛 테스트 8건으로 덮었다.
+  응답 파싱(`getUnavailableMenuId`)과 "같은 메뉴의 옵션 조합을 모두 제거"(`cartItemIdsForMenu`) 두 규칙이
+  대상이다. 서버 계약은 백엔드 테스트가, 클라이언트 해석은 이 테스트가 고정한다.
