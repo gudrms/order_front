@@ -216,6 +216,24 @@ DB 연결 수는 고정 숫자를 선승인하지 않는다. Vercel scale-out과
 
 체감 측면에서는 공개 조회 캐시 TTL을 60초에서 300초로, `stale-while-revalidate`를 300초에서 3600초로 올렸다. 배너·매장·메뉴 쓰기 시 백엔드가 `POST /api/revalidate`로 태그를 즉시 무효화하는 on-demand 경로가 이미 완비돼 있어, TTL을 길게 잡아도 신선도 손실 없이 캐시 miss 빈도(=백엔드 cold start 호출)만 낮출 수 있다. SWR 구간을 늘려 만료 직후에도 stale 응답을 즉시 주고 백그라운드에서 갱신하므로 사용자는 cold start를 체감하지 않는다.
 
+> **2026-09-21 정정** — 이 문단의 전제가 틀렸다. `revalidateTag`는 Next 데이터 캐시만 비우고, 라우트 핸들러가 응답에 직접 붙이는 `s-maxage`(Vercel CDN 응답 캐시)는 지우지 못한다. 실측에서 태그를 무효화한 뒤에도 `X-Vercel-Cache: HIT`로 옛 메뉴가 5분간 그대로 나갔다. 경위와 대응은 [ADR-0001](adr/0001-delivery-edge-cache.md) 참고.
+
+---
+
+## 18. 정식 출시 후 운영 점검 (2026-09-21)
+
+정식 출시 이후 처음으로 운영 데이터와 고객 동선을 끝까지 따라가 본 날이다. 기능 자체보다 **"배포는 됐는데 실제로는 이렇게 동작하고 있었다"**는 것들이 드러났다.
+
+가장 컸던 것은 **배달이 켜진 유일한 매장이 테스트용 매장**이었다는 사실이다. `storeType`이 `test`라 고객 URL에 그대로 노출됐고, 주소 필드에는 전화번호가 들어가 있어 브랜드 사이트에 김포점이 두 번 떴다. 반면 실 김포점은 메뉴 29건을 갖고도 공개 0건이었는데, `TOSS_POS` 모드인데 전 건 `tossMenuCode`가 비어 필터에 걸린 탓이었다. 배달 운영을 실 김포점으로 옮기고 `ADMIN_DIRECT`로 전환한 뒤 네이버 플레이스 기준으로 메뉴 33건을 등록했다([ADR-0003](adr/0003-gimpo-store-consolidation.md)).
+
+이 과정에서 **캐시 무효화가 CDN까지 닿지 않는다**는 것을 실측으로 확인했다. 17번에서 올린 TTL이 "즉시 무효화가 완비돼 있으니 안전하다"는 전제 위에 있었는데, 그 전제가 성립하지 않았다. 품절 처리가 최대 5분 지연되는 문제라 엣지 캐시를 끄고 Next 데이터 캐시에만 의존하도록 바꿨다([ADR-0001](adr/0001-delivery-edge-cache.md)).
+
+품절이 실제로 얼마나 위험한지도 확인했다. 주문 생성이 결제창보다 먼저 돌고 거기서 DB를 직접 읽어 막기 때문에 **돈이 나가지는 않는다.** 다만 고객이 주소·연락처를 다 입력한 뒤 마지막 단계에서 영어 alert으로 거절당하고, 장바구니가 그대로라 재시도도 막혔다. 서버가 `menuId`를 함께 내려주고 클라이언트가 장바구니를 정리하도록 바꾸면서, 고객이 보는 메시지를 한글로 통일하고 남아 있던 네이티브 `alert()` 9곳을 인앱 안내로 교체했다([ADR-0002](adr/0002-customer-error-ux.md)).
+
+쿠폰은 실 계정으로 생성·발급·결제까지 연동 검증을 마쳤다. 그 과정에서 발급 한도가 사용 수 기준이라 한도를 넘겨 발급될 수 있던 문제, 관리자 직접 발급에 한도 검사가 없던 문제를 고쳤다([ADR-0004](adr/0004-coupon-discount-base.md)).
+
+권한 쪽에서는 `getMyStores`가 ADMIN 여부를 보지 않고 `ownerId`로만 조회해, **마스터 관리자가 자기 소유 매장 하나만 볼 수 있었다.** 매장 전환 드롭다운도 매장이 2개 이상일 때만 뜨므로 다른 매장은 관리 자체가 불가능했다. `canManageStore`는 이미 ADMIN에게 소유권을 묻지 않았으므로 그 기준에 맞췄다.
+
 ---
 
 ## 주요 기술 결정 요약
@@ -239,4 +257,10 @@ DB 연결 수는 고정 숫자를 선승인하지 않는다. Vercel scale-out과
 | 배달앱 네이티브 푸시 활성화 | Firebase 준비 후 env opt-in | Remote WebView가 Firebase 없는 Android 번들에서 Push 등록을 호출하면 앱 시작 크래시가 날 수 있음 |
 | 배달앱 OAuth 복귀 | `taco://auth/callback` 앱 scheme | 외부 웹 callback에 남지 않고 앱으로 복귀해 WebView 세션을 복원해야 함 |
 | 결제 후 큐 깨우기 | Vercel background wake-up + cron fail-safe | POS/알림 지연을 줄이되 publish 직후 wake-up 누락과 queue backlog 회수 경로를 남김 |
-| 서버리스 cold start | Fluid Compute + Swagger lazy 생성 + Sentry profiling 제거 + 캐시 TTL 상향 | 캐시가 대부분 우회, 남은 cold start는 빈도·부팅시간·체감을 각각 축소. 무효화 완비로 TTL 상향이 안전 |
+| 서버리스 cold start | Fluid Compute + Swagger lazy 생성 + Sentry profiling 제거 + 데이터 캐시 TTL 상향 | 캐시가 대부분 우회, 남은 cold start는 빈도·부팅시간·체감을 각각 축소. *2026-09-21: "무효화 완비로 TTL 상향이 안전"이라는 전제는 CDN 응답 캐시에 대해 성립하지 않아 엣지 캐시를 껐다 → [ADR-0001](adr/0001-delivery-edge-cache.md)* |
+| 배달앱 공개 API 캐시 | Next 데이터 캐시만 사용, CDN은 `no-store` | `revalidateTag`가 CDN 응답 캐시를 지우지 못해 품절이 최대 5분 지연됐다. 데이터 캐시만으로도 cold start 방어는 유지된다 |
+| 고객 오류 안내 | 한글 + 인앱 배너 (`alert()` 금지) | 네이티브 alert은 Capacitor에서 URL이 붙은 시스템 다이얼로그로 뜬다. 주문 불가 메뉴는 `menuId`를 함께 내려 장바구니를 정리한다 |
+| 배달 운영 매장 | 테스트 매장 → 실 김포점(`tacomolle/gimpo`) | `test`가 고객 URL에 노출되고 주소·좌표가 없었다. URL은 한번 나가면 되돌리기 어려워 출시 직후에 옮겼다 |
+| 쿠폰 할인 기준 | 배달비 제외한 상품 금액 | 배달비는 실비다. 총액 기준이면 쿠폰이 배달 실비를 잠식한다 |
+| 쿠폰 발급 한도 | 발급된 `UserCoupon` 수 기준 | `usedCount` 기준이면 발급만 하고 안 쓸 때 한도를 넘겨 발급된다. 동시 요청 시 1~2장 초과는 예산 통제 목적상 허용 |
+| 마스터 관리자 매장 접근 | 소유 여부 무관 전 매장 | `canManageStore`는 이미 ADMIN에게 소유권을 묻지 않는데 목록 조회만 `ownerId`로 걸러 관리가 불가능했다 |
