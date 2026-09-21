@@ -44,12 +44,10 @@ export default function CartBottomSheet({ isOpen, onClose, onProceedToOrder }: C
         }, 300);
     };
 
-    const handleOrder = () => {
-        if (totalPrice < minimumOrderAmount) {
-            alert(`최소 주문 금액은 ${minimumOrderAmount.toLocaleString()}원입니다.`);
-            return;
-        }
+    // 최소 주문금액 미달 안내는 주문 버튼 바로 위에 이미 표시되므로 버튼만 막는다.
+    const canOrder = items.length > 0 && totalPrice >= minimumOrderAmount;
 
+    const handleOrder = () => {
         setIsAddressSheetOpen(true);
     };
 
@@ -125,7 +123,7 @@ export default function CartBottomSheet({ isOpen, onClose, onProceedToOrder }: C
                     )}
                     <button
                         className="w-full bg-brand-black text-white p-4 rounded-xl font-bold text-lg flex justify-between items-center disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={items.length === 0}
+                        disabled={!canOrder}
                         onClick={handleOrder}
                     >
                         <span>{items.length}개 주문하기</span>

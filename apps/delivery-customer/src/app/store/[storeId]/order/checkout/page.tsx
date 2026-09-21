@@ -237,10 +237,12 @@ export default function CheckoutPage() {
             const unavailableMenuId = getUnavailableMenuId(error);
             if (unavailableMenuId) {
                 // 옵션 조합마다 장바구니 항목이 따로 생기므로 같은 메뉴를 전부 뺀다.
-                const removed = items.filter((item) => item.menuId === unavailableMenuId);
-                removed.forEach((item) => removeItem(item.id));
+                // 서버 메시지에 이미 메뉴명이 들어 있으므로 여기서 다시 붙이지 않는다.
+                items
+                    .filter((item) => item.menuId === unavailableMenuId)
+                    .forEach((item) => removeItem(item.id));
                 setErrorMessage(
-                    `${error instanceof Error ? error.message : '주문할 수 없는 메뉴가 있습니다.'} 장바구니에서 ${removed[0]?.menuName ?? '해당 메뉴'}을(를) 빼드렸습니다.`,
+                    `${error instanceof Error ? error.message : '주문할 수 없는 메뉴가 있습니다.'} 장바구니에서 빼드렸으니 다시 주문해 주세요.`,
                 );
                 return;
             }

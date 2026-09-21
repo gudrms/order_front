@@ -15,6 +15,7 @@ function LoginContent() {
     const [password, setPassword] = useState('');
     const [emailSubmitting, setEmailSubmitting] = useState(false);
     const [emailError, setEmailError] = useState('');
+    const [socialError, setSocialError] = useState('');
 
     useEffect(() => {
         if (user && !loading) {
@@ -29,21 +30,23 @@ function LoginContent() {
 
     const handleKakaoLogin = async () => {
         try {
+            setSocialError('');
             storeRedirect();
             await signInWithKakao();
         } catch (error) {
             console.error('카카오 로그인 실패:', error);
-            alert('로그인에 실패했습니다. 다시 시도해주세요.');
+            setSocialError('로그인에 실패했습니다. 다시 시도해주세요.');
         }
     };
 
     const handleAppleLogin = async () => {
         try {
+            setSocialError('');
             storeRedirect();
             await signInWithApple();
         } catch (error) {
             console.error('Apple 로그인 실패:', error);
-            alert('로그인에 실패했습니다. 다시 시도해주세요.');
+            setSocialError('로그인에 실패했습니다. 다시 시도해주세요.');
         }
     };
 
@@ -81,6 +84,12 @@ function LoginContent() {
                     <h1 className="text-3xl font-bold text-brand-black mb-2">배달 주문</h1>
                     <p className="text-gray-600">간편하게 주문하고 빠르게 받아보세요</p>
                 </div>
+
+                {socialError && (
+                    <p role="alert" className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
+                        {socialError}
+                    </p>
+                )}
 
                 {/* 로그인 버튼들 */}
                 <div className="space-y-3">

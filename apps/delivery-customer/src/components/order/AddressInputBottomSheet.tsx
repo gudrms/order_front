@@ -64,6 +64,7 @@ export default function AddressInputBottomSheet({
     );
     const [deliveryRequest, setDeliveryRequestInput] = useState(deliveryInfo.deliveryRequest || '');
     const [isAddressSearchOpen, setIsAddressSearchOpen] = useState(false);
+    const [validationError, setValidationError] = useState('');
 
     useEffect(() => {
         if (isOpen) {
@@ -110,14 +111,16 @@ export default function AddressInputBottomSheet({
     };
 
     const handleConfirm = () => {
+        setValidationError('');
+
         if (!address || !customerName || !customerPhone) {
-            alert('주소, 받는 분 이름, 연락처를 입력해주세요.');
+            setValidationError('주소, 받는 분 이름, 연락처를 입력해주세요.');
             return;
         }
 
         const phoneRegex = /^01[0-9]-?[0-9]{3,4}-?[0-9]{4}$/;
         if (!phoneRegex.test(customerPhone)) {
-            alert('올바른 휴대폰 번호를 입력해주세요. 예: 010-1234-5678');
+            setValidationError('올바른 휴대폰 번호를 입력해주세요. 예: 010-1234-5678');
             return;
         }
 
@@ -287,6 +290,11 @@ export default function AddressInputBottomSheet({
                     className="flex-shrink-0 p-4 border-t border-gray-100 bg-white"
                     style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 1rem)' }}
                 >
+                    {validationError && (
+                        <p role="alert" className="mb-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
+                            {validationError}
+                        </p>
+                    )}
                     <button
                         onClick={handleConfirm}
                         className="w-full bg-brand-black text-white p-4 rounded-xl font-bold text-lg"

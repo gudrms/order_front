@@ -20,6 +20,7 @@ export default function NewAddressPage() {
     const queryClient = useQueryClient();
 
     const [isOpenPostcode, setIsOpenPostcode] = useState(false);
+    const [validationError, setValidationError] = useState('');
     const [formData, setFormData] = useState<CreateAddressDto>({
         name: '',
         address: '',
@@ -55,8 +56,9 @@ export default function NewAddressPage() {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        setValidationError('');
         if (!formData.name || !formData.address) {
-            alert('주소 별칭과 주소는 필수입니다.');
+            setValidationError('주소 별칭과 주소는 필수입니다.');
             return;
         }
         createMutation.mutate(formData);
@@ -151,6 +153,12 @@ export default function NewAddressPage() {
                         </label>
                     </div>
                 </div>
+
+                {validationError && (
+                    <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
+                        {validationError}
+                    </p>
+                )}
 
                 {createMutation.isError && (
                     <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
