@@ -51,6 +51,10 @@ jobs:
           SUPABASE_SERVICE_KEY: "placeholder"
           NODE_ENV: test
 
+      # order-core는 배달앱과 테이블오더가 함께 쓰는 장바구니 로직이라 여기서 같이 돌린다.
+      - name: order-core unit tests
+        run: pnpm --filter order-core exec vitest run
+
   # ─────────────────────────────────────────
   # 2. 프론트엔드 타입 체크 (세 앱 병렬)
   # ─────────────────────────────────────────
