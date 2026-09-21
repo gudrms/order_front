@@ -82,6 +82,7 @@ export default function MenuList() {
                                 event.stopPropagation();
                                 toggleFavorite(item.id);
                             }}
+                            aria-label={isFavorited(item.id) ? `${item.name} 즐겨찾기 해제` : `${item.name} 즐겨찾기`}
                             className="absolute top-2 right-2 p-1.5 rounded-full bg-white/80 backdrop-blur-sm shadow-sm z-10"
                         >
                             <Heart

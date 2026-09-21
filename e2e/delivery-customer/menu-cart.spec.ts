@@ -78,6 +78,21 @@ test.describe('메뉴 목록', () => {
         await expect(page.getByRole('button', { name: '빈 카테고리', exact: true })).toHaveCount(0);
     });
 
+    test('비로그인 상태로 즐겨찾기를 누르면 웹 토스트로 안내하고 화면을 벗어나지 않는다', async ({ page }) => {
+        await page.goto(`/store/${STUB_STORE_ID}/menu`);
+        await expect(page.getByText('E2E Taco')).toBeVisible({ timeout: 10_000 });
+
+        await page.getByRole('button', { name: 'E2E Taco 즐겨찾기' }).click();
+
+        // 네이티브에서는 Capacitor Toast가 뜨지만 웹에서는 ToastHost가 그린다.
+        const toast = page.getByRole('status').filter({ hasText: '로그인이 필요한 서비스입니다.' });
+        await expect(toast).toBeVisible({ timeout: 5_000 });
+        await expect(page).toHaveURL(/\/menu/);
+
+        // short 토스트(2초)는 저절로 사라진다.
+        await expect(toast).toBeHidden({ timeout: 8_000 });
+    });
+
     test('메뉴 클릭 시 상세 시트가 열린다', async ({ page }) => {
         await page.goto(`/store/${STUB_STORE_ID}/menu`);
         await page.getByText('E2E Taco').first().click();

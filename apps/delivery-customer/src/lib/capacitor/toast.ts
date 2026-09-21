@@ -1,15 +1,21 @@
 import { Toast } from '@capacitor/toast';
 import { isNative } from './index';
+import { showWebToast } from '../webToast';
+
+// Android Toast의 SHORT/LONG에 맞춘 값. 웹에서도 체감이 비슷하도록 같은 길이를 쓴다.
+const WEB_TOAST_DURATION_MS = { short: 2000, long: 3500 } as const;
 
 /**
  * 토스트 메시지 표시
+ *
+ * 네이티브는 Capacitor Toast, 웹은 `ToastHost`가 그리는 인앱 토스트를 쓴다.
  */
 export async function showToast(
   text: string,
   duration: 'short' | 'long' = 'short'
 ) {
   if (!isNative) {
-    // 웹(브라우저) 환경에서는 무시 (향후 웹용 토스트 UI 컴포넌트로 교체 예정)
+    showWebToast(text, WEB_TOAST_DURATION_MS[duration]);
     return;
   }
 

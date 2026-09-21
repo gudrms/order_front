@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useRouter } from 'next/navigation';
+import { showInfoToast } from '@/lib/capacitor/toast';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface Favorite {
@@ -10,7 +10,6 @@ interface Favorite {
 
 export function useFavorites() {
     const { user } = useAuth();
-    const router = useRouter();
     const queryClient = useQueryClient();
 
     const fetchFavorites = async (): Promise<Favorite[]> => {
@@ -53,8 +52,8 @@ export function useFavorites() {
 
     const toggleFavorite = (menuId: string) => {
         if (!user) {
-            // 훅이라 안내를 띄울 UI가 없다. 결제 버튼과 같이 로그인 화면으로 보낸다.
-            router.push('/login');
+            // 하트 한 번에 화면을 떠나보내지 않는다. 메뉴를 보던 맥락을 유지한 채 안내만 한다.
+            void showInfoToast('로그인이 필요한 서비스입니다.');
             return;
         }
 

@@ -4,6 +4,7 @@ import './globals.css';
 import Providers from './providers';
 import PWAInstaller from '@/components/PWAInstaller';
 import DeepLinkHandler from '@/components/DeepLinkHandler';
+import ToastHost from '@/components/ui/ToastHost';
 
 export const metadata: Metadata = {
   title: '타코몰리',
@@ -48,6 +49,7 @@ export default function RootLayout({
         <PWAInstaller />
         <DeepLinkHandler />
         <Providers>{children}</Providers>
+        <ToastHost />
         <Analytics />
       </body>
     </html>
