@@ -105,3 +105,7 @@ tree_output*.txt
 .gemini/
 gha-creds-*.json
 .github/commands/
+
+# Electron 빌드 산출물 — tsc / electron-builder가 재생성한다
+apps/admin-electron/dist/
+apps/admin-electron/release/
