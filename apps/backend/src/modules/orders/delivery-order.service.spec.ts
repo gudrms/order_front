@@ -107,6 +107,18 @@ describe('DeliveryOrderService', () => {
         expect(tx.order.create).not.toHaveBeenCalled();
     });
 
+    it('숨김 메뉴는 menuId를 알아도 주문되지 않는다', async () => {
+        // 목록 API는 숨김 메뉴를 빼지만 주문 생성은 걸러내지 않아 ID만 알면 주문할 수 있었다.
+        tx.store.findUnique.mockResolvedValue(store);
+        tx.menu.findMany.mockResolvedValue([{ ...menu, isHidden: true }]);
+
+        await expect(service.createDeliveryOrder('store-1', dto)).rejects.toMatchObject({
+            response: { code: 'MENU_UNAVAILABLE', menuId: 'menu-1' },
+        });
+
+        expect(tx.order.create).not.toHaveBeenCalled();
+    });
+
     it('rejects cash delivery orders', async () => {
         tx.store.findUnique.mockResolvedValue(store);
 

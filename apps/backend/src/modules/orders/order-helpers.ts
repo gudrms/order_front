@@ -45,7 +45,9 @@ export async function prepareOrderItems(tx: Prisma.TransactionClient, storeId: s
                 menuId: itemDto.menuId,
             });
         }
-        if (!menu.isActive || menu.soldOut) {
+        // isHidden도 함께 막는다. 목록 API는 숨김 메뉴를 빼지만 주문 생성은 걸러내지 않아,
+        // menuId만 알면 숨김 메뉴를 주문할 수 있었다(운영에 10원짜리 결제 테스트용 메뉴가 숨김으로 있다).
+        if (!menu.isActive || menu.soldOut || menu.isHidden) {
             // 고객 화면은 캐시된 메뉴를 보여주므로 장바구니에 담은 뒤 품절될 수 있다.
             // 어느 메뉴를 빼야 하는지 알려주려고 menuId를 함께 내려준다.
             throw new BadRequestException({

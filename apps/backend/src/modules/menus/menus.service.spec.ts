@@ -176,8 +176,7 @@ describe('MenusService', () => {
 
         it('숨김 메뉴도 ID를 알면 조회된다 — 목록에서만 가려질 뿐이다', async () => {
             // getMenus는 isHidden으로 거르지만 상세 조회는 거르지 않는다.
-            // 주문 생성(prepareOrderItems)도 isActive/soldOut만 보고 isHidden은 보지 않으므로,
-            // ID를 아는 사람은 숨김 메뉴를 주문할 수 있다. 현재 동작을 고정해 둔다.
+            // 조회는 열려 있어도 주문은 prepareOrderItems에서 isHidden으로 막는다.
             mockPrismaService.store.findUnique.mockResolvedValue(adminDirectStore);
             const hidden = { id: 'menu-4', name: 'E2E 테스트 타코', price: 10, isHidden: true, tossMenuCode: null, optionGroups: [] };
             vi.spyOn(prisma.menu, 'findUnique').mockResolvedValue(hidden as any);
