@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface Favorite {
@@ -9,6 +10,7 @@ interface Favorite {
 
 export function useFavorites() {
     const { user } = useAuth();
+    const router = useRouter();
     const queryClient = useQueryClient();
 
     const fetchFavorites = async (): Promise<Favorite[]> => {
@@ -51,7 +53,8 @@ export function useFavorites() {
 
     const toggleFavorite = (menuId: string) => {
         if (!user) {
-            alert('로그인이 필요한 서비스입니다.');
+            // 훅이라 안내를 띄울 UI가 없다. 결제 버튼과 같이 로그인 화면으로 보낸다.
+            router.push('/login');
             return;
         }
 
