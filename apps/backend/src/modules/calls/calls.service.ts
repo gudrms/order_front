@@ -79,9 +79,9 @@ export class CallsService {
             this.prisma.user.findUnique({ where: { id: userId } }),
             this.prisma.store.findUnique({ where: { id: storeId } }),
         ]);
-        if (!store) throw new NotFoundException('Store not found');
+        if (!store) throw new NotFoundException('매장을 찾을 수 없습니다');
         if (user?.role !== 'ADMIN' && store.ownerId !== userId) {
-            throw new ForbiddenException('Access denied');
+            throw new ForbiddenException('이 매장에 접근할 권한이 없습니다');
         }
     }
 }

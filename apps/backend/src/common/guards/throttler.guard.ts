@@ -11,7 +11,7 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
     _context: ExecutionContext,
     _throttlerLimitDetail: ThrottlerLimitDetail,
   ): Promise<void> {
-    throw new ThrottlerException('Too many requests. Please try again later.');
+    throw new ThrottlerException('요청이 너무 잦습니다. 잠시 후 다시 시도해 주세요');
   }
 
   protected async getTracker(req: Record<string, any>): Promise<string> {

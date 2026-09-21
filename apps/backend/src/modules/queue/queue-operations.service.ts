@@ -49,16 +49,16 @@ export class QueueOperationsService {
         });
 
         if (!notification) {
-            throw new NotFoundException(`Notification not found: ${notificationId}`);
+            throw new NotFoundException('알림 내역을 찾을 수 없습니다');
         }
         if (notification.storeId !== storeId) {
-            throw new BadRequestException('Notification does not belong to this store');
+            throw new BadRequestException('이 매장의 알림이 아닙니다');
         }
         if (notification.status === 'SENT') {
             return notification;
         }
         if (!notification.payload || typeof notification.payload !== 'object' || Array.isArray(notification.payload)) {
-            throw new BadRequestException('Notification payload is not retryable');
+            throw new BadRequestException('재전송할 수 없는 알림입니다');
         }
 
         await this.prisma.notificationLog.update({
@@ -83,7 +83,7 @@ export class QueueOperationsService {
         ]);
 
         if (!store) {
-            throw new NotFoundException('Store not found');
+            throw new NotFoundException('매장을 찾을 수 없습니다');
         }
 
         assertCanManageStore(user, store);

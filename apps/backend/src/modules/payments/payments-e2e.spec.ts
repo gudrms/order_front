@@ -493,7 +493,7 @@ describe('Toss 카드결제 E2E Flow', () => {
                 'owner-e2e',
                 'order-e2e-1',
                 { cancelReason: '배달비 조정', cancelAmount: 5000 },
-            )).rejects.toThrow('Partial refunds are not supported');
+            )).rejects.toThrow('부분 환불은 지원하지 않습니다');
 
             expect(tossApiService.cancelPayment).not.toHaveBeenCalled();
             expect(prisma.order.update).not.toHaveBeenCalled();

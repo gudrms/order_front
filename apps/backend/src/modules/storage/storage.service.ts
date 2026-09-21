@@ -67,7 +67,7 @@ export class StorageService {
             .upload(path, file.buffer, { contentType: file.mimetype, upsert: false });
 
         if (error) {
-            throw new InternalServerErrorException(`Image upload failed: ${error.message}`);
+            throw new InternalServerErrorException(`이미지 업로드에 실패했습니다: ${error.message}`);
         }
 
         const { data } = client.storage.from(ASSETS_BUCKET).getPublicUrl(path);

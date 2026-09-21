@@ -65,10 +65,10 @@ export class BrandBannersService {
         await this.assertAdmin(userId);
 
         if (!file) {
-            throw new BadRequestException('Image file is required');
+            throw new BadRequestException('이미지 파일을 선택해 주세요');
         }
         if (!this.storage.isSupportedImageType(file.mimetype)) {
-            throw new BadRequestException('Unsupported image type (allowed: JPEG, PNG, WebP)');
+            throw new BadRequestException('지원하지 않는 이미지 형식입니다. JPEG, PNG, WebP만 업로드할 수 있습니다');
         }
 
         const imageUrl = await this.storage.uploadBrandBannerImage(file);
@@ -88,6 +88,6 @@ export class BrandBannersService {
             where: { id: bannerId },
             select: { id: true },
         });
-        if (!banner) throw new NotFoundException('Brand banner not found');
+        if (!banner) throw new NotFoundException('배너를 찾을 수 없습니다');
     }
 }

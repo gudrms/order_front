@@ -31,10 +31,10 @@ export class MenusService {
         await this.assertCanManageAdminDirectMenus(userId, storeId);
 
         if (!file) {
-            throw new BadRequestException('Image file is required');
+            throw new BadRequestException('이미지 파일을 선택해 주세요');
         }
         if (!this.storage.isSupportedImageType(file.mimetype)) {
-            throw new BadRequestException('Unsupported image type (allowed: JPEG, PNG, WebP)');
+            throw new BadRequestException('지원하지 않는 이미지 형식입니다. JPEG, PNG, WebP만 업로드할 수 있습니다');
         }
 
         const imageUrl = await this.storage.uploadMenuImage(storeId, file);
@@ -65,7 +65,7 @@ export class MenusService {
         });
 
         if (!store) {
-            throw new NotFoundException('Store not found');
+            throw new NotFoundException('매장을 찾을 수 없습니다');
         }
 
         const where: any = {
@@ -216,7 +216,7 @@ export class MenusService {
         });
 
         if (!category) {
-            throw new NotFoundException('Menu category not found');
+            throw new NotFoundException('메뉴 카테고리를 찾을 수 없습니다');
         }
 
         const menu = await this.prisma.menu.create({
@@ -251,11 +251,11 @@ export class MenusService {
         });
 
         if (!menu) {
-            throw new NotFoundException('Menu not found');
+            throw new NotFoundException('메뉴를 찾을 수 없습니다');
         }
 
         if (menu.tossMenuCode) {
-            throw new BadRequestException('Toss POS synced menus must be edited in Toss POS');
+            throw new BadRequestException('Toss POS에서 동기화된 메뉴는 Toss POS에서 수정해야 합니다');
         }
 
         if (dto.categoryId) {
@@ -264,7 +264,7 @@ export class MenusService {
                 select: { id: true },
             });
             if (!category) {
-                throw new NotFoundException('Menu category not found');
+                throw new NotFoundException('메뉴 카테고리를 찾을 수 없습니다');
             }
         }
 
@@ -288,8 +288,8 @@ export class MenusService {
             where: { id: menuId, storeId },
             select: { id: true, tossMenuCode: true },
         });
-        if (!menu) throw new NotFoundException('Menu not found');
-        if (menu.tossMenuCode) throw new BadRequestException('Toss POS synced menus must be edited in Toss POS');
+        if (!menu) throw new NotFoundException('메뉴를 찾을 수 없습니다');
+        if (menu.tossMenuCode) throw new BadRequestException('Toss POS에서 동기화된 메뉴는 Toss POS에서 수정해야 합니다');
 
         const optionGroup = await this.prisma.menuOptionGroup.create({
             data: {
@@ -311,7 +311,7 @@ export class MenusService {
         const group = await this.prisma.menuOptionGroup.findFirst({
             where: { id: groupId, menuId, menu: { storeId } },
         });
-        if (!group) throw new NotFoundException('Option group not found');
+        if (!group) throw new NotFoundException('옵션 그룹을 찾을 수 없습니다');
 
         const optionGroup = await this.prisma.menuOptionGroup.update({
             where: { id: groupId },
@@ -328,7 +328,7 @@ export class MenusService {
         const group = await this.prisma.menuOptionGroup.findFirst({
             where: { id: groupId, menuId, menu: { storeId } },
         });
-        if (!group) throw new NotFoundException('Option group not found');
+        if (!group) throw new NotFoundException('옵션 그룹을 찾을 수 없습니다');
 
         await this.prisma.menuOptionGroup.delete({ where: { id: groupId } });
         await revalidateDeliveryCache({ storeId, menuId }, this.logger);
@@ -339,7 +339,7 @@ export class MenusService {
         const group = await this.prisma.menuOptionGroup.findFirst({
             where: { id: groupId, menuId, menu: { storeId } },
         });
-        if (!group) throw new NotFoundException('Option group not found');
+        if (!group) throw new NotFoundException('옵션 그룹을 찾을 수 없습니다');
 
         const option = await this.prisma.menuOption.create({
             data: {
@@ -360,8 +360,8 @@ export class MenusService {
         const option = await this.prisma.menuOption.findFirst({
             where: { id: optionId, optionGroupId: groupId, optionGroup: { menuId, menu: { storeId } } },
         });
-        if (!option) throw new NotFoundException('Option not found');
-        if (option.tossOptionCode) throw new BadRequestException('Toss POS synced options must be edited in Toss POS');
+        if (!option) throw new NotFoundException('옵션을 찾을 수 없습니다');
+        if (option.tossOptionCode) throw new BadRequestException('Toss POS에서 동기화된 옵션은 Toss POS에서 수정해야 합니다');
 
         const updatedOption = await this.prisma.menuOption.update({ where: { id: optionId }, data: dto });
         await revalidateDeliveryCache({ storeId, menuId }, this.logger);
@@ -373,8 +373,8 @@ export class MenusService {
         const option = await this.prisma.menuOption.findFirst({
             where: { id: optionId, optionGroupId: groupId, optionGroup: { menuId, menu: { storeId } } },
         });
-        if (!option) throw new NotFoundException('Option not found');
-        if (option.tossOptionCode) throw new BadRequestException('Toss POS synced options must be edited in Toss POS');
+        if (!option) throw new NotFoundException('옵션을 찾을 수 없습니다');
+        if (option.tossOptionCode) throw new BadRequestException('Toss POS에서 동기화된 옵션은 Toss POS에서 수정해야 합니다');
 
         await this.prisma.menuOption.delete({ where: { id: optionId } });
         await revalidateDeliveryCache({ storeId, menuId }, this.logger);
@@ -387,7 +387,7 @@ export class MenusService {
         ]);
 
         if (!store) {
-            throw new NotFoundException('Store not found');
+            throw new NotFoundException('매장을 찾을 수 없습니다');
         }
 
         assertCanManageStore(user, store);
@@ -399,7 +399,7 @@ export class MenusService {
         const store = await this.assertCanManageStore(userId, storeId);
 
         if (store.menuManagementMode !== MenuManagementMode.ADMIN_DIRECT) {
-            throw new BadRequestException('Direct menu editing is available only in ADMIN_DIRECT mode');
+            throw new BadRequestException('관리자 직접 등록 모드에서만 메뉴를 편집할 수 있습니다');
         }
 
         return store;

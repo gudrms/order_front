@@ -141,7 +141,7 @@ export class StoresService {
         });
 
         if (existingTables.length > 0) {
-            throw new BadRequestException(`Tables already exist: ${existingTables.map((table) => table.tableNumber).join(', ')}`);
+            throw new BadRequestException(`이미 등록된 테이블 번호입니다: ${existingTables.map((table) => table.tableNumber).join(', ')}`);
         }
 
         await this.prisma.table.createMany({
@@ -240,7 +240,7 @@ export class StoresService {
         ]);
 
         if (!store) {
-            throw new NotFoundException('Store not found');
+            throw new NotFoundException('매장을 찾을 수 없습니다');
         }
 
         assertCanManageStore(user, store);

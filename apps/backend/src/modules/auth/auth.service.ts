@@ -12,7 +12,7 @@ export class AuthService {
         phoneNumber?: string | null;
     }) {
         if (!data.id) {
-            throw new BadRequestException('Authenticated user id is required');
+            throw new BadRequestException('로그인 정보를 확인할 수 없습니다');
         }
 
         const email = data.email || `${data.id}@supabase.local`;

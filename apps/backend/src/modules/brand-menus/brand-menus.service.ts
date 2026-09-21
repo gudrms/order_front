@@ -107,10 +107,10 @@ export class BrandMenusService {
         await this.assertAdmin(userId);
 
         if (!file) {
-            throw new BadRequestException('Image file is required');
+            throw new BadRequestException('이미지 파일을 선택해 주세요');
         }
         if (!this.storage.isSupportedImageType(file.mimetype)) {
-            throw new BadRequestException('Unsupported image type (allowed: JPEG, PNG, WebP)');
+            throw new BadRequestException('지원하지 않는 이미지 형식입니다. JPEG, PNG, WebP만 업로드할 수 있습니다');
         }
 
         const imageUrl = await this.storage.uploadBrandMenuImage(file);
@@ -130,7 +130,7 @@ export class BrandMenusService {
             where: { id: categoryId },
             select: { id: true },
         });
-        if (!category) throw new NotFoundException('Brand menu category not found');
+        if (!category) throw new NotFoundException('브랜드 메뉴 카테고리를 찾을 수 없습니다');
     }
 
     private async ensureMenu(menuId: string) {
@@ -138,6 +138,6 @@ export class BrandMenusService {
             where: { id: menuId },
             select: { id: true },
         });
-        if (!menu) throw new NotFoundException('Brand menu not found');
+        if (!menu) throw new NotFoundException('브랜드 메뉴를 찾을 수 없습니다');
     }
 }

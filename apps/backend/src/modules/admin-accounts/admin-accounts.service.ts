@@ -66,12 +66,12 @@ export class AdminAccountsService {
         await this.assertAdmin(actorId);
 
         if (dto.role === 'OWNER' && !dto.storeId) {
-            throw new BadRequestException('OWNER account requires a storeId');
+            throw new BadRequestException('점주 계정은 담당 매장을 선택해야 합니다');
         }
 
         if (dto.storeId) {
             const store = await this.prisma.store.findUnique({ where: { id: dto.storeId } });
-            if (!store) throw new NotFoundException('Store not found');
+            if (!store) throw new NotFoundException('매장을 찾을 수 없습니다');
         }
 
         const client = this.getClient();
@@ -86,7 +86,7 @@ export class AdminAccountsService {
         });
 
         if (error || !data.user) {
-            throw new BadRequestException(error?.message || 'Supabase user creation failed');
+            throw new BadRequestException(error?.message || '계정 생성에 실패했습니다');
         }
 
         try {
@@ -128,7 +128,7 @@ export class AdminAccountsService {
 
         const user = await this.prisma.user.findUnique({ where: { id: userId } });
         if (!user || !['ADMIN', 'OWNER'].includes(user.role)) {
-            throw new NotFoundException('Admin account not found');
+            throw new NotFoundException('관리자 계정을 찾을 수 없습니다');
         }
 
         const { error } = await this.getClient().auth.admin.updateUserById(userId, { password });
@@ -141,12 +141,12 @@ export class AdminAccountsService {
         await this.assertAdmin(actorId);
 
         if (actorId === userId) {
-            throw new BadRequestException('You cannot delete your own account');
+            throw new BadRequestException('본인 계정은 삭제할 수 없습니다');
         }
 
         const user = await this.prisma.user.findUnique({ where: { id: userId } });
         if (!user || !['ADMIN', 'OWNER'].includes(user.role)) {
-            throw new NotFoundException('Admin account not found');
+            throw new NotFoundException('관리자 계정을 찾을 수 없습니다');
         }
 
         const { error } = await this.getClient().auth.admin.deleteUser(userId);

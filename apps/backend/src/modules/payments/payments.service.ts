@@ -395,20 +395,20 @@ export class PaymentsService {
         });
 
         if (!payment) {
-            throw new NotFoundException(`Toss payment not found for order: ${orderId}`);
+            throw new NotFoundException('해당 주문의 결제 내역을 찾을 수 없습니다');
         }
 
         await this.assertCanManageStore(userId, payment.order.storeId);
 
         if (payment.status !== 'PAID' && payment.status !== 'PARTIAL_REFUNDED') {
-            throw new BadRequestException('Only paid Toss payments can be cancelled');
+            throw new BadRequestException('결제 완료 상태에서만 취소할 수 있습니다');
         }
         if (!payment.paymentKey) {
-            throw new BadRequestException('Payment key is missing');
+            throw new BadRequestException('결제 키가 없어 취소할 수 없습니다');
         }
 
         if (dto.cancelAmount !== undefined) {
-            throw new BadRequestException('Partial refunds are not supported. Cancel the full remaining payment amount.');
+            throw new BadRequestException('부분 환불은 지원하지 않습니다. 남은 결제 금액 전체를 취소해 주세요');
         }
 
         const paidAmount = payment.approvedAmount || payment.amount;
@@ -483,7 +483,7 @@ export class PaymentsService {
         });
 
         if (!order) {
-            throw new NotFoundException(`Order not found: ${orderId}`);
+            throw new NotFoundException('주문을 찾을 수 없습니다');
         }
 
         return order;
@@ -692,7 +692,7 @@ export class PaymentsService {
         ]);
 
         if (!store) {
-            throw new NotFoundException('Store not found');
+            throw new NotFoundException('매장을 찾을 수 없습니다');
         }
 
         assertCanManageStore(user, store);

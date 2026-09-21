@@ -137,16 +137,16 @@ export class OrdersService {
         });
 
         if (!order) {
-            throw new NotFoundException(`Order not found: ${orderId}`);
+            throw new NotFoundException('주문을 찾을 수 없습니다');
         }
         if (order.storeId !== storeId) {
-            throw new BadRequestException('Order does not belong to this store');
+            throw new BadRequestException('이 매장의 주문이 아닙니다');
         }
         if (order.tossOrderId || order.posSyncStatus === 'SENT') {
             return order;
         }
         if (order.status !== 'PAID') {
-            throw new BadRequestException('Only paid orders can be retried for POS sync');
+            throw new BadRequestException('결제 완료된 주문만 POS 재전송할 수 있습니다');
         }
 
         const updated = await this.prisma.order.update({
@@ -185,17 +185,17 @@ export class OrdersService {
         });
 
         if (!order) {
-            throw new NotFoundException(`Order not found: ${orderId}`);
+            throw new NotFoundException('주문을 찾을 수 없습니다');
         }
 
         if (order.storeId !== storeId) {
-            throw new BadRequestException('Order does not belong to this store');
+            throw new BadRequestException('이 매장의 주문이 아닙니다');
         }
 
         const allowed = OrdersService.ALLOWED_TRANSITIONS[order.status] ?? [];
         if (!allowed.includes(status)) {
             throw new BadRequestException(
-                `Invalid status transition: ${order.status} → ${status}`,
+                `${order.status} → ${status} 로는 상태를 바꿀 수 없습니다`,
             );
         }
 
@@ -221,25 +221,25 @@ export class OrdersService {
         });
 
         if (!order) {
-            throw new NotFoundException(`Order not found: ${orderId}`);
+            throw new NotFoundException('주문을 찾을 수 없습니다');
         }
         if (order.storeId !== storeId) {
-            throw new BadRequestException('Order does not belong to this store');
+            throw new BadRequestException('이 매장의 주문이 아닙니다');
         }
         if (order.type !== 'DELIVERY' || !order.delivery) {
-            throw new BadRequestException('Order is not a delivery order');
+            throw new BadRequestException('배달 주문이 아닙니다');
         }
         if (order.status === 'CANCELLED') {
-            throw new BadRequestException('Cancelled orders cannot change delivery status');
+            throw new BadRequestException('취소된 주문은 배달 상태를 바꿀 수 없습니다');
         }
         if (order.status === 'COMPLETED' && deliveryStatus !== 'DELIVERED') {
-            throw new BadRequestException('Completed orders cannot change delivery status');
+            throw new BadRequestException('완료된 주문은 배달 상태를 바꿀 수 없습니다');
         }
         // 결제된 주문을 배달 취소만으로 종료하면 돈은 그대로 둔 채 주문만 취소된다.
         // 결제 취소(환불)는 payments 경로에서 처리해야 하므로 여기서는 막는다.
         if (deliveryStatus === 'CANCELLED' && order.paymentStatus === 'PAID') {
             throw new BadRequestException(
-                'Paid orders must be cancelled through the payment cancellation flow so the payment is refunded',
+                '결제 완료된 주문은 환불이 함께 처리되도록 결제 취소 화면에서 취소해야 합니다',
             );
         }
 
@@ -262,7 +262,7 @@ export class OrdersService {
             const allowed = OrdersService.ALLOWED_TRANSITIONS[order.status] ?? [];
             if (!allowed.includes(next)) {
                 throw new BadRequestException(
-                    `Delivery status ${deliveryStatus} requires order status ${next}, but ${order.status} → ${next} is not allowed`,
+                    `배달 상태 ${deliveryStatus}는 주문 상태 ${next}가 필요한데, ${order.status} → ${next} 전환이 허용되지 않습니다`,
                 );
             }
         };
@@ -317,7 +317,7 @@ export class OrdersService {
         ]);
 
         if (!store) {
-            throw new NotFoundException('Store not found');
+            throw new NotFoundException('매장을 찾을 수 없습니다');
         }
 
         assertCanManageStore(user, store);

@@ -125,7 +125,7 @@ export class StoresController {
     ) {
         const store = await this.storesService.getStoreByPath(storeType, branchId);
         if (!store) {
-            throw new NotFoundException('Store not found');
+            throw new NotFoundException('매장을 찾을 수 없습니다');
         }
         return store;
     }
@@ -195,7 +195,7 @@ export class StoresController {
     async getStore(@Param('storeId') storeId: string) {
         const store = await this.storesService.getStore(storeId);
         if (!store) {
-            throw new NotFoundException('Store not found');
+            throw new NotFoundException('매장을 찾을 수 없습니다');
         }
         return store;
     }

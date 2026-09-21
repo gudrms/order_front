@@ -37,7 +37,7 @@ export class FranchiseInquiriesService {
       select: { id: true },
     });
     if (!existing) {
-      throw new NotFoundException('Franchise inquiry not found');
+      throw new NotFoundException('가맹 문의를 찾을 수 없습니다');
     }
 
     return this.prisma.franchiseInquiry.update({
@@ -52,7 +52,7 @@ export class FranchiseInquiriesService {
   private async assertPlatformAdmin(userId: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (user?.role !== 'ADMIN') {
-      throw new ForbiddenException('Only platform admins can manage franchise inquiries');
+      throw new ForbiddenException('가맹 문의는 마스터 관리자만 관리할 수 있습니다');
     }
   }
 }
