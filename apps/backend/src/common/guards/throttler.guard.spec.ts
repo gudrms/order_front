@@ -31,6 +31,34 @@ function createGuard() {
 
 describe('CustomThrottlerGuard', () => {
     describe('getTracker', () => {
+        it('플랫폼이 채우는 x-vercel-forwarded-for를 x-forwarded-for보다 먼저 쓴다', async () => {
+            // 클라이언트가 x-forwarded-for를 위조해도 버킷이 갈리지 않아야 한다.
+            await expect(
+                createGuard().track({
+                    headers: {
+                        'x-forwarded-for': '1.1.1.1',
+                        'x-vercel-forwarded-for': '203.0.113.7',
+                    },
+                }),
+            ).resolves.toBe('203.0.113.7');
+        });
+
+        it('x-vercel-forwarded-for가 없으면 x-real-ip를 쓴다', async () => {
+            await expect(
+                createGuard().track({
+                    headers: { 'x-forwarded-for': '1.1.1.1', 'x-real-ip': '203.0.113.7' },
+                }),
+            ).resolves.toBe('203.0.113.7');
+        });
+
+        it('신뢰 헤더가 비어 있으면 x-forwarded-for로 떨어진다 (자체 호스팅·로컬)', async () => {
+            await expect(
+                createGuard().track({
+                    headers: { 'x-vercel-forwarded-for': '', 'x-forwarded-for': '203.0.113.7' },
+                }),
+            ).resolves.toBe('203.0.113.7');
+        });
+
         it('x-forwarded-for 단일 IP를 그대로 쓴다', async () => {
             await expect(
                 createGuard().track({ headers: { 'x-forwarded-for': '203.0.113.7' } }),
