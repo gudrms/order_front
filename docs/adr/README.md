@@ -28,3 +28,5 @@
 | [0002](0002-customer-error-ux.md) | 고객 오류는 한글 인앱 안내로 통일한다 | 채택됨 | 2026-09-21 |
 | [0003](0003-gimpo-store-consolidation.md) | 배달 운영을 테스트 매장에서 실 김포점으로 이전 | 채택됨 | 2026-09-21 |
 | [0004](0004-coupon-discount-base.md) | 쿠폰 할인은 상품 금액 기준, 한도는 발급 수 기준 | 채택됨 | 2026-09-21 |
+| [0005](0005-pgmq-message-queue.md) | 메시지 큐로 pgmq를 쓴다 | 채택됨 | 2026-05-01 |
+| [0006](0006-vercel-serverless-hosting.md) | 호스팅은 Vercel Serverless + Supabase | 채택됨 | 2025-12-26 |

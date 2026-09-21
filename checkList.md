@@ -175,7 +175,8 @@
 - [x] **포트폴리오용 Notion 초안 작성** (2026-05-13): 루트 `notion.md` 생성. README/architecture와 실제 코드 확인 결과를 기준으로 기술 스택, 운영 안정성/보안, 큐, 비용 절감, 테스트 성과를 정리.
 - [ ] **API 경로 문서 자동화**: `docs/architecture.md`의 주요 API 라우트가 컨트롤러와 어긋나지 않도록 OpenAPI/Swagger JSON에서 라우트 목록을 생성하는 스크립트 추가 검토.
 - [ ] **문서 인코딩/콘솔 출력 가이드**: Windows PowerShell에서 한글 README가 깨져 보일 수 있으므로 UTF-8 확인 방법(`Get-Content -Encoding UTF8`, 에디터 UTF-8)을 `docs/setup.md`에 짧게 추가.
-- [ ] **ADR 문서 추가**: `docs/adr/`에 주요 기술 의사결정 기록. 우선순위: pgmq 선택 이유, Vercel Serverless 선택 이유, Redis-backed Throttler 도입 이유, Capacitor Remote WebView 방식 선택 이유.
+- [x] **ADR 문서 추가** (2026-09-21~22): `docs/adr/` 신설. 배달앱 엣지 캐시(0001), 고객 오류 UX(0002), 김포점 매장 이전(0003), 쿠폰 기준(0004), pgmq 선택(0005), Vercel Serverless 선택(0006)
+  - 0005·0006은 `history.md`에 흩어져 있던 근거를 모으고, 그 선택 때문에 실제로 부딪힌 제약(상시 실행 부재, cold start, 캐시 무효화, 배포 한도)과 대응을 함께 정리했다
 - [ ] **비용 산정 근거 문서 작성**: `docs/cost-model.md`에 NCP 서버/DB 월 비용과 Vercel/Supabase 초기 운영 비용 비교, 무료 Tier 한계, 유료 전환 기준 정리.
 - [ ] **체크리스트 문서 분리**: 현재 `checkList.md`가 커지고 있으므로 출시 검증은 `docs/launch-checklist.md`, 운영 점검은 `docs/operations-checklist.md`, 개발 작업은 `checkList.md`로 분리 검토.
 

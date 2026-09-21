@@ -230,9 +230,8 @@ export default function CheckoutPage() {
             // 품절·삭제된 메뉴는 그대로 두면 다시 눌러도 같은 자리에서 막히므로 장바구니에서 빼준다.
             const unavailableMenuId = getUnavailableMenuId(error);
             if (unavailableMenuId) {
-                // 옵션 조합마다 장바구니 항목이 따로 생기므로 같은 메뉴를 전부 뺀다.
                 // 서버 메시지에 이미 메뉴명이 들어 있으므로 여기서 다시 붙이지 않는다.
-                cartItemIdsForMenu(items, unavailableMenuId).forEach(removeItem);
+                cartItemIdsForMenu(items, unavailableMenuId).forEach((id) => removeItem(id));
                 setErrorMessage(
                     `${error instanceof Error ? error.message : '주문할 수 없는 메뉴가 있습니다.'} 장바구니에서 빼드렸으니 다시 주문해 주세요.`,
                 );
