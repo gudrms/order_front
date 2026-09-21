@@ -42,6 +42,26 @@ Settings -> Build and Deployment -> Ignored Build Step
 - `apps/brand-website/**`, `packages/shared/**`, `packages/ui/**`가 바뀌면 브랜드 웹을 빌드한다.
 - `.npmrc`, `package.json`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`, `turbo.json`이 바뀌면 전체 프로젝트를 빌드한다.
 
+### 변경 범위를 어떻게 구하나
+
+`VERCEL_GIT_PREVIOUS_SHA`(직전 배포 커밋)부터 `VERCEL_GIT_COMMIT_SHA`까지를 비교한다.
+**이 범위를 확정할 수 없으면 스킵하지 않고 빌드한다.**
+
+| 상황 | 동작 |
+|---|---|
+| `VERCEL_GIT_PREVIOUS_SHA` 있음 | 그 범위의 변경으로 판정 |
+| `VERCEL_GIT_PREVIOUS_SHA` 없음 | 빌드 |
+| shallow clone이라 그 커밋이 없어 diff 실패 | 빌드 |
+| 범위는 구했으나 변경 파일이 0건 | 빌드 |
+
+잘못 빌드하면 빌드 한 번을 낭비하지만, **잘못 스킵하면 수정이 조용히 배포되지 않는다.** 그래서 불확실할 때는 빌드 쪽으로 기운다.
+
+> 2026-09-21 이전에는 `VERCEL_GIT_PREVIOUS_SHA`가 없을 때 `HEAD^..HEAD` 한 커밋만 비교했다.
+> 여러 커밋을 한 번에 푸시하면 Vercel이 중간 커밋을 건너뛰고 마지막 커밋만 빌드하는데,
+> 그때 이 비교는 건너뛴 커밋의 변경을 보지 못한다. 예를 들어 팁 커밋이 `docs/**`만 바꿨고
+> 배달앱 수정이 바로 앞 커밋에 있으면, **배달앱 빌드가 스킵된다.**
+> 비어 있지 않은 목록이라 확정된 결과로 취급된다는 점이 특히 위험했다.
+
 ## 로컬 확인
 
 커밋 직후 아래처럼 확인할 수 있다.
