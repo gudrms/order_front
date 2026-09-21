@@ -605,4 +605,67 @@ describe('PaymentsService', () => {
 
         expect(tossApiService.cancelPayment).not.toHaveBeenCalled();
     });
+
+    // Toss 승인은 성공했는데 로컬 커밋이 실패하는 구간. 돈은 이미 빠져나간 상태라
+    // 보상 취소가 어떻게 되느냐로 고객 피해가 갈린다.
+    describe('Toss 승인 후 로컬 커밋 실패', () => {
+        const confirmDto = { paymentKey: 'payment-key', orderId: 'ORDER_1', amount: 24000 };
+
+        beforeEach(() => {
+            prisma.payment.findFirst.mockResolvedValue(pendingPayment);
+            prisma.payment.updateMany.mockResolvedValue({ count: 1 });
+            tossApiService.confirmPayment.mockResolvedValue({
+                method: '카드',
+                approvedAt: '2026-04-25T12:00:00+09:00',
+                receipt: { url: 'https://receipt.example' },
+            });
+        });
+
+        it('유니크 충돌(P2002)은 이미 반영된 것으로 보고 보상 취소 없이 주문을 반환한다', async () => {
+            // 같은 승인이 두 번 들어온 경우다. 여기서 취소하면 정상 결제를 되돌리게 된다.
+            const duplicate = Object.assign(new Error('Unique constraint failed'), { code: 'P2002' });
+            prisma.$transaction.mockRejectedValue(duplicate);
+            prisma.order.findUnique.mockResolvedValue({ id: 'order-1', status: 'PAID', paymentStatus: 'PAID' });
+
+            const result = await service.confirmTossPayment(confirmDto);
+
+            expect(result).toEqual(expect.objectContaining({ id: 'order-1' }));
+            expect(tossApiService.cancelPayment).not.toHaveBeenCalled();
+        });
+
+        it('보상 취소는 성공했으나 기록에 실패해도 취소 자체는 유지하고 원래 오류를 올린다', async () => {
+            const commitError = new Error('db down');
+            prisma.$transaction.mockRejectedValue(commitError);
+            // 보상 취소 결과를 payment에 남기는 update만 실패시킨다.
+            prisma.payment.update.mockImplementation((args: any) => {
+                if (args?.data?.status === 'CANCELLED') return Promise.reject(new Error('record failed'));
+                return { model: 'payment', args };
+            });
+            tossApiService.cancelPayment.mockResolvedValue({});
+            const errorLog = vi.spyOn((service as any).logger, 'error').mockImplementation(() => undefined);
+
+            await expect(service.confirmTossPayment(confirmDto)).rejects.toThrow('db down');
+
+            expect(tossApiService.cancelPayment).toHaveBeenCalledWith(expect.objectContaining({
+                paymentKey: 'payment-key',
+            }));
+            expect(errorLog).toHaveBeenCalledWith(expect.stringContaining('failed to record'));
+            // 주문이 확정되지 않았으므로 후속 처리를 깨우면 안 된다.
+            expect(queueService.publishPaymentPaid).not.toHaveBeenCalled();
+        });
+
+        it('보상 취소까지 실패하면 CRITICAL로 남기고 원래 오류를 올린다', async () => {
+            // 고객이 결제됐는데 주문이 없는 상태다. 사람이 개입해야 하므로 로그가 유일한 단서다.
+            const commitError = new Error('db down');
+            prisma.$transaction.mockRejectedValue(commitError);
+            tossApiService.cancelPayment.mockRejectedValue(new Error('toss unreachable'));
+            const errorLog = vi.spyOn((service as any).logger, 'error').mockImplementation(() => undefined);
+
+            await expect(service.confirmTossPayment(confirmDto)).rejects.toThrow('db down');
+
+            expect(errorLog).toHaveBeenCalledWith(expect.stringContaining('CRITICAL'));
+            expect(errorLog).toHaveBeenCalledWith(expect.stringContaining('payment-1'));
+            expect(queueService.publishPaymentPaid).not.toHaveBeenCalled();
+        });
+    });
 });
