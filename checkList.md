@@ -1,6 +1,6 @@
 # Taco Mono 작업 현황
 
-마지막 업데이트: 2026-09-21 (18차)
+마지막 업데이트: 2026-09-29 (19차)
 
 ---
 
@@ -112,11 +112,21 @@
 ### 테스트
 
 - [ ] **실 Toss 카드결제 E2E**: `payments-e2e.spec.ts`는 서비스 레이어 mock 한정. 실 HTTP 콜백 / idempotency / 취소 무점검. 운영 테스트 매장은 배달 주문 ON, 최소주문금액 0원, `E2E 테스트 타코` 10원으로 세팅 완료. `496603e` 배포 후 장바구니 → 주소 입력 → Toss 결제창 진입 재검증 필요.
-- [ ] **Toss Payments 결제위젯 이용 신청 대기**: Toss Payments `API 키` 화면 상단의 "결제위젯 연동 키" 영역이 현재 `전자결제 신청하고 확인할 수 있어요` 상태. 신청 승인/활성화 후 `test_gck_...`(클라이언트 키), `test_gsk_...`(시크릿 키)가 노출되어야 실 결제위젯 테스트 가능.
+- [x] **Toss Payments 전자결제 심사** (2026-09-29): 카드사 전체 승인 완료(하나은행이 마지막). 상호 주식회사 에스와이월드, MID `tacomom5cx`.
   - 신청 주체: 1호점 실제 운영 사업자/대표자 정보 기준.
   - 정산 계좌: 1호점 사업자 또는 대표자 명의 계좌.
   - 결제수단: 초기 오픈은 카드, 토스페이, 카카오페이, 네이버페이 중심. 삼성페이는 카드 수수료 +0.30%p라 초기 제외 가능. 계좌이체/가상계좌/에스크로는 배달앱 즉시 주문 UX와 운영 복잡도 때문에 보류.
-  - 가맹 확장 시: 매장별 MID 분리 또는 Toss 하위몰/정산대행 구조 문의.
+- [ ] **live 키 교체 (오픈 시점까지 보류)**: 지금 live 키로 바꾸면 외부인이 실결제할 수 있어 test 키를 유지한다. 오픈일이 정해지면 진행
+  - 토스 상점관리자에서 `tacomom5cx`의 결제위젯 연동 키(`live_gck_`/`live_gsk_`) 확인
+  - Vercel Production: delivery `NEXT_PUBLIC_TOSS_CLIENT_KEY`, backend `TOSS_PAYMENTS_SECRET_KEY` 교체. 같은 상점의 짝이어야 승인된다
+  - `NEXT_PUBLIC_*`는 빌드 타임 embed라 빌드 캐시 끄고 재배포, backend도 재배포
+  - 소액 실결제 → 즉시 취소로 승인·환불 확인
+- [ ] **가맹점 결제·정산 구조 결정**: 가맹점(별도 사업자)도 받을 예정이다. 현재는 env 키 하나라 모든 주문이 본사 MID로 결제된다. 가맹점 매출을 본사 MID로 받아 나눠주는 것은 PG 미등록 정산 대행이라 불가(전금법, [금융위 2024.6 보도설명](https://fsc.go.kr/no010102/82523))
+  - **A. 매장별 MID**: 점주가 각자 토스 계약·카드사 심사. 코드는 사업자(Merchant) 테이블에 키 저장(시크릿 AES-GCM 암호화, 마스터키만 env)만 추가하면 된다. 단점은 점주 부담(서류·심사·키 전달·웹훅 등록)이 커서 일반 점주가 혼자 하기 어렵다. 심사 사이트에 해당 점주 사업자정보 표시도 필요할 수 있다
+  - **B. 토스 지급대행**: 본사 MID 하나로 결제받고 토스가 점주 계좌로 직접 정산. 금융위 기준 PG 등록 예외에 해당. 점주는 셀러 등록 시 본인인증만(주 1천만원 이상은 KYC). 대신 별도 계약·강화 심사, 월 고정+건당 요금, 정산 계산(수수료 차감·취소 반영)·지급 요청·JWE 암호화 개발이 필요하다
+  - 현재 B 쪽으로 기울어 있음. **토스(1544-7772)에 확인 후 확정**: ① 프랜차이즈 본사도 지급대행 가입 가능한지(문서는 오픈마켓 대상), ② 월 고정·건당 요금, ③ 카드 전표·매출이 본사/가맹점 중 어디로 잡히는지. 안 되면 KG이니시스 지급대행도 후보
+  - 공통 결정: 결제 수단이 없는 매장은 결제 차단(본사 키 fallback 금지), 결제 설정 등록은 본사 관리자만. 사이트 하단 사업자정보는 본사만 유지
+  - 참고: 엽기떡볶이는 웹 주문 없이 자사앱만 운영, 약관상 카드 취소를 본사가 가맹점주 승인 후 처리 → B류 구조로 추정(미확인)
 - [ ] **Toss Payments 결제위젯 키 세팅**: 결제위젯 SDK는 일반 API 키(`test_ck_...`/`test_sk_...`)가 아니라 결제위젯 연동 키(`test_gck_...`/`test_gsk_...`) 사용. `delivery-customer` Vercel `NEXT_PUBLIC_TOSS_CLIENT_KEY=test_gck_...`, backend Vercel `TOSS_PAYMENTS_SECRET_KEY=test_gsk_...`로 같은 상점 키 세트인지 확인 후 재배포. Toss 콘솔의 "API 개별 연동 키"(`ck`/`sk`, 기존 결제창·자동결제·정산지급대행용)는 이번 결제위젯 연동에 사용하지 않음.
 - [ ] **Toss 리다이렉트 URL 등록**: 운영 도메인 기준 `https://delivery.tacomole.kr/store/*/order/success`, `https://delivery.tacomole.kr/store/*/order/fail` 등록. Vercel preview 결제 테스트가 필요할 때만 `https://*.vercel.app/store/*/order/success|fail` 추가. `delivery.tacomolly.kr`는 DNS 없음.
 - [x] **Toss 웹훅 백엔드 구현** (2026-05-16): `POST /api/v1/payments/toss/webhook` 추가. `PAYMENT_STATUS_CHANGED`, `CANCEL_STATUS_CHANGED` 이벤트를 받고, 웹훅 body를 그대로 신뢰하지 않고 Toss API `fetchPaymentByOrderId`로 재조회한 뒤 로컬 Payment/Order 상태를 idempotent하게 보정. 결제 완료(`DONE`)는 `PAID` 처리 및 POS/알림 큐 발행, 취소(`CANCELED`/`PARTIAL_CANCELED`)는 `REFUNDED`/`PARTIAL_REFUNDED` 보정, 만료/중단(`EXPIRED`/`ABORTED`)은 대기 결제 실패 처리. `payments.service.spec.ts` 웹훅 성공/취소 케이스 추가.
