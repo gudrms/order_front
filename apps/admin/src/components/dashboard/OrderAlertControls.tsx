@@ -17,11 +17,25 @@ export function OrderAlertControls() {
   const isElectron = isAdminElectronRuntime();
 
   useEffect(() => {
-    setAlertsEnabled(localStorage.getItem(ALERT_ENABLED_KEY) === 'true');
-    setSoundEnabled(localStorage.getItem(SOUND_ENABLED_KEY) === 'true');
+    // 주문을 놓치지 않도록 기본은 켜짐. 사용자가 직접 끈 경우('false' 저장)만 꺼진 채로 둔다
+    setAlertsEnabled(localStorage.getItem(ALERT_ENABLED_KEY) !== 'false');
+    setSoundEnabled(localStorage.getItem(SOUND_ENABLED_KEY) !== 'false');
     if ('Notification' in window) {
       setNotificationPermission(Notification.permission);
     }
+
+    // 로그인 시 useWebPush가 권한을 요청하므로, 허용/차단 결과를 라벨에 반영한다
+    let status: PermissionStatus | null = null;
+    const syncPermission = () => {
+      if ('Notification' in window) setNotificationPermission(Notification.permission);
+    };
+    navigator.permissions?.query({ name: 'notifications' })
+      .then((result) => {
+        status = result;
+        status.addEventListener('change', syncPermission);
+      })
+      .catch(() => {});
+    return () => status?.removeEventListener('change', syncPermission);
   }, []);
 
   useEffect(() => {
@@ -72,6 +86,16 @@ export function OrderAlertControls() {
   }, [alertsEnabled, notificationPermission]);
 
   const enableNotifications = async () => {
+    // 기본이 켜짐이라, 권한을 아직 안 받은 상태("알림 권한 필요")에서 누르면 끄지 말고 권한부터 받는다
+    if (!isElectron && 'Notification' in window && Notification.permission === 'default') {
+      const permission = await Notification.requestPermission();
+      setNotificationPermission(permission);
+      setAlertsEnabled(permission === 'granted');
+      setSoundEnabled(true);
+      playNotificationTone(audioContextRef);
+      return;
+    }
+
     const nextSoundEnabled = !soundEnabled;
     setSoundEnabled(nextSoundEnabled);
     if (nextSoundEnabled) {
