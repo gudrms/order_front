@@ -30,18 +30,19 @@
     ],
     "win": {
       "target": "nsis",
-      "icon": "assets/tray-icon.ico"
+      "icon": "assets/icon.png"
     },
     "nsis": {
+      "artifactName": "taco-admin-setup.${ext}",
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
-      "installerLanguages": ["Korean"],
+      "installerLanguages": ["ko_KR"],
       "language": "1042"
     },
     "publish": {
       "provider": "github",
-      "owner": "taco-owner",
-      "repo": "order-change"
+      "owner": "gudrms",
+      "repo": "order_front"
     }
   }
 }
