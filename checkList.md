@@ -1,6 +1,6 @@
 # Taco Mono 작업 현황
 
-마지막 업데이트: 2026-09-29 (19차)
+마지막 업데이트: 2026-10-04 (20차)
 
 ---
 
@@ -111,7 +111,41 @@
 
 ### 테스트
 
-- [ ] **실 Toss 카드결제 E2E**: `payments-e2e.spec.ts`는 서비스 레이어 mock 한정. 실 HTTP 콜백 / idempotency / 취소 무점검. 운영 테스트 매장은 배달 주문 ON, 최소주문금액 0원, `E2E 테스트 타코` 10원으로 세팅 완료. `496603e` 배포 후 장바구니 → 주소 입력 → Toss 결제창 진입 재검증 필요.
+- [ ] **실 Toss 카드결제 E2E (테스트 매장, 로컬 + live 키, 배포 없음)**: `payments-e2e.spec.ts`는 서비스 레이어 mock 한정이라 실 결제·취소·주문서 출력까지 한 번도 이어서 확인한 적이 없다. 운영 배포 없이 로컬 delivery(:3001)·admin(:3003)·backend(:3000)에 live 키를 넣고 실결제 1건 → 주문서 인쇄 → 환불까지 확인한다
+  - **주의 — 로컬이지만 운영 DB다**: 로컬 backend `DATABASE_URL`이 운영 Supabase라 주문·결제가 운영 DB에 남고, 운영 cron(QStash)이 같은 큐를 소비한다. 운영 backend는 test 키라 **live 결제를 조회·취소하지 못한다**
+    - 환불은 반드시 **로컬 admin**(→ 로컬 backend, live 키)에서 한다. 운영 admin이나 토스 상점관리자에서 취소하면 DB가 `PAID`로 남아 어긋난다
+    - 결제창에서 오래 머물지 않는다. 미승인 결제를 운영 reconcile/만료 배치가 집으면 test 키로 조회하다 실패한다
+    - 운영 웹훅(`api.tacomole.kr`)이 live 결제를 test 키로 재조회하다 실패·재전송될 수 있다. 결제 자체엔 영향 없고 로그만 남는다
+  - **준비 — 테스트 매장 `test-admin-direct-store`**
+    - [ ] `isActive=true`, `isDeliveryEnabled=true` (주문 생성이 둘 다 요구). 켜는 동안 브랜드 사이트·배달앱 매장 목록에 노출되므로 **테스트 시간에만 켜고 끝나면 즉시 끈다**
+    - [ ] 최소주문금액 0원, 배달비 0원 (결제 금액 = 메뉴 가격으로 단순화)
+    - [ ] 테스트 메뉴 1개: 1,000원, `isHidden=false`, `soldOut=false`. 메뉴는 2026-09-21 김포점으로 이전돼 비어 있을 수 있고, 10원 메뉴는 카드 최소 결제금액(보통 100원)에 걸린다
+    - [ ] 결제 계정 `test@test.com` (배달 주문은 로그인 필수)
+    - [ ] 테스트 매장에 접근 가능한 관리자 계정(ADMIN 또는 해당 매장 OWNER)
+  - **준비 — 로컬 env (키는 사용자가 직접 입력, `pnpm sync:env` 실행 금지 — 덮어씀)**
+    - [ ] `apps/delivery-customer/.env.local`: `NEXT_PUBLIC_TOSS_CLIENT_KEY=live_gck_...` (현재 `test_ck_`라 결제 버튼이 막힘)
+    - [ ] `apps/backend/.env`: `TOSS_PAYMENTS_SECRET_KEY=live_gsk_...` 추가 (현재 구 `TOSS_ACCESS_SECRET`만 있음)
+    - [ ] 토스 상점관리자에서 카드 결제수단 활성 상태 확인
+    - [ ] 먼저 상점 전용 **test 키**(`test_gck_`/`test_gsk_`)로 아래 흐름을 한 번 돌려 코드·설정 문제를 걸러낸 뒤 live 키로 바꾼다
+  - **결제**
+    - [ ] 테스트 매장 메뉴 → 장바구니 → 주소 입력 → 체크아웃에서 결제위젯이 뜬다 (live 키를 localhost에서 받아주는지 이 단계에서 확인)
+    - [ ] 실카드 결제(사용자 직접 입력) → success 페이지에서 주문 완료 표시
+    - [ ] DB: `Payment.status=PAID`, `approvedAmount=1000`, `receiptUrl` 저장 / `Order.status=PAID`
+    - [ ] 토스 상점관리자 거래내역에 같은 `orderId`·금액으로 승인 건이 보인다
+    - [ ] 배달앱 주문내역·주문 상세에 결제 완료로 보인다
+  - **주문서 인쇄 (로컬 admin `/orders`)**
+    - [ ] 새 주문이 목록에 뜬다 (새로고침 없이 뜨는지, 새로고침이 필요한지 기록 — 자동 갱신 코드는 확인하지 못함)
+    - [ ] 인쇄 버튼(`admin-order-print-{orderId}`) → 영수증 모달에 메뉴·옵션·금액·주소·요청사항이 맞게 나온다
+    - [ ] 웹: `window.print()` 미리보기에 **주문서만** 나오는지 (관리자 화면 전체가 같이 찍히지 않는지)
+    - [ ] admin-electron: 무음 출력이 실제 영수증 프린터로 나온다. `print-receipt`는 `webContents.print`로 **창 전체**를 출력하고, `OrderReceipt`가 `deviceName`을 넘기지 않아 **기본 프린터**로 간다 — 영수증 프린터를 OS 기본 프린터로 지정했는지, 출력물에 주문서만 나오는지 확인
+    - [ ] 80mm 용지 폭에서 글자 잘림·줄바꿈 확인
+  - **주문 처리·환불**
+    - [ ] 주문 상태 `CONFIRMED → COOKING → READY` 진행, 배달앱에 반영
+    - [ ] 로컬 admin에서 전액 취소 → `Payment.status=REFUNDED`, `Order.status=CANCELLED`, 토스 상점관리자에 취소 반영, 카드 취소 문자 수신
+  - **정리**
+    - [ ] 테스트 매장 `isActive=false`, `isDeliveryEnabled=false` 원복
+    - [ ] 로컬 env의 live 키 제거 (test 키로 되돌림)
+    - [ ] 결과와 발견 사항을 이 항목과 `TOSS_PAYMENT_E2E.md`에 기록
 - [x] **Toss Payments 전자결제 심사** (2026-09-29): 카드사 전체 승인 완료(하나은행이 마지막). 상호 주식회사 에스와이월드, MID `tacomom5cx`.
   - 신청 주체: 1호점 실제 운영 사업자/대표자 정보 기준.
   - 정산 계좌: 1호점 사업자 또는 대표자 명의 계좌.
