@@ -161,8 +161,8 @@ function buildCopy(receipt: ReceiptData, copy: ReceiptCopy): Buffer {
   raw(cmd.sizeNormal);
   line(divider());
 
-  // 고객용(배달기사): 주소·연락처
-  if (copy === 'customer' && receipt.isDelivery) {
+  // 배달주소·연락처 — 매장용(주방)·고객용(배달기사) 모두
+  if (receipt.isDelivery) {
     line('배달주소:');
     raw(cmd.sizeTall);
     raw(cmd.boldOn);
