@@ -29,6 +29,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const response = await adminApi.get(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
         headers: { Authorization: `Bearer ${token}` },
+        timeout: 10000,
       });
       setProfile(response.data);
     } catch (error) {
@@ -38,38 +39,79 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    // 1. 초기 세션 확인
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        await fetchProfile(session.user.id, session.access_token);
-      } else {
+    let mounted = true;
+    let revision = 0;
+    let eventReceived = false;
+    let profileRequest: AbortController | null = null;
+    const deferred = new Set<ReturnType<typeof setTimeout>>();
+    const applySession = async (nextSession: Session | null) => {
+      if (!mounted) return;
+      const currentRevision = ++revision;
+      profileRequest?.abort();
+      setSession(nextSession);
+      setUser(nextSession?.user ?? null);
+      if (!nextSession?.user) {
         setProfile(null);
+        setLoading(false);
+        return;
       }
-      setLoading(false);
-    });
-
-    // 2. 인증 상태 변경 감지
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setLoading(true);
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        await fetchProfile(session.user.id, session.access_token);
-      } else {
-        setProfile(null);
+      const controller = new AbortController();
+      profileRequest = controller;
+      try {
+        const response = await adminApi.get(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
+          headers: { Authorization: `Bearer ${nextSession.access_token}` },
+          timeout: 10000,
+          signal: controller.signal,
+        });
+        if (mounted && revision === currentRevision) setProfile(response.data);
+      } catch (error) {
+        if (mounted && revision === currentRevision) {
+          console.error('Profile fetch failed:', error);
+          setProfile(null);
+        }
+      } finally {
+        if (mounted && revision === currentRevision) setLoading(false);
       }
-      
-      setLoading(false);
-      
-      if (_event === 'SIGNED_OUT') {
-        router.push('/login');
+    };
+    const initializationTimeout = setTimeout(() => {
+      if (mounted && !eventReceived) {
+        console.error('인증 세션 초기화 시간이 초과되었습니다. 다시 로그인해 주세요.');
+        void applySession(null);
+      }
+    }, 15000);
+
+    // Keep the auth callback synchronous. Defer network work until the auth storage lock is released.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      eventReceived = true;
+      clearTimeout(initializationTimeout);
+      const timer = setTimeout(() => {
+        deferred.delete(timer);
+        void applySession(nextSession);
+        if (event === 'SIGNED_OUT' && mounted) router.push('/login');
+      }, 0);
+      deferred.add(timer);
+    });
+    void supabase.auth.getSession().then(({ data, error }) => {
+      if (error) throw error;
+      if (!eventReceived) {
+        clearTimeout(initializationTimeout);
+        void applySession(data.session);
+      }
+    }).catch((error) => {
+      if (!mounted) return;
+      console.error('인증 세션 확인에 실패했습니다:', error);
+      if (!eventReceived) {
+        clearTimeout(initializationTimeout);
+        void applySession(null);
       }
     });
-
     return () => {
+      mounted = false;
+      revision += 1;
+      clearTimeout(initializationTimeout);
+      deferred.forEach(clearTimeout);
+      profileRequest?.abort();
       subscription.unsubscribe();
     };
   }, [router]);
