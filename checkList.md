@@ -118,8 +118,8 @@
     - 운영 웹훅(`api.tacomole.kr`)이 live 결제를 test 키로 재조회하다 실패·재전송될 수 있다. 결제 자체엔 영향 없고 로그만 남는다
   - **준비 — 테스트 매장 `test-admin-direct-store`**
     - [ ] `isActive=true`, `isDeliveryEnabled=true` (주문 생성이 둘 다 요구). 켜는 동안 브랜드 사이트·배달앱 매장 목록에 노출되므로 **테스트 시간에만 켜고 끝나면 즉시 끈다**
-    - [ ] 최소주문금액 0원, 배달비 0원 (결제 금액 = 메뉴 가격으로 단순화)
-    - [ ] 테스트 메뉴 1개: 1,000원, `isHidden=false`, `soldOut=false`. 메뉴는 2026-09-21 김포점으로 이전돼 비어 있을 수 있고, 10원 메뉴는 카드 최소 결제금액(보통 100원)에 걸린다
+    - [x] 최소주문금액 0원, 배달비 0원, `menuManagementMode=ADMIN_DIRECT` (2026-10-04, Supabase SQL)
+    - [x] 김포점 메뉴 전체를 테스트 매장에 **복사**하고 메뉴 가격을 모두 100원으로 (2026-10-04): 카테고리 11·메뉴 34·옵션 그룹 2·옵션 9로 김포점과 일치 확인. 김포점은 변경 없음. 옵션 추가금·숨김·품절 상태는 원본 유지(`E2E 테스트 타코`는 숨김이라 주문 불가)
     - [ ] 결제 계정 `test@test.com` (배달 주문은 로그인 필수)
     - [ ] 테스트 매장에 접근 가능한 관리자 계정(ADMIN 또는 해당 매장 OWNER)
   - **준비 — 로컬 env (키는 사용자가 직접 입력, `pnpm sync:env` 실행 금지 — 덮어씀)**
@@ -130,7 +130,7 @@
   - **결제**
     - [ ] 테스트 매장 메뉴 → 장바구니 → 주소 입력 → 체크아웃에서 결제위젯이 뜬다 (live 키를 localhost에서 받아주는지 이 단계에서 확인)
     - [ ] 실카드 결제(사용자 직접 입력) → success 페이지에서 주문 완료 표시
-    - [ ] DB: `Payment.status=PAID`, `approvedAmount=1000`, `receiptUrl` 저장 / `Order.status=PAID`
+    - [ ] DB: `Payment.status=PAID`, `approvedAmount`가 결제 금액(메뉴 100원 × 수량)과 일치, `receiptUrl` 저장 / `Order.status=PAID`
     - [ ] 토스 상점관리자 거래내역에 같은 `orderId`·금액으로 승인 건이 보인다
     - [ ] 배달앱 주문내역·주문 상세에 결제 완료로 보인다
   - **주문서 인쇄 (로컬 admin `/orders`)**
