@@ -63,13 +63,13 @@ export default function DashboardLayout({
   const isSetupPage = pathname === '/pending';
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-dvh bg-gray-50">
       {!isSetupPage && <Sidebar />}
-      <main className={cn("flex-1 overflow-y-auto p-8", isSetupPage && "flex items-center justify-center")}>
+      <main className={cn("min-w-0 flex-1 overflow-y-auto p-4 md:p-8", isSetupPage && "flex items-center justify-center")}>
         {!isSetupPage && (
-          <header className="mb-8 flex flex-wrap items-center justify-between gap-3">
-            <h1 className="text-2xl font-bold text-gray-800">관리자 대시보드</h1>
-            <div className="flex flex-wrap items-center gap-2">
+          <header className="mb-6 flex flex-wrap items-center justify-between gap-3 md:mb-8">
+            <h1 className="flex min-h-11 items-center pl-14 text-xl font-bold text-gray-800 md:pl-0 md:text-2xl">관리자 대시보드</h1>
+            <div className="flex w-full flex-wrap items-center gap-2 md:w-auto">
               <PcAppDownloadButton />
               <OrderAlertControls />
             </div>

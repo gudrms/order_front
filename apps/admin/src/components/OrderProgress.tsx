@@ -28,13 +28,13 @@ function getStepIndex(order: Order): number {
  * 주문 진행 막대 — 지금 몇 번째 단계인지 한눈에 보이게 한다.
  * 결제 대기·취소처럼 흐름 밖의 상태는 -1을 돌려 호출부가 뱃지로 보여준다.
  */
-export function OrderProgress({ order }: { order: Order }) {
+export function OrderProgress({ order, mobile = false }: { order: Order; mobile?: boolean }) {
   const steps = order.type === 'DELIVERY' ? DELIVERY_STEPS : TABLE_STEPS;
   const current = getStepIndex(order);
   const isDone = current === steps.length - 1;
 
   return (
-    <div className="w-40" data-testid={`admin-order-progress-${order.id}`}>
+    <div className="w-40" data-testid={`${mobile ? "mobile-" : ""}admin-order-progress-${order.id}`}>
       <p className={`mb-1.5 text-xs font-bold ${current === 0 ? 'text-red-600' : isDone ? 'text-green-700' : 'text-blue-700'}`}>
         {steps[current]}
       </p>

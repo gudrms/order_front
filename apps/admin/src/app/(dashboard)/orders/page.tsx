@@ -106,6 +106,7 @@ export default function OrdersPage() {
   const { selectedStore, selectedStoreId: storeId, isLoading: isStoresLoading, authHeaders } = useAdminStore();
   const queryClient = useQueryClient();
   const [printOrder, setPrintOrder] = useState<Order | null>(null);
+  const [expandedMobileOrderId, setExpandedMobileOrderId] = useState<string | null>(null);
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [refundDialog, setRefundDialog] = useState<RefundDialogState | null>(null);
   const [operationMessage, setOperationMessage] = useState<OperationMessage | null>(null);
@@ -243,7 +244,7 @@ export default function OrdersPage() {
             {selectedStore?.name} {selectedStore?.branchName ? `· ${selectedStore.branchName}` : ''}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Badge variant="outline" className="bg-white">전체 {orders.length}건</Badge>
           <Badge variant="warning">진행 중 {activeOrders.length}건</Badge>
           <Badge variant="info">배달 {deliveryOrders.length}건</Badge>
@@ -280,7 +281,40 @@ export default function OrdersPage() {
         <SummaryCard label="배달 중" value={orders.filter((order) => order.delivery?.status === 'DELIVERING').length} />
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden" data-testid="admin-orders-table">
+      <div className="space-y-4 md:hidden" data-testid="admin-orders-cards">
+        {orders.map((order) => (
+          <article key={order.id} className="min-w-0 space-y-4 rounded-xl border border-gray-200 bg-white p-4" data-testid={`admin-order-card-${order.id}`}>
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div className="min-w-0">
+                <h3 className="break-all font-semibold text-gray-900">{order.orderNumber}</h3>
+                <p className="text-xs text-gray-500">{formatDate(order.createdAt)}</p>
+                <p className="text-xs text-gray-500">{sourceLabel[order.source || ''] || order.source || '-'}</p>
+              </div>
+              <Badge variant={order.type === 'DELIVERY' ? 'info' : 'outline'}>{orderTypeLabel[order.type || ''] || order.type}{order.type === 'TABLE' ? ` · ${order.tableNumber ?? '-'}번` : ''}</Badge>
+            </div>
+            {isInOrderFlow(order) ? <OrderProgress order={order} mobile /> : <Badge variant={getOrderBadgeVariant(order.status)}>{ORDER_STATUS_LABEL[order.status] || order.status}</Badge>}
+            <div className="space-y-2 break-words text-sm">
+              {order.items.map((item) => <div key={item.id}><p>{item.menuName} × {item.quantity}</p>{item.options && <p className="text-xs text-gray-500">{item.options.flatMap((group) => group.items.map((option) => option.name)).join(', ')}</p>}</div>)}
+            </div>
+            {order.delivery && <div className="space-y-1 break-words text-sm text-gray-600"><p>{order.delivery.address} {order.delivery.detailAddress}</p><p>{order.delivery.recipientName} · {order.delivery.recipientPhone}</p><Badge variant={getDeliveryBadgeVariant(order.delivery.status)}>{deliveryStatusLabel[order.delivery.status]}</Badge></div>}
+            {order.note && <p className="whitespace-pre-wrap break-words text-sm text-orange-700">요청: {order.note}</p>}
+            {order.delivery?.deliveryMemo && <p className="whitespace-pre-wrap break-words text-sm text-orange-700">배달 요청: {order.delivery.deliveryMemo}</p>}
+            <div className="flex flex-wrap items-center justify-between gap-2"><strong>{formatCurrency(order.totalAmount || order.totalPrice)}</strong><Badge variant={getPaymentBadgeVariant(order.paymentStatus)}>{paymentStatusLabel[order.paymentStatus || ''] || order.paymentStatus || '-'}</Badge></div>
+            {order.payments?.[0]?.receiptUrl && <a href={order.payments[0].receiptUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center text-sm text-blue-600 underline">영수증 보기</a>}
+            <div className="flex flex-wrap gap-2 [&_button]:min-h-11 [&_button]:px-4 [&_button]:text-sm">
+              <button onClick={() => setExpandedMobileOrderId((current) => current === order.id ? null : order.id)} aria-expanded={expandedMobileOrderId === order.id} className="rounded-md border border-gray-200 text-gray-600">상세</button>
+              {renderOrderAction(order, (payload) => { if (isAwaitingAcceptance(order) && order.type === 'DELIVERY') { setAcceptOrder(order); return; } updateStatusMutation.mutate(payload); }, true)}
+              {renderDeliveryAction(order, updateDeliveryStatusMutation.mutate, true)}
+              {renderPaymentCancelAction(order, setRefundDialog, true)}
+              <button onClick={() => setPrintOrder(order)} className="inline-flex items-center gap-1 rounded-md border border-gray-200 text-gray-600"><Printer size={16} />출력</button>
+            </div>
+            {expandedMobileOrderId === order.id && <OrderDetailPanel order={order} />}
+          </article>
+        ))}
+        {orders.length === 0 && <p className="py-12 text-center text-gray-400">현재 주문이 없습니다.</p>}
+      </div>
+
+      <div className="hidden md:block bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden" data-testid="admin-orders-table">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[1180px] text-left">
             <thead className="bg-gray-50 border-b border-gray-100">
@@ -745,7 +779,7 @@ function AcceptDeliveryDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-lg rounded-xl bg-white shadow-xl" data-testid="admin-accept-dialog">
+      <div className="max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-xl bg-white shadow-xl" data-testid="admin-accept-dialog">
         <div className="border-b border-gray-100 px-5 py-4">
           <div className="flex items-start justify-between gap-4">
             <div>
@@ -781,7 +815,7 @@ function AcceptDeliveryDialog({
             </button>
           ))}
         </div>
-        <div className="flex justify-end gap-2 border-t border-gray-100 px-5 py-4">
+        <div className="flex flex-wrap justify-end gap-2 [&_button]:min-h-11 border-t border-gray-100 px-5 py-4">
           <button
             onClick={onClose}
             disabled={isSubmitting}
@@ -829,7 +863,7 @@ function RefundDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-lg rounded-xl bg-white shadow-xl">
+      <div className="max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-xl bg-white shadow-xl">
         <div className="border-b border-gray-100 px-5 py-4">
           <div className="flex items-start justify-between gap-4">
             <div>
@@ -873,7 +907,7 @@ function RefundDialog({
           )}
         </div>
 
-        <div className="flex justify-end gap-2 border-t border-gray-100 px-5 py-4">
+        <div className="flex flex-wrap justify-end gap-2 [&_button]:min-h-11 border-t border-gray-100 px-5 py-4">
           <button
             onClick={onClose}
             disabled={isSubmitting}
@@ -1024,7 +1058,8 @@ function getDeliveryBadgeVariant(status: DeliveryStatus): BadgeVariant {
 
 function renderOrderAction(
   order: Order,
-  updateStatus: (payload: { orderId: string; status: OrderStatus }) => void
+  updateStatus: (payload: { orderId: string; status: OrderStatus }) => void,
+  mobile = false
 ) {
   const next = getNextOrderStatus(order);
   if (!next) return null;
@@ -1033,7 +1068,7 @@ function renderOrderAction(
     <button
       onClick={() => updateStatus({ orderId: order.id, status: next.status })}
       className={`inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs text-white ${next.className}`}
-      data-testid={`admin-order-status-action-${order.id}`}
+      data-testid={`${mobile ? "mobile-" : ""}admin-order-status-action-${order.id}`}
     >
       {next.icon}
       {next.label}
@@ -1081,7 +1116,8 @@ function renderDeliveryAction(
     orderId: string;
     status: DeliveryStatus;
     riderMemo?: string;
-  }) => void
+  }) => void,
+  mobile = false
 ) {
   if (order.type !== 'DELIVERY' || !order.delivery || order.status === 'CANCELLED') {
     return null;
@@ -1102,7 +1138,7 @@ function renderDeliveryAction(
       disabled={disabled}
       title={disabled ? '주문을 배달 준비 상태로 변경한 뒤 사용할 수 있습니다.' : undefined}
       className={`inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs text-white disabled:cursor-not-allowed disabled:bg-gray-300 ${action.className}`}
-      data-testid={`admin-delivery-status-action-${order.id}`}
+      data-testid={`${mobile ? "mobile-" : ""}admin-delivery-status-action-${order.id}`}
     >
       <MapPin size={14} />
       {action.label}
@@ -1112,7 +1148,8 @@ function renderDeliveryAction(
 
 function renderPaymentCancelAction(
   order: Order,
-  openRefundDialog: (dialog: RefundDialogState) => void
+  openRefundDialog: (dialog: RefundDialogState) => void,
+  mobile = false
 ) {
   if (!['PAID', 'PARTIAL_REFUNDED'].includes(order.paymentStatus || '')) {
     return null;
@@ -1126,7 +1163,7 @@ function renderPaymentCancelAction(
       <button
         onClick={() => openRefundDialog({ order, remainingAmount })}
         className="inline-flex items-center gap-1 rounded-md bg-red-600 px-3 py-1.5 text-xs text-white hover:bg-red-700"
-        data-testid={`admin-refund-full-${order.id}`}
+        data-testid={`${mobile ? "mobile-" : ""}admin-refund-full-${order.id}`}
       >
         <XCircle size={14} />
         전액 취소
