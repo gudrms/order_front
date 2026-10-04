@@ -4,8 +4,11 @@ import { useEffect, useState } from 'react';
 import { Download } from 'lucide-react';
 import { isAdminElectronRuntime } from '@/lib/electronBridge';
 
-// Windows 설치 파일(.exe) 주소. 비워 두면 버튼을 숨긴다
-const PC_APP_DOWNLOAD_URL = process.env.NEXT_PUBLIC_ADMIN_PC_APP_URL;
+// Windows 설치 파일(.exe) 주소 — GitHub Releases 최신본. env로 바꿀 수 있지만 없어도 기본 주소로 보인다
+// (Vercel에 변수가 빠져 버튼이 통째로 숨던 일이 있어 기본값을 둔다)
+const PC_APP_DOWNLOAD_URL =
+  process.env.NEXT_PUBLIC_ADMIN_PC_APP_URL ||
+  'https://github.com/gudrms/order_front/releases/latest/download/taco-admin-setup.exe';
 
 /**
  * 브라우저로 관리자 화면을 연 매장에 PC 앱(admin-electron) 설치를 안내한다.
