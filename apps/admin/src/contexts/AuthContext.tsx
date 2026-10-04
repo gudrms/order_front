@@ -6,6 +6,7 @@ import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { unregisterWebPush } from '@/hooks/useWebPush';
 import { adminApi } from '@/lib/adminApi';
+import { shouldExpireSession } from '@/lib/loginPreferences';
 
 interface AuthContextType {
   user: User | null;
@@ -80,6 +81,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         void applySession(null);
       }
     }, 15000);
+
+    // 로그인 상태 유지를 끈 채 로그인했다면 브라우저·PC 앱을 다시 켰을 때 남은 세션을 버린다 (SIGNED_OUT → 로그인 화면)
+    if (shouldExpireSession()) void supabase.auth.signOut({ scope: 'local' });
 
     // Keep the auth callback synchronous. Defer network work until the auth storage lock is released.
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {

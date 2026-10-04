@@ -1,8 +1,9 @@
 'use client';
 
-import React, { Suspense, useState } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { getKeepLogin, getSavedEmail, saveLoginPreferences } from '@/lib/loginPreferences';
 
 function validateEmail(email: string) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -13,9 +14,17 @@ function LoginContent() {
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [rememberEmail, setRememberEmail] = useState(false);
+    const [keepLogin, setKeepLogin] = useState(true);
     const router = useRouter();
     const searchParams = useSearchParams();
     const authError = searchParams.get('error');
+
+    useEffect(() => {
+        const savedEmail = getSavedEmail();
+        if (savedEmail) { setEmail(savedEmail); setRememberEmail(true); }
+        setKeepLogin(getKeepLogin());
+    }, []);
 
     const validate = (): string | null => {
         if (!validateEmail(email)) return '올바른 이메일 주소를 입력해주세요.';
@@ -31,6 +40,7 @@ function LoginContent() {
         setLoading(true);
         setError(null);
 
+        saveLoginPreferences({ email, rememberEmail, keepLogin });
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) {
             setError('이메일 또는 비밀번호가 올바르지 않습니다.');
@@ -69,6 +79,17 @@ function LoginContent() {
                         onChange={(e) => { setPassword(e.target.value); setError(null); }}
                         className="block w-full rounded-lg border border-gray-300 px-3 py-3 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm"
                     />
+
+                    <div className="flex flex-wrap gap-x-6 text-sm text-gray-700">
+                        <label className="inline-flex min-h-11 cursor-pointer items-center gap-2">
+                            <input type="checkbox" checked={rememberEmail} onChange={(e) => setRememberEmail(e.target.checked)} className="h-4 w-4 rounded border-gray-300" />
+                            아이디 저장
+                        </label>
+                        <label className="inline-flex min-h-11 cursor-pointer items-center gap-2">
+                            <input type="checkbox" checked={keepLogin} onChange={(e) => setKeepLogin(e.target.checked)} className="h-4 w-4 rounded border-gray-300" />
+                            로그인 상태 유지
+                        </label>
+                    </div>
 
                     {(error || authError) && (
                         <div className="text-red-600 text-sm bg-red-50 px-3 py-2.5 rounded-lg border border-red-100">
