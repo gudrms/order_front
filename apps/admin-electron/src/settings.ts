@@ -4,9 +4,21 @@ import { app } from 'electron';
 
 /** 매장 PC마다 다른 설정 (계정이 아니라 이 PC에 저장) — %APPDATA%\타코 관리자\settings.json */
 export type AppSettings = {
-  /** 주문서를 보낼 영수증 프린터 이름 (webContents.getPrintersAsync의 name) */
+  /**
+   * 출력 방식. windows = Windows에 설치된 프린터(드라이버 필요),
+   * serial = COM 포트로 직접 (드라이버 없이 기존 주문 프로그램들과 같은 방식)
+   */
+  printMode?: 'windows' | 'serial';
+  /** windows 방식: 주문서를 보낼 프린터 이름 (webContents.getPrintersAsync의 name) */
   receiptPrinter?: string;
+  /** serial 방식: COM 포트 (예: COM1) */
+  serialPort?: string;
+  /** serial 방식: 통신 속도 */
+  baudRate?: number;
 };
+
+export const DEFAULT_BAUD_RATE = 9600;
+export const BAUD_RATES = [9600, 19200, 38400, 57600, 115200];
 
 function getSettingsFile() {
   return path.join(app.getPath('userData'), 'settings.json');

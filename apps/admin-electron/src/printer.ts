@@ -1,10 +1,43 @@
 import { BrowserWindow } from 'electron';
 import { log } from './logger';
-import { isVirtualPrinter, loadSettings } from './settings';
+import { buildEscPosReceipt, type ReceiptData } from './receipt';
+import { printViaSerial } from './serialPrinter';
+import { DEFAULT_BAUD_RATE, isVirtualPrinter, loadSettings } from './settings';
 
 export type PrintResult = { success: boolean; message?: string };
 
-export const NO_PRINTER_MESSAGE = '영수증 프린터를 선택해 주세요. 상단 메뉴 [설정] → [영수증 프린터]';
+export const NO_PRINTER_MESSAGE =
+  '영수증 프린터를 선택해 주세요. 상단 메뉴 [설정] → [출력 방식]에서 COM 포트 또는 Windows 프린터를 고르세요';
+
+/**
+ * 주문서 출력 — 설정한 방식(COM 포트 직접 / Windows 프린터)으로 보낸다.
+ * @param receipt 관리자 웹이 넘겨준 주문서 내용 (COM 방식은 이걸 영수증 명령으로 바꿔 보낸다)
+ */
+export async function printOrderReceipt(
+  win: BrowserWindow,
+  options: { deviceName?: string; receipt?: ReceiptData } = {},
+): Promise<PrintResult> {
+  const settings = loadSettings();
+
+  if (settings.printMode === 'serial') {
+    if (!settings.serialPort) {
+      return { success: false, message: 'COM 포트를 선택해 주세요. 상단 메뉴 [설정] → [COM 포트]' };
+    }
+    if (!options.receipt) {
+      // 예전 관리자 화면은 주문서 내용을 넘기지 않는다
+      return { success: false, message: '관리자 화면을 새로고침(Ctrl+R)한 뒤 다시 출력해 주세요.' };
+    }
+    return printViaSerial(settings.serialPort, settings.baudRate ?? DEFAULT_BAUD_RATE, buildEscPosReceipt(options.receipt));
+  }
+
+  const deviceName = await resolveReceiptPrinter(win, options.deviceName);
+  if (!deviceName) {
+    // 프린터가 없거나 기본이 PDF 같은 가상 프린터면 저장 창이 떠 버리므로 출력하지 않고 안내한다
+    log('WARN', 'no receipt printer selected');
+    return { success: false, message: NO_PRINTER_MESSAGE };
+  }
+  return silentPrint(win, deviceName);
+}
 
 /**
  * 출력할 프린터를 정한다. 저장된 영수증 프린터가 우선이고,

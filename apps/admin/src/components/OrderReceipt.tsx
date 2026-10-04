@@ -7,6 +7,7 @@
 import React from 'react';
 import { Order, formatCurrency, formatDate } from '@order/shared';
 import { getAdminElectronBridge } from '@/lib/electronBridge';
+import { buildReceiptData } from '@/lib/receiptData';
 
 interface OrderReceiptProps {
   order: Order;
@@ -31,6 +32,8 @@ export function OrderReceipt({ order, onPrintComplete, onPrintError }: OrderRece
             orderId: order.id,
             orderNumber: order.orderNumber,
             silent: true,
+            // PC 앱이 COM 포트로 직접 출력할 때 쓰는 주문서 내용
+            receipt: buildReceiptData(order),
           });
           if (result && !result.success) {
             onPrintError?.(result.message || '영수증 출력에 실패했습니다.');

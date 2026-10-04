@@ -1,9 +1,11 @@
 import type { AdminOrderAlertPayload } from '@/lib/adminOrderAlerts';
+import type { ReceiptData } from '@/lib/receiptData';
 
 export type ElectronPrintReceiptPayload = {
   orderId: string;
   orderNumber?: string;
   silent?: boolean;
+  receipt?: ReceiptData;
 };
 
 export type ElectronPrintResult = {

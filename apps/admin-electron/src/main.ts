@@ -4,7 +4,8 @@ import { autoUpdater } from 'electron-updater';
 import { createTray, notifyNewOrder, notifyStaffCall } from './tray';
 import { log } from './logger';
 import { setupAppMenu } from './menu';
-import { NO_PRINTER_MESSAGE, resolveReceiptPrinter, silentPrint } from './printer';
+import { printOrderReceipt } from './printer';
+import type { ReceiptData } from './receipt';
 
 const ADMIN_URL = process.env.ADMIN_URL ?? 'https://admin.tacomole.kr';
 const isDev = process.env.NODE_ENV === 'development';
@@ -172,16 +173,10 @@ ipcMain.handle('get-printers', async () => {
   return win.webContents.getPrintersAsync();
 });
 
-// IPC: 무음 영수증 출력 — 메뉴 [설정]에서 고른 영수증 프린터로 보낸다 (15초 타임아웃)
-ipcMain.handle('print-receipt', async (_event, options?: { deviceName?: string }) => {
+// IPC: 주문서 출력 — 메뉴 [설정]의 출력 방식(COM 포트 직접 / Windows 프린터)으로 보낸다
+ipcMain.handle('print-receipt', async (_event, options?: { deviceName?: string; receipt?: ReceiptData }) => {
   if (!win) return { success: false, message: '창을 찾을 수 없습니다.' };
-  const deviceName = await resolveReceiptPrinter(win, options?.deviceName);
-  if (!deviceName) {
-    // 프린터가 없거나 기본이 PDF 같은 가상 프린터면 저장 창이 떠 버리므로 출력하지 않고 안내한다
-    log('WARN', 'no receipt printer selected');
-    return { success: false, message: NO_PRINTER_MESSAGE };
-  }
-  return silentPrint(win, deviceName);
+  return printOrderReceipt(win, options);
 });
 
 process.on('uncaughtException', (error) => log('ERROR', 'uncaught exception', error));

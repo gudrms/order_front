@@ -1,6 +1,6 @@
 {
   "name": "admin-electron",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "타코 관리자 데스크탑 앱",
   "main": "dist/main.js",
   "private": true,
@@ -11,7 +11,9 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "electron-updater": "^6.3.9"
+    "electron-updater": "^6.3.9",
+    "iconv-lite": "^0.6",
+    "serialport": "^12"
   },
   "devDependencies": {
     "electron": "^33.2.1",
@@ -36,7 +38,9 @@
       "artifactName": "taco-admin-setup.${ext}",
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
-      "installerLanguages": ["ko_KR"],
+      "installerLanguages": [
+        "ko_KR"
+      ],
       "language": "1042"
     },
     "publish": {
