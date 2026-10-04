@@ -24,6 +24,10 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      // 트레이에 숨어 있어도 새 주문 확인(주기 조회)과 알람이 멈추지 않게 한다
+      backgroundThrottling: false,
+      // 클릭 없이도 알림음을 낼 수 있게 한다 (브라우저 자동재생 제한 해제)
+      autoplayPolicy: 'no-user-gesture-required',
     },
     show: false,
   });
@@ -128,9 +132,12 @@ function setupAutoUpdater() {
 
 // IPC: 새 주문 알림
 ipcMain.on('notify-new-order', (_event, payload: { orderNumber?: string; totalAmount?: number }) => {
+  log('INFO', 'new order alert', payload);
   notifyNewOrder(payload);
-  // 창이 숨겨진 상태면 트레이 플래시로 주의 환기
-  if (win && !win.isVisible()) {
+  // 트레이에 숨어 있거나 최소화돼 있으면 창을 앞으로 띄워 접수를 놓치지 않게 한다
+  if (win) {
+    if (win.isMinimized()) win.restore();
+    if (!win.isVisible()) win.show();
     win.flashFrame(true);
   }
 });
