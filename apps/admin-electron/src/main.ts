@@ -1,7 +1,9 @@
 import path from 'path';
-import { app, BrowserWindow, ipcMain, shell } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import { createTray, notifyNewOrder, notifyStaffCall } from './tray';
+import { log } from './logger';
+import { setupAppMenu } from './menu';
 
 const ADMIN_URL = process.env.ADMIN_URL ?? 'https://admin.tacomole.kr';
 const isDev = process.env.NODE_ENV === 'development';
@@ -26,6 +28,8 @@ function createWindow() {
     show: false,
   });
 
+  log('INFO', `app start v${app.getVersion()}`, { url: START_URL });
+  setupAppMenu(win, START_URL);
   win.loadURL(START_URL);
 
   win.once('ready-to-show', () => win?.show());
@@ -52,8 +56,9 @@ function createWindow() {
   });
 
   // 인터넷 장애 등으로 admin 로드 실패 시 오프라인 화면 + 5초 주기 재연결
-  win.webContents.on('did-fail-load', (_event, errorCode) => {
+  win.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL) => {
     if (errorCode === -3) return; // ERR_ABORTED (내부 취소)
+    log('WARN', 'page load failed', { errorCode, errorDescription, url: validatedURL });
     win?.loadFile(path.join(__dirname, '..', 'assets', 'offline.html'));
     if (!reconnectTimer) {
       reconnectTimer = setInterval(() => win?.loadURL(START_URL), 5000);
@@ -69,6 +74,13 @@ function createWindow() {
     }
   });
 
+  // 화면(렌더러) 쪽 경고·에러와 멈춤·비정상 종료를 로그에 남긴다
+  win.webContents.on('console-message', (_event, level, message, line, sourceId) => {
+    if (level >= 2) log(level >= 3 ? 'ERROR' : 'WARN', `[renderer] ${message}`, { source: sourceId, line });
+  });
+  win.webContents.on('render-process-gone', (_event, details) => log('ERROR', 'renderer process gone', details));
+  win.on('unresponsive', () => log('WARN', 'window unresponsive'));
+
   createTray(win);
 
   if (!isDev) {
@@ -81,12 +93,36 @@ function setupAutoUpdater() {
   autoUpdater.autoDownload = false;
   autoUpdater.checkForUpdates();
 
-  autoUpdater.on('update-available', () => {
+  // 관리자 웹에는 업데이트 안내 화면이 없어 앱이 직접 물어본다 (영업 중 강제 재시작이 없도록 매번 승인)
+  autoUpdater.on('error', (error) => log('ERROR', 'auto update failed', error));
+  autoUpdater.on('update-available', async (info) => {
+    log('INFO', 'update available', { version: info.version });
     win?.webContents.send('update-available');
+    const { response } = await dialog.showMessageBox({
+      type: 'info',
+      title: '타코 관리자 업데이트',
+      message: `새 버전(${info.version})이 있습니다. 지금 받을까요?`,
+      detail: '받는 동안에도 계속 사용할 수 있습니다. 설치는 다 받은 뒤 다시 물어봅니다.',
+      buttons: ['지금 받기', '나중에'],
+      defaultId: 0,
+      cancelId: 1,
+    });
+    if (response === 0) void autoUpdater.downloadUpdate();
   });
 
-  autoUpdater.on('update-downloaded', () => {
+  autoUpdater.on('update-downloaded', async (info) => {
+    log('INFO', 'update downloaded', { version: info.version });
     win?.webContents.send('update-downloaded');
+    const { response } = await dialog.showMessageBox({
+      type: 'info',
+      title: '타코 관리자 업데이트',
+      message: `새 버전(${info.version})을 설치할 준비가 됐습니다.`,
+      detail: '지금 재시작하면 설치됩니다. [나중에]를 누르면 앱을 종료할 때 자동으로 설치됩니다.',
+      buttons: ['재시작하여 설치', '나중에'],
+      defaultId: 1,
+      cancelId: 1,
+    });
+    if (response === 0) autoUpdater.quitAndInstall();
   });
 }
 
@@ -140,18 +176,26 @@ ipcMain.handle('print-receipt', async (_event, options?: { deviceName?: string }
     };
     // 프린터가 응답하지 않을 때 무한 대기 방지
     const timer = setTimeout(
-      () => finish({ success: false, message: '출력 시간 초과(15초)' }),
+      () => {
+        log('ERROR', 'receipt print timeout (15s)');
+        finish({ success: false, message: '출력 시간 초과(15초)' });
+      },
       15000
     );
     win!.webContents.print(
       { silent: true, printBackground: false, deviceName: options?.deviceName },
       (success, errorType) => {
         clearTimeout(timer);
+        if (success) log('INFO', 'receipt printed', { deviceName: options?.deviceName ?? '(기본 프린터)' });
+        else log('ERROR', 'receipt print failed', { errorType, deviceName: options?.deviceName ?? '(기본 프린터)' });
         finish(success ? { success: true } : { success: false, message: errorType ?? '출력 실패' });
       }
     );
   });
 });
+
+process.on('uncaughtException', (error) => log('ERROR', 'uncaught exception', error));
+process.on('unhandledRejection', (reason) => log('ERROR', 'unhandled rejection', reason));
 
 app.whenReady().then(createWindow);
 
