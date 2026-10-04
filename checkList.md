@@ -1,6 +1,6 @@
 # Taco Mono 작업 현황
 
-마지막 업데이트: 2026-10-04 (20차)
+마지막 업데이트: 2026-10-04 (21차)
 
 ---
 
@@ -31,6 +31,7 @@
 - [x] **rate limit 트래커 우회 가능성 차단** (2026-09-21): `x-forwarded-for`는 프록시가 뒤에 덧붙이는 헤더라 클라이언트가 직접 보내면 첫 값이 조작된다. 값을 매 요청 바꾸면 rate limit을 무제한 우회할 수 있어 로그인·결제 제한이 무력화된다
   - 플랫폼이 직접 채우는 `x-vercel-forwarded-for` → `x-real-ip`를 먼저 보고, 없을 때만 기존처럼 `x-forwarded-for`로 떨어지게 했다. Vercel의 덮어쓰기 동작을 확인하지 못했지만 **어느 쪽이든 안전한** 순서다
   - Vercel 외부에 직접 노출하면 `x-forwarded-for`가 유일한 경로가 되므로 앞단에서 덮어쓰도록 설정해야 한다. 경계값은 `throttler.guard.spec.ts` 14건으로 고정
+- [ ] **`Order` 테이블 RLS 꺼짐** (2026-10-04 발견): 운영 DB(`order` 프로젝트) 조회 결과 `Order`의 RLS가 비활성이고 정책이 없다. anon 키만 있으면 PostgREST로 전체 주문(주소·연락처 포함)을 읽을 수 있는지 확인 후, 매장 관리자·주문 고객만 읽도록 RLS 정책 추가. Realtime publication에 `Order`를 넣으려면 이 작업이 먼저다
 - [x] **프록시 헤더 신뢰 정책 문서화** (2026-09-21): `docs/architecture.md`에 「프록시 헤더 신뢰 정책」 절 추가. 헤더 우선순위와 각 단계의 신뢰 근거, Vercel 외부 노출 시 주의점을 표로 정리
 
 ### 치명 버그
@@ -135,7 +136,7 @@
     - [x] 관리자 목록에 결제 완료·영수증 링크로 보인다 (주문 0036, 200원)
     - [ ] 배달앱 주문내역·주문 상세에 결제 완료로 보인다
   - **주문서 인쇄 (로컬 admin `/orders`)**
-    - [ ] 새 주문이 목록에 뜬다 (새로고침 없이 뜨는지 확인 — `useRealtimeOrders`(Supabase 실시간 구독)가 붙어 있다)
+    - [ ] 새 주문이 목록에 뜬다 (새로고침 없이 뜨는지 확인 — `Order`가 Realtime publication에 없어 구독 이벤트는 오지 않는다. 5초 알람 조회에서 새 주문이 보이면 목록을 다시 불러오도록 `291cef0`에서 보완)
     - [x] 출력 버튼 → 주문서에 메뉴·옵션·금액·주소·연락처·요청사항이 나온다 (확인 모달 제거, 바로 인쇄)
     - [x] 웹: `window.print()` 미리보기에 **주문서만** 나온다 (전역 인쇄 CSS로 나머지 숨김)
     - [ ] admin-electron: 무음 출력이 실제 영수증 프린터로 나온다. `print-receipt`는 `webContents.print`로 **창 전체**를 출력하고, `OrderReceipt`가 `deviceName`을 넘기지 않아 **기본 프린터**로 간다 — 영수증 프린터를 OS 기본 프린터로 지정했는지, 출력물에 주문서만 나오는지 확인
@@ -282,8 +283,13 @@
 - [ ] 앱 표시명/아이콘 통일 AAB 재업로드: Play 스토어 등록정보 기준 `타코몰리`와 `store-assets/google-play/icon-512x512.jpg`를 Android 런처 리소스에 반영한 versionCode 3 번들 제출
 - [ ] `adb shell pm get-app-links com.tacomole.app` App Links 검증
 - [ ] Google 승인 완료 후 관리형 게시에서 공개 테스트 버전 게시
-- [ ] Firebase Android `com.tacomole.app` 설정과 `google-services.json` 추가 후 `NEXT_PUBLIC_CAPACITOR_PUSH_ENABLED=true` 활성화
+- [ ] Firebase Android `com.tacomole.app` 설정과 `google-services.json` 추가 후 `NEXT_PUBLIC_CAPACITOR_PUSH_ENABLED=true` 활성화 (2026-10-04 Firebase 준비됨). 순서를 지켜야 한다 — 옛 앱에서 먼저 켜면 시작 시 크래시
+  - [ ] `google-services.json`을 `apps/delivery-customer/android/app/`에 넣기 (`.gitignore` 대상이라 빌드 PC마다 필요) → `cap:sync` → AAB 재빌드·배포
+  - [ ] 서비스 계정 키의 `FIREBASE_PROJECT_ID`/`FIREBASE_CLIENT_EMAIL`/`FIREBASE_PRIVATE_KEY`를 Vercel backend env에 추가 → 재배포 → 로그 `Firebase Admin initialized successfully.` 확인
+  - [ ] 새 앱 배포 후 Vercel delivery-customer env에 `NEXT_PUBLIC_CAPACITOR_PUSH_ENABLED=true` → 재배포 (`NEXT_PUBLIC_*`는 빌드 시 고정)
 - [ ] USB 실기기 테스트: FCM 토큰 발급 확인, 잠금화면 푸시 수신 확인
+  - 로그인 후 `UserDevice`에 토큰 생성 → 관리자에서 접수·배달 시작·완료 → 알림 수신·탭 시 주문 상세 이동
+  - 안 오면 `NotificationLog.lastError` 확인: `firebase:success:1` = 발송 성공(폰 설정 확인), `skipped_no_devices` = 토큰 미등록, `success:0,fail:N` = 서버 키·패키지명 확인
 - [ ] Vercel 원격 WebView 핫 업데이트 파이프라인 검증
 
 ### iOS (배달앱)
@@ -294,6 +300,7 @@
 - [ ] Apple Developer Program 등록 (연 129달러)
 - [ ] Xcode Archive 빌드 → App Store Connect 앱 등록
 - [ ] TestFlight 베타 배포 → 내부 테스터 검증 → App Store 심사 제출
+- [ ] **iOS 푸시**: `@capacitor/push-notifications`는 iOS에서 FCM이 아닌 APNs 토큰을 주므로 지금 구조로는 iOS 푸시가 가지 않는다. APNs 키를 Firebase에 업로드, `GoogleService-Info.plist` 추가, Xcode Push Notifications capability, FCM 토큰을 받도록 `@capacitor-firebase/messaging` 도입 필요
 
 ---
 
@@ -360,6 +367,11 @@
   - 3단계(메뉴·배너·쿠폰·계정·매장 설정의 표·입력폼)는 범위 밖
 - [x] **새 주문 알람이 울리지 않던 문제** (2026-10-04, `0e5928b`): `useRealtimeOrders`가 없는 테이블(`orders`/`store_id`)을 구독해 이벤트가 한 번도 오지 않았다 → `Order`/`storeId`. 구독을 대시보드 레이아웃으로 옮기고, 결제 완료·미접수 주문이 있으면 접수/취소할 때까지 4초마다 알림음 + 상단 배너 + 15초 주기 재확인. 브라우저는 화면을 한 번 클릭해야 소리가 나는 제한이 있어 안내 문구를 띄운다
 - [x] **접수 즉시 조리 중 + 상태 진행 막대** (2026-10-04): `접수` = `PAID→COOKING`(조리 시작 버튼 단계 제거), 접수 시 예상 시간 선택 → 주문서 자동 출력. 상태 칸은 진행 막대(배달 5단계·매장 3단계)
+- [x] **새 주문이 주문 관리 목록에 바로 안 뜨던 문제** (2026-10-04, `291cef0`): 운영 DB 조회 결과 `Order`가 Realtime publication(`supabase_realtime`)에 없어 `useRealtimeOrders` 이벤트가 오지 않는다. 5초마다 도는 접수 대기 알람 조회에서 새 주문 ID가 보이면 `['admin-orders', storeId, 'list']`를 무효화
+- [ ] **`Order` Realtime publication 추가 검토**: RLS 정책을 먼저 넣은 뒤(🔴 P0 보안 항목) publication에 추가하면 관리자 목록·POS 플러그인 구독이 실제로 동작한다
+- [x] **로그인 아이디 저장·로그인 상태 유지** (2026-10-04, `c4a0926`): 로그인 화면 체크박스 2개(`lib/loginPreferences.ts`, 이 브라우저·PC에만 저장). 상태 유지를 끄면 브라우저·PC 앱 재실행 시 `signOut({ scope: 'local' })`로 로그인 화면. 기본값은 기존과 같이 유지. 브라우저로 저장값 복원 확인, 실제 로그인·재실행 흐름은 수동 확인 필요
+- [x] **주문 관리·주문서 요청사항 분리 표시** (2026-10-04, `984493e`): 「가게 요청」(`note`)·「배달 요청」(`deliveryMemo`) 따로 표시. 예전 주문은 note가 배달 요청 복사본이라 같으면 가게 요청으로 보지 않는다(`@order/shared/utils/orderRequest`). PC 앱 COM 출력은 한 줄 `request`에 `가게) … / 배달) …`로 합쳐 PC 앱 재배포 없이 동작
+- [ ] **출력 설정 화면**: 요구사항에 있으나 PC 앱 메뉴에 이미 출력 방식·COM 포트·프린터 설정이 있고 최신 PC 앱 배포 전이라 보류 (2026-10-04)
 - [ ] **ADMIN의 다매장 알람**: 알람·실시간 구독은 「매장 관리」에서 선택한 매장 하나만 본다. 여러 매장을 관리하는 ADMIN은 다른 매장 새 주문을 못 듣는다 — 매장 선택 칸 공통화와 함께 검토
 
 - [ ] **`orders/page.tsx` 컴포넌트 분리**: 약 1,000줄에 달하는 거대 단일 컴포넌트를 `RefundDialog.tsx`, `OrderDetailPanel.tsx`, `lib/toss-utils.ts` 등으로 모듈화하여 유지보수성 개선
@@ -402,7 +414,14 @@
 
 - [ ] **배달 주문 안심번호 (검토)**: 배민처럼 주문서·라이더에게 고객 실번호 대신 050 가상번호를 주려면 통신사/중계 업체(050 안심번호 API)와 계약이 필요하다 — 주문마다 번호 발급·배달 완료 후 해지, 번호당·통화당 요금. 고객 주문 화면에 "안심번호 사용" 동의 체크, 주문서·관리자 화면에는 가상번호만 노출. 자체 배달이고 주문 수가 적은 지금은 보류
 - [x] **접수 시 고객 푸시** (2026-10-04, `efc6a32`): 매장이 접수하면 "주문이 접수되어 조리를 시작했어요. 약 N분 후 도착 예정" PUSH + IN_APP (`ORDER_CONFIRMED`). 배달 상태 변경 푸시는 기존에 있었다
-- [ ] **매장 거절(접수 전 취소·환불) 시 고객 푸시 확인**: 전액 취소 경로에서 고객에게 알림이 가는지 실기기로 확인
+- [x] **주문 상태가 바뀌어도 고객 앱 알림이 안 오던 문제** (2026-10-04, `38d2f3f`)
+  - 알림 dedupe 키가 `수신자:종류:주문:채널`이라 같은 주문의 두 번째 배달 상태 알림부터 막혔고, 배달 완료는 접수 알림(`ORDER_CONFIRMED`)과 키가 겹쳐 발송되지 않았다 → 페이로드에 `orderStatus`를 넣어 키에 포함 (기존 키는 그대로 호환)
+  - 접수뿐 아니라 조리·준비 완료·배달 시작·완료·취소(`ORDER_CANCELLED`)와 매장 전액 환불 때도 PUSH + IN_APP 발송. 알림 실패가 상태 변경·환불을 막지 않는다
+  - Firebase 미설정 시 `sendPushNotification`이 모든 토큰을 실패로 돌려 고객 기기 토큰이 매번 삭제되던 버그 수정
+  - 푸시 data에 `orderId`를 넣고 Android `clickAction: FLUTTER_NOTIFICATION_CLICK`(맞는 intent-filter 없음) 제거 → 탭하면 주문 상세로 이동
+  - 백엔드 테스트 214건 통과. 실제 발송은 Firebase 설정 후 실기기 확인 필요 (📱 앱 배포 > Android 항목)
+- [ ] **매장 거절(접수 전 취소·환불) 시 고객 푸시 확인**: 전액 취소 경로에서 고객에게 알림이 가는지 실기기로 확인 (코드는 `38d2f3f`에서 추가)
+- [x] **배달 주문 가게 요청사항 분리** (2026-10-04, `984493e`): `CreateDeliveryOrderDto.note` 추가, `deliveryMemo`를 `note`로 복사하던 동작 제거. POS 연동은 `order.note`를 보내므로 이제 배달 요청 없이 가게 요청만 전달된다
 
 - [ ] **대량 트랜잭션 청크(Batch) 분할**: `payments.service.ts`의 `expirePendingTossPayments`에서 수많은 결제를 한 번에 처리할 때 발생하는 Prisma 타임아웃 방지를 위해 `lodash.chunk` 등을 활용한 배치 분할 처리 적용
 - [ ] **Vercel Serverless DB 커넥션 풀러/limit 재검토**: 람다 인스턴스 복제 시 Supabase Max Connections 초과 방지를 위해 운영 `DATABASE_URL`이 서버리스용 Supabase pooler URL + `pgbouncer=true`를 쓰는지 확인하고 `connection_limit`을 낮은 값부터 계측하며 조정. `.env.example`은 pooler + `connection_limit=1` 시작 예시로 갱신. `3`/`5` 고정 승인은 보류하며 Prisma error DB transport가 별도 `PrismaClient`를 만드는 연결 영향도 함께 점검.
@@ -416,6 +435,9 @@
 ---
 
 ## 📱 Delivery Customer (배달앱)
+
+- [x] **앱 사용 중 주문 상태 변경 토스트** (2026-10-04, `309a5a6`): `useOrderStatusAlerts`가 내 주문을 진행 중이면 10초, 아니면 60초마다 확인해 고객 단계(접수 대기→조리 중→배달 중→완료/취소)가 바뀌면 토스트. FCM 없이(웹·푸시 미설정·권한 거부)도 동작하고, 푸시 토큰이 등록된 기기에서는 포그라운드 로컬 알림과 겹치지 않게 생략. 실기기 확인 필요
+- [x] **결제 화면 요청사항 분리** (2026-10-04, `984493e`): 「가게 사장님께」 입력 추가(`note`, 200자), 기존 요청사항은 「배달 기사님께」(`deliveryMemo`)로 표시. 주문 상세도 두 항목으로 나눠 표시. 실결제 흐름으로 저장 확인 필요
 
 - [x] **배달 상태 변경이 결제 취소·주문 상태 전이를 우회하던 문제** (2026-09-20): `updateDeliveryStatus`가 `deliveryStatus`만 보고 `order.status`를 직접 덮어썼다. ① 결제 완료(PAID) 주문의 배달 상태를 `CANCELLED`로 바꾸면 **결제는 그대로 둔 채 주문만 취소**됐고(고객 취소 경로에 있던 PAID 가드가 이쪽엔 없었음), ② `ALLOWED_TRANSITIONS`를 참조하지 않아 조리 전 주문이 픽업 처리되면 `COOKING`/`READY`를 건너뛰고 `DELIVERING`이 됐다. 두 경우 모두 어드민 UI로는 도달 불가였으나 API는 열려 있었음. 가드 추가 + 단위 테스트 2건.
 - [x] **쿠폰 할인 기준에서 배달비 제외** (2026-09-20): 정률 쿠폰이 상품금액+배달비 기준으로 계산돼 배달비가 비싼 매장일수록 더 많이 깎였다. 매장 최소주문금액은 상품금액만 보고 있어 기준선도 어긋나 있었음. 서버·앱 결제 계산·쿠폰 목록 미리보기 세 곳을 모두 상품금액 기준으로 통일. 운영 기준은 [docs/coupon-strategy.md](docs/coupon-strategy.md) 참고.
