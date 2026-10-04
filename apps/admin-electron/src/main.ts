@@ -4,6 +4,7 @@ import { autoUpdater } from 'electron-updater';
 import { createTray, notifyNewOrder, notifyStaffCall } from './tray';
 import { log } from './logger';
 import { setupAppMenu } from './menu';
+import { NO_PRINTER_MESSAGE, resolveReceiptPrinter, silentPrint } from './printer';
 
 const ADMIN_URL = process.env.ADMIN_URL ?? 'https://admin.tacomole.kr';
 const isDev = process.env.NODE_ENV === 'development';
@@ -33,7 +34,7 @@ function createWindow() {
   });
 
   log('INFO', `app start v${app.getVersion()}`, { url: START_URL });
-  setupAppMenu(win, START_URL);
+  void setupAppMenu(win, START_URL);
   win.loadURL(START_URL);
 
   win.once('ready-to-show', () => win?.show());
@@ -171,34 +172,16 @@ ipcMain.handle('get-printers', async () => {
   return win.webContents.getPrintersAsync();
 });
 
-// IPC: 무음 영수증 출력 (특정 프린터 지정 + 15초 타임아웃)
+// IPC: 무음 영수증 출력 — 메뉴 [설정]에서 고른 영수증 프린터로 보낸다 (15초 타임아웃)
 ipcMain.handle('print-receipt', async (_event, options?: { deviceName?: string }) => {
   if (!win) return { success: false, message: '창을 찾을 수 없습니다.' };
-  return new Promise<{ success: boolean; message?: string }>((resolve) => {
-    let settled = false;
-    const finish = (result: { success: boolean; message?: string }) => {
-      if (settled) return;
-      settled = true;
-      resolve(result);
-    };
-    // 프린터가 응답하지 않을 때 무한 대기 방지
-    const timer = setTimeout(
-      () => {
-        log('ERROR', 'receipt print timeout (15s)');
-        finish({ success: false, message: '출력 시간 초과(15초)' });
-      },
-      15000
-    );
-    win!.webContents.print(
-      { silent: true, printBackground: false, deviceName: options?.deviceName },
-      (success, errorType) => {
-        clearTimeout(timer);
-        if (success) log('INFO', 'receipt printed', { deviceName: options?.deviceName ?? '(기본 프린터)' });
-        else log('ERROR', 'receipt print failed', { errorType, deviceName: options?.deviceName ?? '(기본 프린터)' });
-        finish(success ? { success: true } : { success: false, message: errorType ?? '출력 실패' });
-      }
-    );
-  });
+  const deviceName = await resolveReceiptPrinter(win, options?.deviceName);
+  if (!deviceName) {
+    // 프린터가 없거나 기본이 PDF 같은 가상 프린터면 저장 창이 떠 버리므로 출력하지 않고 안내한다
+    log('WARN', 'no receipt printer selected');
+    return { success: false, message: NO_PRINTER_MESSAGE };
+  }
+  return silentPrint(win, deviceName);
 });
 
 process.on('uncaughtException', (error) => log('ERROR', 'uncaught exception', error));
