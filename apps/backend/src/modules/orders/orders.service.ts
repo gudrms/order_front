@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma, OrderStatus, DeliveryStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateOrderDto } from './dto/create-order.dto';
@@ -10,6 +10,8 @@ import { orderInclude, prepareOrderItems, generateOrderNumber } from './order-he
 
 @Injectable()
 export class OrdersService {
+    private readonly logger = new Logger(OrdersService.name);
+
     constructor(
         private readonly prisma: PrismaService,
         private readonly posService: ResilientPosService,
@@ -167,9 +169,10 @@ export class OrdersService {
     }
 
     private static readonly ALLOWED_TRANSITIONS: Record<string, string[]> = {
-        PENDING:          ['CONFIRMED', 'CANCELLED'],
+        // 관리자 '접수'는 바로 조리 중(COOKING)으로 보낸다. CONFIRMED는 POS 등 기존 흐름용으로 남긴다
+        PENDING:          ['CONFIRMED', 'COOKING', 'CANCELLED'],
         PENDING_PAYMENT:  ['PAID', 'CANCELLED'],
-        PAID:             ['CONFIRMED', 'CANCELLED'],
+        PAID:             ['CONFIRMED', 'COOKING', 'CANCELLED'],
         CONFIRMED:        ['COOKING', 'PREPARING', 'CANCELLED'],
         COOKING:          ['READY', 'COMPLETED', 'CANCELLED'],
         PREPARING:        ['READY', 'COMPLETED', 'CANCELLED'],
@@ -205,14 +208,15 @@ export class OrdersService {
             );
         }
 
-        // 접수 시 매장이 정한 배달 예상 시간을 저장한다 (주문 시점엔 매장 기본값이 들어가 있다)
+        // 접수(결제 완료 → 접수/조리 중) 시 매장이 정한 배달 예상 시간을 저장한다 (주문 시점엔 매장 기본값이 들어가 있다)
         const { estimatedMinutes } = options;
-        const shouldSetEstimate = status === 'CONFIRMED' && estimatedMinutes != null && !!order.delivery;
+        const isAccepting = (order.status === 'PAID' || order.status === 'PENDING') && (status === 'CONFIRMED' || status === 'COOKING');
+        const shouldSetEstimate = isAccepting && estimatedMinutes != null && !!order.delivery;
         if (shouldSetEstimate && (!Number.isInteger(estimatedMinutes) || estimatedMinutes < 5 || estimatedMinutes > 180)) {
             throw new BadRequestException('예상 시간은 5분에서 180분 사이로 정해 주세요');
         }
 
-        return this.prisma.order.update({
+        const updated = await this.prisma.order.update({
             where: { id: orderId },
             data: {
                 status,
@@ -221,6 +225,42 @@ export class OrdersService {
                 delivery: shouldSetEstimate ? { update: { estimatedMinutes } } : undefined,
             },
         });
+
+        if (isAccepting && order.userId) {
+            await this.notifyCustomerAccepted(order.userId, storeId, orderId, shouldSetEstimate ? estimatedMinutes : undefined);
+        }
+
+        return updated;
+    }
+
+    /** 매장이 접수하면 고객에게 알린다 — 고객이 가장 기다리는 소식이라 예상 시간을 같이 보낸다 */
+    private async notifyCustomerAccepted(userId: string, storeId: string, orderId: string, estimatedMinutes?: number) {
+        const body = estimatedMinutes
+            ? `주문이 접수되어 조리를 시작했어요. 약 ${estimatedMinutes}분 후 도착 예정이에요.`
+            : '주문이 접수되어 조리를 시작했어요.';
+        try {
+            await this.queueService.publishNotificationSend({
+                recipientType: 'CUSTOMER',
+                recipientId: userId,
+                notificationType: 'ORDER_CONFIRMED',
+                orderId,
+                storeId,
+                channel: 'IN_APP',
+            });
+            await this.queueService.publishNotificationSend({
+                recipientType: 'CUSTOMER',
+                recipientId: userId,
+                notificationType: 'ORDER_CONFIRMED',
+                orderId,
+                storeId,
+                channel: 'PUSH',
+                title: '🌮 주문이 접수되었어요',
+                body,
+            });
+        } catch (error) {
+            // 알림 실패가 접수 자체를 막으면 안 된다
+            this.logger.error(`Failed to publish order accepted notification for ${orderId}`, error as Error);
+        }
     }
 
     async updateDeliveryStatus(

@@ -12,6 +12,7 @@ describe('OrdersService', () => {
         queueService = {
             publishPosSendOrder: vi.fn(),
             publishDeliveryStatusChanged: vi.fn(),
+            publishNotificationSend: vi.fn(),
         };
 
         service = new OrdersService(prisma, {} as any, {} as any, queueService);
@@ -20,18 +21,27 @@ describe('OrdersService', () => {
     it('saves the store-chosen delivery estimate when accepting a delivery order', async () => {
         prisma.order = {
             findUnique: vi.fn().mockResolvedValue({
-                id: 'order-1', storeId: 'store-1', status: 'PAID', delivery: { id: 'delivery-1' },
+                id: 'order-1', storeId: 'store-1', userId: 'user-1', status: 'PAID', delivery: { id: 'delivery-1' },
             }),
-            update: vi.fn().mockResolvedValue({ id: 'order-1', status: 'CONFIRMED' }),
+            update: vi.fn().mockResolvedValue({ id: 'order-1', status: 'COOKING' }),
         };
 
-        await service.updateOrderStatus('store-1', 'order-1', 'CONFIRMED' as any, { estimatedMinutes: 50 });
+        // 관리자 '접수'는 결제 완료에서 바로 조리 중으로 보낸다
+        await service.updateOrderStatus('store-1', 'order-1', 'COOKING' as any, { estimatedMinutes: 50 });
 
         expect(prisma.order.update).toHaveBeenCalledWith(expect.objectContaining({
             data: expect.objectContaining({
-                status: 'CONFIRMED',
+                status: 'COOKING',
                 delivery: { update: { estimatedMinutes: 50 } },
             }),
+        }));
+        // 고객에게 접수 소식과 예상 시간을 푸시한다
+        expect(queueService.publishNotificationSend).toHaveBeenCalledWith(expect.objectContaining({
+            recipientType: 'CUSTOMER',
+            recipientId: 'user-1',
+            notificationType: 'ORDER_CONFIRMED',
+            channel: 'PUSH',
+            body: expect.stringContaining('약 50분'),
         }));
     });
 
