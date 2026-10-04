@@ -21,7 +21,7 @@ interface BackendOrderItem {
     updatedAt?: string;
 }
 
-interface BackendOrder {
+export interface BackendOrder {
     id: string;
     orderNumber: string;
     tableNumber?: number | null;
@@ -44,7 +44,7 @@ interface BackendOrder {
     cancelReason?: string | null;
 }
 
-function mapOrder(order: BackendOrder): Order {
+export function mapOrder(order: BackendOrder): Order {
     return {
         id: order.id,
         orderNumber: order.orderNumber,

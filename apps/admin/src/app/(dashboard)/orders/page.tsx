@@ -22,6 +22,9 @@ import {
   type Order,
   type OrderStatus,
 } from '@order/shared';
+// api 헬퍼는 다른 앱과 같이 하위 경로로 불러온다
+// (shared/src에 남은 예전 컴파일 index.js에는 api 내보내기가 없어 webpack에서 undefined가 된다)
+import { mapOrder, type BackendOrder } from '@order/shared/api';
 import { Badge } from '@order/ui';
 
 import { useAuth } from '@/contexts/AuthContext';
@@ -110,6 +113,8 @@ export default function OrdersPage() {
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [refundDialog, setRefundDialog] = useState<RefundDialogState | null>(null);
   const [operationMessage, setOperationMessage] = useState<OperationMessage | null>(null);
+  // 배달 주문 접수 시 예상 시간을 고르는 창
+  const [acceptOrder, setAcceptOrder] = useState<Order | null>(null);
   useRealtimeOrders(storeId || '');
 
   const { data: orders = [], isLoading: isOrdersLoading, isError: isOrdersError, refetch: refetchOrders } = useQuery<Order[]>({
@@ -119,23 +124,50 @@ export default function OrdersPage() {
         headers: authHeaders,
       });
       // 페이지네이션 응답: { data: [...], meta: {...} } → data 배열만 추출
-      return response.data?.data ?? response.data;
+      // 백엔드 원본(menuPrice, selectedOptions)을 화면용 Order(unitPrice, options)로 변환한다
+      const rows: BackendOrder[] = response.data?.data ?? response.data ?? [];
+      return rows.map(mapOrder);
     },
     enabled: !!session && !!storeId,
   });
 
   const updateStatusMutation = useMutation({
-    mutationFn: async ({ orderId, status }: { orderId: string; status: OrderStatus }) => {
+    mutationFn: async ({
+      orderId,
+      status,
+      estimatedMinutes,
+    }: {
+      orderId: string;
+      status: OrderStatus;
+      estimatedMinutes?: number;
+    }) => {
       await adminApi.patch(
         `${API_URL}/stores/${storeId}/orders/${orderId}/status`,
-        { status },
+        { status, estimatedMinutes },
         { headers: authHeaders }
       );
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       setRefundDialog(null);
-      setOperationMessage({ type: 'success', message: '주문 상태를 변경했습니다.' });
+      setAcceptOrder(null);
       queryClient.invalidateQueries({ queryKey: ['admin-orders', storeId] });
+
+      // 접수하면 주문서를 바로 출력한다 (다시 출력은 '출력' 버튼)
+      const accepted = variables.status === 'CONFIRMED'
+        ? orders.find((order) => order.id === variables.orderId)
+        : undefined;
+      if (accepted) {
+        setPrintOrder({
+          ...accepted,
+          status: 'CONFIRMED',
+          delivery: accepted.delivery && variables.estimatedMinutes
+            ? { ...accepted.delivery, estimatedMinutes: variables.estimatedMinutes }
+            : accepted.delivery,
+        });
+        setOperationMessage({ type: 'success', message: '주문을 접수하고 주문서를 출력했습니다.' });
+        return;
+      }
+      setOperationMessage({ type: 'success', message: '주문 상태를 변경했습니다.' });
     },
     onError: (error) => {
       setOperationMessage({
@@ -286,11 +318,11 @@ export default function OrdersPage() {
               {orders.map((order) => (
                 <React.Fragment key={order.id}>
                 <tr className="hover:bg-gray-50/50 transition-colors align-top" data-testid={`admin-order-row-${order.id}`}>
-                  <td className="px-6 py-4">
+                  <td className="whitespace-nowrap px-4 py-4">
                     <p className="font-mono text-xs text-gray-500">{order.orderNumber}</p>
                     <p className="mt-1 text-xs text-gray-400">{sourceLabel[order.source || ''] || order.source || '-'}</p>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="whitespace-nowrap px-4 py-4">
                     <Badge variant={order.type === 'DELIVERY' ? 'info' : 'outline'}>
                       {orderTypeLabel[order.type || ''] || order.type || '-'}
                     </Badge>
@@ -298,11 +330,16 @@ export default function OrdersPage() {
                       <p className="mt-2 text-sm font-bold">{order.tableNumber ?? '-'}번 테이블</p>
                     )}
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-4 py-4">
                     <div className="space-y-1 text-sm text-gray-800">
                       {order.items.map((item) => (
                         <div key={item.id}>
                           {item.menuName} x {item.quantity}
+                          {item.options && item.options.length > 0 && (
+                            <p className="text-xs text-gray-500">
+                              {item.options.flatMap((group) => group.items.map((option) => option.name)).join(', ')}
+                            </p>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -312,11 +349,16 @@ export default function OrdersPage() {
                         {order.delivery.detailAddress ? ` ${order.delivery.detailAddress}` : ''}
                       </p>
                     )}
+                    {(order.delivery?.deliveryMemo || order.note) && (
+                      <p className="mt-1 max-w-xs whitespace-pre-wrap text-xs font-medium text-orange-700">
+                        요청: {order.delivery?.deliveryMemo || order.note}
+                      </p>
+                    )}
                   </td>
-                  <td className="px-6 py-4 font-semibold text-gray-900">
+                  <td className="whitespace-nowrap px-4 py-4 font-semibold text-gray-900">
                     {formatCurrency(order.totalAmount || order.totalPrice)}
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="whitespace-nowrap px-4 py-4">
                     <Badge variant={getPaymentBadgeVariant(order.paymentStatus)}>
                       {paymentStatusLabel[order.paymentStatus || ''] || order.paymentStatus || '-'}
                     </Badge>
@@ -331,7 +373,7 @@ export default function OrdersPage() {
                       </a>
                     )}
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="whitespace-nowrap px-4 py-4">
                     {order.delivery ? (
                       <div className="space-y-2">
                         <Badge variant={getDeliveryBadgeVariant(order.delivery.status)}>
@@ -346,16 +388,16 @@ export default function OrdersPage() {
                       <span className="text-sm text-gray-400">-</span>
                     )}
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-500">
+                  <td className="whitespace-nowrap px-4 py-4 text-sm text-gray-500">
                     {formatDate(order.createdAt)}
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="whitespace-nowrap px-4 py-4">
                     <Badge variant={getOrderBadgeVariant(order.status)} className="gap-1">
                       {getStatusIcon(order.status)}
                       {ORDER_STATUS_LABEL[order.status] || order.status}
                     </Badge>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="whitespace-nowrap px-4 py-4">
                     <div className="flex min-w-[220px] flex-wrap gap-2">
                       <button
                         onClick={() => setExpandedOrderId((current) => (current === order.id ? null : order.id))}
@@ -368,7 +410,14 @@ export default function OrdersPage() {
                         />
                         상세
                       </button>
-                      {renderOrderAction(order, updateStatusMutation.mutate)}
+                      {renderOrderAction(order, (payload) => {
+                        // 배달 주문 접수는 예상 시간부터 고른다
+                        if (payload.status === 'CONFIRMED' && order.type === 'DELIVERY') {
+                          setAcceptOrder(order);
+                          return;
+                        }
+                        updateStatusMutation.mutate(payload);
+                      })}
                       {renderDeliveryAction(order, updateDeliveryStatusMutation.mutate)}
                       {renderPaymentCancelAction(order, setRefundDialog)}
                       <button
@@ -403,22 +452,30 @@ export default function OrdersPage() {
         </div>
       </div>
 
+      {/* 출력 버튼을 누르면 확인 단계 없이 바로 인쇄한다. 끝나면 언마운트 */}
       {printOrder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="max-h-[90vh] w-full max-w-md overflow-auto rounded-xl bg-white p-4 shadow-xl" data-testid="admin-order-receipt-modal">
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="font-bold">주문 영수증</h3>
-              <button
-                onClick={() => setPrintOrder(null)}
-                className="rounded-md p-2 text-gray-500 hover:bg-gray-100"
-                aria-label="닫기"
-              >
-                닫기
-              </button>
-            </div>
-            <OrderReceipt order={printOrder} />
-          </div>
-        </div>
+        <OrderReceipt
+          key={printOrder.id}
+          order={printOrder}
+          onPrintComplete={() => setPrintOrder(null)}
+          onPrintError={(message) => {
+            setPrintOrder(null);
+            setOperationMessage({ type: 'error', message: `주문서 출력 실패: ${message}` });
+          }}
+        />
+      )}
+
+      {acceptOrder && (
+        <AcceptDeliveryDialog
+          key={acceptOrder.id}
+          order={acceptOrder}
+          defaultMinutes={acceptOrder.delivery?.estimatedMinutes || selectedStore?.estimatedDeliveryMinutes || 40}
+          isSubmitting={updateStatusMutation.isPending}
+          onClose={() => setAcceptOrder(null)}
+          onSubmit={(estimatedMinutes) => {
+            updateStatusMutation.mutate({ orderId: acceptOrder.id, status: 'CONFIRMED', estimatedMinutes });
+          }}
+        />
       )}
 
       {refundDialog && (
@@ -678,6 +735,87 @@ function toNumber(value: unknown) {
   return typeof value === 'number' && Number.isFinite(value) ? value : 0;
 }
 
+const ESTIMATE_OPTIONS = [20, 30, 40, 50, 60, 90];
+
+function AcceptDeliveryDialog({
+  order,
+  defaultMinutes,
+  isSubmitting,
+  onClose,
+  onSubmit,
+}: {
+  order: Order;
+  defaultMinutes: number;
+  isSubmitting: boolean;
+  onClose: () => void;
+  onSubmit: (estimatedMinutes: number) => void;
+}) {
+  const [minutes, setMinutes] = useState(defaultMinutes);
+  // 매장 기본값이 목록에 없으면(예: 45분) 같이 보여준다
+  const options = ESTIMATE_OPTIONS.includes(defaultMinutes)
+    ? ESTIMATE_OPTIONS
+    : [...ESTIMATE_OPTIONS, defaultMinutes].sort((a, b) => a - b);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="w-full max-w-lg rounded-xl bg-white shadow-xl" data-testid="admin-accept-dialog">
+        <div className="border-b border-gray-100 px-5 py-4">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h3 className="text-lg font-bold text-gray-900">주문 접수</h3>
+              <p className="mt-1 text-sm text-gray-500">
+                {order.orderNumber} · 고객에게 안내할 배달 예상 시간을 골라 주세요
+              </p>
+            </div>
+            <button
+              onClick={onClose}
+              disabled={isSubmitting}
+              className="rounded-md px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+              aria-label="닫기"
+            >
+              닫기
+            </button>
+          </div>
+        </div>
+        <div className="grid grid-cols-3 gap-2 px-5 py-4">
+          {options.map((option) => (
+            <button
+              key={option}
+              type="button"
+              onClick={() => setMinutes(option)}
+              className={`rounded-lg border px-3 py-3 text-sm font-semibold ${
+                minutes === option
+                  ? 'border-blue-600 bg-blue-50 text-blue-700'
+                  : 'border-gray-200 text-gray-700 hover:bg-gray-50'
+              }`}
+              data-testid={`admin-accept-minutes-${option}`}
+            >
+              {option}분
+            </button>
+          ))}
+        </div>
+        <div className="flex justify-end gap-2 border-t border-gray-100 px-5 py-4">
+          <button
+            onClick={onClose}
+            disabled={isSubmitting}
+            className="rounded-md border border-gray-200 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+          >
+            취소
+          </button>
+          <button
+            onClick={() => onSubmit(minutes)}
+            disabled={isSubmitting}
+            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+            data-testid="admin-accept-submit"
+          >
+            {isSubmitting ? '접수 중...' : `${minutes}분으로 접수하고 출력`}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function RefundDialog({
   dialog,
   isSubmitting,
@@ -812,7 +950,7 @@ function SummaryCard({ label, value }: { label: string; value: number }) {
 }
 
 function TableHead({ children }: { children: React.ReactNode }) {
-  return <th className="px-6 py-4 text-sm font-semibold text-gray-600">{children}</th>;
+  return <th className="whitespace-nowrap px-4 py-3 text-sm font-semibold text-gray-600">{children}</th>;
 }
 
 function getStatusIcon(status: OrderStatus) {
