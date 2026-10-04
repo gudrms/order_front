@@ -343,6 +343,15 @@
 
 ## ⚙️ Admin (관리자 서비스)
 
+- [ ] **관리자 반응형 1·2단계 (별도 세션에서 진행)** — 지금은 반응형 처리가 전혀 없다. 사이드바 고정 `w-64`(`components/dashboard/Sidebar.tsx`), 바깥 여백 `p-8`(`app/(dashboard)/layout.tsx`), 13개 화면·약 6,000줄. 매장은 PC 앱을 주로 쓰고 점주는 휴대폰으로 주문 확인 정도라 1·2단계까지만 하고 나머지는 필요할 때 화면별로
+  - **1단계 공통 틀**: `md` 미만에서 사이드바를 숨기고 상단 ☰ 버튼으로 여는 서랍(오버레이) 메뉴, 메뉴 선택 시 닫힘. 헤더(제목·PC 앱 다운로드·알림 버튼)와 접수 대기 알람 배너(`PendingOrderAlarm`) 줄바꿈, 바깥 여백 `p-4 md:p-8`. 표는 이미 `overflow-x-auto`라 1단계만으로도 대부분 화면은 쓸 수 있다
+  - **2단계 주문 관리**(`app/(dashboard)/orders/page.tsx`): `md` 미만에서 표 대신 주문별 카드(주문번호·진행 막대 `OrderProgress`·메뉴/옵션·요청사항·금액·주소). 접수·출력·전액 취소 버튼은 손가락으로 누르기 좋게 키운다. 접수 시 예상 시간 선택 창(`AcceptDeliveryDialog`)·환불 창도 휴대폰 폭 확인
+  - 확인: 375px(휴대폰)·768px(태블릿)·1280px(PC). E2E `e2e/admin/*.spec.ts` 28건 회귀 확인 (`npx playwright test --project=admin`, 로컬 백엔드가 4000을 쓰고 있으면 먼저 내릴 것)
+  - 3단계(메뉴·배너·쿠폰·계정·매장 설정의 표·입력폼)는 범위 밖
+- [x] **새 주문 알람이 울리지 않던 문제** (2026-10-04, `0e5928b`): `useRealtimeOrders`가 없는 테이블(`orders`/`store_id`)을 구독해 이벤트가 한 번도 오지 않았다 → `Order`/`storeId`. 구독을 대시보드 레이아웃으로 옮기고, 결제 완료·미접수 주문이 있으면 접수/취소할 때까지 4초마다 알림음 + 상단 배너 + 15초 주기 재확인. 브라우저는 화면을 한 번 클릭해야 소리가 나는 제한이 있어 안내 문구를 띄운다
+- [x] **접수 즉시 조리 중 + 상태 진행 막대** (2026-10-04): `접수` = `PAID→COOKING`(조리 시작 버튼 단계 제거), 접수 시 예상 시간 선택 → 주문서 자동 출력. 상태 칸은 진행 막대(배달 5단계·매장 3단계)
+- [ ] **ADMIN의 다매장 알람**: 알람·실시간 구독은 「매장 관리」에서 선택한 매장 하나만 본다. 여러 매장을 관리하는 ADMIN은 다른 매장 새 주문을 못 듣는다 — 매장 선택 칸 공통화와 함께 검토
+
 - [ ] **`orders/page.tsx` 컴포넌트 분리**: 약 1,000줄에 달하는 거대 단일 컴포넌트를 `RefundDialog.tsx`, `OrderDetailPanel.tsx`, `lib/toss-utils.ts` 등으로 모듈화하여 유지보수성 개선
 - [x] **관리자 주문 중복 폴링 여부 확인** (2026-05-18): admin `orders/page.tsx`는 `useRealtimeOrders(storeId)`로 Realtime invalidate만 수행하고 `refetchInterval`을 쓰지 않는다. 5초 polling은 배달앱 `OrderStatusTracker`가 공유 `useOrderStatus`를 통해 사용자 주문 상세에서만 fallback으로 사용한다.
 - [x] **API 호출 모듈화** (2026-05-25): admin 전역 `adminApi` Axios 인스턴스 도입 + 인터셉터 조건을 `shared/api/client.ts handleResponse`와 동일한 `'data' in d` 단일 조건으로 통일. accounts·menu·store·orders·contexts·hooks 등 15개+ 파일의 직접 axios 호출을 모두 `adminApi`로 교체하여 NestJS TransformInterceptor 래핑 처리를 일원화.
@@ -370,12 +379,18 @@
 - [x] **종료 시 프로세스 완전 해제** (2026-05-23): 트레이 종료를 `win.destroy()`에서 `tray.destroy()` + `app.quit()`로 변경해 좀비 프로세스 방지.
 - [x] **업데이트 수동 승인 전환** (2026-05-23): `autoUpdater.autoDownload=false`로 영업 중 강제 다운로드/재시작 방지. `download-update`/`install-update` IPC와 `update-available`/`downloaded` 구독을 preload에 노출해 렌더러 승인 UX와 연계.
 - [x] **영수증 프린터 타겟팅 + 타임아웃** (2026-05-23): `get-printers`로 프린터 목록 제공, `print-receipt`에 `deviceName` 옵션으로 특정 프린터 무음 출력, 무응답 시 15초 타임아웃. **실제 프린터 동작은 실기기 검증 필요.**
-- [ ] **렌더러(admin 웹) 측 Electron 연동 UI**: preload `adminElectron` API(업데이트 승인 모달, 프린터 선택 드롭다운, 새 주문 사운드)를 admin 웹에서 실제 사용하는 UI는 미구현.
+- [x] **업데이트 안내** (2026-10-04, 1.0.1): 관리자 웹에 업데이트 승인 화면이 없어 설치된 앱이 업데이트되지 않았다 → 앱이 직접 "지금 받기/재시작하여 설치" 창을 띄운다
+- [x] **상단 메뉴·파일 로그** (2026-10-04, 1.0.1): 보기(새로고침·확대), 도움말(개발자 도구 F12·로그 폴더·업데이트 확인·버전). 로그 `%APPDATA%타코 관리자logsmain.log`
+- [x] **백그라운드 알람** (2026-10-04, 1.0.2): `backgroundThrottling:false`·`autoplayPolicy:no-user-gesture-required`로 트레이에 숨어도 반복 알림음, 새 주문 시 창을 앞으로 띄움
+- [ ] **프린터 선택 UI**: `print-receipt`가 `deviceName`을 받지만 관리자 웹에 선택 화면이 없어 OS 기본 프린터로 나간다
 - [ ] **주문 알림 커스텀 음원 (선택)**: 현재 `play-sound` IPC가 `shell.beep()` 시스템 기본음. `play-sound` 패키지 + 음원 에셋으로 교체 여부 결정.
 
 ---
 
 ## ⚙️ Backend (백엔드 서비스)
+
+- [x] **접수 시 고객 푸시** (2026-10-04, `efc6a32`): 매장이 접수하면 "주문이 접수되어 조리를 시작했어요. 약 N분 후 도착 예정" PUSH + IN_APP (`ORDER_CONFIRMED`). 배달 상태 변경 푸시는 기존에 있었다
+- [ ] **매장 거절(접수 전 취소·환불) 시 고객 푸시 확인**: 전액 취소 경로에서 고객에게 알림이 가는지 실기기로 확인
 
 - [ ] **대량 트랜잭션 청크(Batch) 분할**: `payments.service.ts`의 `expirePendingTossPayments`에서 수많은 결제를 한 번에 처리할 때 발생하는 Prisma 타임아웃 방지를 위해 `lodash.chunk` 등을 활용한 배치 분할 처리 적용
 - [ ] **Vercel Serverless DB 커넥션 풀러/limit 재검토**: 람다 인스턴스 복제 시 Supabase Max Connections 초과 방지를 위해 운영 `DATABASE_URL`이 서버리스용 Supabase pooler URL + `pgbouncer=true`를 쓰는지 확인하고 `connection_limit`을 낮은 값부터 계측하며 조정. `.env.example`은 pooler + `connection_limit=1` 시작 예시로 갱신. `3`/`5` 고정 승인은 보류하며 Prisma error DB transport가 별도 `PrismaClient`를 만드는 연결 영향도 함께 점검.
