@@ -107,6 +107,17 @@ describe('NotificationProviderService', () => {
         });
     });
 
+    it('adds orderId to push data so tapping the notification opens the order', async () => {
+        const firebaseService = { sendPushNotification: vi.fn().mockResolvedValue({ successCount: 1, failureCount: 0, failedTokens: [] }) };
+        const prisma = { userDevice: { findMany: vi.fn().mockResolvedValue([{ fcmToken: 'token' }]), deleteMany: vi.fn() } };
+        service = new NotificationProviderService(makeConfig(), firebaseService as any, prisma as any);
+
+        await service.send({ recipientType: 'CUSTOMER', recipientId: 'user-1', notificationType: 'ORDER_CONFIRMED', orderId: 'order-9', channel: 'PUSH', title: 't', body: 'b' });
+
+        expect(firebaseService.sendPushNotification).toHaveBeenCalledWith(['token'], 't', 'b', { orderId: 'order-9' });
+        expect(prisma.userDevice.deleteMany).not.toHaveBeenCalled();
+    });
+
     it('fails when a required external provider is not configured', async () => {
         await expect(service.send({
             recipientType: 'CUSTOMER',

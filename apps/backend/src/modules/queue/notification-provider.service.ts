@@ -64,7 +64,8 @@ export class NotificationProviderService {
                 tokens,
                 payload.title || '알림',
                 payload.body || '',
-                payload.data
+                // 고객 앱은 data.orderId로 알림을 탭했을 때 주문 상세로 이동한다
+                payload.orderId ? { ...payload.data, orderId: payload.orderId } : payload.data
             );
 
             // 실패한 토큰 정리 로직(선택사항)

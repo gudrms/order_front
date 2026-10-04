@@ -46,7 +46,9 @@ export class FirebaseService implements OnModuleInit {
         data?: QueueEventPayload
     ): Promise<{ successCount: number; failureCount: number; failedTokens: string[] }> {
         if (!this.isInitialized || tokens.length === 0) {
-            return { successCount: 0, failureCount: tokens.length, failedTokens: tokens };
+            // 토큰이 잘못된 게 아니라 Firebase 설정이 없는 것이므로 failedTokens로 넘기지 않는다 (넘기면 기기 토큰이 삭제된다)
+            if (!this.isInitialized) this.logger.warn('Firebase is not initialized. Push notification skipped.');
+            return { successCount: 0, failureCount: tokens.length, failedTokens: [] };
         }
 
         const stringifiedData: Record<string, string> = {};
@@ -65,9 +67,9 @@ export class FirebaseService implements OnModuleInit {
             data: stringifiedData,
             android: {
                 priority: 'high',
+                // clickAction을 지정하지 않아야 탭했을 때 앱이 열리고 Capacitor pushNotificationActionPerformed가 온다
                 notification: {
                     sound: 'default',
-                    clickAction: 'FLUTTER_NOTIFICATION_CLICK', // Capacitor 처리 등 필요시 변경
                 },
             },
             apns: {

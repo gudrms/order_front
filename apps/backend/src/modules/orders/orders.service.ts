@@ -246,40 +246,75 @@ export class OrdersService {
             },
         });
 
-        if (isAccepting && order.userId) {
-            await this.notifyCustomerAccepted(order.userId, storeId, orderId, shouldSetEstimate ? estimatedMinutes : undefined);
+        if (order.userId) {
+            await this.notifyCustomerStatusChanged(order.userId, storeId, orderId, status, {
+                isAccepting,
+                estimatedMinutes: shouldSetEstimate ? estimatedMinutes : undefined,
+            });
         }
 
         return updated;
     }
 
-    /** 매장이 접수하면 고객에게 알린다 — 고객이 가장 기다리는 소식이라 예상 시간을 같이 보낸다 */
-    private async notifyCustomerAccepted(userId: string, storeId: string, orderId: string, estimatedMinutes?: number) {
-        const body = estimatedMinutes
-            ? `주문이 접수되어 조리를 시작했어요. 약 ${estimatedMinutes}분 후 도착 예정이에요.`
-            : '주문이 접수되어 조리를 시작했어요.';
+    /** 고객에게 보낼 주문 상태 알림 문구 (알림이 필요 없는 상태는 null) */
+    private static customerStatusMessage(
+        status: OrderStatus,
+        { isAccepting, estimatedMinutes }: { isAccepting: boolean; estimatedMinutes?: number },
+    ): { title: string; body: string } | null {
+        // 접수는 고객이 가장 기다리는 소식이라 예상 시간을 같이 보낸다
+        if (isAccepting) {
+            return {
+                title: '🌮 주문이 접수되었어요',
+                body: estimatedMinutes
+                    ? `주문이 접수되어 조리를 시작했어요. 약 ${estimatedMinutes}분 후 도착 예정이에요.`
+                    : '주문이 접수되어 조리를 시작했어요.',
+            };
+        }
+        const messages: Partial<Record<OrderStatus, { title: string; body: string }>> = {
+            COOKING: { title: '🌮 조리를 시작했어요', body: '주문하신 메뉴를 조리하고 있어요.' },
+            PREPARING: { title: '🌮 조리를 시작했어요', body: '주문하신 메뉴를 준비하고 있어요.' },
+            READY: { title: '🌮 메뉴가 준비되었어요', body: '주문하신 메뉴가 모두 준비되었어요.' },
+            DELIVERING: { title: '🛵 배달을 시작했어요', body: '주문하신 메뉴가 출발했어요.' },
+            COMPLETED: { title: '🌮 주문이 완료되었어요', body: '맛있게 드세요!' },
+            CANCELLED: { title: '주문이 취소되었어요', body: '매장 사정으로 주문이 취소되었어요.' },
+        };
+        return messages[status] ?? null;
+    }
+
+    /** 매장이 주문 상태를 바꾸면 고객 앱에 알린다 */
+    private async notifyCustomerStatusChanged(
+        userId: string,
+        storeId: string,
+        orderId: string,
+        status: OrderStatus,
+        options: { isAccepting: boolean; estimatedMinutes?: number },
+    ) {
+        const message = OrdersService.customerStatusMessage(status, options);
+        if (!message) return;
+        const notificationType = status === 'CANCELLED' ? 'ORDER_CANCELLED' : 'ORDER_CONFIRMED';
         try {
             await this.queueService.publishNotificationSend({
                 recipientType: 'CUSTOMER',
                 recipientId: userId,
-                notificationType: 'ORDER_CONFIRMED',
+                notificationType,
                 orderId,
                 storeId,
+                orderStatus: status,
                 channel: 'IN_APP',
             });
             await this.queueService.publishNotificationSend({
                 recipientType: 'CUSTOMER',
                 recipientId: userId,
-                notificationType: 'ORDER_CONFIRMED',
+                notificationType,
                 orderId,
                 storeId,
+                orderStatus: status,
                 channel: 'PUSH',
-                title: '🌮 주문이 접수되었어요',
-                body,
+                ...message,
             });
         } catch (error) {
-            // 알림 실패가 접수 자체를 막으면 안 된다
-            this.logger.error(`Failed to publish order accepted notification for ${orderId}`, error as Error);
+            // 알림 실패가 상태 변경 자체를 막으면 안 된다
+            this.logger.error(`Failed to publish order status notification for ${orderId}`, error as Error);
         }
     }
 

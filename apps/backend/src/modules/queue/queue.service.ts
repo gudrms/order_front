@@ -192,7 +192,9 @@ export class QueueService {
         const subjectId = payload.orderId || payload.storeId || 'global';
         const channel = payload.channel || 'IN_APP';
 
-        return `${recipientId}:${payload.notificationType}:${subjectId}:${channel}`;
+        const status = payload.orderStatus ? `:${payload.orderStatus}` : '';
+
+        return `${recipientId}:${payload.notificationType}:${subjectId}:${channel}${status}`;
     }
 
     private scheduleImmediateProcessing(): void {

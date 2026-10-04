@@ -89,6 +89,8 @@ export interface NotificationSendEventPayload extends QueueEventPayload {
     orderId?: string;
     storeId?: string;
     channel?: 'IN_APP' | 'EMAIL' | 'PUSH' | 'SMS';
+    /** 알림이 가리키는 주문·배달 상태 — 같은 주문이라도 상태마다 알림이 따로 나가도록 dedupe 키에 넣는다 */
+    orderStatus?: string;
     title?: string;
     body?: string;
     data?: QueueEventPayload;

@@ -463,6 +463,26 @@ export class PaymentsService {
             isFullRefund: true,
         });
 
+        if (payment.order.userId) {
+            try {
+                for (const channel of ['IN_APP', 'PUSH'] as const) {
+                    await this.queueService?.publishNotificationSend({
+                        recipientType: 'CUSTOMER',
+                        recipientId: payment.order.userId,
+                        notificationType: 'ORDER_CANCELLED',
+                        orderId,
+                        storeId: payment.order.storeId,
+                        orderStatus: 'CANCELLED',
+                        channel,
+                        ...(channel === 'PUSH' ? { title: '주문이 취소되었어요', body: `매장에서 주문을 취소하고 결제를 환불했어요. (사유: ${cancelReason})` } : {}),
+                    });
+                }
+            } catch (error) {
+                // 환불은 이미 끝났으므로 알림 실패로 요청을 실패시키지 않는다
+                this.logger.error(`Failed to publish order cancelled notification for ${orderId}`, error as Error);
+            }
+        }
+
         return this.getOrderResponse(orderId);
     }
 

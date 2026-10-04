@@ -115,6 +115,7 @@ export class NotificationEventHandler {
                 notificationType,
                 orderId: payload.orderId,
                 storeId: payload.storeId,
+                orderStatus: payload.newStatus,
                 channel: 'IN_APP',
             });
             await this.queueService.publishNotificationSend({
@@ -123,6 +124,7 @@ export class NotificationEventHandler {
                 notificationType,
                 orderId: payload.orderId,
                 storeId: payload.storeId,
+                orderStatus: payload.newStatus,
                 channel: 'PUSH',
                 title: '🌮 타코몰리 배달 알림',
                 body,
@@ -136,6 +138,7 @@ export class NotificationEventHandler {
                 notificationType: 'DELIVERY_STATUS_CHANGED',
                 orderId: payload.orderId,
                 storeId: payload.storeId,
+                orderStatus: payload.newStatus,
                 channel: 'IN_APP',
             });
             await this.queueService.publishNotificationSend({
@@ -144,6 +147,7 @@ export class NotificationEventHandler {
                 notificationType: 'DELIVERY_STATUS_CHANGED',
                 orderId: payload.orderId,
                 storeId: payload.storeId,
+                orderStatus: payload.newStatus,
                 channel: 'PUSH',
                 title: '⚠️ 배달 취소 알림',
                 body: '고객님의 주문이 취소되었습니다.',
@@ -157,7 +161,9 @@ export function buildNotificationDedupeKey(payload: NotificationSendEventPayload
     const subjectId = payload.orderId || payload.storeId || 'global';
     const channel = payload.channel || 'IN_APP';
 
-    return `${recipientId}:${payload.notificationType}:${subjectId}:${channel}`;
+    const status = payload.orderStatus ? `:${payload.orderStatus}` : '';
+
+    return `${recipientId}:${payload.notificationType}:${subjectId}:${channel}${status}`;
 }
 
 function toJsonPayload(message: unknown): Prisma.InputJsonValue {

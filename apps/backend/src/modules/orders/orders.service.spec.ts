@@ -69,6 +69,32 @@ describe('OrdersService', () => {
         }));
     });
 
+    it('notifies the customer on every customer-visible status change, tagged with the status', async () => {
+        prisma.order = {
+            findUnique: vi.fn().mockResolvedValue({ id: 'order-1', storeId: 'store-1', userId: 'user-1', status: 'COOKING', delivery: null }),
+            update: vi.fn().mockResolvedValue({ id: 'order-1', status: 'READY' }),
+        };
+        await service.updateOrderStatus('store-1', 'order-1', 'READY' as any);
+        expect(queueService.publishNotificationSend).toHaveBeenCalledWith(expect.objectContaining({
+            recipientId: 'user-1', channel: 'PUSH', orderStatus: 'READY', notificationType: 'ORDER_CONFIRMED',
+        }));
+
+        prisma.order.findUnique.mockResolvedValue({ id: 'order-1', storeId: 'store-1', userId: 'user-1', status: 'READY', delivery: null });
+        await service.updateOrderStatus('store-1', 'order-1', 'CANCELLED' as any);
+        expect(queueService.publishNotificationSend).toHaveBeenCalledWith(expect.objectContaining({
+            channel: 'PUSH', orderStatus: 'CANCELLED', notificationType: 'ORDER_CANCELLED',
+        }));
+    });
+
+    it('does not notify for orders without a customer account', async () => {
+        prisma.order = {
+            findUnique: vi.fn().mockResolvedValue({ id: 'order-1', storeId: 'store-1', userId: null, status: 'COOKING', delivery: null }),
+            update: vi.fn().mockResolvedValue({}),
+        };
+        await service.updateOrderStatus('store-1', 'order-1', 'READY' as any);
+        expect(queueService.publishNotificationSend).not.toHaveBeenCalled();
+    });
+
     it('ignores the estimate for orders without delivery and rejects out-of-range estimates', async () => {
         prisma.order = {
             findUnique: vi.fn().mockResolvedValue({ id: 'order-1', storeId: 'store-1', status: 'PAID', delivery: null }),
