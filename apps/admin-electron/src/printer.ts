@@ -18,13 +18,23 @@ export async function printOrderReceipt(
   options: { deviceName?: string; receipt?: ReceiptData } = {},
 ): Promise<PrintResult> {
   const settings = loadSettings();
+  // 실패 원인을 매장에서 바로 볼 수 있게 출력 요청마다 그 순간의 설정을 남긴다
+  log('INFO', 'print requested', {
+    printMode: settings.printMode ?? 'windows',
+    serialPort: settings.serialPort,
+    baudRate: settings.baudRate,
+    receiptPrinter: settings.receiptPrinter,
+    hasReceipt: !!options.receipt,
+  });
 
   if (settings.printMode === 'serial') {
     if (!settings.serialPort) {
+      log('WARN', 'print failed: no serial port selected');
       return { success: false, message: 'COM 포트를 선택해 주세요. 상단 메뉴 [설정] → [COM 포트]' };
     }
     if (!options.receipt) {
       // 예전 관리자 화면은 주문서 내용을 넘기지 않는다
+      log('WARN', 'print failed: admin web did not send receipt data (old web version)');
       return { success: false, message: '관리자 화면을 새로고침(Ctrl+R)한 뒤 다시 출력해 주세요.' };
     }
     return printViaSerial(settings.serialPort, settings.baudRate ?? DEFAULT_BAUD_RATE, buildEscPosReceipt(options.receipt));
