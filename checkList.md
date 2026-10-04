@@ -126,20 +126,22 @@
     - [ ] `apps/delivery-customer/.env.local`: `NEXT_PUBLIC_TOSS_CLIENT_KEY=live_gck_...` (현재 `test_ck_`라 결제 버튼이 막힘)
     - [ ] `apps/backend/.env`: `TOSS_PAYMENTS_SECRET_KEY=live_gsk_...` 추가 (현재 구 `TOSS_ACCESS_SECRET`만 있음)
     - [ ] 토스 상점관리자에서 카드 결제수단 활성 상태 확인
-    - [ ] 먼저 상점 전용 **test 키**(`test_gck_`/`test_gsk_`)로 아래 흐름을 한 번 돌려 코드·설정 문제를 걸러낸 뒤 live 키로 바꾼다
+    - [x] (2026-10-04) 먼저 상점 전용 **test 키**(`test_gck_`/`test_gsk_`)로 아래 흐름을 한 번 돌려 코드·설정 문제를 걸러낸 뒤 live 키로 바꾼다
   - **결제**
-    - [ ] 테스트 매장 메뉴 → 장바구니 → 주소 입력 → 체크아웃에서 결제위젯이 뜬다 (live 키를 localhost에서 받아주는지 이 단계에서 확인)
-    - [ ] 실카드 결제(사용자 직접 입력) → success 페이지에서 주문 완료 표시
+    - [x] (test 키, 외부 Chrome) 테스트 매장 메뉴 → 장바구니 → 주소 입력 → 체크아웃에서 결제위젯이 뜬다 (live 키를 localhost에서 받아주는지 이 단계에서 확인)
+    - [x] (test 키) 실카드 결제(사용자 직접 입력) → success 페이지에서 주문 완료 표시
     - [ ] DB: `Payment.status=PAID`, `approvedAmount`가 결제 금액(메뉴 100원 × 수량)과 일치, `receiptUrl` 저장 / `Order.status=PAID`
     - [ ] 토스 상점관리자 거래내역에 같은 `orderId`·금액으로 승인 건이 보인다
+    - [x] 관리자 목록에 결제 완료·영수증 링크로 보인다 (주문 0036, 200원)
     - [ ] 배달앱 주문내역·주문 상세에 결제 완료로 보인다
   - **주문서 인쇄 (로컬 admin `/orders`)**
     - [ ] 새 주문이 목록에 뜬다 (새로고침 없이 뜨는지 확인 — `useRealtimeOrders`(Supabase 실시간 구독)가 붙어 있다)
-    - [ ] 인쇄 버튼(`admin-order-print-{orderId}`) → 영수증 모달에 메뉴·옵션·금액·주소·요청사항이 맞게 나온다
-    - [ ] 웹: `window.print()` 미리보기에 **주문서만** 나오는지 (관리자 화면 전체가 같이 찍히지 않는지)
+    - [x] 출력 버튼 → 주문서에 메뉴·옵션·금액·주소·연락처·요청사항이 나온다 (확인 모달 제거, 바로 인쇄)
+    - [x] 웹: `window.print()` 미리보기에 **주문서만** 나온다 (전역 인쇄 CSS로 나머지 숨김)
     - [ ] admin-electron: 무음 출력이 실제 영수증 프린터로 나온다. `print-receipt`는 `webContents.print`로 **창 전체**를 출력하고, `OrderReceipt`가 `deviceName`을 넘기지 않아 **기본 프린터**로 간다 — 영수증 프린터를 OS 기본 프린터로 지정했는지, 출력물에 주문서만 나오는지 확인
-    - [ ] 80mm 용지 폭에서 글자 잘림·줄바꿈 확인
+    - [ ] 80mm 용지 폭에서 글자 잘림·줄바꿈 확인 — Microsoft Print to PDF는 A4만 지원해 80mm `@page`를 무시한다. Chrome "PDF로 저장" 또는 실제 영수증 프린터로 확인
   - **주문 처리·환불**
+    - [ ] 배달 주문 `접수` → 예상 시간 선택 → 주문서 자동 출력(예상 소요 N분 표시) → 고객 주문 상세에 "접수 후 약 N분"
     - [ ] 주문 상태 `CONFIRMED → COOKING → READY` 진행, 배달앱에 반영
     - [ ] 로컬 admin에서 전액 취소 → `Payment.status=REFUNDED`, `Order.status=CANCELLED`, 토스 상점관리자에 취소 반영, 카드 취소 문자 수신
   - **정리**
@@ -151,7 +153,17 @@
     - SQL로 매장을 켜면 배달앱 공개 데이터 캐시(5분)가 갱신되지 않아 한동안 "배달 주문을 받지 않습니다"로 보인다. 로컬은 `.next/dev/cache/fetch-cache` 삭제 후 재시작으로 해소. 운영에서 매장 설정은 관리자 화면(revalidate 웹훅 호출)으로 바꿀 것
     - 배달 주소는 카카오 주소 검색으로만 입력된다
     - [ ] **관리자 매장 선택이 「매장 관리」 화면에만 있다**: 주문·메뉴 등 다른 화면은 거기서 고른 매장(`AdminStoreContext`, 브라우저 저장)을 따라가고, 선택 전엔 첫 매장(검단마전점)이 기본값이다. 여러 매장을 보는 ADMIN이 다른 매장 주문을 보고 있는 줄 모르고 상태 변경·환불할 위험 → 공통 헤더/사이드바에 매장 선택 칸 추가
+    - [x] **주문서 출력 시 화면 전체가 죽음** (2026-10-04, `ff01732`): 주문서가 없는 필드 `order.totalPrice`를 읽었다(백엔드는 `totalAmount`). 관리자 화면이 백엔드 응답을 그대로 써서 단가 없음(상세도 죽음)·**선택 옵션 미표시**(하리토스 맛 등 주방이 모름)까지 있었다 → 공용 `mapOrder`로 변환
+    - [ ] **`packages/shared/src`에 예전 컴파일 산출물(.js/.d.ts/.map 48개)이 git에 남아 있다**: webpack은 .ts보다 .js를 먼저 찾아 `@order/shared`가 예전 `index.js`(api 내보내기 없음)로 풀린다. 관리자는 `@order/shared/api` 하위 경로로 우회했다. 운영 빌드도 같은 위험이 있으니 산출물 삭제 + .gitignore 추가 검토
+    - [ ] 운영 `타코몰리 김포점`의 소유자(OWNER)가 가짜 계정 `owner@example.com`이라 **실제 주문 알림이 아무에게도 가지 않는다** → 실제 점주 계정을 만들어 연결
     - 로컬 포트 불일치: 백엔드 기본 4000인데 admin `.env.local`만 3000을 보고 있었다 → 4000으로 통일
+- [ ] **매장용 PC 앱(admin-electron) 배포** — 매장은 PC + 영수증 프린터 구성, iPad 미사용이라 PWA는 하지 않는다 (무음 인쇄·알림음은 Electron만 가능)
+  - [x] GitHub Releases `admin-v1.0.0`에 `taco-admin-setup.exe`·`latest.yml`·blockmap 업로드 (2026-10-04). 다운로드: `https://github.com/gudrms/order_front/releases/latest/download/taco-admin-setup.exe`
+  - [x] 관리자 웹 상단 "PC 앱 다운로드" 버튼 (PC 앱 안에서는 숨김, `NEXT_PUBLIC_ADMIN_PC_APP_URL` 비우면 숨김)
+  - [ ] Vercel 관리자 프로젝트에 `NEXT_PUBLIC_ADMIN_PC_APP_URL` 추가 후 재배포
+  - [ ] 실제 매장 PC에 설치 → 로그인 → 접수 시 무음 자동 출력·알림음·트레이 확인. 코드 서명이 없어 첫 설치 때 "PC 보호" 경고 → [추가 정보] → [실행]
+  - 빌드 방법: 모노레포 안에서 electron-builder를 돌리면 pnpm 링크 문제로 실패하고 `node_modules`를 망가뜨린다(복구: `pnpm install --frozen-lockfile`). 앱 폴더(package.json·dist·assets)를 밖으로 복사해 `npm install` 후 `npx electron-builder --win --publish never`. Windows에서 서명 도구 압축 해제가 심볼릭 링크 권한으로 실패하면 7za로 `winCodeSign-2.6.0` 캐시를 미리 풀어 둔다
+  - 새 버전: `apps/admin-electron/package.json` version 올림 → 빌드 → 새 릴리스. 이 저장소 릴리스는 PC 앱 전용으로 써야 "최신" 주소가 깨지지 않는다
 - [x] **Toss Payments 전자결제 심사** (2026-09-29): 카드사 전체 승인 완료(하나은행이 마지막). 상호 주식회사 에스와이월드, MID `tacomom5cx`.
   - 신청 주체: 1호점 실제 운영 사업자/대표자 정보 기준.
   - 정산 계좌: 1호점 사업자 또는 대표자 명의 계좌.
