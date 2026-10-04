@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { BellRing } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAdminStore } from '@/contexts/AdminStoreContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { canAccessAdmin } from '@/lib/adminPermissions';
@@ -27,6 +28,14 @@ export function OrderAlarmProvider({ children }: { children: ReactNode }) {
   const notifiedIdsRef = useRef(new Set<string>());
   const notifyingIdsRef = useRef(new Set<string>());
   const hasPending = pending.length > 0;
+  const queryClient = useQueryClient();
+  const pendingIdsKey = pending.map((order) => order.id).sort().join(',');
+
+  // Realtime이 끊겨도 알람 폴링(5초)에서 새 주문이 보이면 주문 관리 목록도 다시 불러온다
+  useEffect(() => {
+    if (!pendingIdsKey || !selectedStoreId) return;
+    void queryClient.invalidateQueries({ queryKey: ['admin-orders', selectedStoreId, 'list'] });
+  }, [pendingIdsKey, selectedStoreId, queryClient]);
 
   useEffect(() => {
     const sync = () => { setSettings({ alerts: localStorage.getItem(ALERT_ENABLED_KEY) !== 'false', sound: localStorage.getItem(SOUND_ENABLED_KEY) !== 'false' }); setSettingsReady(true); };
