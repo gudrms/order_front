@@ -7,30 +7,7 @@ import { OrderDetailSkeleton } from '@/components/ui/Skeleton';
 import { OrderStatusTracker } from '@/components/order/OrderStatusTracker';
 import { useCancelOrder, useOrder } from '@/hooks/queries/useOrders';
 import { useAuth } from '@/contexts/AuthContext';
-import type { DeliveryStatus, OrderStatus } from '@order/shared';
-
-const orderStatusLabel: Record<OrderStatus, string> = {
-    PENDING: '접수 대기',
-    PENDING_PAYMENT: '결제 대기',
-    PAID: '결제 완료',
-    CONFIRMED: '주문 접수',
-    COOKING: '조리 중',
-    PREPARING: '준비 중',
-    READY: '배달 준비',
-    DELIVERING: '배달 중',
-    COMPLETED: '완료',
-    CANCELLED: '취소',
-};
-
-const deliveryStatusLabel: Record<DeliveryStatus, string> = {
-    PENDING: '배달 대기',
-    ASSIGNED: '라이더 배정',
-    PICKED_UP: '픽업 완료',
-    DELIVERING: '배달 중',
-    DELIVERED: '배달 완료',
-    FAILED: '배달 실패',
-    CANCELLED: '배달 취소',
-};
+import { getCustomerOrderStatusLabel, getPaymentStatusLabel } from '@/lib/orderStatus';
 
 const CANCEL_REASONS = [
     '주문을 잘못 선택했습니다.',
@@ -254,14 +231,17 @@ export function OrderDetailClient({ orderId }: { orderId: string }) {
                     <div className="space-y-2 text-sm">
                         <InfoRow label="주문번호" value={order.orderNumber} />
                         <InfoRow label="주문일시" value={new Date(order.createdAt).toLocaleString('ko-KR')} />
-                        <InfoRow label="주문상태" value={orderStatusLabel[order.status] || order.status} />
-                        <InfoRow label="결제상태" value={order.paymentStatus || '-'} />
+                        <InfoRow label="주문상태" value={getCustomerOrderStatusLabel(order.status)} />
+                        <InfoRow label="결제상태" value={getPaymentStatusLabel(order.paymentStatus)} />
                         {order.cancelledAt && (
                             <InfoRow label="취소일시" value={new Date(order.cancelledAt).toLocaleString('ko-KR')} />
                         )}
                         {order.delivery && (
                             <>
-                                <InfoRow label="배달상태" value={deliveryStatusLabel[order.delivery.status] || order.delivery.status} />
+                                {/* 매장이 접수하면서 정한 예상 시간 (접수 전에는 매장 기본값이라 보여주지 않는다) */}
+                                {order.delivery.estimatedMinutes && ['CONFIRMED', 'COOKING', 'PREPARING', 'READY', 'DELIVERING'].includes(order.status) && (
+                                    <InfoRow label="예상 시간" value={`접수 후 약 ${order.delivery.estimatedMinutes}분`} />
+                                )}
                                 <InfoRow label="수령자" value={order.delivery.recipientName} />
                                 <InfoRow label="연락처" value={order.delivery.recipientPhone} />
                                 <InfoRow

@@ -3,6 +3,7 @@
 import { CheckCircle2, ChefHat, Clock, MapPin, Package, XCircle } from 'lucide-react';
 import { useOrderStatus } from '@order/shared/hooks/useOrderStatus';
 import type { DeliveryStatus, OrderStatus } from '@order/shared';
+import { CUSTOMER_ORDER_STAGE_LABEL, toCustomerOrderStage, type CustomerOrderStage } from '@/lib/orderStatus';
 
 interface OrderStatusTrackerProps {
     orderId: string;
@@ -11,21 +12,12 @@ interface OrderStatusTrackerProps {
     userId?: string | null;
 }
 
-const steps = [
-    { id: 'PENDING', label: '접수 대기', icon: Clock },
-    { id: 'COOKING', label: '조리 중', icon: ChefHat },
-    { id: 'DELIVERING', label: '배달 중', icon: MapPin },
-    { id: 'COMPLETED', label: '배달 완료', icon: Package },
+const steps: { id: CustomerOrderStage; icon: typeof Clock }[] = [
+    { id: 'WAITING', icon: Clock },
+    { id: 'COOKING', icon: ChefHat },
+    { id: 'DELIVERING', icon: MapPin },
+    { id: 'DELIVERED', icon: Package },
 ];
-
-function normalizeStatus(status: string | null) {
-    if (!status) return 'PENDING';
-    if (status === 'PENDING_PAYMENT' || status === 'PAID') return 'PENDING';
-    if (status === 'CONFIRMED' || status === 'PREPARING' || status === 'COOKING') return 'COOKING';
-    if (status === 'READY' || status === 'DELIVERING') return 'DELIVERING';
-    if (status === 'COMPLETED') return 'COMPLETED';
-    return status;
-}
 
 function getStatusMessage(status: string | null, deliveryStatus?: DeliveryStatus | null) {
     if (deliveryStatus === 'ASSIGNED') return '라이더가 배정되었습니다. 곧 픽업을 시작합니다.';
@@ -64,7 +56,7 @@ export function OrderStatusTracker({
     userId,
 }: OrderStatusTrackerProps) {
     const status = useOrderStatus({ orderId, initialStatus, userId, pollIntervalMs: 5000 });
-    const normalizedStatus = normalizeStatus(status);
+    const normalizedStatus = toCustomerOrderStage(status);
     const currentStepIndex = Math.max(0, steps.findIndex((step) => step.id === normalizedStatus));
     const isCancelled = status === 'CANCELLED' || deliveryStatus === 'CANCELLED';
 
@@ -109,7 +101,7 @@ export function OrderStatusTracker({
                                         className={`text-xs font-medium transition-colors duration-300 ${isActive ? 'text-brand-black' : 'text-gray-400'
                                             } ${isCurrent ? 'font-bold' : ''}`}
                                     >
-                                        {step.label}
+                                        {CUSTOMER_ORDER_STAGE_LABEL[step.id]}
                                     </span>
                                 </div>
                             );

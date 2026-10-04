@@ -6,19 +6,14 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOptionalCurrentStore } from '@/contexts/StoreContext';
 import { useOrders } from '@/hooks/queries/useOrders';
-import type { OrderStatus } from '@order/shared';
+import { CUSTOMER_ORDER_STAGE_LABEL, toCustomerOrderStage, type CustomerOrderStage } from '@/lib/orderStatus';
 
-const statusConfig: Record<OrderStatus, { label: string; icon: typeof Clock; color: string }> = {
-    PENDING: { label: '접수 대기', icon: Clock, color: 'text-gray-500' },
-    PENDING_PAYMENT: { label: '결제 대기', icon: Clock, color: 'text-slate-500' },
-    CONFIRMED: { label: '접수 완료', icon: CheckCircle, color: 'text-blue-500' },
-    PAID: { label: '결제 완료', icon: CheckCircle, color: 'text-blue-500' },
-    COOKING: { label: '조리 중', icon: Loader, color: 'text-orange-500' },
-    PREPARING: { label: '준비 중', icon: Loader, color: 'text-orange-500' },
-    READY: { label: '준비 완료', icon: CheckCircle, color: 'text-green-500' },
-    DELIVERING: { label: '배달 중', icon: Loader, color: 'text-purple-500' },
-    COMPLETED: { label: '완료', icon: CheckCircle, color: 'text-green-600' },
-    CANCELLED: { label: '취소됨', icon: XCircle, color: 'text-red-500' },
+const stageStyle: Record<CustomerOrderStage, { icon: typeof Clock; color: string }> = {
+    WAITING: { icon: Clock, color: 'text-gray-500' },
+    COOKING: { icon: Loader, color: 'text-orange-500' },
+    DELIVERING: { icon: Loader, color: 'text-purple-500' },
+    DELIVERED: { icon: CheckCircle, color: 'text-green-600' },
+    CANCELLED: { icon: XCircle, color: 'text-red-500' },
 };
 
 const paymentStatusBadge: Record<string, { label: string; className: string }> = {
@@ -33,7 +28,8 @@ export default function OrdersPage() {
     const currentStore = useOptionalCurrentStore();
     const storeId = currentStore?.storeId ?? null;
     const { data, isLoading, isError } = useOrders({ storeId, userId: user?.id });
-    const orders = data?.orders || [];
+    // 결제를 끝내지 않은 주문(결제창 이탈)은 주문이 아니므로 목록에서 뺀다
+    const orders = (data?.orders || []).filter((order) => order.status !== 'PENDING_PAYMENT');
 
     if (isAuthLoading) {
         return (
@@ -103,7 +99,8 @@ export default function OrdersPage() {
                     </div>
                 ) : (
                     orders.map((order) => {
-                        const status = statusConfig[order.status];
+                        const stage = toCustomerOrderStage(order.status);
+                        const status = { ...stageStyle[stage], label: CUSTOMER_ORDER_STAGE_LABEL[stage] };
                         const StatusIcon = status.icon;
                         const paymentBadge = order.paymentStatus
                             ? paymentStatusBadge[order.paymentStatus]
