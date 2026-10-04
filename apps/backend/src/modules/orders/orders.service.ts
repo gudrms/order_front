@@ -179,9 +179,15 @@ export class OrdersService {
         CANCELLED:        [],
     };
 
-    async updateOrderStatus(storeId: string, orderId: string, status: OrderStatus) {
+    async updateOrderStatus(
+        storeId: string,
+        orderId: string,
+        status: OrderStatus,
+        options: { estimatedMinutes?: number } = {},
+    ) {
         const order = await this.prisma.order.findUnique({
             where: { id: orderId },
+            include: { delivery: { select: { id: true } } },
         });
 
         if (!order) {
@@ -199,12 +205,20 @@ export class OrdersService {
             );
         }
 
+        // 접수 시 매장이 정한 배달 예상 시간을 저장한다 (주문 시점엔 매장 기본값이 들어가 있다)
+        const { estimatedMinutes } = options;
+        const shouldSetEstimate = status === 'CONFIRMED' && estimatedMinutes != null && !!order.delivery;
+        if (shouldSetEstimate && (!Number.isInteger(estimatedMinutes) || estimatedMinutes < 5 || estimatedMinutes > 180)) {
+            throw new BadRequestException('예상 시간은 5분에서 180분 사이로 정해 주세요');
+        }
+
         return this.prisma.order.update({
             where: { id: orderId },
             data: {
                 status,
                 completedAt: status === 'COMPLETED' ? new Date() : undefined,
                 cancelledAt: status === 'CANCELLED' ? new Date() : undefined,
+                delivery: shouldSetEstimate ? { update: { estimatedMinutes } } : undefined,
             },
         });
     }

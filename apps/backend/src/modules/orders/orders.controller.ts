@@ -251,6 +251,11 @@ export class OrdersController {
                     description: '변경할 주문 상태',
                     example: 'CONFIRMED',
                 },
+                estimatedMinutes: {
+                    type: 'number',
+                    description: '접수(CONFIRMED) 시 매장이 정한 배달 예상 소요 시간(분). 배달 주문에만 적용',
+                    example: 40,
+                },
             },
         },
     })
@@ -274,8 +279,9 @@ export class OrdersController {
         @Param('storeId') storeId: string,
         @Param('orderId') orderId: string,
         @Body('status') status: OrderStatus,
+        @Body('estimatedMinutes') estimatedMinutes?: number,
     ) {
-        return this.ordersService.updateOrderStatus(storeId, orderId, status);
+        return this.ordersService.updateOrderStatus(storeId, orderId, status, { estimatedMinutes });
     }
 
     @Patch(':orderId/delivery-status')

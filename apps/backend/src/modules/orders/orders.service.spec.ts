@@ -17,6 +17,40 @@ describe('OrdersService', () => {
         service = new OrdersService(prisma, {} as any, {} as any, queueService);
     });
 
+    it('saves the store-chosen delivery estimate when accepting a delivery order', async () => {
+        prisma.order = {
+            findUnique: vi.fn().mockResolvedValue({
+                id: 'order-1', storeId: 'store-1', status: 'PAID', delivery: { id: 'delivery-1' },
+            }),
+            update: vi.fn().mockResolvedValue({ id: 'order-1', status: 'CONFIRMED' }),
+        };
+
+        await service.updateOrderStatus('store-1', 'order-1', 'CONFIRMED' as any, { estimatedMinutes: 50 });
+
+        expect(prisma.order.update).toHaveBeenCalledWith(expect.objectContaining({
+            data: expect.objectContaining({
+                status: 'CONFIRMED',
+                delivery: { update: { estimatedMinutes: 50 } },
+            }),
+        }));
+    });
+
+    it('ignores the estimate for orders without delivery and rejects out-of-range estimates', async () => {
+        prisma.order = {
+            findUnique: vi.fn().mockResolvedValue({ id: 'order-1', storeId: 'store-1', status: 'PAID', delivery: null }),
+            update: vi.fn().mockResolvedValue({}),
+        };
+        await service.updateOrderStatus('store-1', 'order-1', 'CONFIRMED' as any, { estimatedMinutes: 50 });
+        expect(prisma.order.update.mock.calls[0][0].data.delivery).toBeUndefined();
+
+        prisma.order.findUnique.mockResolvedValue({
+            id: 'order-1', storeId: 'store-1', status: 'PAID', delivery: { id: 'delivery-1' },
+        });
+        await expect(
+            service.updateOrderStatus('store-1', 'order-1', 'CONFIRMED' as any, { estimatedMinutes: 999 }),
+        ).rejects.toBeInstanceOf(BadRequestException);
+    });
+
     it('lists failed POS sync orders for admin visibility', async () => {
         prisma.order = {
             findMany: vi.fn().mockResolvedValue([{ id: 'order-1', posSyncStatus: 'FAILED' }]),
