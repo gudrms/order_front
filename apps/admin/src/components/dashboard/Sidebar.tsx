@@ -28,7 +28,7 @@ export default function Sidebar() {
     dialog?.showModal();
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    const media = window.matchMedia('(min-width: 768px)');
+    const media = window.matchMedia('(min-width: 1280px)');
     const closeOnDesktop = () => { if (media.matches) setOpen(false); };
     media.addEventListener('change', closeOnDesktop);
     return () => {
@@ -96,8 +96,8 @@ export default function Sidebar() {
 
   return (
     <>
-      <aside className="hidden w-48 shrink-0 flex-col border-r border-gray-200 bg-white md:flex xl:w-64">{content}</aside>
-      <button ref={triggerRef} type="button" onClick={() => setOpen(true)} aria-label="메뉴 열기" aria-expanded={open} aria-controls="admin-mobile-menu" className="fixed left-4 top-4 z-30 flex h-11 w-11 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 shadow-sm md:hidden">
+      <aside className="hidden w-64 shrink-0 flex-col border-r border-gray-200 bg-white xl:flex">{content}</aside>
+      <button ref={triggerRef} type="button" onClick={() => setOpen(true)} aria-label="메뉴 열기" aria-expanded={open} aria-controls="admin-mobile-menu" className="fixed left-4 top-4 z-30 flex h-11 w-11 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 shadow-sm xl:hidden">
         <Menu size={22} />
       </button>
       <dialog ref={dialogRef} id="admin-mobile-menu" aria-label="관리자 메뉴" onCancel={() => setOpen(false)} onClick={(event) => { if (event.target === event.currentTarget) setOpen(false); }} className="fixed inset-0 m-0 h-dvh max-h-none w-full max-w-none bg-transparent p-0 backdrop:bg-black/40">

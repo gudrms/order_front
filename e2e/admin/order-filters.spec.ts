@@ -16,6 +16,7 @@ test('filters server orders by date/state and navigates pages', async ({ adminPa
   await gotoAdminPage(page, '/orders', 'admin-orders-table');
   const filters = page.getByRole('region', { name: '주문 필터' });
   await expect(filters.getByRole('button', { name: '전체 45건' })).toBeVisible();
+  await filters.locator('summary').click();
   await page.getByLabel('시작일', { exact: true }).fill('2026-10-01');
   await page.getByLabel('종료일', { exact: true }).fill('2026-10-04');
   await filters.getByRole('button', { name: '취소 21건' }).click();

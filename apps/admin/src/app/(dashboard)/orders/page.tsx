@@ -241,7 +241,7 @@ export default function OrdersPage() {
   const changeFilters = (next: Partial<typeof filters>) => { setFilters((current) => ({ ...current, ...next, page: 1 })); setExpandedOrderId(null); setExpandedMobileOrderId(null); };
 
   return (
-    <div className="@container space-y-3 xl:space-y-6">
+    <div className="@container space-y-2 xl:space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
           <h2 className="text-xl font-bold text-gray-800 xl:text-2xl">주문 관리</h2>
@@ -252,7 +252,7 @@ export default function OrdersPage() {
 
       </div>
 
-      <section aria-label="주문 필터" className="space-y-2 rounded-xl border border-gray-200 bg-white p-3 xl:space-y-4 xl:p-4">
+      <section aria-label="주문 필터" className="space-y-2 rounded-xl border border-gray-200 bg-white p-3 lg:flex lg:flex-wrap lg:items-start lg:gap-3 lg:space-y-0">
         <div className="flex flex-wrap gap-2" aria-label="주문 상태">
           {([{ value: 'all', label: '전체', color: 'bg-slate-500' }, { value: 'active', label: '진행 중', color: 'bg-blue-600' }, { value: 'cancelled', label: '취소', color: 'bg-red-600' }, { value: 'completed', label: '완료', color: 'bg-green-600' }] as const).map((item) => (
             <button key={item.value} type="button" aria-pressed={filters.state === item.value} onClick={() => changeFilters({ state: item.value })} className={`inline-flex min-h-11 items-center gap-2 rounded-lg border px-3 text-sm font-medium ${filters.state === item.value ? 'border-blue-600 bg-blue-50 text-blue-800' : 'border-gray-200 text-gray-700 hover:bg-gray-50'}`}>
@@ -260,13 +260,16 @@ export default function OrdersPage() {
             </button>
           ))}
         </div>
-        <div className="flex flex-wrap items-end gap-3">
+        <details className="rounded-lg border border-gray-100 px-2">
+          <summary className="cursor-pointer py-2 text-sm text-gray-600">기간 설정{filters.startDate || filters.endDate ? ` · ${filters.startDate || '전체'} ~ ${filters.endDate || '전체'}` : ' · 전체 기간'}</summary>
+        <div className="flex flex-wrap items-end gap-3 pb-2">
           <label className="min-w-0 flex-1 sm:flex-none"><span className="mb-1 block text-sm text-gray-600">시작일</span><input type="date" aria-label="시작일" value={filters.startDate} onChange={(event) => changeFilters({ startDate: event.target.value })} className="min-h-11 w-full min-w-0 rounded-lg border border-gray-300 px-2 text-sm" /></label>
           <label className="min-w-0 flex-1 sm:flex-none"><span className="mb-1 block text-sm text-gray-600">종료일</span><input type="date" aria-label="종료일" value={filters.endDate} onChange={(event) => changeFilters({ endDate: event.target.value })} className="min-h-11 w-full min-w-0 rounded-lg border border-gray-300 px-2 text-sm" /></label>
           <button type="button" onClick={() => { const today = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Seoul' }).format(new Date()); changeFilters({ startDate: today, endDate: today }); }} className="min-h-11 rounded-lg border border-gray-200 px-3 text-sm">오늘</button>
           <button type="button" onClick={() => changeFilters({ startDate: '', endDate: '', state: 'all' })} className="min-h-11 rounded-lg border border-gray-200 px-3 text-sm">초기화</button>
         </div>
         <p className="text-xs text-gray-500">주문 생성일 기준 · 한국 시간 · 진행 중은 결제 대기부터 배달 중까지 포함</p>
+        </details>
         {dateError && <p role="alert" className="text-sm text-red-600">시작일은 종료일 이후일 수 없습니다.</p>}
       </section>
       {isLoading && <p role="status" className="text-sm text-gray-500">주문을 불러오는 중...</p>}
@@ -295,13 +298,13 @@ export default function OrdersPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-3 gap-2 xl:gap-4">
+      <div className="grid grid-cols-3 gap-2 lg:hidden">
         <SummaryCard label="접수 대기" value={orders.filter((order) => ['PENDING', 'PAID'].includes(order.status)).length} />
         <SummaryCard label="조리/준비" value={orders.filter((order) => ['CONFIRMED', 'COOKING', 'PREPARING', 'READY'].includes(order.status)).length} />
         <SummaryCard label="배달 중" value={orders.filter((order) => order.delivery?.status === 'DELIVERING').length} />
       </div>
 
-      <div className="space-y-4 @min-[1360px]:hidden" data-testid="admin-orders-cards">
+      <div className="space-y-4 lg:hidden" data-testid="admin-orders-cards">
         {visibleOrders.map((order) => (
           <article key={order.id} className="min-w-0 space-y-3 rounded-xl border border-gray-200 bg-white p-3 xl:p-4" data-testid={`admin-order-card-${order.id}`}>
             <div className="flex flex-wrap items-start justify-between gap-2">
@@ -334,18 +337,29 @@ export default function OrdersPage() {
         {!isLoading && !isOrdersError && visibleOrders.length === 0 && <p className="py-12 text-center text-gray-400">선택한 조건의 주문이 없습니다.</p>}
       </div>
 
-      <div className="hidden @min-[1360px]:block bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden" data-testid="admin-orders-table">
+      <div className="hidden lg:block bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden" data-testid="admin-orders-table">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1180px] text-left">
+          <table className="w-full min-w-[900px] table-fixed text-left @min-[1360px]:min-w-[1180px] [&_td]:break-words [&_td]:whitespace-normal [&_td]:px-2 [&_td]:py-1 [&_th]:px-2">
+            <colgroup>
+              <col className="w-[130px]" />
+              <col className="hidden w-[70px] @min-[1360px]:table-column" />
+              <col />
+              <col className="w-[100px]" />
+              <col className="hidden w-[100px] @min-[1360px]:table-column" />
+              <col className="hidden w-[140px] @min-[1360px]:table-column" />
+              <col className="hidden w-[140px] @min-[1360px]:table-column" />
+              <col className="w-[170px]" />
+              <col className="w-[240px]" />
+            </colgroup>
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
                 <TableHead>주문 번호</TableHead>
-                <TableHead>유형</TableHead>
+                <th className="hidden @min-[1360px]:table-cell px-2 py-3 text-sm font-semibold text-gray-600">유형</th>
                 <TableHead>주문 내역</TableHead>
                 <TableHead>금액</TableHead>
-                <TableHead>결제</TableHead>
-                <TableHead>배달</TableHead>
-                <TableHead>시간</TableHead>
+                <th className="hidden @min-[1360px]:table-cell px-2 py-3 text-sm font-semibold text-gray-600">결제</th>
+                <th className="hidden @min-[1360px]:table-cell px-2 py-3 text-sm font-semibold text-gray-600">배달</th>
+                <th className="hidden @min-[1360px]:table-cell px-2 py-3 text-sm font-semibold text-gray-600">시간</th>
                 <TableHead>상태</TableHead>
                 <th className="sticky right-0 z-10 bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-600 shadow-[-4px_0_6px_-4px_#0003]">관리</th>
               </tr>
@@ -356,9 +370,13 @@ export default function OrdersPage() {
                 <tr className="hover:bg-gray-50/50 transition-colors align-top" data-testid={`admin-order-row-${order.id}`}>
                   <td className="whitespace-nowrap px-4 py-4">
                     <p className="font-mono text-xs text-gray-500">{order.orderNumber}</p>
-                    <p className="mt-1 text-xs text-gray-400">{sourceLabel[order.source || ''] || order.source || '-'}</p>
+                    <p className="mt-1 text-xs text-gray-400">{orderTypeLabel[order.type || ''] || order.type} · {sourceLabel[order.source || ''] || order.source || '-'}</p>
+                    <div className="mt-2 space-y-1 text-xs text-gray-600 @min-[1360px]:hidden">
+                      <p>{orderTypeLabel[order.type || ''] || order.type}{order.type === 'TABLE' ? ` · ${order.tableNumber ?? '-'}번` : ''}</p>
+                      <p title={formatDate(order.createdAt)}>{new Date(order.createdAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false })}</p>
+                    </div>
                   </td>
-                  <td className="whitespace-nowrap px-4 py-4">
+                  <td className="hidden @min-[1360px]:table-cell whitespace-nowrap px-4 py-4">
                     <Badge variant={order.type === 'DELIVERY' ? 'info' : 'outline'}>
                       {orderTypeLabel[order.type || ''] || order.type || '-'}
                     </Badge>
@@ -367,7 +385,7 @@ export default function OrdersPage() {
                     )}
                   </td>
                   <td className="px-4 py-4">
-                    <div className="space-y-1 text-sm text-gray-800">
+                    <div className="line-clamp-2 text-sm text-gray-800" title={order.items.map((item) => `${item.menuName} × ${item.quantity} ${(item.options || []).flatMap((group) => group.items.map((option) => option.name)).join(', ')}`).join('\n')}>
                       {order.items.map((item) => (
                         <div key={item.id}>
                           {item.menuName} x {item.quantity}
@@ -380,26 +398,29 @@ export default function OrdersPage() {
                       ))}
                     </div>
                     {order.delivery && (
-                      <p className="mt-2 max-w-xs truncate text-xs text-gray-500">
+                      <p className="mt-1 truncate text-xs text-gray-500" title={`${order.delivery.address} ${order.delivery.detailAddress || ''}`}>
                         {order.delivery.address}
                         {order.delivery.detailAddress ? ` ${order.delivery.detailAddress}` : ''}
                       </p>
                     )}
+                    {order.delivery && <div className="text-xs text-gray-600 @min-[1360px]:hidden"><p>{order.delivery.recipientName} · {order.delivery.recipientPhone} · {deliveryStatusLabel[order.delivery.status]}</p></div>}
                     {getStoreRequest(order) && (
-                      <p className="mt-1 max-w-xs whitespace-pre-wrap text-xs font-medium text-orange-700">
+                      <p className="truncate text-xs font-medium text-orange-700" title={getStoreRequest(order) || undefined}>
                         가게 요청: {getStoreRequest(order)}
                       </p>
                     )}
                     {order.delivery?.deliveryMemo && (
-                      <p className="mt-1 max-w-xs whitespace-pre-wrap text-xs font-medium text-orange-700">
+                      <p className="truncate text-xs font-medium text-orange-700" title={order.delivery.deliveryMemo}>
                         배달 요청: {order.delivery.deliveryMemo}
                       </p>
                     )}
                   </td>
                   <td className="whitespace-nowrap px-4 py-4 font-semibold text-gray-900">
                     {formatCurrency(order.totalAmount || order.totalPrice)}
+                    <p className="mt-2 text-xs font-normal text-gray-500 @min-[1360px]:hidden">{paymentStatusLabel[order.paymentStatus || ''] || order.paymentStatus || '-'}</p>
+                    {order.payments?.[0]?.receiptUrl && <a href={order.payments[0].receiptUrl} target="_blank" rel="noreferrer" className="mt-1 block text-xs font-normal text-blue-600 underline @min-[1360px]:hidden">영수증 보기</a>}
                   </td>
-                  <td className="whitespace-nowrap px-4 py-4">
+                  <td className="hidden @min-[1360px]:table-cell whitespace-nowrap px-4 py-4">
                     <Badge variant={getPaymentBadgeVariant(order.paymentStatus)}>
                       {paymentStatusLabel[order.paymentStatus || ''] || order.paymentStatus || '-'}
                     </Badge>
@@ -414,7 +435,7 @@ export default function OrdersPage() {
                       </a>
                     )}
                   </td>
-                  <td className="whitespace-nowrap px-4 py-4">
+                  <td className="hidden @min-[1360px]:table-cell whitespace-nowrap px-4 py-4">
                     {order.delivery ? (
                       <div className="space-y-2">
                         <Badge variant={getDeliveryBadgeVariant(order.delivery.status)}>
@@ -429,7 +450,7 @@ export default function OrdersPage() {
                       <span className="text-sm text-gray-400">-</span>
                     )}
                   </td>
-                  <td className="whitespace-nowrap px-4 py-4 text-sm text-gray-500">
+                  <td className="hidden @min-[1360px]:table-cell whitespace-nowrap px-4 py-4 text-sm text-gray-500">
                     {formatDate(order.createdAt)}
                   </td>
                   <td className="whitespace-nowrap px-4 py-4">
@@ -444,7 +465,7 @@ export default function OrdersPage() {
                     )}
                   </td>
                   <td className="sticky right-0 z-10 bg-white whitespace-nowrap px-4 py-4 shadow-[-4px_0_6px_-4px_#0003]">
-                    <div className="flex w-[220px] flex-wrap gap-2">
+                    <div className="flex w-[220px] flex-wrap gap-1 [&_button]:min-h-11">
                       <button
                         onClick={() => setExpandedOrderId((current) => (current === order.id ? null : order.id))}
                         className="inline-flex items-center gap-1 rounded-md border border-gray-200 px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-50"
@@ -464,7 +485,7 @@ export default function OrdersPage() {
                         }
                         updateStatusMutation.mutate(payload);
                       })}
-                      {renderDeliveryAction(order, updateDeliveryStatusMutation.mutate)}
+                      {(order.status === 'READY' || order.status === 'DELIVERING') && renderDeliveryAction(order, updateDeliveryStatusMutation.mutate)}
                       {renderPaymentCancelAction(order, setRefundDialog)}
                       <button
                         onClick={() => setPrintOrder(order)}
