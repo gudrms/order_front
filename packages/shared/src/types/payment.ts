@@ -55,6 +55,8 @@ export interface CreateDeliveryOrderRequest {
     userId?: string;
     source?: Extract<OrderChannel, 'DELIVERY_APP'>;
     delivery: DeliveryOrderAddressInput;
+    /** 가게 요청사항 (배달 요청사항은 delivery.deliveryMemo) */
+    note?: string;
     items: PaymentOrderItemInput[];
     totalAmount: number;
     payment: PaymentRequest;

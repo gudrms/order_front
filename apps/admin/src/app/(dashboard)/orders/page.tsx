@@ -27,6 +27,7 @@ import { Badge } from '@order/ui';
 import { useAdminStore } from '@/contexts/AdminStoreContext';
 import { isAwaitingAcceptance, useAdminOrderList, type OrderStateFilter } from '@/hooks/useAdminOrders';
 import { OrderReceipt } from '@/components/OrderReceipt';
+import { getStoreRequest } from '@order/shared/utils/orderRequest';
 import { isInOrderFlow, OrderProgress } from '@/components/OrderProgress';
 import { getHttpErrorMessage } from '@/lib/httpError';
 
@@ -323,7 +324,7 @@ export default function OrdersPage() {
               {order.items.map((item) => <div key={item.id}><p>{item.menuName} × {item.quantity}</p>{item.options && <p className="text-xs text-gray-500">{item.options.flatMap((group) => group.items.map((option) => option.name)).join(', ')}</p>}</div>)}
             </div>
             {order.delivery && <div className="space-y-1 break-words text-sm text-gray-600"><p>{order.delivery.address} {order.delivery.detailAddress}</p><p>{order.delivery.recipientName} · {order.delivery.recipientPhone}</p><Badge variant={getDeliveryBadgeVariant(order.delivery.status)}>{deliveryStatusLabel[order.delivery.status]}</Badge></div>}
-            {order.note && <p className="whitespace-pre-wrap break-words text-sm text-orange-700">요청: {order.note}</p>}
+            {getStoreRequest(order) && <p className="whitespace-pre-wrap break-words text-sm text-orange-700">가게 요청: {getStoreRequest(order)}</p>}
             {order.delivery?.deliveryMemo && <p className="whitespace-pre-wrap break-words text-sm text-orange-700">배달 요청: {order.delivery.deliveryMemo}</p>}
             <div className="flex flex-wrap items-center justify-between gap-2"><strong>{formatCurrency(order.totalAmount || order.totalPrice)}</strong><Badge variant={getPaymentBadgeVariant(order.paymentStatus)}>{paymentStatusLabel[order.paymentStatus || ''] || order.paymentStatus || '-'}</Badge></div>
             {order.payments?.[0]?.receiptUrl && <a href={order.payments[0].receiptUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center text-sm text-blue-600 underline">영수증 보기</a>}
@@ -384,9 +385,14 @@ export default function OrdersPage() {
                         {order.delivery.detailAddress ? ` ${order.delivery.detailAddress}` : ''}
                       </p>
                     )}
-                    {(order.delivery?.deliveryMemo || order.note) && (
+                    {getStoreRequest(order) && (
                       <p className="mt-1 max-w-xs whitespace-pre-wrap text-xs font-medium text-orange-700">
-                        요청: {order.delivery?.deliveryMemo || order.note}
+                        가게 요청: {getStoreRequest(order)}
+                      </p>
+                    )}
+                    {order.delivery?.deliveryMemo && (
+                      <p className="mt-1 max-w-xs whitespace-pre-wrap text-xs font-medium text-orange-700">
+                        배달 요청: {order.delivery.deliveryMemo}
                       </p>
                     )}
                   </td>
@@ -555,7 +561,7 @@ function OrderDetailPanel({ order }: { order: Order }) {
         <DetailItem label="주문 유형" value={orderTypeLabel[order.type || ''] || order.type || '-'} />
         <DetailItem label="테이블" value={order.tableNumber ? `${order.tableNumber}번` : '-'} />
         <DetailItem label="Toss 주문 ID" value={order.tossOrderId || '-'} />
-        <DetailItem label="요청 사항" value={order.note || '-'} />
+        <DetailItem label="가게 요청" value={getStoreRequest(order) || '-'} />
         <DetailItem label="주문 생성" value={formatOptionalDate(order.createdAt)} />
         <DetailItem label="최근 변경" value={formatOptionalDate(order.updatedAt)} />
         <DetailItem label="완료 시각" value={formatOptionalDate(order.completedAt)} />
@@ -576,7 +582,7 @@ function OrderDetailPanel({ order }: { order: Order }) {
             <DetailItem label="배달비" value={formatCurrency(delivery.deliveryFee || 0)} />
             <DetailItem label="배달 상태" value={deliveryStatusLabel[delivery.status] || delivery.status} />
             <DetailItem label="예상 시간" value={delivery.estimatedMinutes ? `${delivery.estimatedMinutes}분` : '-'} />
-            <DetailItem label="배달 메모" value={delivery.deliveryMemo || '-'} />
+            <DetailItem label="배달 요청" value={delivery.deliveryMemo || '-'} />
             <DetailItem label="라이더 메모" value={delivery.riderMemo || '-'} />
             <DetailItem label="요청 시각" value={formatOptionalDate(delivery.requestedAt)} />
             <DetailItem label="배정 시각" value={formatOptionalDate(delivery.assignedAt)} />

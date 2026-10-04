@@ -8,6 +8,7 @@ import React from 'react';
 import { Order, formatCurrency, formatDate } from '@order/shared';
 import { getAdminElectronBridge } from '@/lib/electronBridge';
 import { buildReceiptData } from '@/lib/receiptData';
+import { getStoreRequest } from '@order/shared/utils/orderRequest';
 
 interface OrderReceiptProps {
   order: Order;
@@ -92,9 +93,14 @@ export function OrderReceipt({ order, onPrintComplete, onPrintError }: OrderRece
                 {order.delivery.detailAddress ? ` ${order.delivery.detailAddress}` : ''}
               </p>
               <p className="mt-1">{order.delivery.recipientPhone}</p>
-              {(order.delivery.deliveryMemo || order.note) && (
+              {getStoreRequest(order) && (
                 <p className="mt-2 whitespace-pre-wrap">
-                  요청사항: {order.delivery.deliveryMemo || order.note}
+                  가게 요청: {getStoreRequest(order)}
+                </p>
+              )}
+              {order.delivery.deliveryMemo && (
+                <p className="mt-2 whitespace-pre-wrap">
+                  배달 요청: {order.delivery.deliveryMemo}
                 </p>
               )}
             </div>

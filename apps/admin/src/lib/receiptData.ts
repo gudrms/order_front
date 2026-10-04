@@ -1,4 +1,5 @@
 import type { Order } from '@order/shared';
+import { getStoreRequest } from '@order/shared/utils/orderRequest';
 
 /**
  * PC 앱에 넘기는 주문서 내용 (apps/admin-electron/src/receipt.ts의 ReceiptData와 같은 모양).
@@ -29,7 +30,11 @@ export function buildReceiptData(order: Order): ReceiptData {
     estimatedMinutes: delivery?.estimatedMinutes ?? null,
     address: delivery ? `${delivery.address}${delivery.detailAddress ? ` ${delivery.detailAddress}` : ''}` : undefined,
     phone: delivery?.recipientPhone,
-    request: delivery?.deliveryMemo || order.note || undefined,
+    // PC 앱은 요청을 한 줄로 받으므로 가게·배달 요청을 구분해 이어 붙인다 (PC 앱 재배포 없이 동작)
+    request: [
+      getStoreRequest(order) && `가게) ${getStoreRequest(order)}`,
+      delivery?.deliveryMemo && `배달) ${delivery.deliveryMemo}`,
+    ].filter(Boolean).join(' / ') || undefined,
     items: order.items.map((item) => ({
       name: item.menuName,
       quantity: item.quantity,

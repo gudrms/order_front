@@ -216,6 +216,11 @@ export class CreateDeliveryOrderDto {
     @Type(() => DeliveryAddressDto)
     delivery: DeliveryAddressDto;
 
+    @ApiProperty({ description: '가게 요청사항 (배달 요청사항은 delivery.deliveryMemo)', example: '맵지 않게 해주세요.', required: false })
+    @IsString()
+    @IsOptional()
+    note?: string;
+
     @ApiProperty({ description: '주문 아이템 목록', type: [CreateDeliveryOrderItemDto] })
     @IsArray()
     @ValidateNested({ each: true })

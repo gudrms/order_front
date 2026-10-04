@@ -8,6 +8,7 @@ import { OrderStatusTracker } from '@/components/order/OrderStatusTracker';
 import { useCancelOrder, useOrder } from '@/hooks/queries/useOrders';
 import { useAuth } from '@/contexts/AuthContext';
 import { getCustomerOrderStatusLabel, getPaymentStatusLabel } from '@/lib/orderStatus';
+import { getStoreRequest } from '@order/shared/utils/orderRequest';
 
 const CANCEL_REASONS = [
     '주문을 잘못 선택했습니다.',
@@ -244,6 +245,7 @@ function OrderDetailContent() {
                                 {order.delivery.estimatedMinutes && ['CONFIRMED', 'COOKING', 'PREPARING', 'READY', 'DELIVERING'].includes(order.status) && (
                                     <InfoRow label="예상 시간" value={`접수 후 약 ${order.delivery.estimatedMinutes}분`} />
                                 )}
+                                {getStoreRequest(order) && <InfoRow label="가게 사장님께" value={getStoreRequest(order)!} />}
                                 <InfoRow label="수령자" value={order.delivery.recipientName} />
                                 <InfoRow label="연락처" value={order.delivery.recipientPhone} />
                                 <InfoRow
@@ -254,7 +256,7 @@ function OrderDetailContent() {
                                     <InfoRow label="라이더 메모" value={order.delivery.riderMemo} />
                                 )}
                                 {order.delivery.deliveryMemo && (
-                                    <InfoRow label="요청사항" value={order.delivery.deliveryMemo} />
+                                    <InfoRow label="배달 기사님께" value={order.delivery.deliveryMemo} />
                                 )}
                             </>
                         )}

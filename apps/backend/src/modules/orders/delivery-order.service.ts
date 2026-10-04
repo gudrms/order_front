@@ -80,7 +80,7 @@ export class DeliveryOrderService {
                     totalAmount: finalAmount,
                     discountAmount,
                     ...(dto.userCouponId ? { userCouponId: dto.userCouponId } : {}),
-                    note: dto.delivery.deliveryMemo,
+                    note: dto.note?.trim() || undefined,
                     items: {
                         create: orderItemsData.map((item) => ({
                             menuId: item.menuId,

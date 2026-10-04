@@ -57,6 +57,7 @@ export default function CheckoutPage() {
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [selectedCoupon, setSelectedCoupon] = useState<UserCoupon | null>(null);
     const [showCouponSheet, setShowCouponSheet] = useState(false);
+    const [storeRequest, setStoreRequest] = useState('');
     const paymentWidgetRef = useRef<PaymentWidgetInstance | null>(null);
     const warmupRequestedRef = useRef(false);
 
@@ -157,6 +158,7 @@ export default function CheckoutPage() {
                 deliveryMemo: deliveryInfo.deliveryRequest,
                 addressId: deliveryInfo.address?.id,
             },
+            note: storeRequest.trim() || undefined,
             items: orderItems,
             totalAmount,
             userCouponId: selectedCoupon?.id,
@@ -295,11 +297,24 @@ export default function CheckoutPage() {
                         </div>
                         {deliveryInfo.deliveryRequest && (
                             <div>
-                                <span className="text-gray-500">요청사항</span>
+                                <span className="text-gray-500">배달 기사님께</span>
                                 <p className="font-medium mt-1">{deliveryInfo.deliveryRequest}</p>
                             </div>
                         )}
                     </div>
+                </section>
+
+                <section className="bg-white rounded-xl p-4 space-y-3">
+                    <label htmlFor="store-request" className="block font-bold text-lg">가게 사장님께</label>
+                    <textarea
+                        id="store-request"
+                        value={storeRequest}
+                        onChange={(e) => setStoreRequest(e.target.value)}
+                        maxLength={200}
+                        rows={2}
+                        placeholder="예) 맵지 않게 해주세요, 수저는 빼주세요"
+                        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-base focus:border-brand-yellow focus:outline-none"
+                    />
                 </section>
 
                 <section className="bg-white rounded-xl p-4 space-y-3">
