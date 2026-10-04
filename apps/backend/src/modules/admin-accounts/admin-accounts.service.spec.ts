@@ -112,6 +112,22 @@ describe('AdminAccountsService', () => {
         expect(result.role).toBe('OWNER');
     });
 
+    it('explains in Korean when the email is already registered', async () => {
+        prisma.user.findUnique.mockResolvedValue(admin);
+        prisma.store.findUnique.mockResolvedValue(store);
+        supabase.auth.admin.createUser.mockResolvedValue({
+            data: { user: null },
+            error: { code: 'email_exists', message: 'A user with this email address has already been registered' },
+        });
+
+        await expect(service.create('admin-1', {
+            email: 'test@test.com',
+            password: 'password123',
+            role: 'OWNER',
+            storeId: 'store-1',
+        })).rejects.toThrow('이미 가입된 이메일입니다');
+    });
+
     it('rolls back the Supabase user when DB creation fails', async () => {
         prisma.user.findUnique.mockResolvedValue(admin);
         prisma.store.findUnique.mockResolvedValue(store);

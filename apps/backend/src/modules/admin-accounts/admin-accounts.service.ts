@@ -86,6 +86,10 @@ export class AdminAccountsService {
         });
 
         if (error || !data.user) {
+            // Supabase 계정은 배달앱 고객·관리자 계정이 이메일 하나를 공유한다
+            if (error?.code === 'email_exists') {
+                throw new BadRequestException('이미 가입된 이메일입니다. 배달앱 고객 계정도 같은 이메일을 쓸 수 없습니다');
+            }
             throw new BadRequestException(error?.message || '계정 생성에 실패했습니다');
         }
 
