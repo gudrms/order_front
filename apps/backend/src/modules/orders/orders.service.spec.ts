@@ -18,6 +18,30 @@ describe('OrdersService', () => {
         service = new OrdersService(prisma, {} as any, {} as any, queueService);
     });
 
+    it('filters all pages by Korean calendar dates and order state', async () => {
+        prisma.order = { findMany: vi.fn().mockResolvedValue([]), count: vi.fn().mockResolvedValue(42) };
+        const result = await service.getOrders('store-1', undefined, 2, { startDate: '2026-10-04', endDate: '2026-10-04', state: 'cancelled' });
+        expect(prisma.order.findMany).toHaveBeenCalledWith(expect.objectContaining({
+            where: { storeId: 'store-1', status: 'CANCELLED', createdAt: { gte: new Date('2026-10-03T15:00:00Z'), lt: new Date('2026-10-04T15:00:00Z') } },
+            skip: 20, take: 20,
+        }));
+        expect(result.meta).toMatchObject({ total: 42, page: 2, lastPage: 3, counts: { all: 42, active: 42, cancelled: 42, completed: 42 } });
+        expect(prisma.order.count).toHaveBeenCalledWith({ where: { storeId: 'store-1', status: 'COMPLETED', createdAt: { gte: new Date('2026-10-03T15:00:00Z'), lt: new Date('2026-10-04T15:00:00Z') } } });
+    });
+
+    it('excludes completed and cancelled orders from the active filter', async () => {
+        prisma.order = { findMany: vi.fn().mockResolvedValue([]), count: vi.fn().mockResolvedValue(0) };
+        await service.getOrders('store-1', undefined, 1, { state: 'active' });
+        expect(prisma.order.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { storeId: 'store-1', status: { notIn: ['COMPLETED', 'CANCELLED'] } } }));
+    });
+
+    it('rejects invalid dates, reversed ranges, states and pages', async () => {
+        await expect(service.getOrders('store-1', undefined, 1, { startDate: '2026-02-30' })).rejects.toThrow(BadRequestException);
+        await expect(service.getOrders('store-1', undefined, 1, { startDate: '2026-10-05', endDate: '2026-10-04' })).rejects.toThrow(BadRequestException);
+        await expect(service.getOrders('store-1', undefined, 1, { state: 'invalid' })).rejects.toThrow(BadRequestException);
+        await expect(service.getOrders('store-1', undefined, 0)).rejects.toThrow(BadRequestException);
+    });
+
     it('saves the store-chosen delivery estimate when accepting a delivery order', async () => {
         prisma.order = {
             findUnique: vi.fn().mockResolvedValue({

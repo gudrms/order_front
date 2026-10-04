@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Bell, BellOff, Volume2 } from 'lucide-react';
 import { isAdminElectronRuntime } from '@/lib/electronBridge';
-import { ALERT_ENABLED_KEY, playOrderAlarmTone, SOUND_ENABLED_KEY } from '@/lib/orderAlarmSound';
+import { ALERT_ENABLED_KEY, ORDER_ALERT_SETTINGS_EVENT, playOrderAlarmVoice, SOUND_ENABLED_KEY } from '@/lib/orderAlarmSound';
 
 /** 알림·알림음 켜고 끄기. 실제 알람은 PendingOrderAlarm이 이 설정을 읽어 울린다 */
 
@@ -11,13 +11,14 @@ export function OrderAlertControls() {
   const [alertsEnabled, setAlertsEnabled] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(false);
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
-  const audioContextRef = useRef<AudioContext | null>(null);
+  const [settingsReady, setSettingsReady] = useState(false);
   const isElectron = isAdminElectronRuntime();
 
   useEffect(() => {
     // 주문을 놓치지 않도록 기본은 켜짐. 사용자가 직접 끈 경우('false' 저장)만 꺼진 채로 둔다
     setAlertsEnabled(localStorage.getItem(ALERT_ENABLED_KEY) !== 'false');
     setSoundEnabled(localStorage.getItem(SOUND_ENABLED_KEY) !== 'false');
+    setSettingsReady(true);
     if ('Notification' in window) {
       setNotificationPermission(Notification.permission);
     }
@@ -37,12 +38,16 @@ export function OrderAlertControls() {
   }, []);
 
   useEffect(() => {
+    if (!settingsReady) return;
     localStorage.setItem(ALERT_ENABLED_KEY, String(alertsEnabled));
-  }, [alertsEnabled]);
+    window.dispatchEvent(new Event(ORDER_ALERT_SETTINGS_EVENT));
+  }, [alertsEnabled, settingsReady]);
 
   useEffect(() => {
+    if (!settingsReady) return;
     localStorage.setItem(SOUND_ENABLED_KEY, String(soundEnabled));
-  }, [soundEnabled]);
+    window.dispatchEvent(new Event(ORDER_ALERT_SETTINGS_EVENT));
+  }, [soundEnabled, settingsReady]);
 
 
   const notificationLabel = useMemo(() => {
@@ -51,7 +56,7 @@ export function OrderAlertControls() {
     if (notificationPermission === 'granted') return '알림 켜짐';
     if (notificationPermission === 'denied') return '알림 차단됨';
     return '알림 권한 필요';
-  }, [alertsEnabled, notificationPermission]);
+  }, [alertsEnabled, notificationPermission, isElectron]);
 
   const enableNotifications = async () => {
     // 기본이 켜짐이라, 권한을 아직 안 받은 상태("알림 권한 필요")에서 누르면 끄지 말고 권한부터 받는다
@@ -60,14 +65,14 @@ export function OrderAlertControls() {
       setNotificationPermission(permission);
       setAlertsEnabled(permission === 'granted');
       setSoundEnabled(true);
-      playOrderAlarmTone(audioContextRef);
+      void playOrderAlarmVoice();
       return;
     }
 
     const nextSoundEnabled = !soundEnabled;
     setSoundEnabled(nextSoundEnabled);
     if (nextSoundEnabled) {
-      playOrderAlarmTone(audioContextRef);
+      void playOrderAlarmVoice();
     }
 
     if (isElectron) {

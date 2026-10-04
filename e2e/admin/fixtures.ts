@@ -103,6 +103,9 @@ export async function installAdminBaseRoutes(page: Page, mocks: AdminMocks) {
   });
 
   for (const store of mocks.stores) {
+    await page.route(`${API_URL}/stores/${store.id}/orders?status=*`, async (route) => {
+      await fulfillJson(route, { statusCode: 200, data: { data: [], meta: { lastPage: 1 } } });
+    });
     await page.route(`${API_URL}/stores/${store.id}/calls`, async (route) => {
       await fulfillJson(route, { data: [] });
     });

@@ -25,7 +25,7 @@ import {
 import { Badge } from '@order/ui';
 
 import { useAdminStore } from '@/contexts/AdminStoreContext';
-import { isAwaitingAcceptance, useAdminOrders } from '@/hooks/useAdminOrders';
+import { isAwaitingAcceptance, useAdminOrderList, type OrderStateFilter } from '@/hooks/useAdminOrders';
 import { OrderReceipt } from '@/components/OrderReceipt';
 import { isInOrderFlow, OrderProgress } from '@/components/OrderProgress';
 import { getHttpErrorMessage } from '@/lib/httpError';
@@ -105,6 +105,8 @@ const deliveryStatusAction: Partial<Record<DeliveryStatus, {
 export default function OrdersPage() {
   const { selectedStore, selectedStoreId: storeId, isLoading: isStoresLoading, authHeaders } = useAdminStore();
   const queryClient = useQueryClient();
+  const [filters, setFilters] = useState({ startDate: '', endDate: '', state: 'all' as OrderStateFilter, page: 1 });
+  const dateError = !!(filters.startDate && filters.endDate && filters.startDate > filters.endDate);
   const [printOrder, setPrintOrder] = useState<Order | null>(null);
   const [expandedMobileOrderId, setExpandedMobileOrderId] = useState<string | null>(null);
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
@@ -113,7 +115,8 @@ export default function OrdersPage() {
   // 배달 주문 접수 시 예상 시간을 고르는 창
   const [acceptOrder, setAcceptOrder] = useState<Order | null>(null);
   // 실시간 구독은 대시보드 레이아웃에서 한 번만 한다 (어느 화면에서든 새 주문 알람)
-  const { data: orders = [], isLoading: isOrdersLoading, isError: isOrdersError, refetch: refetchOrders } = useAdminOrders();
+  const { data: orderList, isLoading: isOrdersLoading, isError: isOrdersError, refetch: refetchOrders } = useAdminOrderList(filters);
+  const orders = orderList?.orders ?? [];
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({
@@ -217,7 +220,7 @@ export default function OrdersPage() {
 
   const isLoading = isStoresLoading || isOrdersLoading;
 
-  if (isLoading) {
+  if (isStoresLoading) {
     return <div className="flex justify-center py-12">주문을 불러오는 중...</div>;
   }
 
@@ -232,8 +235,9 @@ export default function OrdersPage() {
     );
   }
 
-  const activeOrders = orders.filter((order) => !['COMPLETED', 'CANCELLED'].includes(order.status));
-  const deliveryOrders = orders.filter((order) => order.type === 'DELIVERY');
+  const counts = orderList?.counts ?? { all: 0, active: 0, cancelled: 0, completed: 0 };
+  const visibleOrders = dateError ? [] : orders;
+  const changeFilters = (next: Partial<typeof filters>) => { setFilters((current) => ({ ...current, ...next, page: 1 })); setExpandedOrderId(null); setExpandedMobileOrderId(null); };
 
   return (
     <div className="space-y-6">
@@ -244,12 +248,27 @@ export default function OrdersPage() {
             {selectedStore?.name} {selectedStore?.branchName ? `· ${selectedStore.branchName}` : ''}
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Badge variant="outline" className="bg-white">전체 {orders.length}건</Badge>
-          <Badge variant="warning">진행 중 {activeOrders.length}건</Badge>
-          <Badge variant="info">배달 {deliveryOrders.length}건</Badge>
-        </div>
+
       </div>
+
+      <section aria-label="주문 필터" className="space-y-4 rounded-xl border border-gray-200 bg-white p-4">
+        <div className="flex flex-wrap gap-2" aria-label="주문 상태">
+          {([{ value: 'all', label: '전체', color: 'bg-slate-500' }, { value: 'active', label: '진행 중', color: 'bg-blue-600' }, { value: 'cancelled', label: '취소', color: 'bg-red-600' }, { value: 'completed', label: '완료', color: 'bg-green-600' }] as const).map((item) => (
+            <button key={item.value} type="button" aria-pressed={filters.state === item.value} onClick={() => changeFilters({ state: item.value })} className={`inline-flex min-h-11 items-center gap-2 rounded-lg border px-3 text-sm font-medium ${filters.state === item.value ? 'border-blue-600 bg-blue-50 text-blue-800' : 'border-gray-200 text-gray-700 hover:bg-gray-50'}`}>
+              <span aria-hidden="true" className={`h-2 w-2 rounded-full ${item.color}`} />{item.label} {counts[item.value]}건
+            </button>
+          ))}
+        </div>
+        <div className="flex flex-wrap items-end gap-3">
+          <label className="min-w-0 flex-1 sm:flex-none"><span className="mb-1 block text-sm text-gray-600">시작일</span><input type="date" aria-label="시작일" value={filters.startDate} onChange={(event) => changeFilters({ startDate: event.target.value })} className="min-h-11 w-full min-w-0 rounded-lg border border-gray-300 px-2 text-sm" /></label>
+          <label className="min-w-0 flex-1 sm:flex-none"><span className="mb-1 block text-sm text-gray-600">종료일</span><input type="date" aria-label="종료일" value={filters.endDate} onChange={(event) => changeFilters({ endDate: event.target.value })} className="min-h-11 w-full min-w-0 rounded-lg border border-gray-300 px-2 text-sm" /></label>
+          <button type="button" onClick={() => { const today = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Seoul' }).format(new Date()); changeFilters({ startDate: today, endDate: today }); }} className="min-h-11 rounded-lg border border-gray-200 px-3 text-sm">오늘</button>
+          <button type="button" onClick={() => changeFilters({ startDate: '', endDate: '', state: 'all' })} className="min-h-11 rounded-lg border border-gray-200 px-3 text-sm">초기화</button>
+        </div>
+        <p className="text-xs text-gray-500">주문 생성일 기준 · 한국 시간 · 진행 중은 결제 대기부터 배달 중까지 포함</p>
+        {dateError && <p role="alert" className="text-sm text-red-600">시작일은 종료일 이후일 수 없습니다.</p>}
+      </section>
+      {isLoading && <p role="status" className="text-sm text-gray-500">주문을 불러오는 중...</p>}
 
       {operationMessage && (
         <OperationAlert
@@ -282,7 +301,7 @@ export default function OrdersPage() {
       </div>
 
       <div className="space-y-4 md:hidden" data-testid="admin-orders-cards">
-        {orders.map((order) => (
+        {visibleOrders.map((order) => (
           <article key={order.id} className="min-w-0 space-y-4 rounded-xl border border-gray-200 bg-white p-4" data-testid={`admin-order-card-${order.id}`}>
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div className="min-w-0">
@@ -311,7 +330,7 @@ export default function OrdersPage() {
             {expandedMobileOrderId === order.id && <OrderDetailPanel order={order} />}
           </article>
         ))}
-        {orders.length === 0 && <p className="py-12 text-center text-gray-400">현재 주문이 없습니다.</p>}
+        {!isLoading && !isOrdersError && visibleOrders.length === 0 && <p className="py-12 text-center text-gray-400">선택한 조건의 주문이 없습니다.</p>}
       </div>
 
       <div className="hidden md:block bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden" data-testid="admin-orders-table">
@@ -331,7 +350,7 @@ export default function OrdersPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {orders.map((order) => (
+              {visibleOrders.map((order) => (
                 <React.Fragment key={order.id}>
                 <tr className="hover:bg-gray-50/50 transition-colors align-top" data-testid={`admin-order-row-${order.id}`}>
                   <td className="whitespace-nowrap px-4 py-4">
@@ -461,10 +480,10 @@ export default function OrdersPage() {
                 )}
                 </React.Fragment>
               ))}
-              {orders.length === 0 && (
+              {!isLoading && !isOrdersError && visibleOrders.length === 0 && (
                 <tr>
                   <td colSpan={9} className="px-6 py-12 text-center text-gray-400">
-                    현재 주문이 없습니다.
+                    선택한 조건의 주문이 없습니다.
                   </td>
                 </tr>
               )}
@@ -472,6 +491,12 @@ export default function OrdersPage() {
           </table>
         </div>
       </div>
+
+      {!dateError && !isOrdersError && ((orderList?.lastPage ?? 1) > 1 || filters.page > 1) && <nav aria-label="주문 페이지" className="flex flex-wrap items-center justify-center gap-3">
+        <button type="button" disabled={filters.page <= 1 || isLoading} onClick={() => setFilters((current) => ({ ...current, page: current.page - 1 }))} className="min-h-11 rounded-lg border border-gray-200 bg-white px-4 text-sm disabled:opacity-40">이전</button>
+        <span className="text-sm text-gray-600">{filters.page} / {orderList?.lastPage} 페이지 · {orderList?.total}건</span>
+        <button type="button" disabled={filters.page >= (orderList?.lastPage ?? 1) || isLoading} onClick={() => setFilters((current) => ({ ...current, page: current.page + 1 }))} className="min-h-11 rounded-lg border border-gray-200 bg-white px-4 text-sm disabled:opacity-40">다음</button>
+      </nav>}
 
       {/* 출력 버튼을 누르면 확인 단계 없이 바로 인쇄한다. 끝나면 언마운트 */}
       {printOrder && (

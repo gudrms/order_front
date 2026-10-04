@@ -54,12 +54,12 @@ export function createTray(win: BrowserWindow): Tray {
 export function notifyNewOrder(payload: { orderNumber?: string; totalAmount?: number }) {
   if (!Notification.isSupported()) return;
   const notification = new Notification({
-    title: '새 주문',
+    title: '접수 대기 중입니다',
     body: payload.orderNumber
       ? `주문번호 ${payload.orderNumber}${payload.totalAmount ? ` · ${payload.totalAmount.toLocaleString()}원` : ''}`
-      : '새 주문이 접수되었습니다.',
+      : '접수 대기 중입니다. 주문을 확인해 주세요.',
     icon: path.join(__dirname, '..', 'assets', 'tray-icon.png'),
-    silent: false,
+    silent: true,
   });
   notification.show();
 }

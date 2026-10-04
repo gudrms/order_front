@@ -24,7 +24,7 @@ test.describe('admin orders page', () => {
     const refundOrderId = 'order-refundable-1';
     const refundRequests: unknown[] = [];
 
-    await page.route(`${API_URL}/stores/${storeId}/orders`, async (route) => {
+    await page.route(`${API_URL}/stores/${storeId}/orders*`, async (route) => {
       await fulfillJson(route, {
           data: [
             {
@@ -234,7 +234,7 @@ test.describe('admin orders page', () => {
     const paidDeliveryOrderId = 'order-delivery-paid-1';
     let acceptPayload: unknown;
 
-    await page.route(`${API_URL}/stores/${storeId}/orders`, async (route) => {
+    await page.route(`${API_URL}/stores/${storeId}/orders*`, async (route) => {
       await fulfillJson(route, {
         data: [
           {

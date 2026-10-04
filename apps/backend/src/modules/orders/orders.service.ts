@@ -66,16 +66,31 @@ export class OrdersService {
         return order;
     }
 
-    async getOrders(storeId: string, status?: OrderStatus, page: number = 1) {
+    async getOrders(storeId: string, status?: OrderStatus, page: number = 1, filters: { startDate?: string; endDate?: string; state?: string } = {}) {
+        if (!Number.isInteger(page) || page < 1) throw new BadRequestException('페이지는 1 이상이어야 합니다');
+        if (filters.state && !['all', 'active', 'cancelled', 'completed'].includes(filters.state)) throw new BadRequestException('올바르지 않은 주문 상태 필터입니다');
+        const parseDate = (value: string) => {
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) throw new BadRequestException('날짜 형식은 YYYY-MM-DD이어야 합니다');
+            const date = new Date(`${value}T00:00:00+09:00`);
+            if (Number.isNaN(date.getTime()) || new Date(date.getTime() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10) !== value) throw new BadRequestException('유효하지 않은 날짜입니다');
+            return date;
+        };
+        const start = filters.startDate ? parseDate(filters.startDate) : undefined;
+        const end = filters.endDate ? parseDate(filters.endDate) : undefined;
+        if (start && end && start > end) throw new BadRequestException('시작일은 종료일 이후일 수 없습니다');
         const take = 20;
         const skip = (page - 1) * take;
 
-        const where: Prisma.OrderWhereInput = { storeId };
+        const dateWhere: Prisma.OrderWhereInput = { storeId, ...(start || end ? { createdAt: { ...(start ? { gte: start } : {}), ...(end ? { lt: new Date(end.getTime() + 24 * 60 * 60 * 1000) } : {}) } } : {}) };
+        const where: Prisma.OrderWhereInput = { ...dateWhere };
+        if (filters.state === 'active') where.status = { notIn: ['COMPLETED', 'CANCELLED'] };
+        if (filters.state === 'cancelled') where.status = 'CANCELLED';
+        if (filters.state === 'completed') where.status = 'COMPLETED';
         if (status) {
             where.status = status;
         }
 
-        const [orders, total] = await Promise.all([
+        const [orders, total, all, active, cancelled, completed] = await Promise.all([
             this.prisma.order.findMany({
                 where,
                 include: orderInclude(),
@@ -84,6 +99,10 @@ export class OrdersService {
                 skip,
             }),
             this.prisma.order.count({ where }),
+            this.prisma.order.count({ where: dateWhere }),
+            this.prisma.order.count({ where: { ...dateWhere, status: { notIn: ['COMPLETED', 'CANCELLED'] } } }),
+            this.prisma.order.count({ where: { ...dateWhere, status: 'CANCELLED' } }),
+            this.prisma.order.count({ where: { ...dateWhere, status: 'COMPLETED' } }),
         ]);
 
         return {
@@ -92,6 +111,7 @@ export class OrdersService {
                 total,
                 page,
                 lastPage: Math.ceil(total / take),
+                counts: { all, active, cancelled, completed },
             },
         };
     }

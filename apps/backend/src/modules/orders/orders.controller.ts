@@ -179,12 +179,18 @@ export class OrdersController {
     })
     @ApiResponse({ status: 401, description: '인증 실패' })
     @ApiResponse({ status: 404, description: '매장을 찾을 수 없습니다.' })
+    @ApiQuery({ name: 'startDate', required: false, type: String, description: '주문 생성 시작일 (YYYY-MM-DD, 한국 시간)' })
+    @ApiQuery({ name: 'endDate', required: false, type: String, description: '주문 생성 종료일 (당일 포함, YYYY-MM-DD, 한국 시간)' })
+    @ApiQuery({ name: 'state', required: false, enum: ['all', 'active', 'cancelled', 'completed'], description: '진행 중은 완료·취소를 제외한 상태. meta.counts는 날짜 범위 전체 기준.' })
     async getOrders(
         @Param('storeId') storeId: string,
         @Query('status') status?: OrderStatus,
         @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number = 1,
+        @Query('startDate') startDate?: string,
+        @Query('endDate') endDate?: string,
+        @Query('state') state?: string,
     ) {
-        return this.ordersService.getOrders(storeId, status, page);
+        return this.ordersService.getOrders(storeId, status, page, { startDate, endDate, state });
     }
 
     @Get('pos-sync/failed')

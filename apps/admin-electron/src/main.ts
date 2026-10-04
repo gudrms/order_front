@@ -187,6 +187,8 @@ ipcMain.handle('print-receipt', async (_event, options?: { deviceName?: string }
 process.on('uncaughtException', (error) => log('ERROR', 'uncaught exception', error));
 process.on('unhandledRejection', (reason) => log('ERROR', 'unhandled rejection', reason));
 
+// Windows toast notifications must be associated with the installed application's ID.
+app.setAppUserModelId('kr.tacomole.admin');
 app.whenReady().then(createWindow);
 
 app.on('window-all-closed', () => {

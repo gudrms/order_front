@@ -39,3 +39,63 @@ export function useAdminOrders(options: { refetchIntervalMs?: number } = {}) {
 export function isAwaitingAcceptance(order: Order) {
   return order.status === 'PAID' || order.status === 'PENDING';
 }
+export type OrderStateFilter = 'all' | 'active' | 'cancelled' | 'completed';
+
+export function useAdminOrderList(filters: { startDate: string; endDate: string; state: OrderStateFilter; page: number }) {
+  const { session } = useAuth();
+  const { selectedStoreId: storeId, authHeaders } = useAdminStore();
+  return useQuery({
+    queryKey: ['admin-orders', storeId, 'list', filters],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (filters.startDate) params.set('startDate', filters.startDate);
+      if (filters.endDate) params.set('endDate', filters.endDate);
+      if (filters.state !== 'all') params.set('state', filters.state);
+      if (filters.page > 1) params.set('page', String(filters.page));
+      const query = params.toString();
+      const response = await adminApi.get(`${API_URL}/stores/${storeId}/orders${query ? `?${query}` : ''}`, { headers: authHeaders });
+      const rows: BackendOrder[] = response.data?.data ?? response.data ?? [];
+      const orders = rows.map(mapOrder);
+      const meta = response.data?.meta;
+      return {
+        orders,
+        total: (meta?.total ?? orders.length) as number,
+        lastPage: (meta?.lastPage ?? 1) as number,
+        counts: (meta?.counts ?? {
+          all: orders.length,
+          active: orders.filter((order) => !['COMPLETED', 'CANCELLED'].includes(order.status)).length,
+          cancelled: orders.filter((order) => order.status === 'CANCELLED').length,
+          completed: orders.filter((order) => order.status === 'COMPLETED').length,
+        }) as Record<OrderStateFilter, number>,
+      };
+    },
+    enabled: !!session && !!storeId && !(filters.startDate && filters.endDate && filters.startDate > filters.endDate),
+  });
+}
+
+/** Alarm query is independent of the order page's date/status/page filters. */
+export function usePendingAdminOrders(enabled: boolean) {
+  const { selectedStoreId: storeId, authHeaders } = useAdminStore();
+  return useQuery<Order[]>({
+    queryKey: ['admin-orders', storeId, 'awaiting-acceptance'],
+    queryFn: async () => {
+      const groups = await Promise.all(['PAID', 'PENDING'].map(async (status) => {
+        const rows: BackendOrder[] = [];
+        let page = 1;
+        let lastPage = 1;
+        do {
+          const response = await adminApi.get(`${API_URL}/stores/${storeId}/orders?status=${status}&page=${page}`, { headers: authHeaders });
+          rows.push(...(response.data?.data ?? response.data ?? []));
+          lastPage = response.data?.meta?.lastPage ?? 1;
+          page += 1;
+        } while (page <= lastPage);
+        return rows.map(mapOrder);
+      }));
+      return [...new Map(groups.flat().filter(isAwaitingAcceptance).map((order) => [order.id, order])).values()];
+    },
+    enabled: enabled && !!storeId && !!authHeaders,
+    refetchInterval: 5000,
+    refetchIntervalInBackground: true,
+    refetchOnWindowFocus: true,
+  });
+}
