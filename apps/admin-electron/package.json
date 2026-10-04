@@ -1,6 +1,6 @@
 {
   "name": "admin-electron",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "타코 관리자 데스크탑 앱",
   "main": "dist/main.js",
   "private": true,
