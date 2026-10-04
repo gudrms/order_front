@@ -69,6 +69,7 @@ export default defineConfig({
       name: 'admin',
       use: {
         ...devices['Desktop Chrome'],
+        viewport: { width: 1920, height: 1080 },
         baseURL: 'http://localhost:3003',
       },
       testMatch: 'admin/**/*.spec.ts',

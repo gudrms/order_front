@@ -240,10 +240,10 @@ export default function OrdersPage() {
   const changeFilters = (next: Partial<typeof filters>) => { setFilters((current) => ({ ...current, ...next, page: 1 })); setExpandedOrderId(null); setExpandedMobileOrderId(null); };
 
   return (
-    <div className="space-y-6">
+    <div className="@container space-y-3 xl:space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-800">주문 관리</h2>
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          <h2 className="text-xl font-bold text-gray-800 xl:text-2xl">주문 관리</h2>
           <p className="text-sm text-gray-500">
             {selectedStore?.name} {selectedStore?.branchName ? `· ${selectedStore.branchName}` : ''}
           </p>
@@ -251,7 +251,7 @@ export default function OrdersPage() {
 
       </div>
 
-      <section aria-label="주문 필터" className="space-y-4 rounded-xl border border-gray-200 bg-white p-4">
+      <section aria-label="주문 필터" className="space-y-2 rounded-xl border border-gray-200 bg-white p-3 xl:space-y-4 xl:p-4">
         <div className="flex flex-wrap gap-2" aria-label="주문 상태">
           {([{ value: 'all', label: '전체', color: 'bg-slate-500' }, { value: 'active', label: '진행 중', color: 'bg-blue-600' }, { value: 'cancelled', label: '취소', color: 'bg-red-600' }, { value: 'completed', label: '완료', color: 'bg-green-600' }] as const).map((item) => (
             <button key={item.value} type="button" aria-pressed={filters.state === item.value} onClick={() => changeFilters({ state: item.value })} className={`inline-flex min-h-11 items-center gap-2 rounded-lg border px-3 text-sm font-medium ${filters.state === item.value ? 'border-blue-600 bg-blue-50 text-blue-800' : 'border-gray-200 text-gray-700 hover:bg-gray-50'}`}>
@@ -294,15 +294,15 @@ export default function OrdersPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+      <div className="grid grid-cols-3 gap-2 xl:gap-4">
         <SummaryCard label="접수 대기" value={orders.filter((order) => ['PENDING', 'PAID'].includes(order.status)).length} />
         <SummaryCard label="조리/준비" value={orders.filter((order) => ['CONFIRMED', 'COOKING', 'PREPARING', 'READY'].includes(order.status)).length} />
         <SummaryCard label="배달 중" value={orders.filter((order) => order.delivery?.status === 'DELIVERING').length} />
       </div>
 
-      <div className="space-y-4 md:hidden" data-testid="admin-orders-cards">
+      <div className="space-y-4 @min-[1360px]:hidden" data-testid="admin-orders-cards">
         {visibleOrders.map((order) => (
-          <article key={order.id} className="min-w-0 space-y-4 rounded-xl border border-gray-200 bg-white p-4" data-testid={`admin-order-card-${order.id}`}>
+          <article key={order.id} className="min-w-0 space-y-3 rounded-xl border border-gray-200 bg-white p-3 xl:p-4" data-testid={`admin-order-card-${order.id}`}>
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div className="min-w-0">
                 <h3 className="break-all font-semibold text-gray-900">{order.orderNumber}</h3>
@@ -312,6 +312,13 @@ export default function OrdersPage() {
               <Badge variant={order.type === 'DELIVERY' ? 'info' : 'outline'}>{orderTypeLabel[order.type || ''] || order.type}{order.type === 'TABLE' ? ` · ${order.tableNumber ?? '-'}번` : ''}</Badge>
             </div>
             {isInOrderFlow(order) ? <OrderProgress order={order} mobile /> : <Badge variant={getOrderBadgeVariant(order.status)}>{ORDER_STATUS_LABEL[order.status] || order.status}</Badge>}
+            <div className="flex flex-wrap gap-2 [&_button]:min-h-11 [&_button]:px-4 [&_button]:text-sm">
+              <button onClick={() => setExpandedMobileOrderId((current) => current === order.id ? null : order.id)} aria-expanded={expandedMobileOrderId === order.id} className="rounded-md border border-gray-200 text-gray-600">상세</button>
+              {renderOrderAction(order, (payload) => { if (isAwaitingAcceptance(order) && order.type === 'DELIVERY') { setAcceptOrder(order); return; } updateStatusMutation.mutate(payload); }, true)}
+              {renderDeliveryAction(order, updateDeliveryStatusMutation.mutate, true)}
+              {renderPaymentCancelAction(order, setRefundDialog, true)}
+              <button onClick={() => setPrintOrder(order)} className="inline-flex items-center gap-1 rounded-md border border-gray-200 text-gray-600"><Printer size={16} />출력</button>
+            </div>
             <div className="space-y-2 break-words text-sm">
               {order.items.map((item) => <div key={item.id}><p>{item.menuName} × {item.quantity}</p>{item.options && <p className="text-xs text-gray-500">{item.options.flatMap((group) => group.items.map((option) => option.name)).join(', ')}</p>}</div>)}
             </div>
@@ -320,20 +327,13 @@ export default function OrdersPage() {
             {order.delivery?.deliveryMemo && <p className="whitespace-pre-wrap break-words text-sm text-orange-700">배달 요청: {order.delivery.deliveryMemo}</p>}
             <div className="flex flex-wrap items-center justify-between gap-2"><strong>{formatCurrency(order.totalAmount || order.totalPrice)}</strong><Badge variant={getPaymentBadgeVariant(order.paymentStatus)}>{paymentStatusLabel[order.paymentStatus || ''] || order.paymentStatus || '-'}</Badge></div>
             {order.payments?.[0]?.receiptUrl && <a href={order.payments[0].receiptUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center text-sm text-blue-600 underline">영수증 보기</a>}
-            <div className="flex flex-wrap gap-2 [&_button]:min-h-11 [&_button]:px-4 [&_button]:text-sm">
-              <button onClick={() => setExpandedMobileOrderId((current) => current === order.id ? null : order.id)} aria-expanded={expandedMobileOrderId === order.id} className="rounded-md border border-gray-200 text-gray-600">상세</button>
-              {renderOrderAction(order, (payload) => { if (isAwaitingAcceptance(order) && order.type === 'DELIVERY') { setAcceptOrder(order); return; } updateStatusMutation.mutate(payload); }, true)}
-              {renderDeliveryAction(order, updateDeliveryStatusMutation.mutate, true)}
-              {renderPaymentCancelAction(order, setRefundDialog, true)}
-              <button onClick={() => setPrintOrder(order)} className="inline-flex items-center gap-1 rounded-md border border-gray-200 text-gray-600"><Printer size={16} />출력</button>
-            </div>
             {expandedMobileOrderId === order.id && <OrderDetailPanel order={order} />}
           </article>
         ))}
         {!isLoading && !isOrdersError && visibleOrders.length === 0 && <p className="py-12 text-center text-gray-400">선택한 조건의 주문이 없습니다.</p>}
       </div>
 
-      <div className="hidden md:block bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden" data-testid="admin-orders-table">
+      <div className="hidden @min-[1360px]:block bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden" data-testid="admin-orders-table">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[1180px] text-left">
             <thead className="bg-gray-50 border-b border-gray-100">
@@ -346,7 +346,7 @@ export default function OrdersPage() {
                 <TableHead>배달</TableHead>
                 <TableHead>시간</TableHead>
                 <TableHead>상태</TableHead>
-                <TableHead>관리</TableHead>
+                <th className="sticky right-0 z-10 bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-600 shadow-[-4px_0_6px_-4px_#0003]">관리</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -437,8 +437,8 @@ export default function OrdersPage() {
                       </Badge>
                     )}
                   </td>
-                  <td className="whitespace-nowrap px-4 py-4">
-                    <div className="flex min-w-[220px] flex-wrap gap-2">
+                  <td className="sticky right-0 z-10 bg-white whitespace-nowrap px-4 py-4 shadow-[-4px_0_6px_-4px_#0003]">
+                    <div className="flex w-[220px] flex-wrap gap-2">
                       <button
                         onClick={() => setExpandedOrderId((current) => (current === order.id ? null : order.id))}
                         className="inline-flex items-center gap-1 rounded-md border border-gray-200 px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-50"
@@ -988,9 +988,9 @@ function OperationAlert({
 
 function SummaryCard({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+    <div className="flex flex-wrap items-baseline justify-between gap-x-2 rounded-xl border border-gray-100 bg-white p-3 shadow-sm xl:block xl:p-5">
       <p className="text-sm text-gray-500">{label}</p>
-      <p className="mt-2 text-2xl font-bold text-gray-900">{value}건</p>
+      <p className="text-lg font-bold text-gray-900 xl:mt-2 xl:text-2xl">{value}건</p>
     </div>
   );
 }

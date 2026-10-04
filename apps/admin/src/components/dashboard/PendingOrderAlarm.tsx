@@ -95,7 +95,7 @@ export function PendingOrderAlarm() {
   const { count, soundBlocked, soundEnabled, isError } = useContext(OrderAlarmContext);
   if (!count) return isError ? <p role="alert" className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">주문 알림 조회에 실패했습니다. 연결 상태를 확인해 주세요. 자동으로 다시 확인합니다.</p> : null;
   return (
-    <div className="sticky top-14 z-20 mb-6 flex flex-wrap md:top-0 items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-red-700" role="alert" data-testid="admin-pending-order-alarm">
+    <div className="sticky top-14 z-20 mb-3 flex flex-wrap md:top-0 items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-red-700 xl:mb-6 xl:px-4 xl:py-3" role="alert" data-testid="admin-pending-order-alarm">
       <div className="flex min-w-0 items-center gap-3">
         <BellRing className="h-5 w-5 shrink-0 motion-safe:animate-bounce" />
         <div>

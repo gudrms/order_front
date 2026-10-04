@@ -96,7 +96,7 @@ export default function Sidebar() {
 
   return (
     <>
-      <aside className="hidden w-64 shrink-0 flex-col border-r border-gray-200 bg-white md:flex">{content}</aside>
+      <aside className="hidden w-48 shrink-0 flex-col border-r border-gray-200 bg-white md:flex xl:w-64">{content}</aside>
       <button ref={triggerRef} type="button" onClick={() => setOpen(true)} aria-label="메뉴 열기" aria-expanded={open} aria-controls="admin-mobile-menu" className="fixed left-4 top-4 z-30 flex h-11 w-11 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 shadow-sm md:hidden">
         <Menu size={22} />
       </button>
