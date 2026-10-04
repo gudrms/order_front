@@ -1,18 +1,16 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Bell, BellOff, Volume2 } from 'lucide-react';
-import { ADMIN_ORDER_ALERT_EVENT, type AdminOrderAlertPayload } from '@/lib/adminOrderAlerts';
-import { getAdminElectronBridge, isAdminElectronRuntime } from '@/lib/electronBridge';
+import { isAdminElectronRuntime } from '@/lib/electronBridge';
+import { ALERT_ENABLED_KEY, playOrderAlarmTone, SOUND_ENABLED_KEY } from '@/lib/orderAlarmSound';
 
-const ALERT_ENABLED_KEY = 'admin.orderAlerts.enabled';
-const SOUND_ENABLED_KEY = 'admin.orderAlerts.soundEnabled';
+/** 알림·알림음 켜고 끄기. 실제 알람은 PendingOrderAlarm이 이 설정을 읽어 울린다 */
 
 export function OrderAlertControls() {
   const [alertsEnabled, setAlertsEnabled] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(false);
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
-  const [lastAlert, setLastAlert] = useState<AdminOrderAlertPayload | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const isElectron = isAdminElectronRuntime();
 
@@ -46,36 +44,6 @@ export function OrderAlertControls() {
     localStorage.setItem(SOUND_ENABLED_KEY, String(soundEnabled));
   }, [soundEnabled]);
 
-  useEffect(() => {
-    const handleNewOrder = (event: Event) => {
-      const payload = (event as CustomEvent<AdminOrderAlertPayload>).detail;
-      setLastAlert(payload);
-      const electronBridge = getAdminElectronBridge();
-
-      if (soundEnabled) {
-        if (electronBridge?.playNewOrderSound) {
-          void electronBridge.playNewOrderSound();
-        } else {
-          playNotificationTone(audioContextRef);
-        }
-      }
-
-      if (alertsEnabled && electronBridge?.notifyNewOrder) {
-        void electronBridge.notifyNewOrder(payload);
-        return;
-      }
-
-      if (alertsEnabled && 'Notification' in window && Notification.permission === 'granted') {
-        new Notification('새 주문이 접수되었습니다', {
-          body: payload.orderNumber ? `주문번호 ${payload.orderNumber}` : '관리자 주문 목록을 확인하세요.',
-          tag: payload.orderId || `store-${payload.storeId}`,
-        });
-      }
-    };
-
-    window.addEventListener(ADMIN_ORDER_ALERT_EVENT, handleNewOrder);
-    return () => window.removeEventListener(ADMIN_ORDER_ALERT_EVENT, handleNewOrder);
-  }, [alertsEnabled, soundEnabled]);
 
   const notificationLabel = useMemo(() => {
     if (isElectron && alertsEnabled) return 'PC 알림 켜짐';
@@ -92,14 +60,14 @@ export function OrderAlertControls() {
       setNotificationPermission(permission);
       setAlertsEnabled(permission === 'granted');
       setSoundEnabled(true);
-      playNotificationTone(audioContextRef);
+      playOrderAlarmTone(audioContextRef);
       return;
     }
 
     const nextSoundEnabled = !soundEnabled;
     setSoundEnabled(nextSoundEnabled);
     if (nextSoundEnabled) {
-      playNotificationTone(audioContextRef);
+      playOrderAlarmTone(audioContextRef);
     }
 
     if (isElectron) {
@@ -125,11 +93,6 @@ export function OrderAlertControls() {
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      {lastAlert && (
-        <span className="hidden rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 lg:inline">
-          최근 주문 {lastAlert.orderNumber || lastAlert.orderId || '-'}
-        </span>
-      )}
       <button
         type="button"
         onClick={enableNotifications}
@@ -148,34 +111,3 @@ export function OrderAlertControls() {
   );
 }
 
-function playNotificationTone(audioContextRef: MutableRefObject<AudioContext | null>) {
-  if (typeof window === 'undefined') return;
-
-  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-  if (!AudioContextClass) return;
-
-  const context = audioContextRef.current || new AudioContextClass();
-  audioContextRef.current = context;
-
-  if (context.state === 'suspended') {
-    void context.resume();
-  }
-
-  const oscillator = context.createOscillator();
-  const gain = context.createGain();
-  oscillator.type = 'sine';
-  oscillator.frequency.setValueAtTime(880, context.currentTime);
-  gain.gain.setValueAtTime(0.0001, context.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.2, context.currentTime + 0.02);
-  gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.35);
-  oscillator.connect(gain);
-  gain.connect(context.destination);
-  oscillator.start();
-  oscillator.stop(context.currentTime + 0.36);
-}
-
-declare global {
-  interface Window {
-    webkitAudioContext?: typeof AudioContext;
-  }
-}

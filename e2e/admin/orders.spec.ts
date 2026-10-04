@@ -171,6 +171,11 @@ test.describe('admin orders page', () => {
     await expect(page.getByTestId(`admin-order-row-${deliveryOrderId}`)).toContainText('E2E-DELIVERY-001', { timeout: 15_000 });
     await expect(page.getByTestId(`admin-order-row-${refundOrderId}`)).toContainText('E2E-REFUND-001', { timeout: 15_000 });
 
+    // 결제 완료·미접수 주문(테이블 주문 1건)이 있으면 접수할 때까지 알람 배너가 떠 있다
+    await expect(page.getByTestId('admin-pending-order-alarm')).toContainText('접수 대기 주문 1건');
+    // 상태는 진행 막대로 보인다 (결제 완료·미접수 = 1단계 '접수 대기')
+    await expect(page.getByTestId(`admin-order-progress-${tableOrderId}`)).toContainText('접수 대기');
+
     // 목록에 선택 옵션과 요청사항이 보여야 한다 (백엔드 selectedOptions·deliveryMemo)
     await expect(page.getByTestId(`admin-order-row-${deliveryOrderId}`)).toContainText('망고');
     await expect(page.getByTestId(`admin-order-row-${deliveryOrderId}`)).toContainText('요청: 문 앞에 두세요');
@@ -181,7 +186,7 @@ test.describe('admin orders page', () => {
 
     await page.getByTestId(`admin-order-status-action-${tableOrderId}`).click();
     await expect(page.getByTestId('admin-order-operation-message')).toBeVisible();
-    expect(orderStatusPayload).toEqual({ status: 'CONFIRMED' });
+    expect(orderStatusPayload).toEqual({ status: 'COOKING' });
 
     await page.getByTestId(`admin-delivery-status-action-${deliveryOrderId}`).click();
     await expect(page.getByTestId('admin-order-operation-message')).toBeVisible();
@@ -279,7 +284,7 @@ test.describe('admin orders page', () => {
     await page.getByTestId('admin-accept-minutes-60').click();
     await page.getByTestId('admin-accept-submit').click();
 
-    await expect.poll(() => acceptPayload).toEqual({ status: 'CONFIRMED', estimatedMinutes: 60 });
+    await expect.poll(() => acceptPayload).toEqual({ status: 'COOKING', estimatedMinutes: 60 });
     // 접수하면 주문서가 자동으로 출력되고, 고른 예상 시간이 찍힌다
     await expect
       .poll(() => page.evaluate(() => (window as unknown as { __printedReceipt?: string }).__printedReceipt))

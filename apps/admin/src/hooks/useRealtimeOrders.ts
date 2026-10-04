@@ -1,10 +1,10 @@
 import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
-import { emitAdminOrderAlert } from '@/lib/adminOrderAlerts';
 
 /**
- * 실시간 주문 알림 훅
+ * 실시간 주문 구독 — 주문이 생기거나 바뀌면 주문 목록을 다시 불러온다.
+ * 알람(소리·배너)은 목록의 "결제 완료·미접수" 주문을 보고 PendingOrderAlarm이 결정한다.
  * @param storeId 매장 ID (해당 매장의 주문만 구독)
  */
 export function useRealtimeOrders(storeId: string) {
@@ -13,38 +13,23 @@ export function useRealtimeOrders(storeId: string) {
   useEffect(() => {
     if (!storeId) return;
 
-    // 채널 생성 및 구독
     const channel = supabase
-      .channel(`orders:${storeId}`) // 채널명은 유니크하게
+      .channel(`orders:${storeId}`)
       .on(
         'postgres_changes',
         {
-          event: '*', // INSERT, UPDATE, DELETE 모든 이벤트 감지
+          event: '*',
           schema: 'public',
-          table: 'orders',
-          filter: `store_id=eq.${storeId}`, // ⭐️ 내 매장 주문만 필터링
+          // Prisma 모델명·컬럼명 그대로 (예전엔 'orders'/'store_id'로 구독해 이벤트가 한 번도 오지 않았다)
+          table: 'Order',
+          filter: `storeId=eq.${storeId}`,
         },
-        (payload) => {
-          if (payload.eventType === 'INSERT') {
-            const order = payload.new as {
-              id?: string;
-              order_number?: string;
-              total_amount?: number;
-            };
-            emitAdminOrderAlert({
-              storeId,
-              orderId: order.id,
-              orderNumber: order.order_number,
-              totalAmount: order.total_amount,
-            });
-          }
-
+        () => {
           queryClient.invalidateQueries({ queryKey: ['admin-orders', storeId] });
         }
       )
       .subscribe();
 
-    // 컴포넌트 언마운트 시 구독 해제
     return () => {
       supabase.removeChannel(channel);
     };

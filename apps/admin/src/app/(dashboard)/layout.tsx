@@ -8,6 +8,7 @@ import { usePathname } from 'next/navigation';
 import { canAccessAdmin, canAccessPath } from '@/lib/adminPermissions';
 import { OrderAlertControls } from '@/components/dashboard/OrderAlertControls';
 import { PcAppDownloadButton } from '@/components/dashboard/PcAppDownloadButton';
+import { PendingOrderAlarm } from '@/components/dashboard/PendingOrderAlarm';
 import { StaffCallNotification } from '@/components/dashboard/StaffCallNotification';
 import { useStaffCallRealtimeSubscription } from '@/hooks/useStaffCalls';
 import { useAdminStore } from '@/contexts/AdminStoreContext';
@@ -74,6 +75,7 @@ export default function DashboardLayout({
             </div>
           </header>
         )}
+        {!isSetupPage && <PendingOrderAlarm />}
         {!isSetupPage && isStoresError && (
           <div
             className="mb-6 flex items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"

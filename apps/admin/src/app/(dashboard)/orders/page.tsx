@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '@/lib/adminApi';
 import {
   CheckCircle2,
@@ -22,15 +22,12 @@ import {
   type Order,
   type OrderStatus,
 } from '@order/shared';
-// api 헬퍼는 다른 앱과 같이 하위 경로로 불러온다
-// (shared/src에 남은 예전 컴파일 index.js에는 api 내보내기가 없어 webpack에서 undefined가 된다)
-import { mapOrder, type BackendOrder } from '@order/shared/api';
 import { Badge } from '@order/ui';
 
-import { useAuth } from '@/contexts/AuthContext';
 import { useAdminStore } from '@/contexts/AdminStoreContext';
-import { useRealtimeOrders } from '@/hooks/useRealtimeOrders';
+import { isAwaitingAcceptance, useAdminOrders } from '@/hooks/useAdminOrders';
 import { OrderReceipt } from '@/components/OrderReceipt';
+import { isInOrderFlow, OrderProgress } from '@/components/OrderProgress';
 import { getHttpErrorMessage } from '@/lib/httpError';
 
 type BadgeVariant = React.ComponentProps<typeof Badge>['variant'];
@@ -106,7 +103,6 @@ const deliveryStatusAction: Partial<Record<DeliveryStatus, {
 };
 
 export default function OrdersPage() {
-  const { session } = useAuth();
   const { selectedStore, selectedStoreId: storeId, isLoading: isStoresLoading, authHeaders } = useAdminStore();
   const queryClient = useQueryClient();
   const [printOrder, setPrintOrder] = useState<Order | null>(null);
@@ -115,21 +111,8 @@ export default function OrdersPage() {
   const [operationMessage, setOperationMessage] = useState<OperationMessage | null>(null);
   // 배달 주문 접수 시 예상 시간을 고르는 창
   const [acceptOrder, setAcceptOrder] = useState<Order | null>(null);
-  useRealtimeOrders(storeId || '');
-
-  const { data: orders = [], isLoading: isOrdersLoading, isError: isOrdersError, refetch: refetchOrders } = useQuery<Order[]>({
-    queryKey: ['admin-orders', storeId],
-    queryFn: async () => {
-      const response = await adminApi.get(`${API_URL}/stores/${storeId}/orders`, {
-        headers: authHeaders,
-      });
-      // 페이지네이션 응답: { data: [...], meta: {...} } → data 배열만 추출
-      // 백엔드 원본(menuPrice, selectedOptions)을 화면용 Order(unitPrice, options)로 변환한다
-      const rows: BackendOrder[] = response.data?.data ?? response.data ?? [];
-      return rows.map(mapOrder);
-    },
-    enabled: !!session && !!storeId,
-  });
+  // 실시간 구독은 대시보드 레이아웃에서 한 번만 한다 (어느 화면에서든 새 주문 알람)
+  const { data: orders = [], isLoading: isOrdersLoading, isError: isOrdersError, refetch: refetchOrders } = useAdminOrders();
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({
@@ -153,13 +136,12 @@ export default function OrdersPage() {
       queryClient.invalidateQueries({ queryKey: ['admin-orders', storeId] });
 
       // 접수하면 주문서를 바로 출력한다 (다시 출력은 '출력' 버튼)
-      const accepted = variables.status === 'CONFIRMED'
-        ? orders.find((order) => order.id === variables.orderId)
-        : undefined;
+      const target = orders.find((order) => order.id === variables.orderId);
+      const accepted = target && isAwaitingAcceptance(target) ? target : undefined;
       if (accepted) {
         setPrintOrder({
           ...accepted,
-          status: 'CONFIRMED',
+          status: variables.status,
           delivery: accepted.delivery && variables.estimatedMinutes
             ? { ...accepted.delivery, estimatedMinutes: variables.estimatedMinutes }
             : accepted.delivery,
@@ -392,10 +374,15 @@ export default function OrdersPage() {
                     {formatDate(order.createdAt)}
                   </td>
                   <td className="whitespace-nowrap px-4 py-4">
-                    <Badge variant={getOrderBadgeVariant(order.status)} className="gap-1">
-                      {getStatusIcon(order.status)}
-                      {ORDER_STATUS_LABEL[order.status] || order.status}
-                    </Badge>
+                    {isInOrderFlow(order) ? (
+                      <OrderProgress order={order} />
+                    ) : (
+                      // 결제 대기·취소처럼 진행 흐름 밖의 상태는 뱃지로 보여준다
+                      <Badge variant={getOrderBadgeVariant(order.status)} className="gap-1">
+                        {getStatusIcon(order.status)}
+                        {ORDER_STATUS_LABEL[order.status] || order.status}
+                      </Badge>
+                    )}
                   </td>
                   <td className="whitespace-nowrap px-4 py-4">
                     <div className="flex min-w-[220px] flex-wrap gap-2">
@@ -412,7 +399,7 @@ export default function OrdersPage() {
                       </button>
                       {renderOrderAction(order, (payload) => {
                         // 배달 주문 접수는 예상 시간부터 고른다
-                        if (payload.status === 'CONFIRMED' && order.type === 'DELIVERY') {
+                        if (isAwaitingAcceptance(order) && order.type === 'DELIVERY') {
                           setAcceptOrder(order);
                           return;
                         }
@@ -473,7 +460,7 @@ export default function OrdersPage() {
           isSubmitting={updateStatusMutation.isPending}
           onClose={() => setAcceptOrder(null)}
           onSubmit={(estimatedMinutes) => {
-            updateStatusMutation.mutate({ orderId: acceptOrder.id, status: 'CONFIRMED', estimatedMinutes });
+            updateStatusMutation.mutate({ orderId: acceptOrder.id, status: 'COOKING', estimatedMinutes });
           }}
         />
       )}
@@ -1060,9 +1047,10 @@ function getNextOrderStatus(order: Order): {
   className: string;
   icon: React.ReactNode;
 } | null {
-  if (order.status === 'PENDING' || order.status === 'PAID') {
+  // 접수하면 바로 조리 중으로 넘어간다 (조리 시작 버튼을 따로 누르지 않게)
+  if (isAwaitingAcceptance(order)) {
     return {
-      status: 'CONFIRMED',
+      status: 'COOKING',
       label: '접수',
       className: 'bg-blue-600 hover:bg-blue-700',
       icon: <CheckCircle2 size={14} />,
