@@ -7,6 +7,7 @@ import Sidebar from '@/components/dashboard/Sidebar';
 import { usePathname } from 'next/navigation';
 import { canAccessAdmin, canAccessPath } from '@/lib/adminPermissions';
 import { OrderAlertControls } from '@/components/dashboard/OrderAlertControls';
+import { PcAppDownloadButton } from '@/components/dashboard/PcAppDownloadButton';
 import { StaffCallNotification } from '@/components/dashboard/StaffCallNotification';
 import { useStaffCallRealtimeSubscription } from '@/hooks/useStaffCalls';
 import { useAdminStore } from '@/contexts/AdminStoreContext';
@@ -67,7 +68,10 @@ export default function DashboardLayout({
         {!isSetupPage && (
           <header className="mb-8 flex flex-wrap items-center justify-between gap-3">
             <h1 className="text-2xl font-bold text-gray-800">관리자 대시보드</h1>
-            <OrderAlertControls />
+            <div className="flex flex-wrap items-center gap-2">
+              <PcAppDownloadButton />
+              <OrderAlertControls />
+            </div>
           </header>
         )}
         {!isSetupPage && isStoresError && (
