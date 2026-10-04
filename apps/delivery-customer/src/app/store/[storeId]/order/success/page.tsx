@@ -5,7 +5,6 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { CheckCircle2, RotateCcw } from 'lucide-react';
 import { useCartStore } from '@order/order-core';
 import { useConfirmTossPayment } from '@/hooks/mutations/useConfirmTossPayment';
-import { useCurrentStore } from '@/contexts/StoreContext';
 import { useDeliveryStore } from '@/stores/deliveryStore';
 
 const PENDING_TOSS_ORDER_ID_KEY = 'delivery.pendingTossOrderId';
@@ -16,7 +15,6 @@ function SuccessContent() {
     const { storeId } = useParams<{ storeId: string }>();
     const searchParams = useSearchParams();
     const clearCart = useCartStore((s) => s.clearCart);
-    const { store } = useCurrentStore();
     const { deliveryInfo } = useDeliveryStore();
     const confirmTossPaymentMutation = useConfirmTossPayment();
     const hasProcessedRef = useRef(false);
@@ -127,7 +125,8 @@ function SuccessContent() {
                     </div>
                     <div className="flex justify-between">
                         <span className="text-gray-500">예상 배달 시간</span>
-                        <span className="font-medium">{store.estimatedDeliveryMinutes || 40}분</span>
+                        {/* 매장이 접수하면서 정한다. 결제 직후엔 아직 정해지지 않았다 */}
+                        <span className="font-medium text-right text-sm">매장 접수 후 주문 상세에서 안내</span>
                     </div>
                 </div>
 
