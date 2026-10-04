@@ -5,6 +5,7 @@ import { getToken, onMessage } from 'firebase/messaging';
 import { getFirebaseMessaging, isFirebaseConfigured } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import { adminApi } from '@/lib/adminApi';
+import { isAdminElectronRuntime } from '@/lib/electronBridge';
 
 const VAPID_KEY = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -52,6 +53,8 @@ export function useWebPush() {
     if (!isFirebaseConfigured()) return;
     if (typeof window === 'undefined') return;
     if (!('Notification' in window) || !('serviceWorker' in navigator)) return;
+    // PC 앱(Electron)은 브라우저 웹 푸시를 지원하지 않는다 — 앱 자체 알림·알람을 쓰므로 시도하지 않는다
+    if (isAdminElectronRuntime()) return;
 
     let cancelled = false;
     let unsubscribeForeground: (() => void) | undefined;
