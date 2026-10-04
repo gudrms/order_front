@@ -148,6 +148,7 @@ export default function AccountsPage() {
           <input
             type="email"
             required
+            autoComplete="off"
             placeholder="이메일"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
@@ -157,6 +158,8 @@ export default function AccountsPage() {
             type="password"
             required
             minLength={8}
+            // 브라우저가 관리자 본인의 로그인 정보를 새 계정 칸에 자동완성하지 않게 한다
+            autoComplete="new-password"
             placeholder="초기 비밀번호 (8자 이상)"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
@@ -246,6 +249,7 @@ export default function AccountsPage() {
                       <input
                         type="password"
                         minLength={8}
+                        autoComplete="new-password"
                         placeholder="새 비밀번호"
                         value={resetPasswordById[account.id] || ''}
                         onChange={(event) => setResetPasswordById((prev) => ({
