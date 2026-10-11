@@ -49,7 +49,7 @@ test.describe('admin orders page', () => {
               totalAmount: 18000,
               paymentStatus: 'PAID',
               status: 'PAID',
-              createdAt: '2026-05-06T03:30:00.000Z',
+              createdAt: new Date().toISOString(),
               updatedAt: '2026-05-06T03:30:00.000Z',
             },
             {

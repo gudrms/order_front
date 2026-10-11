@@ -85,7 +85,7 @@ for (const height of [768, 700]) {
     await page.setViewportSize({ width: 1024, height });
     const rows = Array.from({ length: 8 }, (_, index) => ({
       id: `dense-${index}`, storeId: 'store-e2e-1', orderNumber: `POS-00${index + 1}`, type: 'DELIVERY', source: 'DELIVERY_APP', status: 'PAID', paymentStatus: 'PAID', totalAmount: 24000,
-      createdAt: '2026-10-04T01:00:00Z', note: '소스 따로 주세요',
+      createdAt: new Date().toISOString(), note: '소스 따로 주세요',
       items: [{ id: `item-${index}`, menuName: '비프 타코', quantity: 2, menuPrice: 12000, totalPrice: 24000, selectedOptions: [{ id: 'option', optionName: '매운맛', optionPrice: 0, optionGroupName: '맛' }] }],
       delivery: { status: 'PENDING', address: '경기도 김포시 테스트로 123', detailAddress: '101동 1001호', recipientName: '테스트', recipientPhone: '010-1234-5678', deliveryMemo: '문 앞에 놓아주세요' },
       payments: [{ id: `payment-${index}`, status: 'PAID', amount: 24000 }],

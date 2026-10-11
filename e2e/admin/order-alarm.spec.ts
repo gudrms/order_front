@@ -22,7 +22,7 @@ test('Electron alarm continues across pages and stops when pending orders are ac
     const status = url.searchParams.get('status');
     const currentPage = Number(url.searchParams.get('page') || 1);
     requestedPages.push(`${status}:${currentPage}`);
-    const orders = pending && status === 'PAID' ? Array.from({ length: currentPage === 1 ? 20 : 1 }, (_, i) => ({ id: `pending-${currentPage}-${i}`, storeId: 'store-e2e-1', orderNumber: `P-${currentPage}-${i}`, status: 'PAID', type: 'TABLE', totalAmount: 10000, items: [], createdAt: '2026-10-04T01:00:00Z' })) : [];
+    const orders = pending && status === 'PAID' ? Array.from({ length: currentPage === 1 ? 20 : 1 }, (_, i) => ({ id: `pending-${currentPage}-${i}`, storeId: 'store-e2e-1', orderNumber: `P-${currentPage}-${i}`, status: 'PAID', type: 'TABLE', totalAmount: 10000, items: [], createdAt: new Date().toISOString() })) : [];
     await fulfillJson(route, { statusCode: 200, data: { data: orders, meta: { lastPage: pending && status === 'PAID' ? 2 : 1 } } });
   });
   await page.route(`${API_URL}/stores/store-e2e-1/orders`, (route) => fulfillJson(route, { data: [] }));
@@ -91,4 +91,20 @@ test('reports blocked voice playback and retries after a user click', async ({ a
   const audio = await page.request.get('/audio/pending-order.wav');
   expect(audio.ok()).toBe(true);
   expect((await audio.body()).subarray(0, 4).toString()).toBe('RIFF');
+});
+
+test('excludes orders left unaccepted for more than 24 hours from the alarm', async ({ adminPage: page }) => {
+  const staleCreatedAt = new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString();
+  await page.route(`${API_URL}/stores/store-e2e-1/orders?status=*`, (route) => {
+    const status = new URL(route.request().url()).searchParams.get('status');
+    const orders = status === 'PAID'
+      ? [
+        { id: 'fresh-pending', storeId: 'store-e2e-1', orderNumber: 'FRESH', status: 'PAID', type: 'TABLE', items: [], totalAmount: 10000, createdAt: new Date().toISOString() },
+        { id: 'stale-pending', storeId: 'store-e2e-1', orderNumber: 'STALE', status: 'PAID', type: 'TABLE', items: [], totalAmount: 10000, createdAt: staleCreatedAt },
+      ]
+      : [];
+    return fulfillJson(route, { data: orders });
+  });
+  await gotoAdminPage(page, '/menu', 'admin-menu-page');
+  await expect(page.getByTestId('admin-pending-order-alarm')).toContainText('1건');
 });

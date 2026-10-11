@@ -39,6 +39,18 @@ export function useAdminOrders(options: { refetchIntervalMs?: number } = {}) {
 export function isAwaitingAcceptance(order: Order) {
   return order.status === 'PAID' || order.status === 'PENDING';
 }
+
+const ALARM_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * 알람 대상인지 — 24시간 넘게 방치된 주문은 알람에서만 뺀다.
+ * 상태는 그대로라 주문 관리 목록에서는 계속 보이고 직접 처리할 수 있다.
+ * 생성 시각을 알 수 없으면 놓치지 않도록 알람에 남긴다.
+ */
+export function shouldAlarmForOrder(order: Order, now = Date.now()) {
+  if (!isAwaitingAcceptance(order)) return false;
+  return !(now - new Date(order.createdAt).getTime() > ALARM_MAX_AGE_MS);
+}
 export type OrderStateFilter = 'all' | 'active' | 'cancelled' | 'completed';
 
 export function useAdminOrderList(filters: { startDate: string; endDate: string; state: OrderStateFilter; page: number }) {
@@ -91,7 +103,7 @@ export function usePendingAdminOrders(enabled: boolean) {
         } while (page <= lastPage);
         return rows.map(mapOrder);
       }));
-      return [...new Map(groups.flat().filter(isAwaitingAcceptance).map((order) => [order.id, order])).values()];
+      return [...new Map(groups.flat().filter((order) => shouldAlarmForOrder(order)).map((order) => [order.id, order])).values()];
     },
     enabled: enabled && !!storeId && !!authHeaders,
     refetchInterval: 5000,
