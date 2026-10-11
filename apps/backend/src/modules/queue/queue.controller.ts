@@ -1,6 +1,7 @@
 import { Body, Controller, Headers, Post, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ApiBody, ApiHeader, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { SkipThrottle } from '@nestjs/throttler';
 import { QueueConsumerService } from './queue-consumer.service';
 
 @ApiTags('Queue')
@@ -12,6 +13,7 @@ export class QueueController {
     ) { }
 
     @Post('process-once')
+    @SkipThrottle()
     @ApiOperation({
         summary: '백엔드 큐 1회 처리',
         description: 'Vercel Cron 또는 운영 배치에서 호출하는 내부 큐 처리 endpoint입니다.',

@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Header, Headers, HttpCode, Param, Post, Query, UnauthorizedException, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { SkipThrottle } from '@nestjs/throttler';
 import { ConfirmTossPaymentDto, ExpirePendingTossPaymentsDto, FailTossPaymentDto, CancelTossPaymentDto, ReconcileTossPaymentsDto, TossWebhookDto } from './dto/confirm-toss-payment.dto';
 import { PaymentsService } from './payments.service';
 import { SupabaseGuard } from '../auth/guards/supabase.guard';
@@ -83,6 +84,7 @@ export class PaymentsController {
     }
 
     @Post('toss/expire-pending')
+    @SkipThrottle()
     @UsePipes(new ValidationPipe({ transform: true }))
     @ApiOperation({
         summary: 'Toss Payments 대기 주문 만료 처리',
@@ -99,6 +101,7 @@ export class PaymentsController {
     }
 
     @Post('toss/reconcile')
+    @SkipThrottle()
     @UsePipes(new ValidationPipe({ transform: true }))
     @ApiOperation({
         summary: 'Toss Payments 상태 불일치 복구 큐 등록',

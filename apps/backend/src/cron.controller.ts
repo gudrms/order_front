@@ -1,6 +1,7 @@
 import { Body, Controller, Headers, Post, UnauthorizedException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ApiHeader, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { SkipThrottle } from '@nestjs/throttler';
 import * as Sentry from '@sentry/nestjs';
 import { PrismaService } from './modules/prisma/prisma.service';
 import { MenusService } from './modules/menus/menus.service';
@@ -8,6 +9,8 @@ import { QueueConsumerService } from './modules/queue/queue-consumer.service';
 import { PaymentsService } from './modules/payments/payments.service';
 
 @ApiTags('Cron')
+// 내부 secret으로 보호되는 배치 — rate limit 대상이 아니고, 걸어두면 Redis 명령만 소모한다.
+@SkipThrottle()
 @Controller('cron')
 export class CronController {
     private readonly logger = new Logger(CronController.name);
