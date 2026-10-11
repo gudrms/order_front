@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import axios from 'axios';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { unregisterWebPush } from '@/hooks/useWebPush';
@@ -13,17 +14,25 @@ interface AuthContextType {
   session: Session | null;
   profile: any | null; // DB의 유저 프로필 정보
   loading: boolean;
+  /** /auth/me가 서버 장애(응답 없음·5xx)로 실패했다 — 권한 없음과 구분한다 */
+  profileError: boolean;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+/** 서버 장애를 "프로필 없음"으로 처리하면 모든 계정이 승인 대기 화면으로 잘못 보내진다 */
+function isServerFailure(error: unknown) {
+  return axios.isAxiosError(error) && (!error.response || error.response.status >= 500);
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
+  const [profileError, setProfileError] = useState(false);
   const router = useRouter();
 
   const fetchProfile = async (userId: string, token: string) => {
@@ -33,9 +42,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         timeout: 10000,
       });
       setProfile(response.data);
+      setProfileError(false);
     } catch (error) {
       console.error('Profile fetch failed:', error);
       setProfile(null);
+      setProfileError(isServerFailure(error));
     }
   };
 
@@ -53,6 +64,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(nextSession?.user ?? null);
       if (!nextSession?.user) {
         setProfile(null);
+        setProfileError(false);
         setLoading(false);
         return;
       }
@@ -65,11 +77,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           timeout: 10000,
           signal: controller.signal,
         });
-        if (mounted && revision === currentRevision) setProfile(response.data);
+        if (mounted && revision === currentRevision) {
+          setProfile(response.data);
+          setProfileError(false);
+        }
       } catch (error) {
         if (mounted && revision === currentRevision) {
           console.error('Profile fetch failed:', error);
           setProfile(null);
+          setProfileError(isServerFailure(error));
         }
       } finally {
         if (mounted && revision === currentRevision) setLoading(false);
@@ -136,7 +152,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, profile, loading, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ user, session, profile, loading, profileError, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

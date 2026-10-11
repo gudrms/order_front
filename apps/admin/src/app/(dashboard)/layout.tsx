@@ -28,7 +28,7 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user, profile, loading } = useAuth();
+  const { user, profile, loading, profileError } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const { selectedStoreId, isStoresError, refetchStores } = useAdminStore();
@@ -39,6 +39,9 @@ export default function DashboardLayout({
       return;
     }
 
+    // 서버 장애로 권한을 확인하지 못한 것이지 권한이 없는 게 아니다 — 승인 대기로 보내지 않는다
+    if (!loading && user && profileError) return;
+
     if (!loading && user && (!profile || !canAccessAdmin(profile))) {
       if (pathname !== '/pending') router.push('/pending');
       return;
@@ -47,7 +50,7 @@ export default function DashboardLayout({
     if (!loading && user && profile && !canAccessPath(profile, pathname)) {
       router.replace('/');
     }
-  }, [user, profile, loading, router, pathname]);
+  }, [user, profile, loading, profileError, router, pathname]);
 
   if (loading) {
     return (
@@ -58,6 +61,7 @@ export default function DashboardLayout({
   }
 
   if (!user) return null;
+  if (profileError) return <ProfileLoadError />;
   if (profile && !canAccessPath(profile, pathname)) return null;
 
   const isSetupPage = pathname === '/pending';
@@ -98,6 +102,43 @@ export default function DashboardLayout({
       {selectedStoreId && <StaffCallRealtimeSubscriber />}
       {/* 직원 호출 토스트 알림 */}
       <StaffCallNotification />
+    </div>
+  );
+}
+
+function ProfileLoadError() {
+  const { refreshProfile, signOut } = useAuth();
+  const [retrying, setRetrying] = React.useState(false);
+
+  const retry = async () => {
+    setRetrying(true);
+    await refreshProfile();
+    setRetrying(false);
+  };
+
+  return (
+    <div className="flex h-dvh items-center justify-center bg-gray-50 p-4">
+      <div className="w-full max-w-md space-y-6 rounded-2xl border border-gray-100 bg-white p-10 text-center shadow-xl" role="alert" data-testid="admin-profile-load-error">
+        <div>
+          <h2 className="text-2xl font-extrabold text-gray-900">서버에 연결할 수 없습니다</h2>
+          <p className="mt-2 text-sm text-gray-500">
+            계정 권한을 확인하지 못했습니다. 계정 문제가 아니라 서버 오류일 수 있으니 잠시 후 다시 시도해 주세요.
+          </p>
+        </div>
+        <div className="flex flex-col items-center gap-3">
+          <button
+            type="button"
+            onClick={retry}
+            disabled={retrying}
+            className="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
+          >
+            {retrying ? '확인 중…' : '다시 시도'}
+          </button>
+          <button type="button" onClick={signOut} className="text-sm text-gray-400 hover:text-gray-600">
+            로그아웃
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
