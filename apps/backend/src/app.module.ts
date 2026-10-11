@@ -27,7 +27,7 @@ import { CallsModule } from './modules/calls/calls.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { FranchiseInquiriesModule } from './modules/franchise-inquiries/franchise-inquiries.module';
 import { CustomThrottlerGuard } from './common/guards/throttler.guard';
-import { FailOpenThrottlerStorage } from './common/guards/fail-open-throttler-storage';
+import { FallbackThrottlerStorage } from './common/guards/fallback-throttler-storage';
 import { AdminAccountsModule } from './modules/admin-accounts/admin-accounts.module';
 
 @Module({
@@ -75,7 +75,7 @@ import { AdminAccountsModule } from './modules/admin-accounts/admin-accounts.mod
                         { name: 'long',   ttl: 900000, limit: 1000 }, // 15분 1000회
                     ],
                     ...(redisUrl && {
-                        storage: new FailOpenThrottlerStorage(
+                        storage: new FallbackThrottlerStorage(
                             new ThrottlerStorageRedisService(new Redis(redisUrl)),
                         ),
                     }),
